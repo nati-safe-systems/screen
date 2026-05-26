@@ -29,36 +29,11 @@
         }
         .lock-icon { font-size: 4vw; margin-bottom: 12px; }
         .lock-title { font-size: 2.5vw; font-weight: 800; color: #ffcc00; margin-bottom: 10px; }
+        .lock-screen-id { font-size: 1.1vw; color: rgba(255,204,0,0.6); margin-bottom: 10px; }
         .lock-msg { font-size: 1.4vw; color: rgba(255,255,255,0.8); line-height: 1.6; margin-bottom: 20px; }
         .lock-contact { font-size: 1.1vw; color: rgba(255,255,255,0.5); margin-bottom: 24px; }
-        .lock-contact strong { color: #00ff88; }
-
-        /* כפתור הזנת מפתח */
-        #btn-enter-key {
-            background: #ffcc00; color: #000; border: none; border-radius: 10px;
-            padding: 12px 32px; font-size: 1.4vw; font-weight: 800; cursor: pointer;
-            font-family: 'Assistant', sans-serif; transition: background 0.2s;
-            margin-bottom: 16px; display: block; width: 100%;
-        }
-        #btn-enter-key:hover { background: #ffe55a; }
-
-        /* אזור הזנת מפתח */
-        #key-input-area { display: none; margin-top: 10px; }
-        #key-input-area input {
-            width: 100%; padding: 12px; font-size: 1.3vw; font-family: 'Assistant', sans-serif;
-            border-radius: 8px; border: 2px solid #ffcc00; background: #111; color: #fff;
-            text-align: center; letter-spacing: 2px; box-sizing: border-box; margin-bottom: 10px;
-            outline: none;
-        }
-        #key-input-area input::placeholder { color: rgba(255,255,255,0.3); letter-spacing: 1px; }
-        #btn-activate {
-            background: #00ff88; color: #000; border: none; border-radius: 8px;
-            padding: 10px 24px; font-size: 1.3vw; font-weight: 800; cursor: pointer;
-            font-family: 'Assistant', sans-serif; width: 100%; transition: background 0.2s;
-        }
-        #btn-activate:hover { background: #00dd77; }
-        #key-error { color: #ff5555; font-size: 1.1vw; margin-top: 8px; display: none; }
-        #key-success { color: #00ff88; font-size: 1.1vw; margin-top: 8px; display: none; }
+        .lock-contact strong { color: #00ff88; font-size: 1.3vw; }
+        .lock-note { font-size: 1vw; color: rgba(255,255,255,0.3); margin-top: 12px; }
 
         /* ---- Overlay שבת/חג ---- */
         #shabbat-overlay {
@@ -88,13 +63,11 @@
             position: relative; z-index: 10;
         }
         .bulletin-board { flex-grow: 1; position: relative; overflow: hidden; height: 100vh; background: #000; }
-
         .security-header-sidebar {
             background: var(--shabbat-red); color: #fff; text-align: center; padding: 10px 5px;
             font-size: 1.05vw; font-weight: 800; border-bottom: 2px solid var(--accent-gold); line-height: 1.2;
         }
         .bsd-sidebar { display: block; font-size: 0.85vw; margin-bottom: 3px; opacity: 0.9; }
-
         .sidebar-content { padding: 0.8vh 1.2vw; display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; }
         #timer { font-size: 3.8vw; font-weight: 900; color: var(--accent-green); text-align: center; line-height: 1; }
         #date-heb { font-size: 1.3vw; color: #a3d1ff; text-align: center; font-weight: 800; margin-bottom: 4px; }
@@ -102,26 +75,22 @@
             background: var(--card-bg); border: 1px solid rgba(255,204,0,0.3);
             border-radius: 12px; padding: 5px; text-align: center; margin-bottom: 4px;
         }
-        #parasha { font-size: 1.55vw; color: var(--accent-gold); font-family: 'Frank Ruhl Libre', serif; font-weight: 900; display: block; }
-        .info-subtext { font-size: 0.95vw; color: #fff; font-weight: 700; display: block; margin-top: 2px; min-height: 1.1vw; }
-
+        #parasha { font-size: 1.55vw; color: var(--accent-gold); font-family: 'Frank Ruhl Libre', serif; font-weight: 900; display: block; text-align: center; width: 100%; }
+        .info-subtext { font-size: 0.95vw; color: #fff; font-weight: 700; display: block; margin-top: 2px; min-height: 1.1vw; text-align: center; }
         #special-box {
             display: none; background: rgba(0,80,160,0.35); border: 1px solid rgba(100,180,255,0.4);
             border-radius: 10px; padding: 5px 8px; margin-bottom: 4px; font-size: 0.9vw; color: #cce8ff; line-height: 1.4;
         }
         #special-box .special-title { font-weight: 800; color: #88ccff; font-size: 1vw; display: block; margin-bottom: 2px; }
-
         .zmanim-container { display: flex; flex-direction: column; gap: 3px; padding: 2px 0; }
         .zman-row { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 1.25vw; font-weight: 600; }
         .zman-val { color: var(--accent-green); font-weight: 800; font-size: 1.35vw; }
         .warning-text { font-size: 0.9vw; color: #ff5555; text-align: center; margin-top: 3px; font-weight: 700; }
-
         #shabbat-box {
             display: none; background: rgba(128,0,0,0.4); border: 2px solid var(--accent-gold);
             border-radius: 12px; padding: 6px 12px; margin-top: auto; margin-bottom: 4px;
         }
         .shabbat-title { color: var(--accent-gold); font-weight: 800; font-size: 1.1vw; text-align: center; margin-bottom: 3px; display: block; border-bottom: 1px solid var(--accent-gold); padding-bottom: 2px; }
-
         .weekend-mode .zman-row { padding: 1.5px 0; font-size: 1.05vw; }
         .weekend-mode .zman-val { font-size: 1.1vw; }
         .weekend-mode #timer { font-size: 3.2vw; }
@@ -129,8 +98,6 @@
         .weekend-mode .info-card { padding: 4px; margin-bottom: 3px; }
         .weekend-mode #parasha { font-size: 1.35vw; }
         .weekend-mode #shabbat-box { padding: 4px 10px; border-width: 1px; }
-
-        /* ---- פוטר עם לוגו ---- */
         .sidebar-footer {
             padding: 6px 10px 8px 10px; text-align: center;
             border-top: 1px solid rgba(255,255,255,0.1); background: var(--sidebar-bg);
@@ -141,8 +108,6 @@
         #api-indicator { font-size: 0.65vw; color: rgba(255,255,255,0.3); }
         #api-indicator.live { color: var(--accent-green); }
         #api-indicator.offline { color: #ff5555; }
-
-        /* ---- רקע ---- */
         .bg-slide {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background-size: cover; background-position: center;
@@ -160,26 +125,22 @@
 </head>
 <body>
 
-<!-- מסך נעילה עם הזנת מפתח -->
+<!-- מסך נעילה — מוצג כשהרישיון פג -->
 <div id="license-lock">
     <div class="lock-logo-text">נתי <span>SAFE</span></div>
     <div class="lock-box">
         <div class="lock-icon">🔒</div>
         <div class="lock-title">הרישיון פג תוקף</div>
+        <div class="lock-screen-id" id="lock-screen-id"></div>
         <div class="lock-msg">
-            המסך נעול — יש לחדש את הרישיון.<br>
-            לקבלת מפתח חדש, צור קשר עם נתי SAFE.
+            מסך זה נעול — יש לחדש את הרישיון.<br>
+            אנא צור קשר עם נתי SAFE לחידוש השירות.
         </div>
         <div class="lock-contact">
-            <strong>053-717-1280</strong> &nbsp;|&nbsp; Nati@natisafe.co.il
+            <strong>053-717-1280</strong><br>
+            Nati@natisafe.co.il
         </div>
-        <button id="btn-enter-key" onclick="showKeyInput()">🔑 הזן מפתח רישיון חדש</button>
-        <div id="key-input-area">
-            <input type="text" id="license-key-input" placeholder="NS-XXXX-XXXX-XXXX" maxlength="15">
-            <button id="btn-activate" onclick="activateNewKey()">אקטב רישיון</button>
-            <div id="key-error">❌ מפתח שגוי או פג תוקף — נסה שנית</div>
-            <div id="key-success">✅ הרישיון אוקטב בהצלחה! המסך יתחיל בעוד שנייה...</div>
-        </div>
+        <div class="lock-note">המסך יתעדכן אוטומטית לאחר חידוש הרישיון</div>
     </div>
 </div>
 
@@ -201,7 +162,7 @@
     </div>
     <div id="main-sidebar-content" class="sidebar-content">
         <div id="timer">--:--:--</div>
-        <div id="date-heb">טוען תאריך...</div>
+        <div id="date-heb">טוען...</div>
         <div class="info-card">
             <span id="parasha">טוען...</span>
             <span id="info-extra" class="info-subtext"></span>
@@ -239,110 +200,53 @@
 
 <script>
 // ================================================================
-//  הגדרות — שנה כאן בכל התקנה
+//  הגדרות
 // ================================================================
-var API_BASE = "https://script.google.com/macros/s/AKfycbyzEdqLpl5LvSWvD-weFCZRC5im48DKnPMhbuvJ1xz6eFZ6f0hoE7RHBooPJE6zcGUC/exec";
+var API_BASE = "https://script.google.com/macros/s/AKfycbxYMr-uKwTEkc9meX-chjumKKctjceIQjnXT3lXgZQ_CyU1yMXW6x1Dc6oaDX4E1P-e/exec";
 var LOC      = { lat: 31.78, lon: 35.21, elev: 800 };
-// ================================================================
 
-// מפתח רישיון — נטען מ-localStorage אם קיים, אחרת מהקובץ
-var INSTALLED_KEY = "NS-4HXL-RQEP-XNUS"; // ← מפתח ברירת מחדל
-var LICENSE_KEY   = localStorage.getItem("nati_license_key") || INSTALLED_KEY;
+// קרא את מזהה המסך מה-URL: ?id=BUILDING-01
+var urlParams = new URLSearchParams(window.location.search);
+var SCREEN_ID = urlParams.get("id") || "DEFAULT";
 
-var licenseOk   = false;
-var apiData     = null;
-var apiDataNext = null;
-var lastApiDate = "";
+// הצג מזהה מסך במסך הנעילה
+document.getElementById("lock-screen-id").innerText = "מזהה מסך: " + SCREEN_ID;
+
+var licenseOk    = false;
+var apiData      = null;
+var apiDataNext  = null;
+var lastApiDate  = "";
 var lastLicCheck = 0;
-var LICENSE_CHECK_INTERVAL = 60 * 60 * 1000;
+var LICENSE_CHECK_INTERVAL = 60 * 60 * 1000; // בדיקה כל שעה
 
 // ================================================================
-//  הזנת מפתח על ידי הלקוח
-// ================================================================
-function showKeyInput() {
-    document.getElementById("key-input-area").style.display = "block";
-    document.getElementById("btn-enter-key").style.display = "none";
-    document.getElementById("license-key-input").focus();
-}
-
-function activateNewKey() {
-    var newKey = document.getElementById("license-key-input").value.trim().toUpperCase();
-    if (!newKey) return;
-
-    document.getElementById("key-error").style.display = "none";
-    document.getElementById("key-success").style.display = "none";
-    document.getElementById("btn-activate").textContent = "בודק...";
-    document.getElementById("btn-activate").disabled = true;
-
-    fetch(API_BASE + "?action=check&key=" + encodeURIComponent(newKey), { cache: "no-store" })
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
-            if (d.status === "valid" || d.status === "warning") {
-                // שמור מפתח חדש ב-localStorage
-                localStorage.setItem("nati_license_key", newKey);
-                LICENSE_KEY = newKey;
-                document.getElementById("key-success").style.display = "block";
-                setTimeout(function() {
-                    document.getElementById("license-lock").style.display = "none";
-                    licenseOk = true;
-                    startApp();
-                }, 2000);
-            } else {
-                document.getElementById("key-error").style.display = "block";
-                document.getElementById("btn-activate").textContent = "אקטב רישיון";
-                document.getElementById("btn-activate").disabled = false;
-            }
-        })
-        .catch(function() {
-            document.getElementById("key-error").style.display = "block";
-            document.getElementById("key-error").textContent = "❌ שגיאת תקשורת — בדוק חיבור אינטרנט";
-            document.getElementById("btn-activate").textContent = "אקטב רישיון";
-            document.getElementById("btn-activate").disabled = false;
-        });
-}
-
-// Enter במקלדת מאקטב
-document.getElementById("license-key-input").addEventListener("keydown", function(e) {
-    if (e.key === "Enter") activateNewKey();
-});
-
-// ================================================================
-//  בדיקת רישיון
+//  בדיקת רישיון לפי SCREEN_ID
 // ================================================================
 function checkLicense(callback) {
-    fetch(API_BASE + "?action=check&key=" + encodeURIComponent(LICENSE_KEY), { cache: "no-store" })
+    fetch(API_BASE + "?action=check&key=" + encodeURIComponent(SCREEN_ID), { cache: "no-store" })
         .then(function(r) { return r.json(); })
         .then(function(d) {
             lastLicCheck = Date.now();
             if (d.status === "valid" || d.status === "warning") {
                 licenseOk = true;
                 document.getElementById("license-lock").style.display = "none";
+                // עדכן קואורדינטות לפי בניין אם קיים
+                if (d.lat && d.lon) { LOC.lat = parseFloat(d.lat); LOC.lon = parseFloat(d.lon); LOC.elev = parseFloat(d.elev)||0; }
             } else {
                 licenseOk = false;
-                showLockScreen();
+                document.getElementById("license-lock").style.display = "flex";
             }
             if (callback) callback();
         })
         .catch(function() {
+            // אם אין אינטרנט — המשך לפעול אם כבר אומת
             if (!licenseOk) {
                 setTimeout(function() {
-                    if (!licenseOk) showLockScreen();
+                    if (!licenseOk) document.getElementById("license-lock").style.display = "flex";
                 }, 5 * 60 * 1000);
             }
             if (callback) callback();
         });
-}
-
-function showLockScreen() {
-    document.getElementById("license-lock").style.display = "flex";
-    // אפס את טופס ההזנה
-    document.getElementById("btn-enter-key").style.display = "block";
-    document.getElementById("key-input-area").style.display = "none";
-    document.getElementById("license-key-input").value = "";
-    document.getElementById("key-error").style.display = "none";
-    document.getElementById("key-success").style.display = "none";
-    document.getElementById("btn-activate").textContent = "אקטב רישיון";
-    document.getElementById("btn-activate").disabled = false;
 }
 
 // ================================================================
@@ -362,12 +266,11 @@ function fetchHebcalData(dateStr, callback, isNextWeek) {
         .catch(function() { if (!isNextWeek) setApiIndicator("offline"); if (callback) callback(); });
 }
 
-function setApiIndicator(state) {
+function setApiIndicator(s) {
     var el = document.getElementById("api-indicator");
-    if (state === "live") { el.textContent = "● נתונים בזמן אמת"; el.className = "live"; }
-    else { el.textContent = "● מצב אופליין"; el.className = "offline"; }
+    el.textContent = s === "live" ? "● נתונים בזמן אמת" : "● מצב אופליין";
+    el.className = s;
 }
-
 function getTodayStr() {
     var n = new Date();
     return n.getFullYear() + "-" + String(n.getMonth()+1).padStart(2,"0") + "-" + String(n.getDate()).padStart(2,"0");
@@ -377,7 +280,7 @@ function getDateStr(d) {
 }
 
 // ================================================================
-//  חילוץ נתונים
+//  חילוץ נתונים מ-Hebcal
 // ================================================================
 function getHebcalZman(key) {
     if (!apiData || !apiData.times) return null;
@@ -386,13 +289,25 @@ function getHebcalZman(key) {
     return d.getHours() + d.getMinutes()/60 + d.getSeconds()/3600;
 }
 function getHebcalTitle() { return apiData && apiData.date && apiData.date.hebrew ? apiData.date.hebrew : null; }
-function getHebcalParasha() {
-    if (!apiData || !apiData.items) return null;
-    for (var i=0; i<apiData.items.length; i++) {
-        if (apiData.items[i].category === "parashat") return "פרשת " + (apiData.items[i].hebrew || apiData.items[i].title);
+
+function getWeeklyParasha() {
+    // חפש פרשה בנתוני היום
+    if (apiData && apiData.items) {
+        for (var i=0; i<apiData.items.length; i++) {
+            if (apiData.items[i].category === "parashat")
+                return "פרשת " + (apiData.items[i].hebrew || apiData.items[i].title);
+        }
+    }
+    // חפש פרשה בנתוני השבת הבאה
+    if (apiDataNext && apiDataNext.items) {
+        for (var i=0; i<apiDataNext.items.length; i++) {
+            if (apiDataNext.items[i].category === "parashat")
+                return "פרשת " + (apiDataNext.items[i].hebrew || apiDataNext.items[i].title);
+        }
     }
     return null;
 }
+
 function getHebcalHoliday() {
     if (!apiData || !apiData.items) return null;
     for (var i=0; i<apiData.items.length; i++) {
@@ -410,23 +325,23 @@ function getShabbatMevarchimInfo() {
     }
     return rc ? { roshChodesh: rc, molad: mol } : null;
 }
-function getFastInfo(hMonth, hDay) {
+function getFastInfo(m, d) {
     var fasts = [
-        ["צום גדליה",["תשרי",[3,4]]],
-        ["צום עשרה בטבת",["טבת",[10]]],
-        ["תענית אסתר",["אדר",[13]]],
-        ["תענית אסתר",["אדר ב'",[13]]],
-        ["שבעה עשר בתמוז",["תמוז",[17]]],
-        ["תשעה באב",["אב",[9]]]
+        ["צום גדליה","תשרי",[3,4]],
+        ["צום עשרה בטבת","טבת",[10]],
+        ["תענית אסתר","אדר",[13]],
+        ["תענית אסתר","אדר ב'",[13]],
+        ["שבעה עשר בתמוז","תמוז",[17]],
+        ["תשעה באב","אב",[9]]
     ];
     for (var i=0; i<fasts.length; i++) {
-        if (fasts[i][1][0]===hMonth && fasts[i][1][1].indexOf(hDay)>=0) return fasts[i][0];
+        if (fasts[i][1]===m && fasts[i][2].indexOf(d)>=0) return fasts[i][0];
     }
     return null;
 }
 
 // ================================================================
-//  זמנים אסטרונומיים
+//  תאריך עברי
 // ================================================================
 var rhDates = {
     2024:"2024-10-03",2025:"2025-09-23",2026:"2026-09-12",2027:"2027-10-02",
@@ -434,11 +349,11 @@ var rhDates = {
 };
 function getHebrewDateOffline(date) {
     var gYear=date.getFullYear();
-    var rhThis=new Date(rhDates[gYear]), rhNext=new Date(rhDates[gYear+1]), rhPrev=new Date(rhDates[gYear-1]);
+    var rhThis=new Date(rhDates[gYear]),rhNext=new Date(rhDates[gYear+1]),rhPrev=new Date(rhDates[gYear-1]);
     var hYear,rhStart,rhEnd;
     if(date>=rhThis){hYear=gYear+3761;rhStart=rhThis;rhEnd=rhNext;}
     else{hYear=gYear+3760;rhStart=rhPrev;rhEnd=rhThis;}
-    var yLen=Math.round((rhEnd-rhStart)/86400000), isLeap=yLen>360;
+    var yLen=Math.round((rhEnd-rhStart)/86400000),isLeap=yLen>360;
     var dp=Math.floor((date-rhStart)/86400000);
     var months=[{n:"תשרי",l:30},{n:"חשוון",l:(yLen===355||yLen===385)?30:29},
         {n:"כסלו",l:(yLen===353||yLen===383)?29:30},{n:"טבת",l:29},{n:"שבט",l:30}];
@@ -451,7 +366,7 @@ function getHebrewDay(day) {
     if(day===15)return 'ט"ו'; if(day===16)return 'ט"ז';
     var u=["","א'","ב'","ג'","ד'","ה'","ו'","ז'","ח'","ט'"],t=["","י'","כ'","ל'"];
     var ti=Math.floor(day/10),ui=day%10;
-    if(ti>0&&ui>0)return t[ti].replace("'","")+'"'+u[ui].replace("'","");
+    if(ti>0&&ui>0)return t[ti].replace("'","")+'""+u[ui].replace("'","");
     if(ti>0&&ui===0)return t[ti]; return u[ui];
 }
 function getHebrewYear(year) {
@@ -468,7 +383,7 @@ function getJewishHolidays(m,d) {
     if(m==="אדר"&&d===14)return "פורים"; if(m==="אדר ב'"&&d===14)return "פורים";
     if(m==="ניסן"&&d>=15&&d<=21)return "חג הפסח";
     if(m==="אייר"&&d===18)return 'ל"ג בעומר'; if(m==="סיוון"&&d===6)return "חג השבועות";
-    if(m==="תמוז"&&d===17)return 'י"ז בתמוז'; if(m==="אב"&&d===9)return 'תשעה באב';
+    if(m==="תמוז"&&d===17)return 'י"ז בתמוז'; if(m==="אב"&&d===9)return "תשעה באב";
     return "";
 }
 function getErevChag(m,d) {
@@ -482,10 +397,10 @@ function getOmerText(n) {
     var t="היום ";
     if(n===1)t+="יום אחד";else if(n===2)t+="שני ימים";else if(n<10)t+=w[n]+" ימים";
     else if(n===10)t+="עשרה ימים";
-    else if(n<20){var d2=["","אחד עשר","שנים עשר","שלושה עשר","ארבעה עשר","חמישה עשר","שישה עשר","שבעה עשר","שמונה עשר","תשעה עשר"];t+=d2[n-10]+" יום";}
-    else{var tens2=Math.floor(n/10),un=n%10;var tw=(tens2===2)?"עשרים":(tens2===3)?"שלושים":"ארבעים";if(un===0)t+=tw+" יום";else t+=w[un]+" ו"+tw+" יום";}
+    else if(n<20){var arr=["","אחד עשר","שנים עשר","שלושה עשר","ארבעה עשר","חמישה עשר","שישה עשר","שבעה עשר","שמונה עשר","תשעה עשר"];t+=arr[n-10]+" יום";}
+    else{var tn=Math.floor(n/10),un=n%10;var tw=(tn===2)?"עשרים":(tn===3)?"שלושים":"ארבעים";t+=(un===0)?tw+" יום":w[un]+" ו"+tw+" יום";}
     var wk=Math.floor(n/7),dy=n%7;
-    if(wk>0){t+=", שהם ";var ww=["","שבוע","שני שבועות","שלושה שבועות","ארבעה שבועות","חמישה שבועות","שישה שבועות"];t+=ww[wk];if(dy>0){t+=" ו";t+=(dy===1)?"יום אחד":(dy===2)?"שני ימים":w[dy]+" ימים";}}
+    if(wk>0){t+=", שהם ";var ww=["","שבוע","שני שבועות","שלושה שבועות","ארבעה שבועות","חמישה שבועות","שישה שבועות"];t+=ww[wk];if(dy>0)t+=" ו"+((dy===1)?"יום אחד":(dy===2)?"שני ימים":w[dy]+" ימים");}
     return t+" לעומר";
 }
 function fmt(dec) {
@@ -530,12 +445,12 @@ function getZmanimMixed(now) {
 // ================================================================
 function update() {
     if (!licenseOk) return;
-    var now=new Date(), times=getZmanimMixed(now), cur=now.getHours()+now.getMinutes()/60;
+    var now=new Date(),times=getZmanimMixed(now),cur=now.getHours()+now.getMinutes()/60;
     var hebCalcDate=new Date(now); if(cur>=times.tzeit) hebCalcDate.setDate(hebCalcDate.getDate()+1);
     var hDate=getHebrewDateOffline(hebCalcDate);
     document.getElementById("timer").innerText=now.toLocaleTimeString("he-IL",{hour12:false});
     document.getElementById("date-heb").innerText=getHebcalTitle()||(getHebrewDay(hDate.day)+" ב"+hDate.month+" "+getHebrewYear(hDate.year));
-    document.getElementById("parasha").innerText=getHebcalParasha()||"פרשת השבוע";
+    document.getElementById("parasha").innerText=getWeeklyParasha()||"פרשת השבוע";
     var chag=getHebcalHoliday()||getJewishHolidays(hDate.month,hDate.day);
     var erevChag=getErevChag(hDate.month,hDate.day);
     document.getElementById("info-extra").innerText=chag||erevChag||"";
@@ -621,27 +536,31 @@ setInterval(function(){
 function startApp() {
     var today=getTodayStr();
     fetchHebcalData(today, function(){
-        // טען שבוע הבא לשבת מברכים
-        var nextSat=new Date(); var dts=(6-nextSat.getDay()+7)%7||7;
+        // טען שבת קרובה לפרשה ושבת מברכים
+        var nextSat=new Date();
+        var dts=(6-nextSat.getDay()+7)%7||7;
         nextSat.setDate(nextSat.getDate()+dts);
-        var wa=new Date(nextSat); wa.setDate(wa.getDate()+7);
-        fetchHebcalData(getDateStr(wa), null, true);
-        update();
-        setInterval(update, 1000);
-        setInterval(function(){
-            var t=getTodayStr();
-            if(t!==lastApiDate) fetchHebcalData(t, null, false);
-        }, 3600000);
-        setInterval(function(){
-            if(Date.now()-lastLicCheck>LICENSE_CHECK_INTERVAL) checkLicense(null);
-        }, LICENSE_CHECK_INTERVAL);
+        fetchHebcalData(getDateStr(nextSat), function(){
+            // אם שבת — טען גם שבת שאחריה לשבת מברכים
+            if(new Date().getDay()===6){
+                var wa=new Date(nextSat); wa.setDate(wa.getDate()+7);
+                fetchHebcalData(getDateStr(wa), null, true);
+            }
+            update();
+            setInterval(update, 1000);
+            setInterval(function(){
+                var t=getTodayStr();
+                if(t!==lastApiDate) fetchHebcalData(t, null, false);
+            }, 3600000);
+            setInterval(function(){
+                if(Date.now()-lastLicCheck>LICENSE_CHECK_INTERVAL) checkLicense(null);
+            }, LICENSE_CHECK_INTERVAL);
+        }, true);
     });
 }
 
 (function init(){
-    checkLicense(function(){
-        if(licenseOk) startApp();
-    });
+    checkLicense(function(){ if(licenseOk) startApp(); });
 })();
 </script>
 </body>
