@@ -11,7 +11,6 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
 .lt{font-size:5vw;font-weight:900;color:#fff;font-family:"Frank Ruhl Libre",serif;}
 .lt span{color:#ffcc00;}
 .lb{background:rgba(255,255,255,0.06);border:1px solid rgba(255,204,0,0.3);border-radius:20px;padding:3vh 4vw;text-align:center;max-width:560px;width:90%;}
-.li{font-size:4vw;margin-bottom:12px;}
 .lti{font-size:2.5vw;font-weight:800;color:#ffcc00;margin-bottom:10px;}
 .lsi{font-size:1.1vw;color:rgba(255,204,0,0.6);margin-bottom:10px;}
 .lm{font-size:1.3vw;color:rgba(255,255,255,0.8);line-height:1.6;margin-bottom:16px;}
@@ -59,23 +58,16 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
 .bs.active{opacity:1;z-index:2;}
 .bs.previous{opacity:1;z-index:1;}
 #ob{position:absolute;bottom:15px;left:50%;transform:translateX(-50%);background:#c19200;color:#fff;padding:8px 25px;border-radius:8px;font-size:1.4vw;font-weight:800;border:1.5px solid #fff;z-index:5;white-space:nowrap;display:none;}
-
-/* לוח מודעות גולל */
-#marquee-wrap{position:absolute;left:0;right:0;bottom:60px;top:60px;z-index:6;overflow:hidden;pointer-events:none;display:none;}
-#marquee-text{position:absolute;width:100%;text-align:center;font-size:2.2vw;font-weight:800;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,0.9);line-height:1.6;padding:0 40px;animation:scrollUp linear infinite;white-space:pre-wrap;}
-@keyframes scrollUp{
-  0%{transform:translateY(100%);}
-  100%{transform:translateY(-100%);}
-}
+#mq-wrap{position:absolute;left:0;right:0;bottom:70px;top:70px;z-index:6;overflow:hidden;pointer-events:none;display:none;}
+#mq-text{position:absolute;width:100%;text-align:center;font-size:2.2vw;font-weight:800;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,0.9);line-height:1.7;padding:0 40px;white-space:pre-wrap;}
 #msg-badge{position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,204,0,0.5);border-radius:6px;padding:4px 12px;font-size:1vw;color:#ffcc00;font-weight:700;z-index:7;display:none;}
+@keyframes scrollUp{0%{transform:translateY(100%);}100%{transform:translateY(-100%);}}
 </style>
 </head>
 <body>
-
 <div id="lock">
   <div class="lt">נתי <span>SAFE</span></div>
   <div class="lb">
-    <div class="li">&#x1F512;</div>
     <div class="lti">הרישיון פג תוקף</div>
     <div class="lsi" id="lsi"></div>
     <div class="lm">מסך זה נעול — יש לחדש את הרישיון.<br>אנא צור קשר עם נתי SAFE.</div>
@@ -83,7 +75,6 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
     <div class="ln">המסך יתעדכן אוטומטית לאחר חידוש הרישיון</div>
   </div>
 </div>
-
 <div id="sho">
   <div class="sg" id="og">שבת שלום</div>
   <div class="otb">
@@ -92,7 +83,6 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
     <div class="otr"><span>רבינו תם</span><span class="otv" id="ort">--:--</span></div>
   </div>
 </div>
-
 <div class="sidebar">
   <div class="hdr"><span class="bsd">בס"ד</span>המסך חסום ומוגן מגלישה באינטרנט</div>
   <div id="sc" class="sc">
@@ -101,7 +91,7 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
     <div class="ic"><span id="par">טוען...</span><span id="ie" class="ist"></span></div>
     <div id="spb"><span class="st" id="spt"></span><span id="spc"></span></div>
     <div class="zc" id="zl"></div>
-    <div class="wt">* אין לסמוך על הזמנים בצמצום</div>
+    <div class="wt">אין לסמוך על הזמנים בצמצום</div>
     <div id="shb">
       <span class="sht" id="sht">זמני שבת קודש</span>
       <div class="zr"><span id="li">כניסת שבת</span><span class="zv" id="si">--:--</span></div>
@@ -115,50 +105,47 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
     <div id="ai">טוען...</div>
   </div>
 </div>
-
 <div class="bb" id="bc">
-  <div class="bs active" style="background-image:linear-gradient(rgba(0,0,0,0.2),rgba(0,0,0,0.2)),url(https://images.unsplash.com/photo-1433086966358-54859d0ed716?q=80&w=1920&auto=format&fit=crop)"></div>
+<div class="bs active" style="background-image:linear-gradient(rgba(0,0,0,0.2),rgba(0,0,0,0.2)),url(https://images.unsplash.com/photo-1433086966358-54859d0ed716?q=80&w=1920&auto=format&fit=crop)"></div>
 <div class="bs" style="background-image:linear-gradient(rgba(0,0,0,0.2),rgba(0,0,0,0.2)),url(https://images.unsplash.com/photo-1441974231531-c6227dbb6b9e?q=80&w=1920&auto=format&fit=crop)"></div>
 <div class="bs" style="background-image:linear-gradient(rgba(0,0,0,0.2),rgba(0,0,0,0.2)),url(https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=1920&auto=format&fit=crop)"></div>
 <div class="bs" style="background-image:linear-gradient(rgba(0,0,0,0.2),rgba(0,0,0,0.2)),url(https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=1920&auto=format&fit=crop)"></div>
 <div class="bs" style="background-image:linear-gradient(rgba(0,0,0,0.2),rgba(0,0,0,0.2)),url(https://images.unsplash.com/photo-1470813740244-df37b8c1edcb?q=80&w=1920&auto=format&fit=crop)"></div>
 <div class="bs" style="background-image:linear-gradient(rgba(0,0,0,0.2),rgba(0,0,0,0.2)),url(https://images.unsplash.com/photo-1493246507139-91e8fad9978e?q=80&w=1920&auto=format&fit=crop)"></div>
-
   <div id="ob"></div>
-  <div id="marquee-wrap"><div id="marquee-text"></div></div>
-  <div id="msg-badge">&#x1F4E2; הודעה לדיירים</div>
+  <div id="mq-wrap"><div id="mq-text"></div></div>
+  <div id="msg-badge">הודעה לדיירים</div>
 </div>
-
 <script>
+
 var SUPA = "https://cxtrrejclkhqhkqbicmz.supabase.co";
 var SKEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dHJyZWpjbGtocWhrcWJpY216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTk3MDksImV4cCI6MjA5NTU3NTcwOX0._7wB4YwrYEnK6hWuR6YqcFxRb05OLnWvOelIC-ahIEQ";
 var GAS  = "https://script.google.com/macros/s/AKfycbxYMr-uKwTEkc9meX-chjumKKctjceIQjnXT3lXgZQ_CyU1yMXW6x1Dc6oaDX4E1P-e/exec";
-var LOC  = {lat:31.78,lon:35.21,elev:800};
+var LOC  = {lat:31.78, lon:35.21, elev:800};
 var SID  = new URLSearchParams(window.location.search).get("id") || "DEFAULT";
 document.getElementById("lsi").textContent = "מזהה מסך: " + SID;
 
 var ok=false, aD=null, aN=null, lad="", llc=0, LCI=3600000;
-var currentMsg = "";
+var currentMsg="", mqTimer=null;
 
-function supa(path) {
-  return fetch(SUPA+"/rest/v1/"+path, {
-    headers: {"apikey":SKEY,"Authorization":"Bearer "+SKEY}
-  }).then(function(r){return r.json();});
+function supaFetch(path) {
+  return fetch(SUPA + "/rest/v1/" + path, {
+    headers: {
+      "apikey": SKEY,
+      "Authorization": "Bearer " + SKEY
+    }
+  }).then(function(r){ return r.json(); });
 }
 
 function chkLic(cb) {
-  // בדוק רישיון מ-Supabase לפי screen_id
-  supa("screens?screen_id=eq."+encodeURIComponent(SID))
+  supaFetch("screens?screen_id=eq." + encodeURIComponent(SID))
   .then(function(d) {
     llc = Date.now();
     if (d && d.length > 0) {
       var exp = new Date(d[0].license_expiry);
-      var now = new Date();
-      if (exp > now) {
+      if (exp > new Date()) {
         ok = true;
         document.getElementById("lock").style.display = "none";
-        if (d[0].lat) LOC.lat = parseFloat(d[0].lat);
-        if (d[0].lon) LOC.lon = parseFloat(d[0].lon);
         updateMarquee(d[0].message || "");
       } else {
         ok = false;
@@ -170,32 +157,35 @@ function chkLic(cb) {
     }
     if (cb) cb();
   }).catch(function() {
-    if (!ok) setTimeout(function(){if(!ok)document.getElementById("lock").style.display="flex";}, 300000);
+    if (!ok) setTimeout(function(){ if(!ok) document.getElementById("lock").style.display="flex"; }, 300000);
     if (cb) cb();
   });
 }
 
 function updateMarquee(msg) {
   currentMsg = msg;
-  var wrap = document.getElementById("marquee-wrap");
-  var txt  = document.getElementById("marquee-text");
+  var wrap  = document.getElementById("mq-wrap");
+  var txt   = document.getElementById("mq-text");
   var badge = document.getElementById("msg-badge");
+  if (mqTimer) { clearInterval(mqTimer); mqTimer=null; }
   if (msg && msg.trim()) {
     txt.textContent = msg;
     wrap.style.display = "block";
     badge.style.display = "block";
-    // מהירות גלילה לפי אורך הטקסט
-    var speed = Math.max(15, Math.min(60, msg.length * 0.3));
-    txt.style.animationDuration = speed + "s";
+    var speed = Math.max(15, Math.min(80, msg.length * 0.35));
+    txt.style.animation = "none";
+    txt.style.transform = "translateY(100%)";
+    setTimeout(function() {
+      txt.style.animation = "scrollUp " + speed + "s linear infinite";
+    }, 50);
   } else {
     wrap.style.display = "none";
     badge.style.display = "none";
   }
 }
 
-// רענן מודעה מ-Supabase כל 2 דקות
 function pollMessage() {
-  supa("screens?screen_id=eq."+encodeURIComponent(SID)+"&select=message,license_expiry")
+  supaFetch("screens?screen_id=eq." + encodeURIComponent(SID) + "&select=message,license_expiry")
   .then(function(d) {
     if (d && d.length > 0) {
       var exp = new Date(d[0].license_expiry);
@@ -205,107 +195,269 @@ function pollMessage() {
   }).catch(function(){});
 }
 
-function fhcal(ds,cb,nx) {
-  fetch(GAS+"?action=hebcal&lat="+LOC.lat+"&lon="+LOC.lon+"&date="+ds,{cache:"no-store"})
-  .then(function(r){return r.json();})
-  .then(function(d){
-    if(d.ok&&d.data){if(nx){aN=d.data;}else{aD=d.data;lad=ds;sai("live");}}
-    else{if(!nx)sai("offline");}
-    if(cb)cb();
-  }).catch(function(){if(!nx)sai("offline");if(cb)cb();});
+function fhcal(ds, cb, nx) {
+  fetch(GAS + "?action=hebcal&lat=" + LOC.lat + "&lon=" + LOC.lon + "&date=" + ds, {cache:"no-store"})
+  .then(function(r){ return r.json(); })
+  .then(function(d) {
+    if (d.ok && d.data) { if(nx){aN=d.data;}else{aD=d.data;lad=ds;sai("live");} }
+    else { if(!nx) sai("offline"); }
+    if (cb) cb();
+  }).catch(function(){ if(!nx) sai("offline"); if(cb) cb(); });
 }
 
 function sai(s) {
-  var el=document.getElementById("ai");
-  el.textContent=s==="live"?"● נתונים בזמן אמת":"● מצב אופליין";
-  el.className=s;
+  var el = document.getElementById("ai");
+  el.textContent = s==="live" ? "נתונים בזמן אמת" : "מצב אופליין";
+  el.className = s;
 }
 
-function tds(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
-function tdy(){return tds(new Date());}
-function gzm(k){if(!aD||!aD.times)return null;var v=aD.times[k];if(!v)return null;var d=new Date(v);return d.getHours()+d.getMinutes()/60+d.getSeconds()/3600;}
-function ghtl(){return aD&&aD.date&&aD.date.hebrew?aD.date.hebrew:null;}
+function tds(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function tdy(){ return tds(new Date()); }
+function gzm(k){ if(!aD||!aD.times)return null; var v=aD.times[k]; if(!v)return null; var d=new Date(v); return d.getHours()+d.getMinutes()/60+d.getSeconds()/3600; }
+function ghtl(){ return aD&&aD.date&&aD.date.hebrew ? aD.date.hebrew : null; }
 
-function gwp(){
-  if(aD&&aD.items)for(var i=0;i<aD.items.length;i++){if(aD.items[i].category==="parashat")return "פרשת "+(aD.items[i].hebrew||aD.items[i].title);}
-  if(aN&&aN.items)for(var i=0;i<aN.items.length;i++){if(aN.items[i].category==="parashat")return "פרשת "+(aN.items[i].hebrew||aN.items[i].title);}
+function gwp() {
+  if(aD&&aD.items) for(var i=0;i<aD.items.length;i++) if(aD.items[i].category==="parashat") return "פרשת "+(aD.items[i].hebrew||aD.items[i].title);
+  if(aN&&aN.items) for(var i=0;i<aN.items.length;i++) if(aN.items[i].category==="parashat") return "פרשת "+(aN.items[i].hebrew||aN.items[i].title);
   return null;
 }
 
-function ghol(){if(!aD||!aD.items)return null;for(var i=0;i<aD.items.length;i++){if(aD.items[i].category==="holiday")return aD.items[i].hebrew||aD.items[i].title;}return null;}
-function gsmi(){if(!aN||!aN.items)return null;var rc=null,mol=null;for(var i=0;i<aN.items.length;i++){var it=aN.items[i];if(it.category==="roshchodesh")rc=it.hebrew||it.title;if(it.category==="molad")mol=it.hebrew||it.title;}return rc?{rc:rc,mol:mol}:null;}
-function gfi(m,d){var fs=[["צום גדליה","תשרי",[3,4]],["צום עשרה בטבת","טבת",[10]],["תענית אסתר","אדר",[13]],["תענית אסתר","אדר ב'",[13]],["שבעה עשר בתמוז","תמוז",[17]],["תשעה באב","אב",[9]]];for(var i=0;i<fs.length;i++){if(fs[i][1]===m&&fs[i][2].indexOf(d)>=0)return fs[i][0];}return null;}
+function ghol() {
+  if(!aD||!aD.items) return null;
+  for(var i=0;i<aD.items.length;i++) if(aD.items[i].category==="holiday") return aD.items[i].hebrew||aD.items[i].title;
+  return null;
+}
+
+function gsmi() {
+  if(!aN||!aN.items) return null;
+  var rc=null, mol=null;
+  for(var i=0;i<aN.items.length;i++) {
+    var it=aN.items[i];
+    if(it.category==="roshchodesh") rc=it.hebrew||it.title;
+    if(it.category==="molad") mol=it.hebrew||it.title;
+  }
+  return rc ? {rc:rc,mol:mol} : null;
+}
+
+function gfi(m,d) {
+  var fs=[
+    ["צום גדליה","תשרי",[3,4]],
+    ["צום עשרה בטבת","טבת",[10]],
+    ["תענית אסתר","אדר",[13]],
+    ["שבעה עשר בתמוז","תמוז",[17]],
+    ["תשעה באב","אב",[9]]
+  ];
+  for(var i=0;i<fs.length;i++) if(fs[i][1]===m && fs[i][2].indexOf(d)>=0) return fs[i][0];
+  return null;
+}
 
 var rh={2024:"2024-10-03",2025:"2025-09-23",2026:"2026-09-12",2027:"2027-10-02",2028:"2028-09-21",2029:"2029-09-10",2030:"2030-09-28",2031:"2031-09-18"};
-function ghd(date){var gy=date.getFullYear();var rT=new Date(rh[gy]),rN=new Date(rh[gy+1]),rP=new Date(rh[gy-1]);var hy,rS,rE;if(date>=rT){hy=gy+3761;rS=rT;rE=rN;}else{hy=gy+3760;rS=rP;rE=rT;}var yL=Math.round((rE-rS)/86400000),iL=yL>360;var dp=Math.floor((date-rS)/86400000);var mo=[{n:"תשרי",l:30},{n:"חשוון",l:(yL===355||yL===385)?30:29},{n:"כסלו",l:(yL===353||yL===383)?29:30},{n:"טבת",l:29},{n:"שבט",l:30}];if(iL){mo.push({n:"אדר א'",l:30},{n:"אדר ב'",l:29});}else{mo.push({n:"אדר",l:29});}mo.push({n:"ניסן",l:30},{n:"אייר",l:29},{n:"סיוון",l:30},{n:"תמוז",l:29},{n:"אב",l:30},{n:"אלול",l:29});var mi=0;while(dp>=mo[mi].l){dp-=mo[mi].l;mi++;}return {year:hy,month:mo[mi].n,day:dp+1};}
-function gdl(d){var u=["","א","ב","ג","ד","ה","ו","ז","ח","ט"],t=["","י","כ","ל"];if(d===15)return "טו";if(d===16)return "טז";var ti=Math.floor(d/10),ui=d%10;if(ti>0&&ui>0)return t[ti]+u[ui];if(ti>0)return t[ti];return u[ui];}
-function gdy(y){var v=y%1000,s="";while(v>=400){s+="ת";v-=400;}if(v>=300){s+="ש";v-=300;}if(v>=200){s+="ר";v-=200;}if(v>=100){s+="ק";v-=100;}var tn=["","י","כ","ל","מ","נ","ס","ע","פ","צ"],un=["","א","ב","ג","ד","ה","ו","ז","ח","ט"];if(v%100===15){s+="טו";}else if(v%100===16){s+="טז";}else{s+=tn[Math.floor((v%100)/10)]+un[v%10];}return "ה'"+s.substring(0,s.length-1)+'"'+s.substring(s.length-1);}
-function gjh(m,d){if(m==="תשרי"){if(d===1||d===2)return "ראש השנה";if(d===10)return "יום כיפור";if(d>=15&&d<=21)return "חג הסוכות";if(d===22)return "שמחת תורה";}if(m==="כסלו"&&d>=25)return "חנוכה";if(m==="טבת"&&d<=2)return "חנוכה";if(m==="אדר"&&d===14)return "פורים";if(m==="אדר ב'"&&d===14)return "פורים";if(m==="ניסן"&&d>=15&&d<=21)return "חג הפסח";if(m==="אייר"&&d===18)return "לג בעומר";if(m==="סיוון"&&d===6)return "חג השבועות";if(m==="תמוז"&&d===17)return "יז בתמוז";if(m==="אב"&&d===9)return "תשעה באב";return "";}
-function gec(m,d){if(m==="אלול"&&d===29)return "ערב ראש השנה";if(m==="תשרי"&&d===9)return "ערב יום כיפור";if(m==="תשרי"&&d===14)return "ערב חג הסוכות";if(m==="ניסן"&&d===14)return "ערב חג הפסח";if(m==="סיוון"&&d===5)return "ערב חג השבועות";return "";}
-function got(n){if(n<1||n>49)return "";var w=["","אחד","שניים","שלושה","ארבעה","חמישה","שישה","שבעה","שמונה","תשעה"];var t="היום ";if(n===1)t+="יום אחד";else if(n===2)t+="שני ימים";else if(n<10)t+=w[n]+" ימים";else if(n===10)t+="עשרה ימים";else if(n<20){var a=["","אחד עשר","שנים עשר","שלושה עשר","ארבעה עשר","חמישה עשר","שישה עשר","שבעה עשר","שמונה עשר","תשעה עשר"];t+=a[n-10]+" יום";}else{var tn2=Math.floor(n/10),un2=n%10;var tw=(tn2===2)?"עשרים":(tn2===3)?"שלושים":"ארבעים";t+=(un2===0)?tw+" יום":w[un2]+" ו"+tw+" יום";}var wk=Math.floor(n/7),dy=n%7;if(wk>0){var ww=["","שבוע","שני שבועות","שלושה שבועות","ארבעה שבועות","חמישה שבועות","שישה שבועות"];t+=", שהם "+ww[wk];if(dy>0)t+=" ו"+((dy===1)?"יום אחד":(dy===2)?"שני ימים":w[dy]+" ימים");}return t+" לעומר";}
-function fmt(v){if(isNaN(v))return "--:--";var h=Math.floor(v)%24;if(h<0)h+=24;var m=Math.floor(Math.round(v*60)%60);if(m<0)m+=60;return (h<10?"0"+h:h)+":"+(m<10?"0"+m:m);}
-function gzo(d){var rad=Math.PI/180,s=new Date(d.getFullYear(),0,0);var df=d-s+(s.getTimezoneOffset()-d.getTimezoneOffset())*60000;var doy=Math.floor(df/86400000),b=2*Math.PI*(doy-81)/365;var eq=9.87*Math.sin(2*b)-7.53*Math.cos(b)-1.5*Math.sin(b);var dc=23.45*Math.sin(b)*rad;var zen=90.833+0.0347*Math.sqrt(LOC.elev);var cH=(Math.cos(zen*rad)-Math.sin(LOC.lat*rad)*Math.sin(dc))/(Math.cos(LOC.lat*rad)*Math.cos(dc));var ha=Math.acos(Math.max(-1,Math.min(1,cH)))/rad;var tz=-d.getTimezoneOffset()/60;var nn=(12-LOC.lon/15)+tz-(eq/60);var sr=nn-(ha/15),ss=nn+(ha/15);return {alot:sr-1.2,sunrise:sr,szM:sr-1.2+((ss+1.2-(sr-1.2))/12)*3,szG:sr+((ss-sr)/12)*3,noon:nn,mincha:nn+0.5,sunset:ss,tz:ss+(36/60),rt:ss+(72/60)};}
-function gzm2(n){var o=gzo(n);return {alot:gzm("alotHashachar")||o.alot,sunrise:gzm("sunrise")||o.sunrise,szM:gzm("sofZmanShmaMGA")||o.szM,szG:gzm("sofZmanShmaGRA")||o.szG,noon:gzm("chatzot")||o.noon,mincha:gzm("minchaGedola")||o.mincha,sunset:gzm("sunset")||o.sunset,tz:gzm("tzeit7083deg")||o.tz,rt:gzm("rabbenu-tam")||o.rt};}
 
-function upd(){
-  if(!ok)return;
-  var now=new Date(),tm=gzm2(now),cur=now.getHours()+now.getMinutes()/60;
-  var hcd=new Date(now);if(cur>=tm.tz)hcd.setDate(hcd.getDate()+1);
+function ghd(date) {
+  var gy=date.getFullYear();
+  var rT=new Date(rh[gy]),rN=new Date(rh[gy+1]),rP=new Date(rh[gy-1]);
+  var hy,rS,rE;
+  if(date>=rT){hy=gy+3761;rS=rT;rE=rN;}else{hy=gy+3760;rS=rP;rE=rT;}
+  var yL=Math.round((rE-rS)/86400000), iL=yL>360;
+  var dp=Math.floor((date-rS)/86400000);
+  var mo=[{n:"תשרי",l:30},{n:"חשוון",l:(yL===355||yL===385)?30:29},{n:"כסלו",l:(yL===353||yL===383)?29:30},{n:"טבת",l:29},{n:"שבט",l:30}];
+  if(iL){mo.push({n:"אדר א",l:30},{n:"אדר ב",l:29});}else{mo.push({n:"אדר",l:29});}
+  mo.push({n:"ניסן",l:30},{n:"אייר",l:29},{n:"סיוון",l:30},{n:"תמוז",l:29},{n:"אב",l:30},{n:"אלול",l:29});
+  var mi=0; while(dp>=mo[mi].l){dp-=mo[mi].l;mi++;}
+  return {year:hy, month:mo[mi].n, day:dp+1};
+}
+
+function gdl(d) {
+  var u=["","א","ב","ג","ד","ה","ו","ז","ח","ט"],t=["","י","כ","ל"];
+  if(d===15) return "טו";
+  if(d===16) return "טז";
+  var ti=Math.floor(d/10),ui=d%10;
+  if(ti>0&&ui>0) return t[ti]+u[ui];
+  if(ti>0) return t[ti];
+  return u[ui];
+}
+
+function gdy(y) {
+  var v=y%1000,s="";
+  while(v>=400){s+="ת";v-=400;} if(v>=300){s+="ש";v-=300;} if(v>=200){s+="ר";v-=200;} if(v>=100){s+="ק";v-=100;}
+  var tn=["","י","כ","ל","מ","נ","ס","ע","פ","צ"],un=["","א","ב","ג","ד","ה","ו","ז","ח","ט"];
+  if(v%100===15){s+="טו";}else if(v%100===16){s+="טז";}else{s+=tn[Math.floor((v%100)/10)]+un[v%10];}
+  return s;
+}
+
+function gjh(m,d) {
+  if(m==="תשרי"){if(d===1||d===2)return "ראש השנה";if(d===10)return "יום כיפור";if(d>=15&&d<=21)return "חג הסוכות";if(d===22)return "שמחת תורה";}
+  if(m==="כסלו"&&d>=25)return "חנוכה"; if(m==="טבת"&&d<=2)return "חנוכה";
+  if(m==="אדר"&&d===14)return "פורים"; if(m==="ניסן"&&d>=15&&d<=21)return "חג הפסח";
+  if(m==="אייר"&&d===18)return "לג בעומר"; if(m==="סיוון"&&d===6)return "חג השבועות";
+  if(m==="תמוז"&&d===17)return "יז בתמוז"; if(m==="אב"&&d===9)return "תשעה באב";
+  return "";
+}
+
+function gec(m,d) {
+  if(m==="אלול"&&d===29)return "ערב ראש השנה"; if(m==="תשרי"&&d===9)return "ערב יום כיפור";
+  if(m==="תשרי"&&d===14)return "ערב חג הסוכות"; if(m==="ניסן"&&d===14)return "ערב חג הפסח";
+  if(m==="סיוון"&&d===5)return "ערב חג השבועות"; return "";
+}
+
+function got(n) {
+  if(n<1||n>49)return "";
+  var w=["","אחד","שניים","שלושה","ארבעה","חמישה","שישה","שבעה","שמונה","תשעה"];
+  var t="היום ";
+  if(n===1)t+="יום אחד"; else if(n===2)t+="שני ימים"; else if(n<10)t+=w[n]+" ימים";
+  else if(n===10)t+="עשרה ימים";
+  else if(n<20){var a=["","אחד עשר","שנים עשר","שלושה עשר","ארבעה עשר","חמישה עשר","שישה עשר","שבעה עשר","שמונה עשר","תשעה עשר"];t+=a[n-10]+" יום";}
+  else{var tn2=Math.floor(n/10),un2=n%10;var tw=(tn2===2)?"עשרים":(tn2===3)?"שלושים":"ארבעים";t+=(un2===0)?tw+" יום":w[un2]+" ו"+tw+" יום";}
+  var wk=Math.floor(n/7),dy=n%7;
+  if(wk>0){var ww=["","שבוע","שני שבועות","שלושה שבועות","ארבעה שבועות","חמישה שבועות","שישה שבועות"];t+=", שהם "+ww[wk];if(dy>0)t+=" ו"+((dy===1)?"יום אחד":(dy===2)?"שני ימים":w[dy]+" ימים");}
+  return t+" לעומר";
+}
+
+function fmt(v) {
+  if(isNaN(v))return "--:--";
+  var h=Math.floor(v)%24; if(h<0)h+=24;
+  var m=Math.floor(Math.round(v*60)%60); if(m<0)m+=60;
+  return (h<10?"0"+h:h)+":"+(m<10?"0"+m:m);
+}
+
+function gzo(d) {
+  var rad=Math.PI/180, s=new Date(d.getFullYear(),0,0);
+  var df=d-s+(s.getTimezoneOffset()-d.getTimezoneOffset())*60000;
+  var doy=Math.floor(df/86400000), b=2*Math.PI*(doy-81)/365;
+  var eq=9.87*Math.sin(2*b)-7.53*Math.cos(b)-1.5*Math.sin(b);
+  var dc=23.45*Math.sin(b)*rad;
+  var zen=90.833+0.0347*Math.sqrt(LOC.elev);
+  var cH=(Math.cos(zen*rad)-Math.sin(LOC.lat*rad)*Math.sin(dc))/(Math.cos(LOC.lat*rad)*Math.cos(dc));
+  var ha=Math.acos(Math.max(-1,Math.min(1,cH)))/rad;
+  var tz=-d.getTimezoneOffset()/60;
+  var nn=(12-LOC.lon/15)+tz-(eq/60);
+  var sr=nn-(ha/15), ss=nn+(ha/15);
+  return {alot:sr-1.2,sunrise:sr,szM:sr-1.2+((ss+1.2-(sr-1.2))/12)*3,szG:sr+((ss-sr)/12)*3,noon:nn,mincha:nn+0.5,sunset:ss,tz:ss+(36/60),rt:ss+(72/60)};
+}
+
+function gzm2(n) {
+  var o=gzo(n);
+  return {
+    alot:    gzm("alotHashachar")||o.alot,
+    sunrise: gzm("sunrise")||o.sunrise,
+    szM:     gzm("sofZmanShmaMGA")||o.szM,
+    szG:     gzm("sofZmanShmaGRA")||o.szG,
+    noon:    gzm("chatzot")||o.noon,
+    mincha:  gzm("minchaGedola")||o.mincha,
+    sunset:  gzm("sunset")||o.sunset,
+    tz:      gzm("tzeit7083deg")||o.tz,
+    rt:      gzm("rabbenu-tam")||o.rt
+  };
+}
+
+function upd() {
+  if(!ok) return;
+  var now=new Date(), tm=gzm2(now), cur=now.getHours()+now.getMinutes()/60;
+  var hcd=new Date(now); if(cur>=tm.tz) hcd.setDate(hcd.getDate()+1);
   var hd=ghd(hcd);
-  document.getElementById("timer").textContent=now.toLocaleTimeString("he-IL",{hour12:false});
-  document.getElementById("dh").textContent=ghtl()||(gdl(hd.day)+" ב"+hd.month+" "+gdy(hd.year));
-  document.getElementById("par").textContent=gwp()||"פרשת השבוע";
+
+  document.getElementById("timer").textContent = now.toLocaleTimeString("he-IL",{hour12:false});
+  document.getElementById("dh").textContent = ghtl() || (gdl(hd.day)+" ב"+hd.month+" "+gdy(hd.year));
+  document.getElementById("par").textContent = gwp() || "פרשת השבוע";
+
   var ch=ghol()||gjh(hd.month,hd.day);
   var ec=gec(hd.month,hd.day);
-  document.getElementById("ie").textContent=ch||ec||"";
+  document.getElementById("ie").textContent = ch||ec||"";
+
   var fn=gfi(hd.month,hd.day);
   var sm=(now.getDay()===6)?gsmi():null;
   var spb=document.getElementById("spb");
-  if(fn){spb.style.display="block";document.getElementById("spt").textContent="צום: "+fn;document.getElementById("spc").textContent="כניסה: "+fmt(tm.sunset-(18/60))+" | יציאה: "+fmt(tm.tz);}
-  else if(sm){spb.style.display="block";document.getElementById("spt").textContent="שבת מברכים";var inf=(sm.rc?"ראש חודש: "+sm.rc:"")+(sm.mol?(sm.rc?" | ":"")+"מולד: "+sm.mol:"");document.getElementById("spc").textContent=inf||"ראש חודש השבוע";}
-  else{spb.style.display="none";}
-  document.getElementById("zl").innerHTML=
-    '<div class="zr"><span>עלות השחר</span><span class="zv">'+fmt(tm.alot)+'</span></div>'+
-    '<div class="zr"><span>נץ החמה</span><span class="zv">'+fmt(tm.sunrise)+'</span></div>'+
-    '<div class="zr"><span>סוף ק"ש מג"א</span><span class="zv" style="color:#ffcc00">'+fmt(tm.szM)+'</span></div>'+
-    '<div class="zr"><span>סוף ק"ש גר"א</span><span class="zv">'+fmt(tm.szG)+'</span></div>'+
-    '<div class="zr"><span>חצות</span><span class="zv">'+fmt(tm.noon)+'</span></div>'+
-    '<div class="zr"><span>מנחה גדולה</span><span class="zv">'+fmt(tm.mincha)+'</span></div>'+
-    '<div class="zr"><span>שקיעה</span><span class="zv">'+fmt(tm.sunset)+'</span></div>'+
-    '<div class="zr"><span>צאת הכוכבים</span><span class="zv">'+fmt(tm.tz)+'</span></div>'+
-    '<div class="zr"><span>רבינו תם</span><span class="zv">'+fmt(tm.rt)+'</span></div>';
-  var od=0;if(hd.month==="ניסן"&&hd.day>=16)od=hd.day-15;if(hd.month==="אייר")od=15+hd.day;if(hd.month==="סיוון"&&hd.day<=5)od=44+hd.day;
-  var ob=document.getElementById("ob");if(od>0&&od<=49){ob.style.display="block";ob.textContent=got(od);}else{ob.style.display="none";}
+  if(fn) {
+    spb.style.display="block";
+    document.getElementById("spt").textContent="צום: "+fn;
+    document.getElementById("spc").textContent="כניסה: "+fmt(tm.sunset-(18/60))+" יציאה: "+fmt(tm.tz);
+  } else if(sm) {
+    spb.style.display="block";
+    document.getElementById("spt").textContent="שבת מברכים";
+    var inf=(sm.rc?"ראש חודש: "+sm.rc:"")+(sm.mol?" מולד: "+sm.mol:"");
+    document.getElementById("spc").textContent=inf||"ראש חודש השבוע";
+  } else { spb.style.display="none"; }
+
+  var zhtml="";
+  zhtml+='<div class="zr"><span>עלות השחר</span><span class="zv">'+fmt(tm.alot)+'</span></div>';
+  zhtml+='<div class="zr"><span>נץ החמה</span><span class="zv">'+fmt(tm.sunrise)+'</span></div>';
+  zhtml+='<div class="zr"><span>סוף קש מגא</span><span class="zv" style="color:#ffcc00">'+fmt(tm.szM)+'</span></div>';
+  zhtml+='<div class="zr"><span>סוף קש גרא</span><span class="zv">'+fmt(tm.szG)+'</span></div>';
+  zhtml+='<div class="zr"><span>חצות</span><span class="zv">'+fmt(tm.noon)+'</span></div>';
+  zhtml+='<div class="zr"><span>מנחה גדולה</span><span class="zv">'+fmt(tm.mincha)+'</span></div>';
+  zhtml+='<div class="zr"><span>שקיעה</span><span class="zv">'+fmt(tm.sunset)+'</span></div>';
+  zhtml+='<div class="zr"><span>צאת הכוכבים</span><span class="zv">'+fmt(tm.tz)+'</span></div>';
+  zhtml+='<div class="zr"><span>רבינו תם</span><span class="zv">'+fmt(tm.rt)+'</span></div>';
+  document.getElementById("zl").innerHTML=zhtml;
+
+  var od=0;
+  if(hd.month==="ניסן"&&hd.day>=16) od=hd.day-15;
+  if(hd.month==="אייר") od=15+hd.day;
+  if(hd.month==="סיוון"&&hd.day<=5) od=44+hd.day;
+  var ob=document.getElementById("ob");
+  if(od>0&&od<=49){ob.style.display="block";ob.textContent=got(od);}else{ob.style.display="none";}
+
   var shIn=tm.sunset-(40/60);
   var isWE=(now.getDay()===4&&cur>=tm.tz)||now.getDay()===5||now.getDay()===6;
   var scc=document.getElementById("sc");
-  if(isWE||ec||ch){document.getElementById("shb").style.display="block";scc.className="sc wm";document.getElementById("si").textContent=fmt(shIn);document.getElementById("so2").textContent=fmt(tm.tz);document.getElementById("rt").textContent=fmt(tm.rt);document.getElementById("osi").textContent=fmt(shIn);document.getElementById("oso").textContent=fmt(tm.tz);document.getElementById("ort").textContent=fmt(tm.rt);}
-  else{document.getElementById("shb").style.display="none";scc.className="sc";}
+  if(isWE||ec||ch) {
+    document.getElementById("shb").style.display="block";
+    scc.className="sc wm";
+    document.getElementById("si").textContent=fmt(shIn);
+    document.getElementById("so2").textContent=fmt(tm.tz);
+    document.getElementById("rt").textContent=fmt(tm.rt);
+    document.getElementById("osi").textContent=fmt(shIn);
+    document.getElementById("oso").textContent=fmt(tm.tz);
+    document.getElementById("ort").textContent=fmt(tm.rt);
+  } else {
+    document.getElementById("shb").style.display="none";
+    scc.className="sc";
+  }
+
   var isSh=(now.getDay()===5&&cur>=shIn)||(now.getDay()===6&&cur<tm.rt);
   var isCh=(ec&&cur>=shIn)||(ch&&cur<tm.rt&&now.getDay()!==6);
-  if(isSh){document.getElementById("og").textContent="שבת שלום";document.getElementById("sht").textContent="זמני שבת קודש";document.getElementById("li").textContent="כניסת שבת";document.getElementById("lo").textContent="יציאת שבת";}
-  else if(isCh){document.getElementById("og").textContent="חג שמח";document.getElementById("sht").textContent="זמני החג";document.getElementById("li").textContent="כניסת החג";document.getElementById("lo").textContent="יציאת החג";}
+  if(isSh) {
+    document.getElementById("og").textContent="שבת שלום";
+    document.getElementById("sht").textContent="זמני שבת קודש";
+    document.getElementById("li").textContent="כניסת שבת";
+    document.getElementById("lo").textContent="יציאת שבת";
+  } else if(isCh) {
+    document.getElementById("og").textContent="חג שמח";
+    document.getElementById("sht").textContent="זמני החג";
+    document.getElementById("li").textContent="כניסת החג";
+    document.getElementById("lo").textContent="יציאת החג";
+  }
   document.getElementById("sho").style.display=(isSh||isCh)?"flex":"none";
 }
 
-var si2=0,sl=document.querySelectorAll(".bs");
-setInterval(function(){sl[si2].classList.remove("active");sl[si2].classList.add("previous");si2=(si2+1)%sl.length;sl[si2].classList.add("active");setTimeout(function(){sl.forEach(function(s,i){if(i!==si2)s.classList.remove("previous");});}，14000);},15000);
+var si2=0, sl=document.querySelectorAll(".bs");
+setInterval(function(){
+  sl[si2].classList.remove("active");
+  sl[si2].classList.add("previous");
+  si2=(si2+1)%sl.length;
+  sl[si2].classList.add("active");
+  setTimeout(function(){
+    sl.forEach(function(s,i){ if(i!==si2) s.classList.remove("previous"); });
+  }, 14000);
+}, 15000);
 
-function start(){
-  fhcal(tdy(),function(){
-    var ns=new Date(),dt=(6-ns.getDay()+7)%7||7;ns.setDate(ns.getDate()+dt);
-    fhcal(tds(ns),function(){
-      if(new Date().getDay()===6){var wa=new Date(ns);wa.setDate(wa.getDate()+7);fhcal(tds(wa),null,true);}
+function start() {
+  fhcal(tdy(), function(){
+    var ns=new Date(), dt=(6-ns.getDay()+7)%7||7;
+    ns.setDate(ns.getDate()+dt);
+    fhcal(tds(ns), function(){
+      if(new Date().getDay()===6){ var wa=new Date(ns); wa.setDate(wa.getDate()+7); fhcal(tds(wa),null,true); }
       upd();
-      setInterval(upd,1000);
-      setInterval(function(){var t=tdy();if(t!==lad)fhcal(t,null,false);},3600000);
-      setInterval(function(){if(Date.now()-llc>LCI)chkLic(null);},LCI);
-      setInterval(pollMessage,120000);
-    },true);
+      setInterval(upd, 1000);
+      setInterval(function(){ var t=tdy(); if(t!==lad) fhcal(t,null,false); }, 3600000);
+      setInterval(function(){ if(Date.now()-llc>LCI) chkLic(null); }, LCI);
+      setInterval(pollMessage, 120000);
+    }, true);
   });
 }
 
-(function(){chkLic(function(){if(ok)start();});})();
+(function(){ chkLic(function(){ if(ok) start(); }); })();
+
 </script>
 </body>
 </html>
