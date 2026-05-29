@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>נתי SAFE — פאנל ניהול ראשי</title>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Assistant,sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh;}
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
+.login-card{background:#161b22;border:1px solid #30363d;border-radius:20px;padding:44px 40px;width:100%;max-width:380px;text-align:center;}
+.login-title{font-size:22px;font-weight:800;color:#fff;margin-bottom:4px;}
+.login-title span{color:#ffcc00;}
+.login-sub{font-size:13px;color:#8b949e;margin-bottom:28px;}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;text-align:right;}
+.field label{font-size:13px;color:#8b949e;font-weight:700;}
+input,select{background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:7px;padding:10px 14px;font-family:Assistant,sans-serif;font-size:15px;width:100%;outline:none;}
+input:focus,select:focus{border-color:#58a6ff;}
+.btn{background:#58a6ff;color:#000;border:none;border-radius:7px;padding:11px;font-family:Assistant,sans-serif;font-size:15px;font-weight:800;cursor:pointer;width:100%;}
+.btn.red{background:#f85149;color:#fff;}
+.btn.green{background:#3fb950;color:#fff;}
+.btn.gray{background:#21262d;color:#e6edf3;border:1px solid #30363d;}
+.btn.warn{background:#d29922;color:#000;}
+.btn-sm{width:auto;padding:6px 14px;font-size:13px;border-radius:6px;}
+#err{color:#f85149;font-size:13px;margin-top:8px;display:none;}
+
+/* APP */
+#app{display:none;min-height:100vh;}
+.topbar{background:#161b22;border-bottom:1px solid #30363d;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;}
+.topbar-title{font-size:17px;font-weight:800;color:#fff;}
+.topbar-title span{color:#ffcc00;}
+.tabs{display:flex;gap:4px;padding:16px 24px 0;border-bottom:1px solid #30363d;}
+.tab{padding:10px 20px;border-radius:8px 8px 0 0;font-weight:700;font-size:14px;cursor:pointer;color:#8b949e;border:1px solid transparent;border-bottom:none;background:transparent;}
+.tab.active{color:#e6edf3;background:#161b22;border-color:#30363d;}
+.tab-content{display:none;padding:24px;}
+.tab-content.active{display:block;}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:28px;}
+.stat{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:18px 20px;}
+.stat-num{font-size:36px;font-weight:900;line-height:1;}
+.stat-lbl{font-size:13px;color:#8b949e;margin-top:4px;}
+.stat.blue .stat-num{color:#58a6ff;}
+.stat.green .stat-num{color:#3fb950;}
+.stat.red .stat-num{color:#f85149;}
+.stat.yellow .stat-num{color:#d29922;}
+
+/* TABLE */
+.tbl-wrap{background:#161b22;border:1px solid #30363d;border-radius:12px;overflow:auto;}
+table{width:100%;border-collapse:collapse;font-size:14px;}
+th{background:#0d1117;color:#8b949e;font-weight:700;text-align:right;padding:12px 16px;border-bottom:1px solid #30363d;white-space:nowrap;}
+td{padding:11px 16px;border-bottom:1px solid #30363d;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(88,166,255,0.04);}
+.badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:700;}
+.badge.ok{background:rgba(63,185,80,0.15);color:#3fb950;}
+.badge.exp{background:rgba(248,81,73,0.15);color:#f85149;}
+.badge.warn{background:rgba(210,153,34,0.15);color:#d29922;}
+.key-code{font-family:monospace;font-size:13px;color:#58a6ff;}
+.row-actions{display:flex;gap:6px;}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:999;align-items:center;justify-content:center;padding:20px;}
+.modal-bg.open{display:flex;}
+.modal{background:#161b22;border:1px solid #30363d;border-radius:14px;padding:28px;width:100%;max-width:480px;display:flex;flex-direction:column;gap:14px;}
+.modal h3{font-size:17px;font-weight:800;color:#58a6ff;}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;}
+.modal-footer .btn{width:auto;padding:9px 20px;}
+
+/* TOAST */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1c2128;border:1px solid #30363d;color:#e6edf3;padding:12px 28px;border-radius:10px;font-weight:700;font-size:14px;display:none;z-index:9999;}
+.section-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.section-title{font-size:16px;font-weight:800;}
+.filter-row{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.search-input{width:220px;padding:8px 12px;}
+</style>
+</head>
+<body>
+
+<div class="login-wrap" id="login-wrap">
+  <div class="login-card">
+    <div class="login-title">נתי <span>SAFE</span></div>
+    <div class="login-sub">פאנל ניהול ראשי</div>
+    <div class="field"><label>סיסמת מנהל</label><input type="password" id="apass" placeholder="הכנס סיסמה" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="btn" onclick="doLogin()">כניסה</button>
+    <div id="err">סיסמה שגויה</div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-title">נתי <span>SAFE</span> — ניהול ראשי</div>
+    <button class="btn gray btn-sm" onclick="doLogout()">יציאה</button>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('dashboard')">סקירה כללית</div>
+    <div class="tab" onclick="switchTab('screens')">מסכים</div>
+    <div class="tab" onclick="switchTab('companies')">חברות ניהול</div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="tab-dashboard" class="tab-content active">
+    <div class="stats" id="stats-row">
+      <div class="stat blue"><div class="stat-num" id="s-total">-</div><div class="stat-lbl">סה"כ מסכים</div></div>
+      <div class="stat green"><div class="stat-num" id="s-active">-</div><div class="stat-lbl">פעילים</div></div>
+      <div class="stat yellow"><div class="stat-num" id="s-warn">-</div><div class="stat-lbl">פגים בחודש</div></div>
+      <div class="stat red"><div class="stat-num" id="s-exp">-</div><div class="stat-lbl">פג תוקף</div></div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>מסך</th><th>בניין</th><th>חברה</th><th>תפוגה</th><th>ימים</th><th>סטטוס</th><th>פעולות</th></tr></thead>
+        <tbody id="dash-tbl"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SCREENS -->
+  <div id="tab-screens" class="tab-content">
+    <div class="section-hdr">
+      <div class="section-title">ניהול מסכים</div>
+      <button class="btn green btn-sm" onclick="openAddScreen()">+ מסך חדש</button>
+    </div>
+    <div class="filter-row">
+      <input class="search-input" type="text" id="screen-search" placeholder="חיפוש..." oninput="renderScreens()">
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>מזהה</th><th>בניין</th><th>חברה</th><th>תפוגה</th><th>סטטוס</th><th>פעולות</th></tr></thead>
+        <tbody id="screens-tbl"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- COMPANIES -->
+  <div id="tab-companies" class="tab-content">
+    <div class="section-hdr">
+      <div class="section-title">חברות ניהול</div>
+      <button class="btn green btn-sm" onclick="openAddCompany()">+ חברה חדשה</button>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>מזהה</th><th>שם חברה</th><th>משתמש</th><th>סיסמה</th><th>מסכים</th><th>פעולות</th></tr></thead>
+        <tbody id="companies-tbl"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: מסך חדש -->
+<div class="modal-bg" id="modal-screen">
+  <div class="modal">
+    <h3 id="modal-screen-title">מסך חדש</h3>
+    <div class="field"><label>מזהה מסך (ייחודי, באנגלית)</label><input id="sc-id" placeholder="TEL-AVIV-01"></div>
+    <div class="field"><label>שם בניין</label><input id="sc-name" placeholder="מגדל הארגמן, תל אביב"></div>
+    <div class="field"><label>חברת ניהול</label><select id="sc-company"></select></div>
+    <div class="field"><label>תפוגת רישיון</label><input type="date" id="sc-expiry"></div>
+    <div class="modal-footer">
+      <button class="btn gray" onclick="closeModal('modal-screen')">ביטול</button>
+      <button class="btn green" onclick="saveScreen()">שמור</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: חידוש רישיון -->
+<div class="modal-bg" id="modal-renew">
+  <div class="modal">
+    <h3>חידוש רישיון</h3>
+    <div id="renew-info" style="color:#8b949e;font-size:14px;"></div>
+    <input type="hidden" id="renew-sid">
+    <div class="field"><label>תפוגה חדשה</label><input type="date" id="renew-expiry"></div>
+    <div class="modal-footer">
+      <button class="btn gray" onclick="closeModal('modal-renew')">ביטול</button>
+      <button class="btn warn" onclick="doRenew()">חדש רישיון</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: חברה חדשה -->
+<div class="modal-bg" id="modal-company">
+  <div class="modal">
+    <h3 id="modal-company-title">חברה חדשה</h3>
+    <div class="field"><label>מזהה חברה</label><input id="co-id" placeholder="COMP-002"></div>
+    <div class="field"><label>שם החברה</label><input id="co-name" placeholder="חברת הניהול בע"מ"></div>
+    <div class="field"><label>שם משתמש</label><input id="co-user" placeholder="manager1"></div>
+    <div class="field"><label>סיסמה</label><input id="co-pass" placeholder="בחר סיסמה חזקה"></div>
+    <div class="modal-footer">
+      <button class="btn gray" onclick="closeModal('modal-company')">ביטול</button>
+      <button class="btn green" onclick="saveCompany()">שמור</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+var SUPA="https://cxtrrejclkhqhkqbicmz.supabase.co";
+var KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dHJyZWpjbGtocWhrcWJpY216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTk3MDksImV4cCI6MjA5NTU3NTcwOX0._7wB4YwrYEnK6hWuR6YqcFxRb05OLnWvOelIC-ahIEQ";
+var ADMIN_PASS="NatiSafe2025";
+
+var allScreens=[], allCompanies=[];
+
+function sf(path,opts){
+  return fetch(SUPA+"/rest/v1/"+path,Object.assign({headers:{"apikey":KEY,"Authorization":"Bearer "+KEY,"Content-Type":"application/json","Prefer":"return=representation"}},opts)).then(function(r){return r.json();});
+}
+
+function doLogin(){
+  var p=document.getElementById("apass").value;
+  if(p===ADMIN_PASS){
+    document.getElementById("login-wrap").style.display="none";
+    document.getElementById("app").style.display="block";
+    loadAll();
+  }else{document.getElementById("err").style.display="block";}
+}
+function doLogout(){document.getElementById("login-wrap").style.display="flex";document.getElementById("app").style.display="none";document.getElementById("apass").value="";}
+
+function loadAll(){
+  Promise.all([
+    sf("screens"),
+    sf("companies")
+  ]).then(function(res){
+    allScreens=res[0]||[];
+    allCompanies=res[1]||[];
+    renderDashboard();
+    renderScreens();
+    renderCompanies();
+  });
+}
+
+function switchTab(t){
+  document.querySelectorAll(".tab").forEach(function(el,i){el.className="tab"+(["dashboard","screens","companies"][i]===t?" active":"");});
+  document.querySelectorAll(".tab-content").forEach(function(el){el.className="tab-content";});
+  document.getElementById("tab-"+t).className="tab-content active";
+}
+
+function renderDashboard(){
+  var now=new Date();
+  var total=allScreens.length;
+  var active=allScreens.filter(function(s){return new Date(s.license_expiry)>now&&Math.ceil((new Date(s.license_expiry)-now)/86400000)>30;}).length;
+  var warn=allScreens.filter(function(s){var d=Math.ceil((new Date(s.license_expiry)-now)/86400000);return d>0&&d<=30;}).length;
+  var exp=allScreens.filter(function(s){return new Date(s.license_expiry)<=now;}).length;
+  document.getElementById("s-total").textContent=total;
+  document.getElementById("s-active").textContent=active;
+  document.getElementById("s-warn").textContent=warn;
+  document.getElementById("s-exp").textContent=exp;
+
+  var compMap={};
+  allCompanies.forEach(function(c){compMap[c.company_id]=c.company_name;});
+
+  document.getElementById("dash-tbl").innerHTML=allScreens.map(function(s){
+    var exp=new Date(s.license_expiry),days=Math.ceil((exp-now)/86400000);
+    var ok=days>0,warn=days>0&&days<=30;
+    return '<tr><td><span class="key-code">'+s.screen_id+'</span></td>'+
+      '<td>'+(s.building_name||"-")+'</td>'+
+      '<td>'+(compMap[s.company_id]||s.company_id)+'</td>'+
+      '<td>'+new Date(s.license_expiry).toLocaleDateString("he-IL")+'</td>'+
+      '<td style="color:'+(ok?(warn?"#d29922":"#3fb950"):"#f85149")+';font-weight:800">'+(ok?days+" יום":"פג!")+'</td>'+
+      '<td><span class="badge '+(ok?(warn?"warn":"ok"):"exp")+'">'+(ok?(warn?"בקרוב":"פעיל"):"פג")+'</span></td>'+
+      '<td><div class="row-actions">'+
+      '<button class="btn warn btn-sm" onclick="openRenew(\''+s.screen_id+'\','+days+')">חדש</button>'+
+      '<button class="btn red btn-sm" onclick="deleteScreen(\''+s.screen_id+'\')">מחק</button>'+
+      '</div></td></tr>';
+  }).join("");
+}
+
+function renderScreens(){
+  var q=(document.getElementById("screen-search")||{}).value||"";
+  var now=new Date();
+  var compMap={};
+  allCompanies.forEach(function(c){compMap[c.company_id]=c.company_name;});
+  var rows=allScreens.filter(function(s){return !q||[s.screen_id,s.building_name,s.company_id].some(function(v){return (v||"").toLowerCase().includes(q.toLowerCase());});});
+  document.getElementById("screens-tbl").innerHTML=rows.map(function(s){
+    var exp=new Date(s.license_expiry),days=Math.ceil((exp-now)/86400000),ok=days>0;
+    return '<tr><td><span class="key-code">'+s.screen_id+'</span></td>'+
+      '<td>'+(s.building_name||"-")+'</td>'+
+      '<td>'+(compMap[s.company_id]||s.company_id)+'</td>'+
+      '<td>'+new Date(s.license_expiry).toLocaleDateString("he-IL")+'</td>'+
+      '<td><span class="badge '+(ok?"ok":"exp")+'">'+(ok?days+" ימים":"פג")+'</span></td>'+
+      '<td><div class="row-actions">'+
+      '<button class="btn warn btn-sm" onclick="openRenew(\''+s.screen_id+'\','+days+')">חדש</button>'+
+      '<button class="btn red btn-sm" onclick="deleteScreen(\''+s.screen_id+'\')">מחק</button>'+
+      '</div></td></tr>';
+  }).join("");
+}
+
+function renderCompanies(){
+  var screenCount={};
+  allScreens.forEach(function(s){screenCount[s.company_id]=(screenCount[s.company_id]||0)+1;});
+  document.getElementById("companies-tbl").innerHTML=allCompanies.map(function(c){
+    return '<tr><td><span class="key-code">'+c.company_id+'</span></td>'+
+      '<td>'+c.company_name+'</td>'+
+      '<td>'+c.username+'</td>'+
+      '<td>'+(screenCount[c.company_id]||0)+'</td>'+
+      '<td><div class="row-actions">'+
+      '<button class="btn red btn-sm" onclick="deleteCompany(\''+c.company_id+'\',\''+c.company_name+'\')">מחק</button>'+
+      '</div></td></tr>';
+  }).join("");
+}
+
+function openAddScreen(){
+  document.getElementById("modal-screen-title").textContent="מסך חדש";
+  document.getElementById("sc-id").value="";
+  document.getElementById("sc-name").value="";
+  document.getElementById("sc-expiry").value="";
+  var sel=document.getElementById("sc-company");
+  sel.innerHTML=allCompanies.map(function(c){return '<option value="'+c.company_id+'">'+c.company_name+'</option>';}).join("");
+  // ברירת מחדל — שנה מהיום
+  var def=new Date(); def.setFullYear(def.getFullYear()+1);
+  document.getElementById("sc-expiry").value=def.toISOString().slice(0,10);
+  document.getElementById("modal-screen").classList.add("open");
+}
+
+function saveScreen(){
+  var id=document.getElementById("sc-id").value.trim().toUpperCase();
+  var name=document.getElementById("sc-name").value.trim();
+  var comp=document.getElementById("sc-company").value;
+  var expiry=document.getElementById("sc-expiry").value;
+  if(!id||!name||!expiry){showToast("מלא את כל השדות");return;}
+  sf("screens",{method:"POST",body:JSON.stringify({screen_id:id,building_name:name,company_id:comp,license_expiry:expiry,message:"",message_type:"scroll"})})
+  .then(function(){closeModal("modal-screen");showToast("המסך נוסף!");loadAll();});
+}
+
+function openRenew(sid,days){
+  document.getElementById("renew-sid").value=sid;
+  document.getElementById("renew-info").textContent="מסך: "+sid+" | "+days+" ימים שנותרו";
+  var def=new Date(); def.setFullYear(def.getFullYear()+1);
+  document.getElementById("renew-expiry").value=def.toISOString().slice(0,10);
+  document.getElementById("modal-renew").classList.add("open");
+}
+
+function doRenew(){
+  var sid=document.getElementById("renew-sid").value;
+  var exp=document.getElementById("renew-expiry").value;
+  sf("screens?screen_id=eq."+encodeURIComponent(sid),{method:"PATCH",body:JSON.stringify({license_expiry:exp})})
+  .then(function(){closeModal("modal-renew");showToast("הרישיון חודש!");loadAll();});
+}
+
+function deleteScreen(sid){
+  if(!confirm("למחוק את המסך "+sid+"?"))return;
+  sf("screens?screen_id=eq."+encodeURIComponent(sid),{method:"DELETE"})
+  .then(function(){showToast("המסך נמחק");loadAll();});
+}
+
+function openAddCompany(){
+  ["co-id","co-name","co-user","co-pass"].forEach(function(id){document.getElementById(id).value="";});
+  document.getElementById("modal-company").classList.add("open");
+}
+
+function saveCompany(){
+  var id=document.getElementById("co-id").value.trim().toUpperCase();
+  var name=document.getElementById("co-name").value.trim();
+  var user=document.getElementById("co-user").value.trim();
+  var pass=document.getElementById("co-pass").value.trim();
+  if(!id||!name||!user||!pass){showToast("מלא את כל השדות");return;}
+  sf("companies",{method:"POST",body:JSON.stringify({company_id:id,company_name:name,username:user,password:pass,must_change_password:true})})
+  .then(function(){closeModal("modal-company");showToast("החברה נוספה! הלקוח יתבקש לשנות סיסמה בכניסה הראשונה.");loadAll();});
+}
+
+function deleteCompany(cid,cname){
+  if(!confirm("למחוק את חברת "+cname+"?\nכל המסכים שלה יישארו אך לא יהיה להם גישה."))return;
+  sf("companies?company_id=eq."+encodeURIComponent(cid),{method:"DELETE"})
+  .then(function(){showToast("החברה נמחקה");loadAll();});
+}
+
+function resetPassword(cid,cname){
+  var newpass=prompt("סיסמה זמנית חדשה עבור "+cname+":");
+  if(!newpass||newpass.length<4){alert("סיסמה קצרה מדי");return;}
+  sf("companies?company_id=eq."+encodeURIComponent(cid),{method:"PATCH",body:JSON.stringify({password:newpass,must_change_password:true,password_changed_at:null})})
+  .then(function(){showToast("הסיסמה אופסה. הלקוח יתבקש לשנות בכניסה הבאה.");loadAll();});
+}
+function closeModal(id){document.getElementById(id).classList.remove("open");}
+function showToast(msg){var t=document.getElementById("toast");t.textContent=msg;t.style.display="block";setTimeout(function(){t.style.display="none";},3000);}
+document.querySelectorAll(".modal-bg").forEach(function(bg){bg.addEventListener("click",function(e){if(e.target===bg)bg.classList.remove("open");});});
+</script>
+</body>
+</html>
