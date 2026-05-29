@@ -67,9 +67,9 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
 
 /* מודעה גוללת */
 #mq-wrap{position:absolute;left:0;right:0;bottom:0;top:0;z-index:6;overflow:hidden;pointer-events:none;display:none;background:rgba(0,0,0,0.45);}
-#mq-inner{position:absolute;width:100%;animation:scrollUp linear infinite;}
+#mq-inner{position:absolute;width:100%;top:0;}
 #mq-text{width:100%;text-align:center;font-size:2.4vw;font-weight:800;color:#fff;text-shadow:0 2px 16px rgba(0,0,0,0.95);line-height:1.8;padding:40px 60px;white-space:pre-wrap;}
-@keyframes scrollUp{0%{transform:translateY(100%);}100%{transform:translateY(-100%);}}
+@keyframes mqScroll{0%{top:100%;}100%{top:-100%;}}
 
 /* מודעה קבועה */
 #static-wrap{position:absolute;inset:0;z-index:6;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);pointer-events:none;}
