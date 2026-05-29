@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>נתי SAFE — ניהול לוח מודעות</title>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Assistant,sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh;}
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;}
+.login-box{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:40px;width:360px;}
+.login-logo{font-size:24px;font-weight:800;color:#58a6ff;text-align:center;margin-bottom:6px;}
+.login-sub{color:#8b949e;font-size:14px;text-align:center;margin-bottom:24px;}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+.field label{font-size:13px;color:#8b949e;font-weight:700;}
+input{background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:10px 14px;font-family:Assistant,sans-serif;font-size:15px;width:100%;outline:none;}
+input:focus{border-color:#58a6ff;}
+.btn{background:#58a6ff;color:#000;border:none;border-radius:6px;padding:11px;font-family:Assistant,sans-serif;font-size:15px;font-weight:800;cursor:pointer;width:100%;}
+.btn:hover{opacity:0.85;}
+.btn.green{background:#3fb950;color:#fff;}
+.btn.red{background:#f85149;color:#fff;}
+.btn.gray{background:#21262d;color:#e6edf3;border:1px solid #30363d;}
+#err{color:#f85149;font-size:13px;text-align:center;margin-top:8px;display:none;}
+#app{display:none;max-width:900px;margin:0 auto;padding:24px 16px;}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
+.topbar-title{font-size:20px;font-weight:800;color:#58a6ff;}
+.screens-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;}
+.screen-card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px;cursor:pointer;transition:border-color 0.2s;}
+.screen-card:hover{border-color:#58a6ff;}
+.screen-card.expired{border-color:#f85149;opacity:0.7;}
+.sc-name{font-size:17px;font-weight:800;margin-bottom:4px;}
+.sc-id{font-size:12px;color:#8b949e;font-family:monospace;margin-bottom:10px;}
+.sc-status{font-size:12px;font-weight:700;padding:2px 10px;border-radius:20px;display:inline-block;}
+.sc-status.ok{background:rgba(63,185,80,0.15);color:#3fb950;}
+.sc-status.exp{background:rgba(248,81,73,0.15);color:#f85149;}
+.sc-msg{font-size:13px;color:#8b949e;margin-top:10px;line-height:1.4;max-height:40px;overflow:hidden;}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:28px;width:90%;max-width:500px;display:flex;flex-direction:column;gap:14px;}
+.modal h3{font-size:18px;font-weight:800;color:#58a6ff;}
+.modal-sub{font-size:13px;color:#8b949e;}
+textarea{background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:12px;font-family:Assistant,sans-serif;font-size:14px;width:100%;resize:vertical;min-height:120px;outline:none;line-height:1.5;}
+textarea:focus{border-color:#58a6ff;}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;}
+.modal-footer .btn{width:auto;padding:9px 20px;}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1c2128;border:1px solid #30363d;color:#e6edf3;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;display:none;z-index:9999;}
+.empty{text-align:center;color:#8b949e;padding:48px;font-size:15px;}
+.char-count{font-size:12px;color:#8b949e;text-align:left;}
+</style>
+</head>
+<body>
+
+<div class="login-wrap" id="login-wrap">
+  <div class="login-box">
+    <div class="login-logo">נתי SAFE</div>
+    <div class="login-sub">ניהול לוח מודעות — כניסה</div>
+    <div class="field"><label>שם משתמש</label><input type="text" id="uname" placeholder="הכנס שם משתמש" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="field"><label>סיסמה</label><input type="password" id="upass" placeholder="הכנס סיסמה" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="btn" onclick="doLogin()">כניסה</button>
+    <div id="err">שם משתמש או סיסמה שגויים</div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-title" id="company-title">לוח מודעות</div>
+    <button class="btn gray" onclick="doLogout()" style="width:auto;padding:8px 18px;">יציאה</button>
+  </div>
+  <div class="screens-grid" id="screens-grid"></div>
+</div>
+
+<div class="modal-bg" id="edit-modal">
+  <div class="modal">
+    <h3>✏️ עריכת מודעה</h3>
+    <div class="modal-sub" id="edit-screen-name"></div>
+    <div class="field">
+      <label>טקסט המודעה (יגלול על המסך מלמטה למעלה)</label>
+      <textarea id="msg-text" placeholder="הכנס את טקסט המודעה כאן..." oninput="updateCount()"></textarea>
+      <div class="char-count" id="char-count">0 תווים</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn gray" onclick="closeModal()">ביטול</button>
+      <button class="btn green" onclick="saveMessage()">💾 שמור ועדכן מסך</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+var SUPA = "https://cxtrrejclkhqhkqbicmz.supabase.co";
+var KEY  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dHJyZWpjbGtocWhrcWJpY216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTk3MDksImV4cCI6MjA5NTU3NTcwOX0._7wB4YwrYEnK6hWuR6YqcFxRb05OLnWvOelIC-ahIEQ";
+
+var currentCompany = null;
+var currentScreenId = null;
+
+function supa(path, opts) {
+  return fetch(SUPA + "/rest/v1/" + path, Object.assign({
+    headers: {
+      "apikey": KEY,
+      "Authorization": "Bearer " + KEY,
+      "Content-Type": "application/json",
+      "Prefer": "return=representation"
+    }
+  }, opts)).then(function(r) { return r.json(); });
+}
+
+function doLogin() {
+  var u = document.getElementById("uname").value.trim();
+  var p = document.getElementById("upass").value.trim();
+  if (!u || !p) return;
+  supa("companies?username=eq." + encodeURIComponent(u) + "&password=eq." + encodeURIComponent(p))
+  .then(function(d) {
+    if (d && d.length > 0) {
+      currentCompany = d[0];
+      document.getElementById("login-wrap").style.display = "none";
+      document.getElementById("app").style.display = "block";
+      document.getElementById("company-title").textContent = d[0].company_name + " — לוח מודעות";
+      loadScreens();
+    } else {
+      document.getElementById("err").style.display = "block";
+    }
+  });
+}
+
+function doLogout() {
+  currentCompany = null;
+  document.getElementById("login-wrap").style.display = "flex";
+  document.getElementById("app").style.display = "none";
+  document.getElementById("uname").value = "";
+  document.getElementById("upass").value = "";
+}
+
+function loadScreens() {
+  supa("screens?company_id=eq." + encodeURIComponent(currentCompany.company_id))
+  .then(function(screens) {
+    var grid = document.getElementById("screens-grid");
+    if (!screens || screens.length === 0) {
+      grid.innerHTML = '<div class="empty">אין מסכים משויכים לחברה זו</div>';
+      return;
+    }
+    var now = new Date();
+    grid.innerHTML = screens.map(function(s) {
+      var exp = new Date(s.license_expiry);
+      var ok = exp > now;
+      var daysLeft = Math.ceil((exp - now) / 86400000);
+      return '<div class="screen-card' + (ok ? "" : " expired") + '" onclick="openEdit(\'' + s.screen_id + '\',\'' + s.building_name.replace(/'/g,"") + '\')">' +
+        '<div class="sc-name">' + s.building_name + '</div>' +
+        '<div class="sc-id">' + s.screen_id + '</div>' +
+        '<span class="sc-status ' + (ok ? "ok" : "exp") + '">' + (ok ? "פעיל — " + daysLeft + " ימים" : "פג תוקף") + '</span>' +
+        '<div class="sc-msg">' + (s.message || "אין מודעה") + '</div>' +
+        '</div>';
+    }).join("");
+  });
+}
+
+function openEdit(sid, sname) {
+  currentScreenId = sid;
+  document.getElementById("edit-screen-name").textContent = sname + " (" + sid + ")";
+  supa("screens?screen_id=eq." + encodeURIComponent(sid))
+  .then(function(d) {
+    var msg = (d && d[0]) ? (d[0].message || "") : "";
+    document.getElementById("msg-text").value = msg;
+    updateCount();
+    document.getElementById("edit-modal").classList.add("open");
+  });
+}
+
+function updateCount() {
+  var len = document.getElementById("msg-text").value.length;
+  document.getElementById("char-count").textContent = len + " תווים";
+}
+
+function saveMessage() {
+  var msg = document.getElementById("msg-text").value.trim();
+  supa("screens?screen_id=eq." + encodeURIComponent(currentScreenId), {
+    method: "PATCH",
+    body: JSON.stringify({ message: msg })
+  }).then(function() {
+    closeModal();
+    showToast("המודעה עודכנה בהצלחה ✅");
+    loadScreens();
+  });
+}
+
+function closeModal() {
+  document.getElementById("edit-modal").classList.remove("open");
+  currentScreenId = null;
+}
+
+function showToast(msg) {
+  var t = document.getElementById("toast");
+  t.textContent = msg; t.style.display = "block";
+  setTimeout(function() { t.style.display = "none"; }, 3000);
+}
+
+document.getElementById("edit-modal").addEventListener("click", function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+</body>
+</html>
