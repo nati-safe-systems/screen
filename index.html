@@ -114,7 +114,7 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
 <div class="bs" style="background-image:linear-gradient(rgba(0,0,0,0.2),rgba(0,0,0,0.2)),url(https://images.unsplash.com/photo-1493246507139-91e8fad9978e?q=80&w=1920&auto=format&fit=crop)"></div>
   <div id="ob"></div>
   <div id="mq-wrap"><div id="mq-text"></div></div>
-  <div id="msg-badge">הודעה לדיירים</div>
+  
 </div>
 <script>
 
@@ -207,7 +207,7 @@ function fhcal(ds, cb, nx) {
 
 function sai(s) {
   var el = document.getElementById("ai");
-  el.textContent = s==="live" ? "נתונים בזמן אמת" : "מצב אופליין";
+  el.textContent = s==="live" ? "● נתונים בזמן אמת" : "● מצב אופליין";
   el.className = s;
 }
 
@@ -381,8 +381,8 @@ function upd() {
   var zhtml="";
   zhtml+='<div class="zr"><span>עלות השחר</span><span class="zv">'+fmt(tm.alot)+'</span></div>';
   zhtml+='<div class="zr"><span>נץ החמה</span><span class="zv">'+fmt(tm.sunrise)+'</span></div>';
-  zhtml+='<div class="zr"><span>סוף קש מגא</span><span class="zv" style="color:#ffcc00">'+fmt(tm.szM)+'</span></div>';
-  zhtml+='<div class="zr"><span>סוף קש גרא</span><span class="zv">'+fmt(tm.szG)+'</span></div>';
+  zhtml+='<div class="zr"><span>סו"ז קש מג"א</span><span class="zv" style="color:#ffcc00">'+fmt(tm.szM)+'</span></div>';
+  zhtml+='<div class="zr"><span>סו"ז קש גר"א</span><span class="zv">'+fmt(tm.szG)+'</span></div>';
   zhtml+='<div class="zr"><span>חצות</span><span class="zv">'+fmt(tm.noon)+'</span></div>';
   zhtml+='<div class="zr"><span>מנחה גדולה</span><span class="zv">'+fmt(tm.mincha)+'</span></div>';
   zhtml+='<div class="zr"><span>שקיעה</span><span class="zv">'+fmt(tm.sunset)+'</span></div>';
