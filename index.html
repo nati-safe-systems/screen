@@ -17,12 +17,18 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
 .lc{font-size:1.1vw;color:rgba(255,255,255,0.5);}
 .lc strong{color:#00ff88;font-size:1.3vw;}
 .ln{font-size:0.9vw;color:rgba(255,255,255,0.3);margin-top:10px;}
-#sho{display:none;position:fixed;inset:0;background:linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6)),url(https://images.unsplash.com/photo-1543157145-f78c636d023d?q=80&w=1920&auto=format&fit=crop);background-size:cover;z-index:10000;flex-direction:column;justify-content:center;align-items:center;}
-.sg{font-size:10vw;font-family:"Frank Ruhl Libre",serif;font-weight:900;color:#ffcc00;text-shadow:0 10px 50px #000;}
-.otb{margin-top:4vh;background:rgba(0,0,0,0.5);border:2px solid #ffcc00;border-radius:20px;padding:2vh 4vw;}
-.otr{font-size:2.5vw;color:white;font-weight:700;display:flex;justify-content:space-between;gap:5vw;padding:1vh 0;border-bottom:1px solid rgba(255,204,0,0.3);}
+
+/* שבת overlay - כל המסך */
+#sho{display:none;position:fixed;inset:0;z-index:10000;flex-direction:column;justify-content:center;align-items:center;background:rgba(0,0,0,0.55);}
+#sho-bg{position:absolute;inset:0;background-size:cover;background-position:center;z-index:-1;filter:brightness(0.7);}
+.sg{font-size:11vw;font-family:"Frank Ruhl Libre",serif;font-weight:900;color:#ffcc00;text-shadow:0 8px 40px rgba(0,0,0,0.8);margin-bottom:4vh;line-height:1;}
+.shabbat-card{background:rgba(0,0,0,0.6);border:2px solid #ffcc00;border-radius:24px;padding:3vh 5vw;backdrop-filter:blur(12px);min-width:40vw;max-width:60vw;}
+.shabbat-card-title{font-size:1.8vw;color:#ffcc00;font-weight:800;text-align:center;margin-bottom:16px;border-bottom:1px solid rgba(255,204,0,0.4);padding-bottom:10px;}
+.otr{font-size:2.2vw;color:white;font-weight:700;display:flex;justify-content:space-between;gap:4vw;padding:1vh 0;border-bottom:1px solid rgba(255,204,0,0.2);}
 .otr:last-child{border-bottom:none;}
 .otv{color:#ffcc00;font-weight:900;}
+.molad-row{font-size:1.4vw;color:#a3d1ff;text-align:center;margin-top:12px;line-height:1.5;}
+
 .sidebar{width:380px;background:rgba(10,15,30,0.98);color:white;display:flex;flex-direction:column;border-left:2px solid rgba(255,255,255,0.1);z-index:10;}
 .bb{flex-grow:1;position:relative;overflow:hidden;}
 .hdr{background:#800000;color:#fff;text-align:center;padding:10px 5px;font-size:1.05vw;font-weight:800;border-bottom:2px solid #ffcc00;line-height:1.2;}
@@ -58,9 +64,15 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
 .bs.active{opacity:1;z-index:2;}
 .bs.previous{opacity:1;z-index:1;}
 #ob{position:absolute;bottom:15px;left:50%;transform:translateX(-50%);background:#c19200;color:#fff;padding:8px 25px;border-radius:8px;font-size:1.4vw;font-weight:800;border:1.5px solid #fff;z-index:5;white-space:nowrap;display:none;}
-#mq-wrap{position:absolute;left:0;right:0;bottom:70px;top:70px;z-index:6;overflow:hidden;pointer-events:none;display:none;}
-#mq-text{position:absolute;width:100%;text-align:center;font-size:2.2vw;font-weight:800;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,0.9);line-height:1.7;padding:0 40px;white-space:pre-wrap;}
-#msg-badge{position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,204,0,0.5);border-radius:6px;padding:4px 12px;font-size:1vw;color:#ffcc00;font-weight:700;z-index:7;display:none;}
+
+/* מודעה גוללת */
+#mq-wrap{position:absolute;left:0;right:0;bottom:0;top:0;z-index:6;overflow:hidden;pointer-events:none;display:none;background:rgba(0,0,0,0.45);}
+#mq-text{position:absolute;width:100%;text-align:center;font-size:2.4vw;font-weight:800;color:#fff;text-shadow:0 2px 16px rgba(0,0,0,0.95);line-height:1.8;padding:0 60px;white-space:pre-wrap;}
+
+/* מודעה קבועה */
+#static-wrap{position:absolute;inset:0;z-index:6;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);pointer-events:none;}
+#static-text{font-size:3vw;font-weight:900;color:#fff;text-shadow:0 4px 20px rgba(0,0,0,0.9);text-align:center;padding:0 80px;line-height:1.6;white-space:pre-wrap;}
+
 @keyframes scrollUp{0%{transform:translateY(100%);}100%{transform:translateY(-100%);}}
 </style>
 </head>
@@ -75,14 +87,19 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
     <div class="ln">המסך יתעדכן אוטומטית לאחר חידוש הרישיון</div>
   </div>
 </div>
+
 <div id="sho">
+  <div id="sho-bg"></div>
   <div class="sg" id="og">שבת שלום</div>
-  <div class="otb">
+  <div class="shabbat-card">
+    <div class="shabbat-card-title" id="shabbat-card-title">זמני שבת קודש</div>
     <div class="otr"><span id="oli">כניסת שבת</span><span class="otv" id="osi">--:--</span></div>
     <div class="otr"><span id="olo">צאת שבת</span><span class="otv" id="oso">--:--</span></div>
     <div class="otr"><span>רבינו תם</span><span class="otv" id="ort">--:--</span></div>
+    <div class="molad-row" id="molad-row" style="display:none"></div>
   </div>
 </div>
+
 <div class="sidebar">
   <div class="hdr"><span class="bsd">בס"ד</span>המסך חסום ומוגן מגלישה באינטרנט</div>
   <div id="sc" class="sc">
@@ -105,17 +122,20 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
     <div id="ai">טוען...</div>
   </div>
 </div>
+
 <div class="bb" id="bc">
-<div class="bs active" style="background-image:linear-gradient(rgba(0,0,0,0.2),rgba(0,0,0,0.2)),url(https://images.unsplash.com/photo-1433086966358-54859d0ed716?q=80&w=1920&auto=format&fit=crop)"></div>
+  <div class="bs active" style="background-image:linear-gradient(rgba(0,0,0,0.2),rgba(0,0,0,0.2)),url(https://images.unsplash.com/photo-1433086966358-54859d0ed716?q=80&w=1920&auto=format&fit=crop)"></div>
 <div class="bs" style="background-image:linear-gradient(rgba(0,0,0,0.2),rgba(0,0,0,0.2)),url(https://images.unsplash.com/photo-1441974231531-c6227dbb6b9e?q=80&w=1920&auto=format&fit=crop)"></div>
 <div class="bs" style="background-image:linear-gradient(rgba(0,0,0,0.2),rgba(0,0,0,0.2)),url(https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=1920&auto=format&fit=crop)"></div>
 <div class="bs" style="background-image:linear-gradient(rgba(0,0,0,0.2),rgba(0,0,0,0.2)),url(https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=1920&auto=format&fit=crop)"></div>
 <div class="bs" style="background-image:linear-gradient(rgba(0,0,0,0.2),rgba(0,0,0,0.2)),url(https://images.unsplash.com/photo-1470813740244-df37b8c1edcb?q=80&w=1920&auto=format&fit=crop)"></div>
 <div class="bs" style="background-image:linear-gradient(rgba(0,0,0,0.2),rgba(0,0,0,0.2)),url(https://images.unsplash.com/photo-1493246507139-91e8fad9978e?q=80&w=1920&auto=format&fit=crop)"></div>
+
   <div id="ob"></div>
   <div id="mq-wrap"><div id="mq-text"></div></div>
-  
+  <div id="static-wrap"><div id="static-text"></div></div>
 </div>
+
 <script>
 
 var SUPA = "https://cxtrrejclkhqhkqbicmz.supabase.co";
@@ -126,14 +146,18 @@ var SID  = new URLSearchParams(window.location.search).get("id") || "DEFAULT";
 document.getElementById("lsi").textContent = "מזהה מסך: " + SID;
 
 var ok=false, aD=null, aN=null, lad="", llc=0, LCI=3600000;
-var currentMsg="", mqTimer=null;
+var currentData = null;
+
+// תמונות שבת/חג
+var SHABBAT_IMGS = [
+  "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=1920&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=1920&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1490750967868-88df5691cc9c?q=80&w=1920&auto=format&fit=crop"
+];
 
 function supaFetch(path) {
   return fetch(SUPA + "/rest/v1/" + path, {
-    headers: {
-      "apikey": SKEY,
-      "Authorization": "Bearer " + SKEY
-    }
+    headers: {"apikey": SKEY, "Authorization": "Bearer " + SKEY}
   }).then(function(r){ return r.json(); });
 }
 
@@ -146,7 +170,8 @@ function chkLic(cb) {
       if (exp > new Date()) {
         ok = true;
         document.getElementById("lock").style.display = "none";
-        updateMarquee(d[0].message || "");
+        currentData = d[0];
+        renderMessage(d[0]);
       } else {
         ok = false;
         document.getElementById("lock").style.display = "flex";
@@ -162,35 +187,53 @@ function chkLic(cb) {
   });
 }
 
-function updateMarquee(msg) {
-  currentMsg = msg;
-  var wrap  = document.getElementById("mq-wrap");
-  var txt   = document.getElementById("mq-text");
-  var badge = document.getElementById("msg-badge");
-  if (mqTimer) { clearInterval(mqTimer); mqTimer=null; }
-  if (msg && msg.trim()) {
-    txt.textContent = msg;
-    wrap.style.display = "block";
-    badge.style.display = "block";
-    var speed = Math.max(15, Math.min(80, msg.length * 0.35));
-    txt.style.animation = "none";
-    txt.style.transform = "translateY(100%)";
-    setTimeout(function() {
-      txt.style.animation = "scrollUp " + speed + "s linear infinite";
-    }, 50);
+function renderMessage(data) {
+  // בדוק אם זמן תזמון עבר
+  var msg = data.message || "";
+  var msgType = data.message_type || "scroll";
+  var msgExpiry = data.message_expiry ? new Date(data.message_expiry) : null;
+
+  var mqWrap = document.getElementById("mq-wrap");
+  var mqText = document.getElementById("mq-text");
+  var stWrap = document.getElementById("static-wrap");
+  var stText = document.getElementById("static-text");
+
+  // איפוס
+  mqWrap.style.display = "none";
+  stWrap.style.display = "none";
+  mqText.style.animation = "none";
+
+  // אם פג תוקף המודעה — אל תציג
+  if (msgExpiry && new Date() > msgExpiry) {
+    msg = "";
+  }
+
+  if (!msg.trim()) return;
+
+  if (msgType === "static") {
+    stText.textContent = msg;
+    stWrap.style.display = "flex";
   } else {
-    wrap.style.display = "none";
-    badge.style.display = "none";
+    // גלילה
+    mqText.textContent = msg;
+    mqWrap.style.display = "block";
+    var speed = Math.max(15, Math.min(90, msg.length * 0.4));
+    setTimeout(function() {
+      mqText.style.animation = "scrollUp " + speed + "s linear infinite";
+    }, 100);
   }
 }
 
 function pollMessage() {
-  supaFetch("screens?screen_id=eq." + encodeURIComponent(SID) + "&select=message,license_expiry")
+  supaFetch("screens?screen_id=eq." + encodeURIComponent(SID) + "&select=message,message_type,message_expiry,license_expiry")
   .then(function(d) {
     if (d && d.length > 0) {
       var exp = new Date(d[0].license_expiry);
       if (exp <= new Date()) { ok=false; document.getElementById("lock").style.display="flex"; return; }
-      if (d[0].message !== currentMsg) updateMarquee(d[0].message || "");
+      if (JSON.stringify(d[0]) !== JSON.stringify(currentData)) {
+        currentData = d[0];
+        renderMessage(d[0]);
+      }
     }
   }).catch(function(){});
 }
@@ -236,17 +279,11 @@ function gsmi() {
     if(it.category==="roshchodesh") rc=it.hebrew||it.title;
     if(it.category==="molad") mol=it.hebrew||it.title;
   }
-  return rc ? {rc:rc,mol:mol} : null;
+  return rc ? {rc:rc, mol:mol} : null;
 }
 
 function gfi(m,d) {
-  var fs=[
-    ["צום גדליה","תשרי",[3,4]],
-    ["צום עשרה בטבת","טבת",[10]],
-    ["תענית אסתר","אדר",[13]],
-    ["שבעה עשר בתמוז","תמוז",[17]],
-    ["תשעה באב","אב",[9]]
-  ];
+  var fs=[["צום גדליה","תשרי",[3,4]],["צום עשרה בטבת","טבת",[10]],["תענית אסתר","אדר",[13]],["שבעה עשר בתמוז","תמוז",[17]],["תשעה באב","אב",[9]]];
   for(var i=0;i<fs.length;i++) if(fs[i][1]===m && fs[i][2].indexOf(d)>=0) return fs[i][0];
   return null;
 }
@@ -269,20 +306,20 @@ function ghd(date) {
 
 function gdl(d) {
   var u=["","א","ב","ג","ד","ה","ו","ז","ח","ט"],t=["","י","כ","ל"];
-  if(d===15) return "טו";
-  if(d===16) return "טז";
+  if(d===15)return "טו"; if(d===16)return "טז";
   var ti=Math.floor(d/10),ui=d%10;
-  if(ti>0&&ui>0) return t[ti]+u[ui];
-  if(ti>0) return t[ti];
+  if(ti>0&&ui>0)return t[ti]+u[ui];
+  if(ti>0)return t[ti];
   return u[ui];
 }
 
 function gdy(y) {
   var v=y%1000,s="";
-  while(v>=400){s+="ת";v-=400;} if(v>=300){s+="ש";v-=300;} if(v>=200){s+="ר";v-=200;} if(v>=100){s+="ק";v-=100;}
-  var tn=["","י","כ","ל","מ","נ","ס","ע","פ","צ"],un=["","א","ב","ג","ד","ה","ו","ז","ח","ט"];
-  if(v%100===15){s+="טו";}else if(v%100===16){s+="טז";}else{s+=tn[Math.floor((v%100)/10)]+un[v%10];}
-  return s;
+  while(v>=400){s+="\u05EA";v-=400;} if(v>=300){s+="\u05E9";v-=300;} if(v>=200){s+="\u05E8";v-=200;} if(v>=100){s+="\u05E7";v-=100;}
+  var tn=["","\u05D9","\u05DB","\u05DC","\u05DE","\u05E0","\u05E1","\u05E2","\u05E4","\u05E6"],un=["","\u05D0","\u05D1","\u05D2","\u05D3","\u05D4","\u05D5","\u05D6","\u05D7","\u05D8"];
+  if(v%100===15){s+="\u05D8\u05D5";}else if(v%100===16){s+="\u05D8\u05D6";}else{s+=tn[Math.floor((v%100)/10)]+un[v%10];}
+  if(s.length===1) return s+"\u05F3";
+  return s.substring(0,s.length-1)+"\u05F4"+s.substring(s.length-1);
 }
 
 function gjh(m,d) {
@@ -338,16 +375,44 @@ function gzo(d) {
 function gzm2(n) {
   var o=gzo(n);
   return {
-    alot:    gzm("alotHashachar")||o.alot,
-    sunrise: gzm("sunrise")||o.sunrise,
-    szM:     gzm("sofZmanShmaMGA")||o.szM,
-    szG:     gzm("sofZmanShmaGRA")||o.szG,
-    noon:    gzm("chatzot")||o.noon,
-    mincha:  gzm("minchaGedola")||o.mincha,
-    sunset:  gzm("sunset")||o.sunset,
-    tz:      gzm("tzeit7083deg")||o.tz,
-    rt:      gzm("rabbenu-tam")||o.rt
+    alot:gzm("alotHashachar")||o.alot, sunrise:gzm("sunrise")||o.sunrise,
+    szM:gzm("sofZmanShmaMGA")||o.szM, szG:gzm("sofZmanShmaGRA")||o.szG,
+    noon:gzm("chatzot")||o.noon, mincha:gzm("minchaGedola")||o.mincha,
+    sunset:gzm("sunset")||o.sunset, tz:gzm("tzeit7083deg")||o.tz, rt:gzm("rabbenu-tam")||o.rt
   };
+}
+
+var shabbatImgIdx = 0;
+function showShabbatOverlay(greeting, tm, isShabbatMevarchim) {
+  var sho = document.getElementById("sho");
+  var bg  = document.getElementById("sho-bg");
+
+  // בחר תמונה אקראית
+  var imgUrl = SHABBAT_IMGS[shabbatImgIdx % SHABBAT_IMGS.length];
+  bg.style.backgroundImage = "url(" + imgUrl + ")";
+
+  document.getElementById("og").textContent = greeting;
+  document.getElementById("osi").textContent = fmt(tm.sunset - (40/60));
+  document.getElementById("oso").textContent = fmt(tm.tz);
+  document.getElementById("ort").textContent = fmt(tm.rt);
+
+  // שבת מברכים
+  var moladRow = document.getElementById("molad-row");
+  var smInfo = isShabbatMevarchim ? gsmi() : null;
+  if (smInfo) {
+    var txt = "";
+    if (smInfo.rc) txt += "ראש חודש: " + smInfo.rc;
+    if (smInfo.mol) txt += (txt ? " | " : "") + "מולד: " + smInfo.mol;
+    moladRow.textContent = txt;
+    moladRow.style.display = "block";
+  } else {
+    moladRow.style.display = "none";
+  }
+
+  sho.style.display = "flex";
+  // הסתר מודעות בשבת
+  document.getElementById("mq-wrap").style.display = "none";
+  document.getElementById("static-wrap").style.display = "none";
 }
 
 function upd() {
@@ -367,22 +432,15 @@ function upd() {
   var fn=gfi(hd.month,hd.day);
   var sm=(now.getDay()===6)?gsmi():null;
   var spb=document.getElementById("spb");
-  if(fn) {
-    spb.style.display="block";
-    document.getElementById("spt").textContent="צום: "+fn;
-    document.getElementById("spc").textContent="כניסה: "+fmt(tm.sunset-(18/60))+" יציאה: "+fmt(tm.tz);
-  } else if(sm) {
-    spb.style.display="block";
-    document.getElementById("spt").textContent="שבת מברכים";
-    var inf=(sm.rc?"ראש חודש: "+sm.rc:"")+(sm.mol?" מולד: "+sm.mol:"");
-    document.getElementById("spc").textContent=inf||"ראש חודש השבוע";
-  } else { spb.style.display="none"; }
+  if(fn){spb.style.display="block";document.getElementById("spt").textContent="צום: "+fn;document.getElementById("spc").textContent="כניסה: "+fmt(tm.sunset-(18/60))+" יציאה: "+fmt(tm.tz);}
+  else if(sm){spb.style.display="block";document.getElementById("spt").textContent="שבת מברכים";var inf=(sm.rc?"ראש חודש: "+sm.rc:"")+(sm.mol?" מולד: "+sm.mol:"");document.getElementById("spc").textContent=inf;}
+  else{spb.style.display="none";}
 
   var zhtml="";
   zhtml+='<div class="zr"><span>עלות השחר</span><span class="zv">'+fmt(tm.alot)+'</span></div>';
   zhtml+='<div class="zr"><span>נץ החמה</span><span class="zv">'+fmt(tm.sunrise)+'</span></div>';
-  zhtml+='<div class="zr"><span>סו"ז קש מג"א</span><span class="zv" style="color:#ffcc00">'+fmt(tm.szM)+'</span></div>';
-  zhtml+='<div class="zr"><span>סו"ז קש גר"א</span><span class="zv">'+fmt(tm.szG)+'</span></div>';
+  zhtml+='<div class="zr"><span>סוף ק"ש מג"א</span><span class="zv" style="color:#ffcc00">'+fmt(tm.szM)+'</span></div>';
+  zhtml+='<div class="zr"><span>סוף ק"ש גר"א</span><span class="zv">'+fmt(tm.szG)+'</span></div>';
   zhtml+='<div class="zr"><span>חצות</span><span class="zv">'+fmt(tm.noon)+'</span></div>';
   zhtml+='<div class="zr"><span>מנחה גדולה</span><span class="zv">'+fmt(tm.mincha)+'</span></div>';
   zhtml+='<div class="zr"><span>שקיעה</span><span class="zv">'+fmt(tm.sunset)+'</span></div>';
@@ -391,43 +449,42 @@ function upd() {
   document.getElementById("zl").innerHTML=zhtml;
 
   var od=0;
-  if(hd.month==="ניסן"&&hd.day>=16) od=hd.day-15;
-  if(hd.month==="אייר") od=15+hd.day;
-  if(hd.month==="סיוון"&&hd.day<=5) od=44+hd.day;
+  if(hd.month==="ניסן"&&hd.day>=16)od=hd.day-15;
+  if(hd.month==="אייר")od=15+hd.day;
+  if(hd.month==="סיוון"&&hd.day<=5)od=44+hd.day;
   var ob=document.getElementById("ob");
   if(od>0&&od<=49){ob.style.display="block";ob.textContent=got(od);}else{ob.style.display="none";}
 
   var shIn=tm.sunset-(40/60);
   var isWE=(now.getDay()===4&&cur>=tm.tz)||now.getDay()===5||now.getDay()===6;
   var scc=document.getElementById("sc");
-  if(isWE||ec||ch) {
-    document.getElementById("shb").style.display="block";
-    scc.className="sc wm";
+  if(isWE||ec||ch){
+    document.getElementById("shb").style.display="block"; scc.className="sc wm";
     document.getElementById("si").textContent=fmt(shIn);
     document.getElementById("so2").textContent=fmt(tm.tz);
     document.getElementById("rt").textContent=fmt(tm.rt);
-    document.getElementById("osi").textContent=fmt(shIn);
-    document.getElementById("oso").textContent=fmt(tm.tz);
-    document.getElementById("ort").textContent=fmt(tm.rt);
   } else {
-    document.getElementById("shb").style.display="none";
-    scc.className="sc";
+    document.getElementById("shb").style.display="none"; scc.className="sc";
   }
 
+  // שבת/חג overlay — כל המסך
   var isSh=(now.getDay()===5&&cur>=shIn)||(now.getDay()===6&&cur<tm.rt);
   var isCh=(ec&&cur>=shIn)||(ch&&cur<tm.rt&&now.getDay()!==6);
+
   if(isSh) {
-    document.getElementById("og").textContent="שבת שלום";
-    document.getElementById("sht").textContent="זמני שבת קודש";
-    document.getElementById("li").textContent="כניסת שבת";
-    document.getElementById("lo").textContent="יציאת שבת";
+    document.getElementById("oli").textContent="כניסת שבת";
+    document.getElementById("olo").textContent="צאת שבת";
+    var isShMev = now.getDay()===6 && gsmi()!==null;
+    showShabbatOverlay("שבת שלום", tm, isShMev);
   } else if(isCh) {
-    document.getElementById("og").textContent="חג שמח";
-    document.getElementById("sht").textContent="זמני החג";
-    document.getElementById("li").textContent="כניסת החג";
-    document.getElementById("lo").textContent="יציאת החג";
+    document.getElementById("oli").textContent="כניסת החג";
+    document.getElementById("olo").textContent="צאת החג";
+    showShabbatOverlay("חג שמח", tm, false);
+  } else {
+    document.getElementById("sho").style.display="none";
+    // הצג מודעה רק אם לא שבת/חג
+    if(currentData) renderMessage(currentData);
   }
-  document.getElementById("sho").style.display=(isSh||isCh)?"flex":"none";
 }
 
 var si2=0, sl=document.querySelectorAll(".bs");
@@ -451,7 +508,7 @@ function start() {
       setInterval(upd, 1000);
       setInterval(function(){ var t=tdy(); if(t!==lad) fhcal(t,null,false); }, 3600000);
       setInterval(function(){ if(Date.now()-llc>LCI) chkLic(null); }, LCI);
-      setInterval(pollMessage, 120000);
+      setInterval(pollMessage, 60000);
     }, true);
   });
 }
