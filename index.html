@@ -739,7 +739,7 @@ function start(){
       loadNextSat(function(){
         upd();
       setInterval(upd,1000);
-        setInterval(function(){var t=tdy();if(t!==lad){fhcal(t,null);fparasha(t,function(){loadNextSat(null);});}},3600000);
+        setInterval(function(){var t=tdy();if(t!==lad){fhcal(t,null);fparasha(t,function(){loadNextSat(null);});}},60000);
         setInterval(function(){if(Date.now()-llc>LCI)chkLic(null);},LCI);
         setInterval(pollMsg,15000);
       });
