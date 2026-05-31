@@ -134,6 +134,7 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
   <div class="hdr"><span class="bsd">בס"ד</span>המסך חסום ומוגן מגלישה באינטרנט</div>
   <div id="sc" class="sc">
     <div id="timer">--:--:--</div>
+    <div id="dow">טוען...</div>
     <div id="dh">טוען...</div>
     <div class="ic"><span id="par">טוען...</span><span id="ie" class="ist"></span></div>
     <div id="spb"><span class="st" id="spt"></span><span id="spc"></span></div>
@@ -632,6 +633,7 @@ function upd(){
   var hd=ghd(hcd);
 
   document.getElementById("timer").textContent=now.toLocaleTimeString("he-IL",{hour12:false});
+  document.getElementById("dow").textContent="יום "+["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"][now.getDay()];
   document.getElementById("dh").textContent=ghtl()||(gdl(hd.day)+" ב"+hd.month+" "+gdy(hd.year));
   document.getElementById("par").textContent=gwp()||"פרשת השבוע";
 
