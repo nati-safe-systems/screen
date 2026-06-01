@@ -93,6 +93,9 @@ input:focus,select:focus{border-color:#58a6ff;}
 .sc-foot{padding:12px 18px;border-top:1px solid #30363d;}
 .btn-edit{background:rgba(88,166,255,0.1);color:#58a6ff;border:1px solid rgba(88,166,255,0.3);border-radius:6px;padding:8px;font-family:Assistant,sans-serif;font-size:13px;font-weight:700;cursor:pointer;width:100%;}
 .btn-edit:hover{background:rgba(88,166,255,0.2);}
+.sc-foot-row{display:flex;gap:8px;}
+.btn-show{background:rgba(63,185,80,0.1);color:#3fb950;border:1px solid rgba(63,185,80,0.3);border-radius:6px;padding:8px;font-family:Assistant,sans-serif;font-size:13px;font-weight:700;cursor:pointer;flex:0 0 auto;white-space:nowrap;}
+.btn-show:hover{background:rgba(63,185,80,0.2);}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);}
 .modal-bg.open{display:flex;}
 .modal{background:#161b22;border:1px solid #30363d;border-radius:16px;width:100%;max-width:720px;max-height:92vh;overflow-y:auto;}
@@ -317,6 +320,15 @@ input:focus,select:focus{border-color:#58a6ff;}
       <button class="modal-x" onclick="closeModal()">&#215;</button>
     </div>
     <div class="modal-body">
+
+      <div class="field">
+        <label>שם הבניין</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="edit-building-name" placeholder="שם הבניין / כתובת" style="flex:1;">
+          <button class="btn-save" style="padding:10px 18px;" onclick="saveBuildingName()">שמור שם</button>
+        </div>
+        <div class="hint">שם זה מוצג בראש מסך השילוט ובטבלת הניהול.</div>
+      </div>
 
       <div class="field">
         <label>סוג תוכן</label>
@@ -795,10 +807,22 @@ function renderGrid(){
       '<div class="sc-prev">'+prevText+'</div>' +
       schBadge +
       (i.mx&&i.mx>now?'<div class="sc-expnote">פג ב: '+i.mx.toLocaleString("he-IL")+'</div>':'')+
-      '</div><div class="sc-foot">' +
+      '</div><div class="sc-foot"><div class="sc-foot-row">' +
       '<button class="btn-edit" data-id="'+safeId+'" data-name="'+safeName+'" onclick="openEdit(this)">ערוך מודעה</button>' +
-      '</div></div>';
+      '<button class="btn-show" data-id="'+safeId+'" data-token="'+(s.screen_token||"")+'" onclick="showScreen(this)">👁 הצג מסך</button>' +
+      '</div></div></div>';
   }).join("");
+}
+
+function showScreen(el){
+  var id=el.getAttribute("data-id");
+  var token=el.getAttribute("data-token")||"";
+  if(!token){
+    toast("למסך זה אין טוקן אבטחה — לא ניתן להציג תצוגה מקדימה. פנה לנתי SAFE.");
+    return;
+  }
+  var url="https://nati-safe-systems.github.io/screen/?id="+encodeURIComponent(id)+"&preview=1&_="+Date.now()+"&token="+encodeURIComponent(token);
+  window.open(url,"_blank");
 }
 
 function openEdit(el){
@@ -810,6 +834,7 @@ function openEdit(el){
   .then(function(d){
     if(d&&d[0]){
       var s=d[0];
+      document.getElementById("edit-building-name").value=s.building_name||"";
       document.getElementById("rte-editor").innerHTML=s.message||"";
       document.getElementById("pdf-url").value=s.pdf_url||"";
       document.getElementById("pdf-anim").value=s.anim_pdf||"none";
@@ -820,6 +845,17 @@ function openEdit(el){
       renderSchedList();
     }
     document.getElementById("edit-modal").classList.add("open");
+  });
+}
+
+function saveBuildingName(){
+  var name=document.getElementById("edit-building-name").value.trim();
+  if(!name){toast("הזן שם בניין");return;}
+  sf("screens?screen_id=eq."+encodeURIComponent(sid),{method:"PATCH",body:JSON.stringify({building_name:name})})
+  .then(function(){
+    document.getElementById("modal-info").textContent=name+" ("+sid+")";
+    toast("שם הבניין עודכן");
+    loadScreens();
   });
 }
 
