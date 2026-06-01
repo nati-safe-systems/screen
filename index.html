@@ -122,20 +122,25 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
   border-top:1px solid rgba(255,255,255,0.1);}
 
 /* רצועת מבזקי חדשות תחתונה */
-#news-ticker{display:none;position:fixed;left:0;right:0;bottom:0;height:52px;z-index:50;
-  background:linear-gradient(90deg,#7a0000,#a01010);border-top:3px solid #ffcc00;
-  align-items:center;overflow:hidden;}
-#news-ticker .nt-label{flex-shrink:0;background:#ffcc00;color:#7a0000;font-weight:900;
-  font-size:1.2vw;height:100%;display:flex;align-items:center;padding:0 18px;letter-spacing:1px;}
+#news-ticker{display:none;position:fixed;left:0;right:0;bottom:0;height:60px;z-index:50;
+  background:linear-gradient(90deg,#6e0000,#9a0d0d 50%,#6e0000);border-top:3px solid #ffcc00;
+  align-items:center;overflow:hidden;box-shadow:0 -4px 18px rgba(0,0,0,0.45);}
+#news-ticker .nt-label{flex-shrink:0;background:linear-gradient(180deg,#ffd633,#ffb800);color:#7a0000;
+  font-weight:900;font-size:1.25vw;height:100%;display:flex;align-items:center;gap:9px;padding:0 20px;
+  letter-spacing:1px;box-shadow:4px 0 12px rgba(0,0,0,0.35);position:relative;z-index:2;}
+#news-ticker .nt-label .nt-live{width:0.7vw;height:0.7vw;min-width:9px;min-height:9px;border-radius:50%;
+  background:#e00;animation:nt-pulse 1.6s infinite;}
+@keyframes nt-pulse{0%{box-shadow:0 0 0 0 rgba(238,0,0,0.7);}70%{box-shadow:0 0 0 9px rgba(238,0,0,0);}
+  100%{box-shadow:0 0 0 0 rgba(238,0,0,0);}}
 #news-ticker .nt-viewport{flex-grow:1;overflow:hidden;position:relative;height:100%;}
 #news-ticker .nt-track{position:absolute;white-space:nowrap;will-change:transform;
   display:flex;align-items:center;height:100%;}
-#news-ticker .nt-item{color:#fff;font-size:1.25vw;font-weight:700;padding:0 40px;
-  text-shadow:0 1px 4px rgba(0,0,0,0.5);}
-#news-ticker .nt-item::before{content:"●";color:#ffcc00;margin-left:40px;font-size:0.7em;vertical-align:middle;}
+#news-ticker .nt-item{color:#fff;font-size:1.35vw;font-weight:700;padding:0 30px;
+  text-shadow:0 1px 5px rgba(0,0,0,0.55);display:inline-flex;align-items:center;}
+#news-ticker .nt-item::before{content:"◆";color:#ffcc00;margin-left:30px;font-size:0.6em;opacity:0.9;}
 
 /* כשהטיקר פעיל — דחוף את התוכן מעלה */
-body.has-ticker .sidebar,body.has-ticker .adbar,body.has-ticker .bb{margin-bottom:52px;}
+body.has-ticker .sidebar,body.has-ticker .adbar,body.has-ticker .bb{margin-bottom:60px;}
 
 /* הסתרת בלוקים בסיידבר לפי קונפיג */
 .sidebar.hide-clock #timer,.sidebar.hide-clock #dow,.sidebar.hide-clock #dh{display:none!important;}
@@ -219,7 +224,7 @@ body.has-ticker .sidebar,body.has-ticker .adbar,body.has-ticker .bb{margin-botto
 </div>
 
 <div id="news-ticker">
-  <div class="nt-label">מבזקים</div>
+  <div class="nt-label"><span class="nt-live"></span>מבזקים</div>
   <div class="nt-viewport"><div class="nt-track" id="nt-track"></div></div>
 </div>
 
@@ -522,7 +527,7 @@ function renderNews(items){
   var anim="nt-scroll-"+Date.now();
   var sheet=document.getElementById("nt-anim-sheet");
   if(!sheet){sheet=document.createElement("style");sheet.id="nt-anim-sheet";document.head.appendChild(sheet);}
-  sheet.textContent="@keyframes "+anim+"{from{transform:translateX(0)}to{transform:translateX(-"+w+"px)}}";
+  sheet.textContent="@keyframes "+anim+"{from{transform:translateX(-"+w+"px)}to{transform:translateX(0)}}";
   track.style.animation=anim+" "+dur+"s linear infinite";
 }
 
