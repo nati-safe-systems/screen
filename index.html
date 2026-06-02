@@ -540,28 +540,44 @@ function renderNews(items){
   }
   if(!unit)return;
 
-  // מדוד את רוחב היחידה ואת רוחב הרצועה הגלויה
+  // הצג מיד יחידה אחת כדי שלא תהיה רצועה ריקה
   track.style.animation="none";
   track.style.transform="translateX(0)";
   track.innerHTML=unit;
-  var unitW=track.scrollWidth||1;
-  var vpW=(track.parentElement&&track.parentElement.clientWidth)||window.innerWidth||800;
 
-  // חזור על היחידה מספיק פעמים כדי שתמלא לפחות פעם וחצי את רוחב המסך (בלי רווחים)
-  var reps=Math.max(1,Math.ceil((vpW*1.5)/unitW));
-  var block="";for(var k=0;k<reps;k++)block+=unit;
+  // המדידה והבנייה נעשות רק אחרי שהדפדפן סיים לפרוס את העמוד
+  // (אחרת הרוחב יוצא אפס/שגוי וזה גורם לרווח ולהיעלמות). מנסים שוב אם צריך.
+  var tries=0;
+  function build(){
+    var vp=track.parentElement;
+    var unitW=track.scrollWidth||0;
+    var vpW=(vp&&vp.clientWidth)||0;
+    // אם הרוחב עדיין לא מוכן — נסה שוב בפריים הבא (עד ~30 ניסיונות)
+    if((unitW<2||vpW<2)&&tries<30){
+      tries++;
+      return requestAnimationFrame(build);
+    }
+    if(unitW<1)unitW=1;
+    if(vpW<1)vpW=window.innerWidth||800;
 
-  // שני בלוקים זהים => לולאה רציפה לחלוטין
-  track.innerHTML=block+block;
-  var half=track.scrollWidth/2;            // רוחב בלוק אחד
-  var dur=Math.max(half/70,8);             // ~70px לשנייה, מינימום 8 שניות
+    // חזור על היחידה מספיק פעמים כדי שתמלא לפחות פעמיים את רוחב המסך (בלי רווחים)
+    var reps=Math.max(2,Math.ceil((vpW*2)/unitW));
+    var block="";for(var k=0;k<reps;k++)block+=unit;
 
-  // אנימציה דינמית: משמאל לימין (התוכן נע ימינה), לולאה אינסופית
-  var anim="nt-scroll-"+Date.now();
-  var sheet=document.getElementById("nt-anim-sheet");
-  if(!sheet){sheet=document.createElement("style");sheet.id="nt-anim-sheet";document.head.appendChild(sheet);}
-  sheet.textContent="@keyframes "+anim+"{from{transform:translateX(-"+half+"px)}to{transform:translateX(0)}}";
-  track.style.animation=anim+" "+dur+"s linear infinite";
+    // שני בלוקים זהים => לולאה רציפה לחלוטין
+    track.innerHTML=block+block;
+    var half=track.scrollWidth/2;            // רוחב בלוק אחד
+    var dur=Math.max(half/70,8);             // ~70px לשנייה, מינימום 8 שניות
+
+    // אנימציה דינמית: משמאל לימין (התוכן נע ימינה), לולאה אינסופית
+    var anim="nt-scroll-"+Date.now();
+    var sheet=document.getElementById("nt-anim-sheet");
+    if(!sheet){sheet=document.createElement("style");sheet.id="nt-anim-sheet";document.head.appendChild(sheet);}
+    sheet.textContent="@keyframes "+anim+"{from{transform:translateX(-"+half+"px)}to{transform:translateX(0)}}";
+    track.style.transform="translateX(0)";
+    track.style.animation=anim+" "+dur+"s linear infinite";
+  }
+  requestAnimationFrame(build);
 }
 
 /* ----- רצועת פרסומות ----- */
