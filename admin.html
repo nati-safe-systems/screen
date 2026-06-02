@@ -335,9 +335,18 @@ tr:hover td{background:rgba(128,0,0,0.05);}
         </div>
 
         <div class="field" id="dc-rss-wrap" style="margin-top:10px;display:none;">
-          <label>כתובת RSS למבזקים</label>
+          <label>מקורות מבזקים</label>
+          <div id="news-sources" style="display:flex;flex-direction:column;gap:6px;margin:6px 0;">
+            <label class="dc-chk"><input type="checkbox" class="ns-src" value="ynet"   onchange="markCustom()"> ynet — מבזקים</label>
+            <label class="dc-chk"><input type="checkbox" class="ns-src" value="maariv" onchange="markCustom()"> מעריב — חדשות</label>
+            <label class="dc-chk"><input type="checkbox" class="ns-src" value="rotter" onchange="markCustom()"> רוטר — סקופים</label>
+            <label class="dc-chk"><input type="checkbox" class="ns-src" value="kikar"  onchange="markCustom()"> כיכר השבת — מבזקים (חרדי)</label>
+            <label class="dc-chk"><input type="checkbox" class="ns-src" value="inn"    onchange="markCustom()"> ערוץ 7 — דתי-לאומי</label>
+            <label class="dc-chk"><input type="checkbox" class="ns-src" value="makor"  onchange="markCustom()"> מקור ראשון — דתי-לאומי</label>
+          </div>
+          <label style="margin-top:8px;">כתובת RSS מותאמת (אופציונלי)</label>
           <input id="edit-sc-rss" placeholder="https://www.ynet.co.il/Integration/StoryRss2.xml" style="font-family:monospace;font-size:12px;direction:ltr;text-align:left;">
-          <div style="font-size:11px;color:#8b949e;margin-top:4px;">הדבק כתובת פיד RSS. דורש את תוספת ה-RSS בשרת ה-GAS (ראה קובץ ההוראות).</div>
+          <div style="font-size:11px;color:#8b949e;margin-top:4px;">סמן מקורות מהרשימה, או הדבק כתובת פיד נוספת. דורש את תוספת ה-RSS בשרת ה-GAS.</div>
         </div>
 
         <div class="field" id="ads-mgmt" style="margin-top:12px;display:none;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:14px;">
@@ -685,6 +694,7 @@ function openAddScreen(){
   document.getElementById('edit-sc-profile').value='chareidi';
   applyProfile('chareidi');
   document.getElementById('edit-sc-rss').value='';
+  Array.prototype.forEach.call(document.querySelectorAll('.ns-src'), function(c){ c.checked=false; });
   document.getElementById('dc-tenant-edit').checked=false;
   document.getElementById('dc-tenant-ads').checked=false;
   adsList=[]; renderAdsAdmin(); toggleAdsMgmt();
@@ -763,6 +773,7 @@ function readDisplayConfig(){
     news:    document.getElementById('dc-news').checked,
     ads:     document.getElementById('dc-ads').checked,
     rss_url: document.getElementById('edit-sc-rss').value.trim(),
+    news_sources: Array.prototype.slice.call(document.querySelectorAll('.ns-src:checked')).map(function(c){return c.value;}),
     protected: document.getElementById('dc-protected').checked,
     tenant_can_edit: document.getElementById('dc-tenant-edit').checked,
     tenant_ads_edit: document.getElementById('dc-tenant-ads').checked,
@@ -781,6 +792,7 @@ function fillDisplayConfig(cfg){
   document.getElementById('dc-news').checked    = cfg.news    !== undefined ? !!cfg.news    : def.news;
   document.getElementById('dc-ads').checked     = cfg.ads     !== undefined ? !!cfg.ads     : def.ads;
   document.getElementById('edit-sc-rss').value  = cfg.rss_url || '';
+  (function(){ var sel = Array.isArray(cfg.news_sources) ? cfg.news_sources : []; Array.prototype.forEach.call(document.querySelectorAll('.ns-src'), function(c){ c.checked = sel.indexOf(c.value) >= 0; }); })();
   document.getElementById('dc-protected').checked = (cfg.protected!==undefined) ? !!cfg.protected : ((cfg.profile||'chareidi')==='chareidi');
   document.getElementById('dc-tenant-edit').checked = !!cfg.tenant_can_edit;
   document.getElementById('dc-tenant-ads').checked = !!cfg.tenant_ads_edit;

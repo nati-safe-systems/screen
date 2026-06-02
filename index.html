@@ -252,6 +252,15 @@ body.has-ticker .sidebar,body.has-ticker .adbar,body.has-ticker .bb{margin-botto
 var SUPA = "https://cxtrrejclkhqhkqbicmz.supabase.co";
 var SKEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dHJyZWpjbGtocWhrcWJpY216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTk3MDksImV4cCI6MjA5NTU3NTcwOX0._7wB4YwrYEnK6hWuR6YqcFxRb05OLnWvOelIC-ahIEQ";
 var GAS  = "https://script.google.com/macros/s/AKfycbyMATppr6lZ1MqJlFF_E_Y-9XuKNzNd-mJr4MqqslwdLxVdi7qP1IOPp_aORVVkooBF/exec";
+/* ----- מקורות מבזקים: המפתחות תואמים לתיבות הסימון באדמין ----- */
+var NEWS_SOURCES = {
+  ynet:   "https://www.ynet.co.il/Integration/StoryRss1854.xml",
+  maariv: "https://www.maariv.co.il/Rss/RssChadashot",
+  rotter: "http://rotter.net/rss/rotternews.xml",
+  kikar:  "https://a.kikar.co.il/v1/rss/scoop-news/latest/rss2",
+  inn:    "https://www.inn.co.il/Rss.aspx",
+  makor:  "https://www.makorrishon.co.il/feed/"
+};
 var LOC  = {lat:31.78, lon:35.21, elev:800};
 var SID   = new URLSearchParams(window.location.search).get("id") || "DEFAULT";
 var TOKEN = new URLSearchParams(window.location.search).get("token") || "";
@@ -470,6 +479,7 @@ function parseDisplayConfig(raw){
     news:    c.news   !==undefined?!!c.news   :false,
     ads:     c.ads    !==undefined?!!c.ads    :false,
     rss_url: c.rss_url||"",
+    news_sources: Array.isArray(c.news_sources)?c.news_sources:[],
     ads_list:Array.isArray(c.ads_list)?c.ads_list:null,
     protected: c.protected
   };
@@ -506,10 +516,12 @@ function applyDisplayConfig(cfg){
 
   // --- מבזקי חדשות (טיקר תחתון) ---
   var ticker=document.getElementById("news-ticker");
-  if(cfg.news && cfg.rss_url){
+  var _src = (Array.isArray(cfg.news_sources)&&cfg.news_sources.length) ? cfg.news_sources.slice() : [];
+  if(cfg.rss_url){ _src.push(cfg.rss_url); }   // כתובת ידנית (אם קיימת) נוספת לרשימה
+  if(cfg.news && _src.length){
     ticker.style.display="flex";
     document.body.classList.add("has-ticker");
-    startNews(cfg.rss_url);
+    startNews(_src);
   }else{
     ticker.style.display="none";
     document.body.classList.remove("has-ticker");
@@ -518,11 +530,17 @@ function applyDisplayConfig(cfg){
 }
 
 /* ----- מבזקי חדשות דרך ה-GAS (action=rss) ----- */
-/* תומך בכמה מקורות יחד: מפרידים בפסיק / נקודה-פסיק / שורה חדשה */
-function startNews(rssUrl){
-  var urls=String(rssUrl||"").split(/[\n,;]+/)
-    .map(function(s){return s.trim();})
-    .filter(function(s){return s;});
+/* מקבל מערך מפתחות/כתובות, או מחרוזת עם מפרידים (פסיק / נקודה-פסיק / שורה) */
+function startNews(src){
+  var list = Array.isArray(src) ? src : [src];
+  var urls = [];
+  list.forEach(function(item){
+    String(item||"").split(/[\n,;]+/).forEach(function(s){
+      s = s.trim(); if(!s) return;
+      urls.push(NEWS_SOURCES[s] || s);   // מפתח -> כתובת, אחרת כתובת כפי שהיא
+    });
+  });
+  urls = urls.filter(function(u,i){ return urls.indexOf(u)===i; });  // ללא כפילויות
   if(!urls.length)return;
 
   function load(){
