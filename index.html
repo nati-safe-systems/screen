@@ -456,14 +456,16 @@ function parseDisplayConfig(raw){
     news:    c.news   !==undefined?!!c.news   :false,
     ads:     c.ads    !==undefined?!!c.ads    :false,
     rss_url: c.rss_url||"",
-    ads_list:Array.isArray(c.ads_list)?c.ads_list:null
+    ads_list:Array.isArray(c.ads_list)?c.ads_list:null,
+    protected: c.protected
   };
 }
 
 function applyDisplayConfig(cfg){
   DC=cfg;
   var sb=document.querySelector(".sidebar");
-  var isChareidi = (cfg.profile==="chareidi");
+  // שדה יציב ובלתי תלוי בתיבות הסימון. מסכים ישנים ללא השדה — נגזר מהפרופיל לאחור-תאימות.
+  var isChareidi = (cfg.protected!==undefined) ? !!cfg.protected : (cfg.profile==="chareidi");
 
   // --- כותרת "מסך מוגן מגלישה" — רק בקהל יעד חרדי ---
   var phdr=document.getElementById("protected-hdr");
@@ -588,6 +590,13 @@ function renderNews(items){
 }
 
 /* ----- רצועת פרסומות ----- */
+function drvImg(u){
+  if(!u) return "";
+  u=String(u).trim();
+  var m=u.match(/\/d\/([^/]+)/)||u.match(/[?&]id=([^&]+)/);
+  if(m) return "https://drive.google.com/thumbnail?id="+m[1]+"&sz=w1600";
+  return u; // לא דרייב — קישור ישיר
+}
 function startAds(list){
   var body=document.getElementById("adbar-body");
   if(!body)return;
@@ -599,7 +608,8 @@ function startAds(list){
   var html="";
   for(var i=0;i<list.length;i++){
     var a=list[i]||{};
-    var img=a.img?'<img src="'+a.img+'" alt="">':'';
+    var src=drvImg(a.img);
+    var img=src?'<img src="'+src.replace(/"/g,"")+'" alt="">':'';
     var txt=a.txt?'<div class="ad-txt">'+(a.txt.replace(/</g,"&lt;").replace(/>/g,"&gt;"))+'</div>':'';
     html+='<div class="ad-slide'+(i===0?' active':'')+'">'+img+txt+'</div>';
   }

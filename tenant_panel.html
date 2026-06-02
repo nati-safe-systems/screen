@@ -348,6 +348,20 @@ input:focus,select:focus{border-color:#58a6ff;}
         <div class="hint">סמן אילו רכיבים יופיעו על המסך. השינוי נכנס לתוקף תוך כמה דקות.</div>
       </div>
 
+      <div class="field" id="tenant-ads-sec" style="display:none;border:1px solid #30363d;border-radius:10px;padding:14px;">
+        <label style="color:#ffcc00;font-weight:800;">ניהול פרסומות</label>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+          <input id="t-ad-img" placeholder="קישור Google Drive לתמונה (שיתוף: כל מי שיש לו הקישור)" style="font-family:monospace;font-size:12px;direction:ltr;text-align:left;">
+          <input id="t-ad-txt" placeholder="טקסט / כותרת (אופציונלי)">
+          <button class="btn-save" type="button" style="align-self:flex-start;padding:8px 16px;" onclick="tAddAd()">+ הוסף מודעה</button>
+        </div>
+        <div id="t-ads-list" style="margin-top:12px;display:flex;flex-direction:column;gap:6px;"></div>
+        <div style="display:flex;justify-content:flex-end;margin-top:10px;">
+          <button class="btn-save" style="padding:10px 18px;" onclick="saveAds()">שמור פרסומות</button>
+        </div>
+        <div class="hint">העלה את התמונה ל-Google Drive, שתף כ"כל מי שיש לו הקישור", והדבק כאן את הקישור.</div>
+      </div>
+
       <div class="field">
         <label>סוג תוכן</label>
         <div class="type-grid">
@@ -878,8 +892,8 @@ function saveBuildingName(){
   });
 }
 
-/* ===== נתי SAFE: שליטת לקוח בתצוגה (רק אם האדמין איפשר) ===== */
-var _tenantDC=null;
+/* ===== נתי SAFE: שליטת לקוח בתצוגה ובפרסומות (רק אם האדמין איפשר) ===== */
+var _tenantDC=null, _tenantAds=[];
 function parseDCfg(raw){
   if(!raw) return null;
   if(typeof raw==="object") return raw;
@@ -888,34 +902,83 @@ function parseDCfg(raw){
 function applyTenantDisplaySection(raw){
   var cfg=parseDCfg(raw)||{};
   _tenantDC=cfg;
+  // --- שליטה בתצוגה (רכיבי המסך) ---
   var sec=document.getElementById("tenant-display-sec");
-  if(!cfg.tenant_can_edit){ sec.style.display="none"; return; }
-  sec.style.display="block";
-  // ברירת מחדל לאחור-תאימות: מסך ישן = חרדי מלא
-  document.getElementById("td-clock").checked   = cfg.clock   !==undefined ? !!cfg.clock   : true;
-  document.getElementById("td-zmanim").checked  = cfg.zmanim  !==undefined ? !!cfg.zmanim  : true;
-  document.getElementById("td-parasha").checked = cfg.parasha !==undefined ? !!cfg.parasha : true;
-  document.getElementById("td-board").checked   = cfg.board   !==undefined ? !!cfg.board   : true;
-  document.getElementById("td-news").checked    = cfg.news    !==undefined ? !!cfg.news    : false;
-  document.getElementById("td-ads").checked     = cfg.ads     !==undefined ? !!cfg.ads     : false;
+  if(cfg.tenant_can_edit){
+    sec.style.display="block";
+    // ברירת מחדל לאחור-תאימות: מסך ישן = חרדי מלא
+    document.getElementById("td-clock").checked   = cfg.clock   !==undefined ? !!cfg.clock   : true;
+    document.getElementById("td-zmanim").checked  = cfg.zmanim  !==undefined ? !!cfg.zmanim  : true;
+    document.getElementById("td-parasha").checked = cfg.parasha !==undefined ? !!cfg.parasha : true;
+    document.getElementById("td-board").checked   = cfg.board   !==undefined ? !!cfg.board   : true;
+    document.getElementById("td-news").checked    = cfg.news    !==undefined ? !!cfg.news    : false;
+    document.getElementById("td-ads").checked     = cfg.ads     !==undefined ? !!cfg.ads     : false;
+  } else { sec.style.display="none"; }
+  // --- ניהול פרסומות (הרשאה נפרדת) ---
+  var asec=document.getElementById("tenant-ads-sec");
+  if(cfg.tenant_ads_edit){
+    asec.style.display="block";
+    _tenantAds = Array.isArray(cfg.ads_list) ? cfg.ads_list.slice() : [];
+    renderTenantAds();
+  } else { asec.style.display="none"; _tenantAds=[]; }
+}
+function _tenantBaseDC(){
+  // בסיס לשמירה: כל מה שהאדמין קבע נשמר; נדרוס רק את החלק הרלוונטי
+  var b=_tenantDC||{};
+  return {
+    profile: b.profile||"custom",
+    clock:   b.clock,  zmanim: b.zmanim, parasha: b.parasha,
+    board:   b.board,  news:   b.news,   ads:     b.ads,
+    rss_url: b.rss_url||"",
+    protected: b.protected,
+    tenant_can_edit: !!b.tenant_can_edit,
+    tenant_ads_edit: !!b.tenant_ads_edit,
+    ads_list: Array.isArray(b.ads_list)?b.ads_list.slice():[]
+  };
+}
+function _tenantSaveDC(out){
+  return sf("screens?screen_id=eq."+encodeURIComponent(sid),
+    {method:"PATCH",body:JSON.stringify({display_config:JSON.stringify(out)})})
+    .then(function(){ _tenantDC=out; });
 }
 function saveDisplayConfig(){
   if(!_tenantDC||!_tenantDC.tenant_can_edit){toast("אין הרשאה");return;}
-  // שמור על שדות שהאדמין קבע (פרופיל, מקור חדשות, הרשאה), עדכן רק את הרכיבים
-  var out={
-    profile: _tenantDC.profile||"custom",
-    clock:   document.getElementById("td-clock").checked,
-    zmanim:  document.getElementById("td-zmanim").checked,
-    parasha: document.getElementById("td-parasha").checked,
-    board:   document.getElementById("td-board").checked,
-    news:    document.getElementById("td-news").checked,
-    ads:     document.getElementById("td-ads").checked,
-    rss_url: _tenantDC.rss_url||"",
-    tenant_can_edit: true
-  };
-  if(Array.isArray(_tenantDC.ads_list)) out.ads_list=_tenantDC.ads_list;
-  sf("screens?screen_id=eq."+encodeURIComponent(sid),{method:"PATCH",body:JSON.stringify({display_config:JSON.stringify(out)})})
-  .then(function(){ _tenantDC=out; toast("התצוגה עודכנה"); });
+  var out=_tenantBaseDC();
+  out.clock   = document.getElementById("td-clock").checked;
+  out.zmanim  = document.getElementById("td-zmanim").checked;
+  out.parasha = document.getElementById("td-parasha").checked;
+  out.board   = document.getElementById("td-board").checked;
+  out.news    = document.getElementById("td-news").checked;
+  out.ads     = document.getElementById("td-ads").checked;
+  _tenantSaveDC(out).then(function(){ toast("התצוגה עודכנה"); });
+}
+function renderTenantAds(){
+  var wrap=document.getElementById("t-ads-list");
+  if(!wrap)return;
+  if(!_tenantAds.length){ wrap.innerHTML='<div style="font-size:12px;color:#8b949e;">אין מודעות עדיין.</div>'; return; }
+  wrap.innerHTML=_tenantAds.map(function(a,i){
+    var t=(a.txt||"").replace(/</g,"&lt;").replace(/>/g,"&gt;")||"(ללא טקסט)";
+    return '<div style="display:flex;align-items:center;gap:8px;background:#161b22;border:1px solid #30363d;border-radius:8px;padding:6px 10px;">'+
+      '<span style="flex:1;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(i+1)+'. '+t+'</span>'+
+      '<button type="button" onclick="tDelAd('+i+')" style="background:#5a1a1a;color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;">מחק</button>'+
+    '</div>';
+  }).join("");
+}
+function tAddAd(){
+  var img=document.getElementById("t-ad-img").value.trim();
+  var txt=document.getElementById("t-ad-txt").value.trim();
+  if(!img && !txt){ toast("הדבק קישור תמונה או טקסט"); return; }
+  _tenantAds.push({img:img,txt:txt});
+  document.getElementById("t-ad-img").value="";
+  document.getElementById("t-ad-txt").value="";
+  renderTenantAds();
+}
+function tDelAd(i){ _tenantAds.splice(i,1); renderTenantAds(); }
+function saveAds(){
+  if(!_tenantDC||!_tenantDC.tenant_ads_edit){toast("אין הרשאה");return;}
+  var out=_tenantBaseDC();
+  out.ads_list=_tenantAds.slice();
+  _tenantSaveDC(out).then(function(){ toast("הפרסומות עודכנו"); });
 }
 
 function parseSchedules(raw){
