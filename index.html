@@ -132,11 +132,11 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
   background:#e00;animation:nt-pulse 1.6s infinite;}
 @keyframes nt-pulse{0%{box-shadow:0 0 0 0 rgba(238,0,0,0.7);}70%{box-shadow:0 0 0 9px rgba(238,0,0,0);}
   100%{box-shadow:0 0 0 0 rgba(238,0,0,0);}}
-#news-ticker .nt-viewport{flex-grow:1;overflow:hidden;position:relative;height:100%;}
-#news-ticker .nt-track{position:absolute;top:0;right:0;white-space:nowrap;will-change:transform;
+#news-ticker .nt-viewport{flex-grow:1;overflow:hidden;position:relative;height:100%;direction:ltr;}
+#news-ticker .nt-track{position:relative;width:max-content;white-space:nowrap;will-change:transform;
   display:flex;align-items:center;height:100%;}
-#news-ticker .nt-item{color:#fff;font-size:1.35vw;font-weight:700;padding:0 30px;
-  text-shadow:0 1px 5px rgba(0,0,0,0.55);display:inline-flex;align-items:center;}
+#news-ticker .nt-item{color:#fff;font-size:1.35vw;font-weight:700;padding:0 30px;direction:rtl;
+  text-shadow:0 1px 5px rgba(0,0,0,0.55);display:inline-flex;align-items:center;flex:0 0 auto;}
 #news-ticker .nt-item::before{content:"◆";color:#ffcc00;margin-left:30px;font-size:0.6em;opacity:0.9;}
 
 /* כשהטיקר פעיל — דחוף את התוכן מעלה */
@@ -545,37 +545,32 @@ function renderNews(items){
   track.style.transform="translateX(0)";
   track.innerHTML=unit;
 
-  // המדידה והבנייה נעשות רק אחרי שהדפדפן סיים לפרוס את העמוד
-  // (אחרת הרוחב יוצא אפס/שגוי וזה גורם לרווח ולהיעלמות). מנסים שוב אם צריך.
+  // המדידה נעשית רק אחרי שהדפדפן סיים לפרוס את העמוד; מנסים שוב אם צריך
   var tries=0;
   function build(){
     var vp=track.parentElement;
     var unitW=track.scrollWidth||0;
     var vpW=(vp&&vp.clientWidth)||0;
-    // אם הרוחב עדיין לא מוכן — נסה שוב בפריים הבא (עד ~30 ניסיונות)
-    if((unitW<2||vpW<2)&&tries<30){
-      tries++;
-      return requestAnimationFrame(build);
-    }
+    if((unitW<2||vpW<2)&&tries<30){ tries++; return requestAnimationFrame(build); }
     if(unitW<1)unitW=1;
     if(vpW<1)vpW=window.innerWidth||800;
 
-    // חזור על היחידה מספיק פעמים כדי שתמלא לפחות פעמיים את רוחב המסך (בלי רווחים)
+    // קבוצה אחת = היחידה חוזרת מספיק פעמים כדי למלא לפחות פעמיים את רוחב המסך
     var reps=Math.max(2,Math.ceil((vpW*2)/unitW));
-    var block="";for(var k=0;k<reps;k++)block+=unit;
+    var group="";for(var k=0;k<reps;k++)group+=unit;
 
-    // שני בלוקים זהים => לולאה רציפה לחלוטין
-    track.innerHTML=block+block;
-    var half=track.scrollWidth/2;            // רוחב בלוק אחד
-    var dur=Math.max(half/70,8);             // ~70px לשנייה, מינימום 8 שניות
+    // שתי קבוצות זהות זו אחר זו. הזזה של 50% = בדיוק קבוצה אחת => לולאה רציפה.
+    track.innerHTML=group+group;
+    var groupW=track.scrollWidth/2;
+    var dur=Math.max(groupW/70,8); // ~70px לשנייה
 
-    // אנימציה דינמית: משמאל לימין (התוכן נע ימינה), לולאה אינסופית
-    var anim="nt-scroll-"+Date.now();
+    // אנימציה באחוזים (לא בפיקסלים) — יציבה ולא תלויה במדידה מדויקת.
+    // 50% = רוחב קבוצה אחת. מ -50% ל 0 => התוכן נע משמאל לימין.
     var sheet=document.getElementById("nt-anim-sheet");
     if(!sheet){sheet=document.createElement("style");sheet.id="nt-anim-sheet";document.head.appendChild(sheet);}
-    sheet.textContent="@keyframes "+anim+"{from{transform:translateX(-"+half+"px)}to{transform:translateX(0)}}";
-    track.style.transform="translateX(0)";
-    track.style.animation=anim+" "+dur+"s linear infinite";
+    sheet.textContent="@keyframes nt-scroll{from{transform:translateX(-50%)}to{transform:translateX(0)}}";
+    track.style.transform="";
+    track.style.animation="nt-scroll "+dur+"s linear infinite";
   }
   requestAnimationFrame(build);
 }
