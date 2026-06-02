@@ -142,8 +142,12 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
 /* כשהטיקר פעיל — דחוף את התוכן מעלה */
 body.has-ticker .sidebar,body.has-ticker .adbar,body.has-ticker .bb{margin-bottom:60px;}
 
+/* תאריך לועזי (מוצג רק בקהל יעד שאינו חרדי) */
+.dg{font-size:1.15vw;color:#7fb0e0;text-align:center;font-weight:700;margin:2px 0;display:none;}
+.sidebar.show-greg .dg{display:block;}
+.wm .dg{font-size:1vw;}
 /* הסתרת בלוקים בסיידבר לפי קונפיג */
-.sidebar.hide-clock #timer,.sidebar.hide-clock #dow,.sidebar.hide-clock #dh{display:none!important;}
+.sidebar.hide-clock #timer,.sidebar.hide-clock #dow,.sidebar.hide-clock #dh,.sidebar.hide-clock #dg{display:none!important;}
 .sidebar.hide-parasha .ic{display:none!important;}
 .sidebar.hide-zmanim .zc,.sidebar.hide-zmanim .wt,.sidebar.hide-zmanim #shb,
 .sidebar.hide-zmanim #spb{display:none!important;}
@@ -180,9 +184,10 @@ body.has-ticker .sidebar,body.has-ticker .adbar,body.has-ticker .bb{margin-botto
 </div>
 
 <div class="sidebar">
-  <div class="hdr"><span class="bsd">בס"ד</span>המסך חסום ומוגן מגלישה באינטרנט</div>
+  <div class="hdr" id="protected-hdr"><span class="bsd">בס"ד</span>המסך חסום ומוגן מגלישה באינטרנט</div>
   <div id="sc" class="sc">
     <div id="timer">--:--:--</div>
+    <div id="dg" class="dg">טוען...</div>
     <div id="dow">טוען...</div>
     <div id="dh">טוען...</div>
     <div class="ic"><span id="par">טוען...</span><span id="ie" class="ist"></span></div>
@@ -458,12 +463,19 @@ function parseDisplayConfig(raw){
 function applyDisplayConfig(cfg){
   DC=cfg;
   var sb=document.querySelector(".sidebar");
+  var isChareidi = (cfg.profile==="chareidi");
+
+  // --- כותרת "מסך מוגן מגלישה" — רק בקהל יעד חרדי ---
+  var phdr=document.getElementById("protected-hdr");
+  if(phdr) phdr.style.display = isChareidi ? "" : "none";
 
   // --- סיידבר ימני (חרדי): שעון/תאריך, פרשה, זמנים ---
   if(sb){
     sb.classList.toggle("hide-clock",   !cfg.clock);
     sb.classList.toggle("hide-parasha", !cfg.parasha);
     sb.classList.toggle("hide-zmanim",  !cfg.zmanim);
+    // תאריך לועזי בצמוד לשעון — בכל קהל יעד שאינו חרדי
+    sb.classList.toggle("show-greg",    !isChareidi);
     // אם שום דבר בסיידבר לא פעיל — הסתר אותו לגמרי
     var anySidebar = cfg.clock||cfg.parasha||cfg.zmanim;
     sb.classList.toggle("hide-all", !anySidebar);
@@ -905,6 +917,7 @@ function upd(){
   var hdDisp=ghd(now);
 
   document.getElementById("timer").textContent=now.toLocaleTimeString("he-IL",{hour12:false});
+  document.getElementById("dg").textContent=now.toLocaleDateString("he-IL",{day:"numeric",month:"long",year:"numeric"});
   document.getElementById("dow").textContent="יום "+["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"][now.getDay()];
   document.getElementById("dh").textContent=gdl(hdDisp.day)+" ב"+hdDisp.month+" "+gdy(hdDisp.year);
   document.getElementById("par").textContent=gwp()||"פרשת השבוע";

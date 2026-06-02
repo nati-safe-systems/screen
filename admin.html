@@ -335,6 +335,13 @@ tr:hover td{background:rgba(128,0,0,0.05);}
           <input id="edit-sc-rss" placeholder="https://www.ynet.co.il/Integration/StoryRss2.xml" style="font-family:monospace;font-size:12px;direction:ltr;text-align:left;">
           <div style="font-size:11px;color:#8b949e;margin-top:4px;">הדבק כתובת פיד RSS. דורש את תוספת ה-RSS בשרת ה-GAS (ראה קובץ ההוראות).</div>
         </div>
+
+        <div style="border-top:1px solid rgba(255,255,255,0.08);margin-top:14px;padding-top:12px;">
+          <label class="dc-chk" style="font-weight:700;">
+            <input type="checkbox" id="dc-tenant-edit"> אפשר ללקוח לשלוט בתצוגה דרך הממשק שלו
+          </label>
+          <div style="font-size:11px;color:#8b949e;margin-top:4px;">כשמופעל, הלקוח יוכל לסמן אילו רכיבים יוצגו על המסך (ללא כתובת מקורות החדשות). כשכבוי — אין ללקוח שליטה על התצוגה.</div>
+        </div>
       </div>
       <!-- ===== סוף תצוגת המסך ===== -->
     </div>
@@ -649,6 +656,7 @@ function openAddScreen(){
   document.getElementById('edit-sc-profile').value='chareidi';
   applyProfile('chareidi');
   document.getElementById('edit-sc-rss').value='';
+  document.getElementById('dc-tenant-edit').checked=false;
   openModal('modal-sc');
 }
 
@@ -683,7 +691,8 @@ function readDisplayConfig(){
     board:   document.getElementById('dc-board').checked,
     news:    document.getElementById('dc-news').checked,
     ads:     document.getElementById('dc-ads').checked,
-    rss_url: document.getElementById('edit-sc-rss').value.trim()
+    rss_url: document.getElementById('edit-sc-rss').value.trim(),
+    tenant_can_edit: document.getElementById('dc-tenant-edit').checked
   };
 }
 function fillDisplayConfig(cfg){
@@ -698,6 +707,7 @@ function fillDisplayConfig(cfg){
   document.getElementById('dc-news').checked    = cfg.news    !== undefined ? !!cfg.news    : def.news;
   document.getElementById('dc-ads').checked     = cfg.ads     !== undefined ? !!cfg.ads     : def.ads;
   document.getElementById('edit-sc-rss').value  = cfg.rss_url || '';
+  document.getElementById('dc-tenant-edit').checked = !!cfg.tenant_can_edit;
   toggleRssField();
 }
 function parseDC(raw){

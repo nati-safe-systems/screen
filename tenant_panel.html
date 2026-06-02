@@ -21,6 +21,8 @@ body{font-family:Assistant,sans-serif;background:linear-gradient(135deg,#0d1117 
 .sub{font-size:13px;color:#8b949e;}
 .field{display:flex;flex-direction:column;gap:7px;margin-bottom:14px;}
 .field label{font-size:13px;color:#8b949e;font-weight:700;}
+.td-chk{display:flex;align-items:center;gap:8px;font-size:14px!important;color:#e6edf3!important;font-weight:600!important;cursor:pointer;}
+.td-chk input{width:17px;height:17px;cursor:pointer;}
 input,select{background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:8px;padding:11px 14px;font-family:Assistant,sans-serif;font-size:15px;width:100%;outline:none;transition:border-color 0.2s;}
 input:focus,select:focus{border-color:#58a6ff;}
 .btn-main{background:linear-gradient(135deg,#800000,#a00000);color:#ffcc00;border:none;border-radius:8px;padding:13px;font-family:Assistant,sans-serif;font-size:16px;font-weight:800;cursor:pointer;width:100%;}
@@ -328,6 +330,22 @@ input:focus,select:focus{border-color:#58a6ff;}
           <button class="btn-save" style="padding:10px 18px;" onclick="saveBuildingName()">שמור שם</button>
         </div>
         <div class="hint">שם זה מוצג בראש מסך השילוט ובטבלת הניהול.</div>
+      </div>
+
+      <div class="field" id="tenant-display-sec" style="display:none;border:1px solid #30363d;border-radius:10px;padding:14px;">
+        <label style="color:#ffcc00;font-weight:800;">מה יוצג על המסך</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-top:8px;">
+          <label class="td-chk"><input type="checkbox" id="td-clock"> שעון + תאריך</label>
+          <label class="td-chk"><input type="checkbox" id="td-zmanim"> זמני הלכה (שבת/חג)</label>
+          <label class="td-chk"><input type="checkbox" id="td-parasha"> פרשת שבוע / חגים</label>
+          <label class="td-chk"><input type="checkbox" id="td-board"> לוח מודעות (מרכז)</label>
+          <label class="td-chk"><input type="checkbox" id="td-news"> מבזקי חדשות</label>
+          <label class="td-chk"><input type="checkbox" id="td-ads"> פרסומות בצדדים</label>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+          <button class="btn-save" style="padding:10px 18px;" onclick="saveDisplayConfig()">שמור תצוגה</button>
+        </div>
+        <div class="hint">סמן אילו רכיבים יופיעו על המסך. השינוי נכנס לתוקף תוך כמה דקות.</div>
       </div>
 
       <div class="field">
@@ -835,6 +853,7 @@ function openEdit(el){
     if(d&&d[0]){
       var s=d[0];
       document.getElementById("edit-building-name").value=s.building_name||"";
+      applyTenantDisplaySection(s.display_config);
       document.getElementById("rte-editor").innerHTML=s.message||"";
       document.getElementById("pdf-url").value=s.pdf_url||"";
       document.getElementById("pdf-anim").value=s.anim_pdf||"none";
@@ -857,6 +876,46 @@ function saveBuildingName(){
     toast("שם הבניין עודכן");
     loadScreens();
   });
+}
+
+/* ===== נתי SAFE: שליטת לקוח בתצוגה (רק אם האדמין איפשר) ===== */
+var _tenantDC=null;
+function parseDCfg(raw){
+  if(!raw) return null;
+  if(typeof raw==="object") return raw;
+  try{ return JSON.parse(raw); }catch(e){ return null; }
+}
+function applyTenantDisplaySection(raw){
+  var cfg=parseDCfg(raw)||{};
+  _tenantDC=cfg;
+  var sec=document.getElementById("tenant-display-sec");
+  if(!cfg.tenant_can_edit){ sec.style.display="none"; return; }
+  sec.style.display="block";
+  // ברירת מחדל לאחור-תאימות: מסך ישן = חרדי מלא
+  document.getElementById("td-clock").checked   = cfg.clock   !==undefined ? !!cfg.clock   : true;
+  document.getElementById("td-zmanim").checked  = cfg.zmanim  !==undefined ? !!cfg.zmanim  : true;
+  document.getElementById("td-parasha").checked = cfg.parasha !==undefined ? !!cfg.parasha : true;
+  document.getElementById("td-board").checked   = cfg.board   !==undefined ? !!cfg.board   : true;
+  document.getElementById("td-news").checked    = cfg.news    !==undefined ? !!cfg.news    : false;
+  document.getElementById("td-ads").checked     = cfg.ads     !==undefined ? !!cfg.ads     : false;
+}
+function saveDisplayConfig(){
+  if(!_tenantDC||!_tenantDC.tenant_can_edit){toast("אין הרשאה");return;}
+  // שמור על שדות שהאדמין קבע (פרופיל, מקור חדשות, הרשאה), עדכן רק את הרכיבים
+  var out={
+    profile: _tenantDC.profile||"custom",
+    clock:   document.getElementById("td-clock").checked,
+    zmanim:  document.getElementById("td-zmanim").checked,
+    parasha: document.getElementById("td-parasha").checked,
+    board:   document.getElementById("td-board").checked,
+    news:    document.getElementById("td-news").checked,
+    ads:     document.getElementById("td-ads").checked,
+    rss_url: _tenantDC.rss_url||"",
+    tenant_can_edit: true
+  };
+  if(Array.isArray(_tenantDC.ads_list)) out.ads_list=_tenantDC.ads_list;
+  sf("screens?screen_id=eq."+encodeURIComponent(sid),{method:"PATCH",body:JSON.stringify({display_config:JSON.stringify(out)})})
+  .then(function(){ _tenantDC=out; toast("התצוגה עודכנה"); });
 }
 
 function parseSchedules(raw){
