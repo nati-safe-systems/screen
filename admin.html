@@ -363,7 +363,7 @@ tr:hover td{background:rgba(128,0,0,0.05);}
                 <option value="none">מעבר: ללא (מיידי)</option>
               </select>
             </div>
-            <button type="button" class="btn-modal-save" style="align-self:flex-start;padding:8px 16px;" onclick="addAd()">+ הוסף מודעה</button>
+            <button type="button" id="ad-save-btn" class="btn-modal-save" style="align-self:flex-start;padding:8px 16px;" onclick="addAd()">+ הוסף מודעה</button>
           </div>
           <div id="ads-list-admin" style="margin-top:12px;display:flex;flex-direction:column;gap:6px;"></div>
           <div style="font-size:11px;color:#8b949e;margin-top:6px;">העלה את התמונה ל-Google Drive, שתף כ"כל מי שיש לו הקישור", והדבק כאן את הקישור. המודעות מתחלפות אוטומטית על המסך.</div>
@@ -697,7 +697,7 @@ function openAddScreen(){
   Array.prototype.forEach.call(document.querySelectorAll('.ns-src'), function(c){ c.checked=false; });
   document.getElementById('dc-tenant-edit').checked=false;
   document.getElementById('dc-tenant-ads').checked=false;
-  adsList=[]; renderAdsAdmin(); toggleAdsMgmt();
+  adsList=[]; resetAdForm(); renderAdsAdmin(); toggleAdsMgmt();
   openModal('modal-sc');
 }
 
@@ -725,9 +725,29 @@ function renderAdsAdmin(){
     return '<div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border-radius:8px;padding:6px 10px;">'+
       '<span style="flex:1;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(i+1)+'. '+t+
         ' <span style="color:#8b949e;">— '+meta+'</span></span>'+
+      '<button type="button" onclick="editAd('+i+')" style="background:#1a3a5a;color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;">ערוך</button>'+
       '<button type="button" onclick="delAd('+i+')" style="background:#5a1a1a;color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;">מחק</button>'+
     '</div>';
   }).join('');
+}
+var _adEditIdx=-1;   // -1 = הוספה חדשה, אחרת אינדקס המודעה שנערכת
+function resetAdForm(){
+  document.getElementById('ad-img').value='';
+  document.getElementById('ad-txt').value='';
+  document.getElementById('ad-dur').value='8';
+  document.getElementById('ad-anim').value='fade';
+  _adEditIdx=-1;
+  var btn=document.getElementById('ad-save-btn'); if(btn)btn.textContent='+ הוסף מודעה';
+}
+function editAd(i){
+  var a=adsList[i]; if(!a)return;
+  document.getElementById('ad-img').value=a.img||'';
+  document.getElementById('ad-txt').value=a.txt||'';
+  document.getElementById('ad-dur').value=a.dur||8;
+  document.getElementById('ad-anim').value=a.anim||'fade';
+  _adEditIdx=i;
+  var btn=document.getElementById('ad-save-btn'); if(btn)btn.textContent='שמור שינויים';
+  document.getElementById('ad-img').focus();
 }
 function addAd(){
   var img=document.getElementById('ad-img').value.trim();
@@ -735,14 +755,21 @@ function addAd(){
   var dur=parseInt(document.getElementById('ad-dur').value,10); if(!dur||dur<1)dur=8;
   var anim=document.getElementById('ad-anim').value||'fade';
   if(!img && !txt){ toast('הדבק קישור תמונה או טקסט'); return; }
-  adsList.push({img:img, txt:txt, dur:dur, anim:anim});
-  document.getElementById('ad-img').value='';
-  document.getElementById('ad-txt').value='';
-  document.getElementById('ad-dur').value='8';
-  document.getElementById('ad-anim').value='fade';
+  var ad={img:img, txt:txt, dur:dur, anim:anim};
+  if(_adEditIdx>=0 && adsList[_adEditIdx]){
+    adsList[_adEditIdx]=Object.assign({}, adsList[_adEditIdx], ad);  // שמירת שדות נוספים אם קיימים
+  }else{
+    adsList.push(ad);
+  }
+  resetAdForm();
   renderAdsAdmin();
 }
-function delAd(i){ adsList.splice(i,1); renderAdsAdmin(); }
+function delAd(i){
+  adsList.splice(i,1);
+  if(_adEditIdx===i){ resetAdForm(); }       // אם מחקנו את מה שערכנו — איפוס הטופס
+  else if(_adEditIdx>i){ _adEditIdx--; }      // התאמת האינדקס אחרי מחיקה
+  renderAdsAdmin();
+}
 
 function applyProfile(p){
   var cfg=DC_PROFILES[p];
@@ -797,6 +824,7 @@ function fillDisplayConfig(cfg){
   document.getElementById('dc-tenant-edit').checked = !!cfg.tenant_can_edit;
   document.getElementById('dc-tenant-ads').checked = !!cfg.tenant_ads_edit;
   adsList = Array.isArray(cfg.ads_list) ? cfg.ads_list.slice() : [];
+  resetAdForm();
   renderAdsAdmin();
   toggleRssField();
   toggleAdsMgmt();
