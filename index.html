@@ -532,26 +532,35 @@ function startNews(rssUrl){
 function renderNews(items){
   var track=document.getElementById("nt-track");
   if(!track)return;
-  // שכפל את הרשימה כדי שהגלילה תהיה רציפה
-  var html="";
-  for(var r=0;r<2;r++){
-    for(var i=0;i<items.length;i++){
-      var t=(items[i].title||"").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-      if(t) html+='<span class="nt-item">'+t+'</span>';
-    }
+  // בנה "יחידה" אחת מכל הכותרות
+  var unit="";
+  for(var i=0;i<items.length;i++){
+    var t=(items[i].title||"").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    if(t) unit+='<span class="nt-item">'+t+'</span>';
   }
-  track.innerHTML=html;
-  // אנימציית גלילה מימין לשמאל לפי רוחב התוכן
-  track.style.transition="none";
+  if(!unit)return;
+
+  // מדוד את רוחב היחידה ואת רוחב הרצועה הגלויה
+  track.style.animation="none";
   track.style.transform="translateX(0)";
-  var w=track.scrollWidth/2; // רוחב מחזור אחד
-  var px=Math.max(w,800);
-  var dur=px/60; // ~60px לשנייה
-  // הפעל אנימציה ב-CSS דינמי
+  track.innerHTML=unit;
+  var unitW=track.scrollWidth||1;
+  var vpW=(track.parentElement&&track.parentElement.clientWidth)||window.innerWidth||800;
+
+  // חזור על היחידה מספיק פעמים כדי שתמלא לפחות פעם וחצי את רוחב המסך (בלי רווחים)
+  var reps=Math.max(1,Math.ceil((vpW*1.5)/unitW));
+  var block="";for(var k=0;k<reps;k++)block+=unit;
+
+  // שני בלוקים זהים => לולאה רציפה לחלוטין
+  track.innerHTML=block+block;
+  var half=track.scrollWidth/2;            // רוחב בלוק אחד
+  var dur=Math.max(half/70,8);             // ~70px לשנייה, מינימום 8 שניות
+
+  // אנימציה דינמית: משמאל לימין (התוכן נע ימינה), לולאה אינסופית
   var anim="nt-scroll-"+Date.now();
   var sheet=document.getElementById("nt-anim-sheet");
   if(!sheet){sheet=document.createElement("style");sheet.id="nt-anim-sheet";document.head.appendChild(sheet);}
-  sheet.textContent="@keyframes "+anim+"{from{transform:translateX(-"+w+"px)}to{transform:translateX(0)}}";
+  sheet.textContent="@keyframes "+anim+"{from{transform:translateX(-"+half+"px)}to{transform:translateX(0)}}";
   track.style.animation=anim+" "+dur+"s linear infinite";
 }
 
