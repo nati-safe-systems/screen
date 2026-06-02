@@ -490,15 +490,34 @@ function applyDisplayConfig(cfg){
 }
 
 /* ----- מבזקי חדשות דרך ה-GAS (action=rss) ----- */
+/* תומך בכמה מקורות יחד: מפרידים בפסיק / נקודה-פסיק / שורה חדשה */
 function startNews(rssUrl){
+  var urls=String(rssUrl||"").split(/[\n,;]+/)
+    .map(function(s){return s.trim();})
+    .filter(function(s){return s;});
+  if(!urls.length)return;
+
   function load(){
-    var u=GAS+"?action=rss&max=10&url="+encodeURIComponent(rssUrl)+"&_="+Date.now();
-    fetch(u,{cache:"no-store"})
-      .then(function(r){return r.json();})
-      .then(function(d){
-        if(d&&d.ok&&d.items&&d.items.length){ renderNews(d.items); }
-      })
-      .catch(function(){ /* שקט — נשאיר את הכותרות הקודמות */ });
+    var reqs=urls.map(function(one){
+      var u=GAS+"?action=rss&max=10&url="+encodeURIComponent(one)+"&_="+Date.now();
+      return fetch(u,{cache:"no-store"})
+        .then(function(r){return r.json();})
+        .then(function(d){ return (d&&d.ok&&d.items)?d.items:[]; })
+        .catch(function(){ return []; });
+    });
+    Promise.all(reqs).then(function(lists){
+      // שילוב לסירוגין בין המקורות כדי שהמבזקים יהיו מגוונים
+      var merged=[],i=0,added=true;
+      while(added){
+        added=false;
+        for(var s=0;s<lists.length;s++){
+          if(lists[s][i]){ merged.push(lists[s][i]); added=true; }
+        }
+        i++;
+      }
+      if(merged.length){ renderNews(merged); }
+      // אם הכל ריק — משאירים את הכותרות הקודמות
+    });
   }
   load();
   if(_newsTimer)clearInterval(_newsTimer);
