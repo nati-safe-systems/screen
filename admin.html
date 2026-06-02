@@ -345,6 +345,15 @@ tr:hover td{background:rgba(128,0,0,0.05);}
           <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
             <input id="ad-img" placeholder="קישור Google Drive לתמונה (שיתוף: כל מי שיש לו הקישור)" style="font-family:monospace;font-size:12px;direction:ltr;text-align:left;">
             <input id="ad-txt" placeholder="טקסט / כותרת (אופציונלי)">
+            <div style="display:flex;gap:8px;">
+              <input id="ad-dur" type="number" min="1" step="1" value="8" placeholder="זמן הצגה (שניות)" style="flex:1;">
+              <select id="ad-anim" style="flex:1;">
+                <option value="fade">מעבר: דהייה</option>
+                <option value="slide">מעבר: החלקה</option>
+                <option value="zoom">מעבר: הגדלה</option>
+                <option value="none">מעבר: ללא (מיידי)</option>
+              </select>
+            </div>
             <button type="button" class="btn-modal-save" style="align-self:flex-start;padding:8px 16px;" onclick="addAd()">+ הוסף מודעה</button>
           </div>
           <div id="ads-list-admin" style="margin-top:12px;display:flex;flex-direction:column;gap:6px;"></div>
@@ -691,6 +700,7 @@ var DC_PROFILES={
 
 /* ----- ניהול פרסומות ----- */
 var adsList=[];
+var ANIM_LABELS={fade:"דהייה",slide:"החלקה",zoom:"הגדלה",none:"ללא"};
 function toggleAdsMgmt(){
   var on=document.getElementById('dc-ads').checked;
   document.getElementById('ads-mgmt').style.display = on ? 'block' : 'none';
@@ -701,8 +711,10 @@ function renderAdsAdmin(){
   if(!adsList.length){ wrap.innerHTML='<div style="font-size:12px;color:#8b949e;">אין מודעות עדיין.</div>'; return; }
   wrap.innerHTML=adsList.map(function(a,i){
     var t=(a.txt||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')||'(ללא טקסט)';
+    var meta=(a.dur||8)+' שנ\' · '+(ANIM_LABELS[a.anim||'fade']||'דהייה');
     return '<div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border-radius:8px;padding:6px 10px;">'+
-      '<span style="flex:1;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(i+1)+'. '+t+'</span>'+
+      '<span style="flex:1;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(i+1)+'. '+t+
+        ' <span style="color:#8b949e;">— '+meta+'</span></span>'+
       '<button type="button" onclick="delAd('+i+')" style="background:#5a1a1a;color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;">מחק</button>'+
     '</div>';
   }).join('');
@@ -710,10 +722,14 @@ function renderAdsAdmin(){
 function addAd(){
   var img=document.getElementById('ad-img').value.trim();
   var txt=document.getElementById('ad-txt').value.trim();
+  var dur=parseInt(document.getElementById('ad-dur').value,10); if(!dur||dur<1)dur=8;
+  var anim=document.getElementById('ad-anim').value||'fade';
   if(!img && !txt){ toast('הדבק קישור תמונה או טקסט'); return; }
-  adsList.push({img:img, txt:txt});
+  adsList.push({img:img, txt:txt, dur:dur, anim:anim});
   document.getElementById('ad-img').value='';
   document.getElementById('ad-txt').value='';
+  document.getElementById('ad-dur').value='8';
+  document.getElementById('ad-anim').value='fade';
   renderAdsAdmin();
 }
 function delAd(i){ adsList.splice(i,1); renderAdsAdmin(); }

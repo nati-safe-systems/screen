@@ -115,10 +115,15 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
 .adbar-hdr::after{content:"";position:absolute;left:50%;bottom:-2px;transform:translateX(-50%);
   width:48px;height:2px;background:#ffcc00;box-shadow:0 0 10px rgba(255,204,0,0.8);}
 .adbar-body{flex-grow:1;position:relative;overflow:hidden;}
-.ad-slide{position:absolute;inset:0;opacity:0;transform:scale(0.97);
-  transition:opacity 0.8s ease, transform 0.8s ease;display:flex;
+.ad-slide{position:absolute;inset:0;opacity:0;
+  transition:opacity 0.7s ease, transform 0.7s ease;display:flex;
   flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 20px;box-sizing:border-box;}
-.ad-slide.active{opacity:1;transform:scale(1);}
+.ad-slide.active{opacity:1;transform:none;}
+/* סוגי הנפשה למצב לא-פעיל (כניסת המודעה הבאה) */
+.ad-slide:not(.active)[data-anim="fade"]{transform:none;}
+.ad-slide:not(.active)[data-anim="zoom"]{transform:scale(0.9);}
+.ad-slide:not(.active)[data-anim="slide"]{transform:translateX(40px);}
+.ad-slide[data-anim="none"]{transition:none;}
 .ad-slide img{max-width:100%;max-height:62%;border-radius:14px;object-fit:contain;
   border:1px solid rgba(255,255,255,0.12);
   box-shadow:0 10px 32px rgba(0,0,0,0.55), 0 0 0 4px rgba(255,255,255,0.03);}
@@ -620,17 +625,25 @@ function startAds(list){
     var src=drvImg(a.img);
     var img=src?'<img src="'+src.replace(/"/g,"")+'" alt="">':'';
     var txt=a.txt?'<div class="ad-txt">'+(a.txt.replace(/</g,"&lt;").replace(/>/g,"&gt;"))+'</div>':'';
-    html+='<div class="ad-slide'+(i===0?' active':'')+'">'+img+txt+'</div>';
+    var anim=(a.anim||"fade");
+    html+='<div class="ad-slide'+(i===0?' active':'')+'" data-anim="'+anim+'">'+img+txt+'</div>';
   }
   body.innerHTML=html;
   if(list.length>1){
     var slides=body.querySelectorAll(".ad-slide"),idx=0;
-    if(_adTimer)clearInterval(_adTimer);
-    _adTimer=setInterval(function(){
+    if(_adTimer)clearTimeout(_adTimer);
+    var durOf=function(n){
+      var d=parseFloat((list[n]||{}).dur);
+      if(!d||d<1)d=8;            // ברירת מחדל 8 שניות, מינימום 1
+      return d*1000;
+    };
+    var next=function(){
       slides[idx].classList.remove("active");
       idx=(idx+1)%slides.length;
       slides[idx].classList.add("active");
-    },8000);
+      _adTimer=setTimeout(next, durOf(idx));
+    };
+    _adTimer=setTimeout(next, durOf(0));
   }
 }
 
