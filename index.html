@@ -552,6 +552,7 @@ function renderNews(items){
     var vp=track.parentElement;
     var unitW=track.scrollWidth||0;
     var vpW=(vp&&vp.clientWidth)||0;
+    console.log("NEWS build try="+tries+" unitW="+unitW+" vpW="+vpW+" items="+items.length);
     // אם הרוחב עדיין לא מוכן — נסה שוב בפריים הבא (עד ~30 ניסיונות)
     if((unitW<2||vpW<2)&&tries<30){
       tries++;
@@ -576,6 +577,7 @@ function renderNews(items){
     sheet.textContent="@keyframes "+anim+"{from{transform:translateX(-"+half+"px)}to{transform:translateX(0)}}";
     track.style.transform="translateX(0)";
     track.style.animation=anim+" "+dur+"s linear infinite";
+    console.log("NEWS animate reps="+reps+" half="+half+" dur="+dur+" trackW="+track.scrollWidth);
   }
   requestAnimationFrame(build);
 }
