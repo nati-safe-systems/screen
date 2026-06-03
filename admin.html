@@ -363,6 +363,11 @@ tr:hover td{background:rgba(128,0,0,0.05);}
                 <option value="none">מעבר: ללא (מיידי)</option>
               </select>
             </div>
+            <select id="ad-side">
+              <option value="both">מוצג: בשני הצדדים</option>
+              <option value="left">מוצג: שמאל בלבד (רצועת הפרסום)</option>
+              <option value="right">מוצג: ימין בלבד (במקום הזמנים)</option>
+            </select>
             <button type="button" id="ad-save-btn" class="btn-modal-save" style="align-self:flex-start;padding:8px 16px;" onclick="addAd()">+ הוסף מודעה</button>
           </div>
           <div id="ads-list-admin" style="margin-top:12px;display:flex;flex-direction:column;gap:6px;"></div>
@@ -711,6 +716,7 @@ var DC_PROFILES={
 /* ----- ניהול פרסומות ----- */
 var adsList=[];
 var ANIM_LABELS={fade:"דהייה",slide:"החלקה",zoom:"הגדלה",none:"ללא"};
+var SIDE_LABELS={both:"שני הצדדים",left:"שמאל בלבד",right:"ימין בלבד"};
 function toggleAdsMgmt(){
   var on=document.getElementById('dc-ads').checked;
   document.getElementById('ads-mgmt').style.display = on ? 'block' : 'none';
@@ -721,7 +727,8 @@ function renderAdsAdmin(){
   if(!adsList.length){ wrap.innerHTML='<div style="font-size:12px;color:#8b949e;">אין מודעות עדיין.</div>'; return; }
   wrap.innerHTML=adsList.map(function(a,i){
     var t=(a.txt||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')||'(ללא טקסט)';
-    var meta=(a.dur||8)+' שנ\' · '+(ANIM_LABELS[a.anim||'fade']||'דהייה');
+    var sideTxt=(a.side&&a.side!=='both')?(' · '+(SIDE_LABELS[a.side]||'')):'';
+    var meta=(a.dur||8)+' שנ\' · '+(ANIM_LABELS[a.anim||'fade']||'דהייה')+sideTxt;
     return '<div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border-radius:8px;padding:6px 10px;">'+
       '<span style="flex:1;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(i+1)+'. '+t+
         ' <span style="color:#8b949e;">— '+meta+'</span></span>'+
@@ -736,6 +743,7 @@ function resetAdForm(){
   document.getElementById('ad-txt').value='';
   document.getElementById('ad-dur').value='8';
   document.getElementById('ad-anim').value='fade';
+  document.getElementById('ad-side').value='both';
   _adEditIdx=-1;
   var btn=document.getElementById('ad-save-btn'); if(btn)btn.textContent='+ הוסף מודעה';
 }
@@ -745,6 +753,7 @@ function editAd(i){
   document.getElementById('ad-txt').value=a.txt||'';
   document.getElementById('ad-dur').value=a.dur||8;
   document.getElementById('ad-anim').value=a.anim||'fade';
+  document.getElementById('ad-side').value=a.side||'both';
   _adEditIdx=i;
   var btn=document.getElementById('ad-save-btn'); if(btn)btn.textContent='שמור שינויים';
   document.getElementById('ad-img').focus();
@@ -754,8 +763,9 @@ function addAd(){
   var txt=document.getElementById('ad-txt').value.trim();
   var dur=parseInt(document.getElementById('ad-dur').value,10); if(!dur||dur<1)dur=8;
   var anim=document.getElementById('ad-anim').value||'fade';
+  var side=document.getElementById('ad-side').value||'both';
   if(!img && !txt){ toast('הדבק קישור תמונה או טקסט'); return; }
-  var ad={img:img, txt:txt, dur:dur, anim:anim};
+  var ad={img:img, txt:txt, dur:dur, anim:anim, side:side};
   if(_adEditIdx>=0 && adsList[_adEditIdx]){
     adsList[_adEditIdx]=Object.assign({}, adsList[_adEditIdx], ad);  // שמירת שדות נוספים אם קיימים
   }else{
