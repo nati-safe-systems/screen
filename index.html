@@ -829,14 +829,12 @@ function fparasha(ds, cb, nx) {
   }).catch(function(){if(cb)cb();});
 }
 
-/* ---- זמנים ישירות מ-Hebcal (דיוק לשנייה, אזור זמן ישראל) ---- */
+/* ---- זמנים דרך הפרוקסי הקיים (Hebcal), עם שמות שדות מתוקנים ---- */
 function fhcal(ds,cb,nx) {
-  var url="https://www.hebcal.com/zmanim?cfg=json&sec=1&tzid=Asia/Jerusalem"
-        + "&lat="+LOC.lat+"&lon="+LOC.lon+"&date="+ds;
-  fetch(url,{cache:"no-store"})
+  fetch(GAS+"?action=hebcal&lat="+LOC.lat+"&lon="+LOC.lon+"&date="+ds+"&cfg=json",{cache:"no-store"})
   .then(function(r){return r.json();})
   .then(function(d){
-    if(d&&d.times){if(nx){aN=d;}else{aD=d;lad=ds;sai("live");}}
+    if(d.ok&&d.data){if(nx){aN=d.data;}else{aD=d.data;lad=ds;sai("live");}}
     else{if(!nx)sai("offline");}
     if(cb)cb();
   }).catch(function(){if(!nx)sai("offline");if(cb)cb();});
