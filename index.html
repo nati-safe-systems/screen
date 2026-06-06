@@ -829,12 +829,14 @@ function fparasha(ds, cb, nx) {
   }).catch(function(){if(cb)cb();});
 }
 
-/* ---- Hebcal (זמנים בלבד) ---- */
+/* ---- זמנים ישירות מ-Hebcal (דיוק לשנייה, אזור זמן ישראל) ---- */
 function fhcal(ds,cb,nx) {
-  fetch(GAS+"?action=hebcal&lat="+LOC.lat+"&lon="+LOC.lon+"&date="+ds+"&cfg=json",{cache:"no-store"})
+  var url="https://www.hebcal.com/zmanim?cfg=json&sec=1&tzid=Asia/Jerusalem"
+        + "&lat="+LOC.lat+"&lon="+LOC.lon+"&date="+ds;
+  fetch(url,{cache:"no-store"})
   .then(function(r){return r.json();})
   .then(function(d){
-    if(d.ok&&d.data){if(nx){aN=d.data;}else{aD=d.data;lad=ds;sai("live");}}
+    if(d&&d.times){if(nx){aN=d;}else{aD=d;lad=ds;sai("live");}}
     else{if(!nx)sai("offline");}
     if(cb)cb();
   }).catch(function(){if(!nx)sai("offline");if(cb)cb();});
@@ -849,7 +851,7 @@ function sai(s){
 function tds(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
 function tdy(){return tds(new Date());}
 
-function gzm(k){if(!aD||!aD.times)return null;var v=aD.times[k];if(!v)return null;var d=new Date(v);return d.getHours()+d.getMinutes()/60+d.getSeconds()/3600;}
+function gzm(k){if(!aD||!aD.times)return NaN;var v=aD.times[k];if(!v)return NaN;var d=new Date(v);return d.getHours()+d.getMinutes()/60+d.getSeconds()/3600;}
 function ghtl(){return aD&&aD.date&&aD.date.hebrew?aD.date.hebrew:null;}
 
 /* פרשה — מנתוני הפרשה הנפרדים */
@@ -973,17 +975,16 @@ function gzo(d){
 }
 
 function gzm2(n){
-  var o=gzo(n);
   return {
-    alot:    gzm("alotHashachar")||o.alot,
-    sunrise: gzm("sunrise")||o.sunrise,
-    szM:     gzm("sofZmanShmaMGA19Point8")||o.szM,
-    szG:     gzm("sofZmanShma")||o.szG,
-    noon:    gzm("chatzot")||o.noon,
-    mincha:  gzm("minchaGedola")||o.mincha,
-    sunset:  gzm("sunset")||o.sunset,
-    tz:      gzm("tzeit85deg")||o.tz,
-    rt:      gzm("tzeit72min")||o.rt
+    alot:    gzm("alotHaShachar"),
+    sunrise: gzm("sunrise"),
+    szM:     gzm("sofZmanShmaMGA"),
+    szG:     gzm("sofZmanShma"),
+    noon:    gzm("chatzot"),
+    mincha:  gzm("minchaGedola"),
+    sunset:  gzm("sunset"),
+    tz:      gzm("tzeit85deg"),
+    rt:      gzm("tzeit72min")
   };
 }
 
