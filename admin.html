@@ -471,8 +471,18 @@ tr:hover td{background:rgba(128,0,0,0.05);}
       </div>
 
       <div style="border-top:2px solid rgba(255,204,0,0.25);margin-top:6px;padding-top:14px;">
-        <label style="color:#ffcc00;font-weight:800;display:block;margin-bottom:6px;">משתמשי משנה (הרשאות מוגבלות)</label>
-        <div style="font-size:11px;color:#8b949e;margin-bottom:10px;">המשתמש הראשי שלמעלה (המשרד) מקבל הרשאות מלאות תמיד. כאן אפשר להוסיף משתמשי שטח עם הרשאות חלקיות בלבד.</div>
+        <label style="color:#ffcc00;font-weight:800;display:block;margin-bottom:6px;">הרשאות הלקוח — מה יופיע בממשק הניהול שלו</label>
+        <div style="font-size:11px;color:#8b949e;margin-bottom:10px;">סמן וי ליד כל פעולה שתרצה שהלקוח (המשתמש הראשי) יוכל לבצע. מה שלא מסומן — לא יופיע לו בממשק כלל.</div>
+        <div style="display:flex;gap:8px;margin-bottom:6px;">
+          <button type="button" class="btn-modal-cancel" style="padding:5px 12px;font-size:12px;" onclick="setAllCoPerms(true)">סמן הכל</button>
+          <button type="button" class="btn-modal-cancel" style="padding:5px 12px;font-size:12px;" onclick="setAllCoPerms(false)">נקה הכל</button>
+        </div>
+        <div id="co-perms-grid"></div>
+      </div>
+
+      <div style="border-top:2px solid rgba(255,204,0,0.25);margin-top:6px;padding-top:14px;">
+        <label style="color:#ffcc00;font-weight:800;display:block;margin-bottom:6px;">משתמשי משנה (אנשי שטח)</label>
+        <div style="font-size:11px;color:#8b949e;margin-bottom:10px;">המשתמש הראשי (המשרד) מקבל את כל ההרשאות שסימנת למעלה. כאן אפשר להוסיף אנשי שטח עם תת-קבוצה. משתמש משנה יקבל בפועל רק הרשאות שגם ללקוח עצמו יש.</div>
         <div id="sub-users-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;"></div>
         <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px;">
           <div style="display:flex;gap:8px;">
@@ -480,12 +490,7 @@ tr:hover td{background:rgba(128,0,0,0.05);}
             <input id="su-pass" placeholder="סיסמה" style="flex:1;">
           </div>
           <input id="su-label" placeholder="תפקיד / שם (אופציונלי — למשל: איש שטח)">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;margin-top:2px;">
-            <label class="dc-chk"><input type="checkbox" id="su-perm-message" checked> עריכת טקסט ההודעה</label>
-            <label class="dc-chk"><input type="checkbox" id="su-perm-ads"> ניהול פרסומות</label>
-            <label class="dc-chk"><input type="checkbox" id="su-perm-display"> שליטה ברכיבי התצוגה</label>
-            <label class="dc-chk"><input type="checkbox" id="su-perm-building"> עריכת שם הבניין</label>
-          </div>
+          <div id="su-perms-grid" style="margin-top:2px;"></div>
           <button type="button" class="btn-modal-save" style="align-self:flex-start;padding:8px 16px;" onclick="addSubUser()">+ הוסף משתמש</button>
         </div>
       </div>
@@ -1026,7 +1031,7 @@ function openAddCompany(){
   document.getElementById('co-logo-preview').style.display='none';
   document.getElementById('co-logo-hint').textContent='לחץ להעלאת לוגו';
   document.getElementById('co-id').disabled=false;
-  subUsers=[]; renderSubUsers(); resetSubUserForm();
+  subUsers=[]; coPerms=defaultAllPerms(); renderCoPerms(coPerms); renderSubUsers(); resetSubUserForm();
   document.getElementById('modal-co-title').textContent='לקוח חדש';
   openModal('modal-co');
 }
@@ -1049,8 +1054,9 @@ function openEditCompany(cid){
     document.getElementById('co-logo-preview').style.display='none';
     document.getElementById('co-logo-hint').textContent='לחץ להעלאת לוגו';
   }
-  subUsers=Array.isArray(c.sub_users)?c.sub_users.slice():[];
-  renderSubUsers(); resetSubUserForm();
+  subUsers=(Array.isArray(c.sub_users)?c.sub_users.slice():[]).map(function(su){return {username:su.username,password:su.password,label:su.label,perms:migrateOldPerms(su.perms)};});
+  coPerms=(c.perms&&Object.keys(c.perms).length)?migrateOldPerms(c.perms):defaultAllPerms();
+  renderCoPerms(coPerms); renderSubUsers(); resetSubUserForm();
   document.getElementById('modal-co-title').textContent='עריכת לקוח';
   openModal('modal-co');
 }
@@ -1068,18 +1074,83 @@ function handleLogoUpload(input){
   reader.readAsDataURL(file);
 }
 
-var SU_PERM_LABELS={message:'הודעה',ads:'פרסומות',display:'תצוגה',building:'שם בניין'};
+/* ===== מערכת הרשאות מפורטת — מקור אמת אחד ===== */
+var PERM_DEFS=[
+  {cat:'הודעות ותוכן',items:[
+    {id:'edit_message',label:'עריכת טקסט ההודעה'},
+    {id:'type_scroll',label:'סוג: גוללת'},
+    {id:'type_static',label:'סוג: קבועה'},
+    {id:'type_pdf',label:'סוג: PDF'},
+    {id:'scroll_speed',label:'שליטה במהירות הגלילה'}
+  ]},
+  {cat:'רכיבי המסך',items:[
+    {id:'disp_clock',label:'שעון + תאריך'},
+    {id:'disp_zmanim',label:'זמני הלכה'},
+    {id:'disp_parasha',label:'פרשת שבוע / חגים'},
+    {id:'disp_board',label:'לוח מודעות'},
+    {id:'disp_news',label:'מבזקי חדשות'},
+    {id:'disp_ads',label:'פרסומות בצדדים'}
+  ]},
+  {cat:'פרסומות',items:[
+    {id:'ads_manage',label:'ניהול פרסומות'}
+  ]},
+  {cat:'עיצוב רקע',items:[
+    {id:'bg_brightness',label:'בהירות תמונת הרקע'}
+  ]},
+  {cat:'כללי',items:[
+    {id:'building_name',label:'עריכת שם הבניין'}
+  ]}
+];
+var PERM_IDS=[]; PERM_DEFS.forEach(function(g){g.items.forEach(function(it){PERM_IDS.push(it.id);});});
+var PERM_LABELS={}; PERM_DEFS.forEach(function(g){g.items.forEach(function(it){PERM_LABELS[it.id]=it.label;});});
+var coPerms={};
+
+function defaultAllPerms(){ var o={}; PERM_IDS.forEach(function(id){o[id]=true;}); return o; }
+function migrateOldPerms(perms){
+  if(!perms||typeof perms!=='object') return {};
+  var hasNew=PERM_IDS.some(function(id){return id in perms;});
+  if(hasNew) return perms;
+  var hasOld=('message'in perms)||('ads'in perms)||('display'in perms)||('building'in perms);
+  if(!hasOld) return perms;
+  var o={};
+  if(perms.message){o.edit_message=true;o.type_scroll=true;o.type_static=true;o.type_pdf=true;}
+  if(perms.display){o.disp_clock=true;o.disp_zmanim=true;o.disp_parasha=true;o.disp_board=true;o.disp_news=true;o.disp_ads=true;}
+  if(perms.ads){o.ads_manage=true;}
+  if(perms.building){o.building_name=true;}
+  return o;
+}
+function permGridHtml(prefix,perms){
+  return PERM_DEFS.map(function(g){
+    var items=g.items.map(function(it){
+      var ck=(perms&&perms[it.id])?' checked':'';
+      return '<label class="dc-chk"><input type="checkbox" id="'+prefix+it.id+'"'+ck+'> '+escH(it.label)+'</label>';
+    }).join('');
+    return '<div style="margin-top:8px;"><div style="color:#ffcc00;font-size:11px;font-weight:700;margin-bottom:4px;">'+escH(g.cat)+'</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;">'+items+'</div></div>';
+  }).join('');
+}
+function readPermGrid(prefix){
+  var o={}; PERM_DEFS.forEach(function(g){g.items.forEach(function(it){var el=document.getElementById(prefix+it.id);o[it.id]=!!(el&&el.checked);});}); return o;
+}
+function renderCoPerms(perms){ var el=document.getElementById('co-perms-grid'); if(el)el.innerHTML=permGridHtml('coperm-',perms); }
+function renderSuPermsForm(perms){ var el=document.getElementById('su-perms-grid'); if(el)el.innerHTML=permGridHtml('superm-',perms); }
+function setAllCoPerms(v){ PERM_IDS.forEach(function(id){var el=document.getElementById('coperm-'+id); if(el)el.checked=v;}); }
+function permsSummary(perms){
+  if(!perms) return 'ללא הרשאות';
+  var on=PERM_IDS.filter(function(id){return perms[id];});
+  if(!on.length) return 'ללא הרשאות';
+  return on.map(function(id){return PERM_LABELS[id];}).join(' · ');
+}
+
 function renderSubUsers(){
   var wrap=document.getElementById('sub-users-list');
   if(!wrap)return;
   if(!subUsers.length){ wrap.innerHTML='<div style="font-size:12px;color:#8b949e;">אין משתמשי משנה עדיין.</div>'; return; }
   wrap.innerHTML=subUsers.map(function(u,i){
-    var perms=Object.keys(SU_PERM_LABELS).filter(function(k){return u.perms&&u.perms[k];}).map(function(k){return SU_PERM_LABELS[k];});
-    var permsTxt=perms.length?perms.join(' · '):'ללא הרשאות';
-    return '<div style="display:flex;align-items:center;gap:8px;background:#161b22;border:1px solid #30363d;border-radius:8px;padding:7px 10px;">'+
+    return '<div style="display:flex;align-items:flex-start;gap:8px;background:#161b22;border:1px solid #30363d;border-radius:8px;padding:7px 10px;">'+
       '<span style="flex:1;font-size:12px;overflow:hidden;">'+
         '<b>'+escH(u.username||'')+'</b>'+(u.label?' <span style="color:#8b949e;">('+escH(u.label)+')</span>':'')+
-        '<br><span style="color:#3fb950;font-size:11px;">'+escH(permsTxt)+'</span></span>'+
+        '<br><span style="color:#3fb950;font-size:11px;">'+escH(permsSummary(u.perms))+'</span></span>'+
       '<button type="button" onclick="delSubUser('+i+')" style="background:#5a1a1a;color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;">מחק</button>'+
     '</div>';
   }).join('');
@@ -1088,10 +1159,7 @@ function resetSubUserForm(){
   document.getElementById('su-user').value='';
   document.getElementById('su-pass').value='';
   document.getElementById('su-label').value='';
-  document.getElementById('su-perm-message').checked=true;
-  document.getElementById('su-perm-ads').checked=false;
-  document.getElementById('su-perm-display').checked=false;
-  document.getElementById('su-perm-building').checked=false;
+  renderSuPermsForm({edit_message:true});
 }
 function addSubUser(){
   var u=document.getElementById('su-user').value.trim().toLowerCase();
@@ -1101,12 +1169,7 @@ function addSubUser(){
   var master=document.getElementById('co-user').value.trim();
   if(u.toLowerCase()===master.toLowerCase()){ toast('שם המשתמש זהה למשתמש הראשי'); return; }
   if(subUsers.some(function(x){return (x.username||'').toLowerCase()===u.toLowerCase();})){ toast('שם המשתמש כבר קיים'); return; }
-  subUsers.push({username:u,password:p,label:label,perms:{
-    message:document.getElementById('su-perm-message').checked,
-    ads:document.getElementById('su-perm-ads').checked,
-    display:document.getElementById('su-perm-display').checked,
-    building:document.getElementById('su-perm-building').checked
-  }});
+  subUsers.push({username:u,password:p,label:label,perms:readPermGrid('superm-')});
   resetSubUserForm();
   renderSubUsers();
 }
@@ -1122,6 +1185,7 @@ function saveCompany(){
   if(!orig&&!pass){toast('סיסמה חובה ללקוח חדש');return;}
   var body={company_name:name,username:user};
   body.sub_users=subUsers;
+  body.perms=readPermGrid('coperm-');
   if(logo)body.logo_b64=logo;
   if(pass){body.password=pass;body.must_change_password=true;}
   if(!orig){
@@ -1228,6 +1292,6 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 1.1</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 1.2</div>
 </body>
 </html>
