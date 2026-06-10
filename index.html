@@ -784,7 +784,7 @@ function showMessage(s) {
     requestAnimationFrame(function(){
       var wH=mqWrap.offsetHeight||600;
       var mH=mqMover.offsetHeight||200;
-      var speed=80;
+      var speed=(DC&&+DC.scrollSpeed>0)?+DC.scrollSpeed:80;
       var dur=(wH+mH)/speed;
       var styleId="mq-style";
       var old=document.getElementById(styleId);
