@@ -334,6 +334,19 @@ tr:hover td{background:rgba(128,0,0,0.05);}
           <label class="dc-chk"><input type="checkbox" id="dc-ads" onchange="markCustom();toggleAdsMgmt()"> פרסומות בצדדים</label>
         </div>
 
+        <div class="field" style="margin-top:12px;">
+          <label>מהירות גלילת הטקסט הגולל</label>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
+            <span style="font-size:12px;color:#8b949e;">איטי</span>
+            <input type="range" id="dc-scroll-speed" min="30" max="200" step="5" value="80"
+                   oninput="markCustom();document.getElementById('dc-scroll-val').textContent=this.value;"
+                   style="flex:1;">
+            <span style="font-size:12px;color:#8b949e;">מהיר</span>
+            <span id="dc-scroll-val" style="font-size:13px;color:#ffcc00;font-weight:700;min-width:32px;text-align:center;">80</span>
+          </div>
+          <div style="font-size:11px;color:#8b949e;margin-top:4px;">משפיע על מהירות ההודעה הגוללת במסך. ברירת מחדל: 80.</div>
+        </div>
+
         <div class="field" id="dc-rss-wrap" style="margin-top:10px;display:none;">
           <label>מקורות מבזקים</label>
           <div id="news-sources" style="display:flex;flex-direction:column;gap:6px;margin:6px 0;">
@@ -809,6 +822,7 @@ function readDisplayConfig(){
     board:   document.getElementById('dc-board').checked,
     news:    document.getElementById('dc-news').checked,
     ads:     document.getElementById('dc-ads').checked,
+    scrollSpeed: parseInt(document.getElementById('dc-scroll-speed').value,10)||80,
     rss_url: document.getElementById('edit-sc-rss').value.trim(),
     news_sources: Array.prototype.slice.call(document.querySelectorAll('.ns-src:checked')).map(function(c){return c.value;}),
     protected: document.getElementById('dc-protected').checked,
@@ -828,6 +842,8 @@ function fillDisplayConfig(cfg){
   document.getElementById('dc-board').checked   = cfg.board   !== undefined ? !!cfg.board   : def.board;
   document.getElementById('dc-news').checked    = cfg.news    !== undefined ? !!cfg.news    : def.news;
   document.getElementById('dc-ads').checked     = cfg.ads     !== undefined ? !!cfg.ads     : def.ads;
+  document.getElementById('dc-scroll-speed').value = cfg.scrollSpeed || 80;
+  document.getElementById('dc-scroll-val').textContent = cfg.scrollSpeed || 80;
   document.getElementById('edit-sc-rss').value  = cfg.rss_url || '';
   (function(){ var sel = Array.isArray(cfg.news_sources) ? cfg.news_sources : []; Array.prototype.forEach.call(document.querySelectorAll('.ns-src'), function(c){ c.checked = sel.indexOf(c.value) >= 0; }); })();
   document.getElementById('dc-protected').checked = (cfg.protected!==undefined) ? !!cfg.protected : ((cfg.profile||'chareidi')==='chareidi');
