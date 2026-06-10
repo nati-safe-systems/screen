@@ -273,6 +273,7 @@ input:focus,select:focus{border-color:#58a6ff;}
     </div>
     <div class="topbar-btns">
       <button class="btn-top" onclick="showChPass(false)">החלף סיסמה</button>
+      <button class="btn-top" id="btn-manage-users" onclick="openUsersModal()" style="display:none;">ניהול משתמשים</button>
       <button class="btn-top red" onclick="logout()">יציאה</button>
     </div>
   </div>
@@ -308,6 +309,60 @@ input:focus,select:focus{border-color:#58a6ff;}
       <div class="stb-count" id="scr-count"></div>
     </div>
     <div class="grid" id="grid"></div>
+  </div>
+</div>
+
+<!-- USERS MANAGEMENT MODAL -->
+<div class="modal-bg" id="users-modal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div>
+        <h3>ניהול משתמשים</h3>
+        <div class="modal-info">הקם משתמשים נוספים לצוות שלך וקבע לכל אחד מה מותר לו לראות ולערוך.</div>
+      </div>
+      <button class="modal-x" onclick="closeUsersModal()">&#215;</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="field">
+        <label>המשתמשים הקיימים</label>
+        <div id="users-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+
+      <div class="field" style="border:1px solid #30363d;border-radius:10px;padding:14px;">
+        <label id="user-form-title" style="color:#ffcc00;font-weight:800;">הוספת משתמש חדש</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-top:8px;">
+          <div>
+            <div class="hint">שם משתמש (לכניסה)</div>
+            <input type="text" id="user-uname" placeholder="לדוגמה: gabai1" autocapitalize="none" autocorrect="off" spellcheck="false" style="width:100%;">
+          </div>
+          <div>
+            <div class="hint">סיסמה</div>
+            <input type="text" id="user-pass" placeholder="סיסמה" style="width:100%;">
+          </div>
+        </div>
+        <div style="margin-top:8px;">
+          <div class="hint">כינוי / תיאור (לא חובה)</div>
+          <input type="text" id="user-label" placeholder="לדוגמה: גבאי ראשי" style="width:100%;">
+        </div>
+        <div style="margin-top:12px;">
+          <div class="hint" style="margin-bottom:6px;">מה מותר למשתמש הזה:</div>
+          <div style="margin-bottom:8px;display:flex;gap:8px;">
+            <button type="button" class="btn-top" onclick="setAllUserPerms(true)">סמן הכל</button>
+            <button type="button" class="btn-top" onclick="setAllUserPerms(false)">נקה הכל</button>
+          </div>
+          <div id="user-perms-grid"></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:14px;">
+          <button class="btn-save" id="user-save-btn" onclick="addOrUpdateUser()">הוסף משתמש</button>
+          <button class="btn-cancel" id="user-cancel-btn" onclick="resetUserForm()" style="display:none;">ביטול עריכה</button>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeUsersModal()">סגור</button>
+    </div>
   </div>
 </div>
 
@@ -597,7 +652,35 @@ input:focus,select:focus{border-color:#58a6ff;}
 var SB="https://cxtrrejclkhqhkqbicmz.supabase.co";
 var SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dHJyZWpjbGtocWhrcWJpY216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTk3MDksImV4cCI6MjA5NTU3NTcwOX0._7wB4YwrYEnK6hWuR6YqcFxRb05OLnWvOelIC-ahIEQ";
 var co=null, sid=null, mtype="scroll", fromApp=false;
-var PERM_IDS_T=['edit_message','type_scroll','type_static','type_pdf','scroll_speed','disp_clock','disp_zmanim','disp_parasha','disp_board','disp_news','disp_ads','ads_manage','bg_brightness','building_name'];
+var PERM_DEFS_T=[
+  {cat:'הודעות ותוכן',items:[
+    {id:'edit_message',label:'עריכת טקסט ההודעה'},
+    {id:'type_scroll',label:'סוג: גוללת'},
+    {id:'type_static',label:'סוג: קבועה'},
+    {id:'type_pdf',label:'סוג: PDF'},
+    {id:'scroll_speed',label:'שליטה במהירות הגלילה'}
+  ]},
+  {cat:'רכיבי המסך',items:[
+    {id:'disp_clock',label:'שעון + תאריך'},
+    {id:'disp_zmanim',label:'זמני הלכה'},
+    {id:'disp_parasha',label:'פרשת שבוע / חגים'},
+    {id:'disp_board',label:'לוח מודעות'},
+    {id:'disp_news',label:'מבזקי חדשות'},
+    {id:'disp_ads',label:'פרסומות בצדדים'}
+  ]},
+  {cat:'פרסומות',items:[
+    {id:'ads_manage',label:'ניהול פרסומות'}
+  ]},
+  {cat:'עיצוב רקע',items:[
+    {id:'bg_brightness',label:'בהירות תמונת הרקע'}
+  ]},
+  {cat:'כללי',items:[
+    {id:'building_name',label:'עריכת שם הבניין'},
+    {id:'manage_users',label:'ניהול משתמשי משנה'}
+  ]}
+];
+var PERM_IDS_T=[]; PERM_DEFS_T.forEach(function(g){g.items.forEach(function(it){PERM_IDS_T.push(it.id);});});
+var PERM_LABELS_T={}; PERM_DEFS_T.forEach(function(g){g.items.forEach(function(it){PERM_LABELS_T[it.id]=it.label;});});
 function allPermsT(){ var o={}; PERM_IDS_T.forEach(function(id){o[id]=true;}); return o; }
 function migratePermsT(perms){
   if(!perms||typeof perms!=='object') return null;
@@ -852,6 +935,12 @@ function enterApp(){
   sessionStorage.setItem('nati_user',CURRENT_USER||'');
   sessionStorage.setItem('nati_is_admin',IS_ADMIN?'1':'0');
   sessionStorage.setItem('nati_perms',JSON.stringify(CURRENT_PERMS||FULL_PERMS));
+  // כפתור "ניהול משתמשים" — רק למשתמש הראשי/אדמין שיש לו הרשאה
+  var muBtn=document.getElementById("btn-manage-users");
+  if(muBtn){
+    var canManage=(isMasterUser()||IS_ADMIN) && !!(CURRENT_PERMS&&CURRENT_PERMS.manage_users);
+    muBtn.style.display=canManage?"":"none";
+  }
   fillCoBg(co.logo_b64||'');
   // הצג לוגו לקוח בתחתית
   var footer=document.getElementById("co-footer");
@@ -1178,6 +1267,134 @@ function saveAds(){
   var out=_tenantBaseDC();
   out.ads_list=_tenantAds.slice();
   _tenantSaveDC(out).then(function(){ toast("הפרסומות עודכנו"); });
+}
+
+/* ===== ניהול משתמשי משנה ע"י הלקוח הראשי ===== */
+var _coSubUsers=[];        // עותק עבודה של sub_users של החברה
+var _editingUserIdx=null;  // אינדקס בעריכה, או null אם הוספה
+function isMasterUser(){
+  return !IS_ADMIN && co && (CURRENT_USER||"").toLowerCase()===(co.username||"").toLowerCase();
+}
+/* אילו הרשאות הלקוח רשאי להעניק = ההרשאות שלו עצמו, פחות ניהול-משתמשים */
+function grantablePermDefs(){
+  var P=CURRENT_PERMS||{};
+  var allowAll=IS_ADMIN; // אדמין יכול להעניק הכל
+  return PERM_DEFS_T.map(function(g){
+    var items=g.items.filter(function(it){
+      if(it.id==='manage_users') return false; // משתמש-משנה לא מקים משתמשים
+      return allowAll || !!P[it.id];
+    });
+    return {cat:g.cat,items:items};
+  }).filter(function(g){return g.items.length;});
+}
+function userPermGridHtml(perms){
+  perms=perms||{};
+  return grantablePermDefs().map(function(g){
+    var rows=g.items.map(function(it){
+      var ck=perms[it.id]?' checked':'';
+      return '<label class="td-chk" style="display:flex;align-items:center;gap:6px;">'+
+        '<input type="checkbox" id="uperm-'+it.id+'"'+ck+'> '+it.label+'</label>';
+    }).join('');
+    return '<div style="margin-bottom:10px;"><div style="color:#8b949e;font-size:12px;font-weight:700;margin-bottom:4px;">'+g.cat+'</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;">'+rows+'</div></div>';
+  }).join('');
+}
+function readUserPermGrid(){
+  var o={};
+  grantablePermDefs().forEach(function(g){g.items.forEach(function(it){
+    var el=document.getElementById('uperm-'+it.id);
+    o[it.id]=!!(el&&el.checked);
+  });});
+  return o;
+}
+function setAllUserPerms(v){
+  grantablePermDefs().forEach(function(g){g.items.forEach(function(it){
+    var el=document.getElementById('uperm-'+it.id); if(el) el.checked=v;
+  });});
+}
+function renderUsersList(){
+  var wrap=document.getElementById("users-list");
+  if(!wrap)return;
+  if(!_coSubUsers.length){ wrap.innerHTML='<div class="hint">עדיין לא הוקמו משתמשים.</div>'; return; }
+  wrap.innerHTML=_coSubUsers.map(function(su,i){
+    var nm=(su.label||su.username||"").replace(/</g,"&lt;");
+    var un=(su.username||"").replace(/</g,"&lt;");
+    return '<div style="display:flex;align-items:center;gap:8px;background:#161b22;border:1px solid #30363d;border-radius:8px;padding:8px 12px;">'+
+      '<div style="flex:1;"><div style="font-weight:700;">'+nm+'</div>'+
+        '<div class="hint" style="margin:0;">שם משתמש: '+un+'</div></div>'+
+      '<button class="btn-top" type="button" onclick="editUser('+i+')">ערוך</button>'+
+      '<button class="btn-top red" type="button" onclick="delUser('+i+')">מחק</button>'+
+    '</div>';
+  }).join("");
+}
+function resetUserForm(){
+  _editingUserIdx=null;
+  document.getElementById("user-uname").value="";
+  document.getElementById("user-pass").value="";
+  document.getElementById("user-label").value="";
+  document.getElementById("user-form-title").textContent="הוספת משתמש חדש";
+  document.getElementById("user-save-btn").textContent="הוסף משתמש";
+  document.getElementById("user-cancel-btn").style.display="none";
+  document.getElementById("user-perms-grid").innerHTML=userPermGridHtml({edit_message:true});
+}
+function editUser(i){
+  var su=_coSubUsers[i]; if(!su)return;
+  _editingUserIdx=i;
+  document.getElementById("user-uname").value=su.username||"";
+  document.getElementById("user-pass").value=su.password||"";
+  document.getElementById("user-label").value=su.label||"";
+  document.getElementById("user-form-title").textContent="עריכת משתמש";
+  document.getElementById("user-save-btn").textContent="עדכן משתמש";
+  document.getElementById("user-cancel-btn").style.display="";
+  document.getElementById("user-perms-grid").innerHTML=userPermGridHtml(migratePermsT(su.perms)||{});
+}
+function delUser(i){
+  var su=_coSubUsers[i]; if(!su)return;
+  if(!confirm("למחוק את המשתמש \""+(su.label||su.username)+"\"?"))return;
+  _coSubUsers.splice(i,1);
+  if(_editingUserIdx===i) resetUserForm();
+  saveUsers();
+}
+function addOrUpdateUser(){
+  var un=document.getElementById("user-uname").value.trim();
+  var pw=document.getElementById("user-pass").value;
+  var lb=document.getElementById("user-label").value.trim();
+  if(!un){toast("הזן שם משתמש");return;}
+  if(!pw){toast("הזן סיסמה");return;}
+  // בדיקת כפילות שם משתמש (לא רגיש לאותיות), לא כולל המשתמש בעריכה
+  var dup=_coSubUsers.some(function(s,idx){
+    return idx!==_editingUserIdx && (s.username||"").toLowerCase()===un.toLowerCase();
+  });
+  if(dup){toast("שם המשתמש כבר קיים");return;}
+  // לא להתנגש עם שם המשתמש הראשי של החברה
+  if((co.username||"").toLowerCase()===un.toLowerCase()){toast("שם זה שמור למשתמש הראשי");return;}
+  var perms=readUserPermGrid();
+  var rec={username:un,password:pw,label:lb,perms:perms};
+  if(_editingUserIdx!==null){ _coSubUsers[_editingUserIdx]=rec; }
+  else { _coSubUsers.push(rec); }
+  saveUsers();
+}
+function saveUsers(){
+  if(!(isMasterUser()||IS_ADMIN)){toast("אין הרשאה");return;}
+  sf("companies?company_id=eq."+encodeURIComponent(co.company_id),
+     {method:"PATCH",body:JSON.stringify({sub_users:_coSubUsers})})
+  .then(function(){
+    co.sub_users=_coSubUsers.slice();
+    renderUsersList();
+    resetUserForm();
+    toast("המשתמשים עודכנו");
+  }).catch(function(){ toast("שגיאה בשמירה"); });
+}
+function openUsersModal(){
+  if(!(isMasterUser()||IS_ADMIN)){toast("אין הרשאה");return;}
+  if(!(CURRENT_PERMS&&CURRENT_PERMS.manage_users)){toast("אין הרשאה לניהול משתמשים");return;}
+  _coSubUsers=Array.isArray(co.sub_users)?co.sub_users.map(function(s){return Object.assign({},s);}):[];
+  renderUsersList();
+  resetUserForm();
+  document.getElementById("users-modal").classList.add("open");
+}
+function closeUsersModal(){
+  document.getElementById("users-modal").classList.remove("open");
 }
 
 function parseSchedules(raw){
@@ -1532,6 +1749,6 @@ window.addEventListener("load",function(){
   }
 });
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 1.4</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 1.5</div>
 </body>
 </html>

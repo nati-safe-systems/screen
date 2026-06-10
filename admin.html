@@ -1101,7 +1101,8 @@ var PERM_DEFS=[
     {id:'bg_brightness',label:'בהירות תמונת הרקע'}
   ]},
   {cat:'כללי',items:[
-    {id:'building_name',label:'עריכת שם הבניין'}
+    {id:'building_name',label:'עריכת שם הבניין'},
+    {id:'manage_users',label:'ניהול משתמשי משנה (הלקוח מקים בעצמו)'}
   ]}
 ];
 var PERM_IDS=[]; PERM_DEFS.forEach(function(g){g.items.forEach(function(it){PERM_IDS.push(it.id);});});
@@ -1313,6 +1314,6 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 1.3</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 1.5</div>
 </body>
 </html>
