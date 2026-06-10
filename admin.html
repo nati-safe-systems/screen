@@ -491,7 +491,10 @@ tr:hover td{background:rgba(128,0,0,0.05);}
           </div>
           <input id="su-label" placeholder="תפקיד / שם (אופציונלי — למשל: איש שטח)">
           <div id="su-perms-grid" style="margin-top:2px;"></div>
-          <button type="button" class="btn-modal-save" style="align-self:flex-start;padding:8px 16px;" onclick="addSubUser()">+ הוסף משתמש</button>
+          <div style="display:flex;gap:8px;">
+            <button type="button" id="su-add-btn" class="btn-modal-save" style="align-self:flex-start;padding:8px 16px;" onclick="addSubUser()">+ הוסף משתמש</button>
+            <button type="button" id="su-cancel-btn" class="btn-modal-cancel" style="display:none;align-self:flex-start;padding:8px 16px;" onclick="cancelEditSubUser()">ביטול עריכה</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1104,6 +1107,7 @@ var PERM_DEFS=[
 var PERM_IDS=[]; PERM_DEFS.forEach(function(g){g.items.forEach(function(it){PERM_IDS.push(it.id);});});
 var PERM_LABELS={}; PERM_DEFS.forEach(function(g){g.items.forEach(function(it){PERM_LABELS[it.id]=it.label;});});
 var coPerms={};
+var editingSubIndex=null;
 
 function defaultAllPerms(){ var o={}; PERM_IDS.forEach(function(id){o[id]=true;}); return o; }
 function migrateOldPerms(perms){
@@ -1151,16 +1155,31 @@ function renderSubUsers(){
       '<span style="flex:1;font-size:12px;overflow:hidden;">'+
         '<b>'+escH(u.username||'')+'</b>'+(u.label?' <span style="color:#8b949e;">('+escH(u.label)+')</span>':'')+
         '<br><span style="color:#3fb950;font-size:11px;">'+escH(permsSummary(u.perms))+'</span></span>'+
+      '<button type="button" onclick="editSubUser('+i+')" style="background:#1f6feb;color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;">ערוך</button>'+
       '<button type="button" onclick="delSubUser('+i+')" style="background:#5a1a1a;color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;">מחק</button>'+
     '</div>';
   }).join('');
 }
 function resetSubUserForm(){
+  editingSubIndex=null;
   document.getElementById('su-user').value='';
   document.getElementById('su-pass').value='';
   document.getElementById('su-label').value='';
   renderSuPermsForm({edit_message:true});
+  var btn=document.getElementById('su-add-btn'); if(btn)btn.textContent='+ הוסף משתמש';
+  var cancel=document.getElementById('su-cancel-btn'); if(cancel)cancel.style.display='none';
 }
+function editSubUser(i){
+  var u=subUsers[i]; if(!u)return;
+  editingSubIndex=i;
+  document.getElementById('su-user').value=u.username||'';
+  document.getElementById('su-pass').value=u.password||'';
+  document.getElementById('su-label').value=u.label||'';
+  renderSuPermsForm(u.perms||{});
+  var btn=document.getElementById('su-add-btn'); if(btn)btn.textContent='עדכן משתמש';
+  var cancel=document.getElementById('su-cancel-btn'); if(cancel)cancel.style.display='inline-block';
+}
+function cancelEditSubUser(){ resetSubUserForm(); }
 function addSubUser(){
   var u=document.getElementById('su-user').value.trim().toLowerCase();
   var p=document.getElementById('su-pass').value.trim();
@@ -1168,12 +1187,14 @@ function addSubUser(){
   if(!u||!p){ toast('מלא שם משתמש וסיסמה'); return; }
   var master=document.getElementById('co-user').value.trim();
   if(u.toLowerCase()===master.toLowerCase()){ toast('שם המשתמש זהה למשתמש הראשי'); return; }
-  if(subUsers.some(function(x){return (x.username||'').toLowerCase()===u.toLowerCase();})){ toast('שם המשתמש כבר קיים'); return; }
-  subUsers.push({username:u,password:p,label:label,perms:readPermGrid('superm-')});
+  if(subUsers.some(function(x,idx){return idx!==editingSubIndex && (x.username||'').toLowerCase()===u.toLowerCase();})){ toast('שם המשתמש כבר קיים'); return; }
+  var obj={username:u,password:p,label:label,perms:readPermGrid('superm-')};
+  if(editingSubIndex!==null && subUsers[editingSubIndex]){ subUsers[editingSubIndex]=obj; toast('המשתמש עודכן'); }
+  else { subUsers.push(obj); }
   resetSubUserForm();
   renderSubUsers();
 }
-function delSubUser(i){ subUsers.splice(i,1); renderSubUsers(); }
+function delSubUser(i){ if(editingSubIndex===i)resetSubUserForm(); subUsers.splice(i,1); renderSubUsers(); }
 function saveCompany(){
   var orig=document.getElementById('co-orig').value;
   var id=orig||document.getElementById('co-id').value.trim().toUpperCase();
@@ -1292,6 +1313,6 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 1.2</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 1.3</div>
 </body>
 </html>
