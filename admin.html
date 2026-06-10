@@ -1123,6 +1123,24 @@ var PERM_DEFS=[
 ];
 var PERM_IDS=[]; PERM_DEFS.forEach(function(g){g.items.forEach(function(it){PERM_IDS.push(it.id);});});
 var PERM_LABELS={}; PERM_DEFS.forEach(function(g){g.items.forEach(function(it){PERM_LABELS[it.id]=it.label;});});
+/* תלויות: הרשאה-בת ניתנת לסימון רק אם ההרשאה-האב מסומנת */
+var PERM_DEPS={
+  type_scroll:'edit_message',
+  type_static:'edit_message',
+  type_pdf:'edit_message',
+  scroll_speed:'type_scroll',
+  ads_manage:'disp_ads'
+};
+function applyPermDeps(prefix){
+  PERM_IDS.forEach(function(id){
+    var dep=PERM_DEPS[id]; if(!dep) return;
+    var el=document.getElementById(prefix+id); if(!el) return;
+    var p=document.getElementById(prefix+dep);
+    var ok=p && p.checked && !p.disabled;
+    if(!ok){ el.checked=false; el.disabled=true; if(el.parentNode) el.parentNode.style.opacity=0.45; }
+    else { el.disabled=false; if(el.parentNode) el.parentNode.style.opacity=''; }
+  });
+}
 var coPerms={};
 var editingSubIndex=null;
 
@@ -1144,18 +1162,18 @@ function permGridHtml(prefix,perms){
   return PERM_DEFS.map(function(g){
     var items=g.items.map(function(it){
       var ck=(perms&&perms[it.id])?' checked':'';
-      return '<label class="dc-chk"><input type="checkbox" id="'+prefix+it.id+'"'+ck+'> '+escH(it.label)+'</label>';
+      return '<label class="dc-chk"><input type="checkbox" id="'+prefix+it.id+'"'+ck+' onchange="applyPermDeps(\''+prefix+'\')"> '+escH(it.label)+'</label>';
     }).join('');
     return '<div style="margin-top:8px;"><div style="color:#ffcc00;font-size:11px;font-weight:700;margin-bottom:4px;">'+escH(g.cat)+'</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;">'+items+'</div></div>';
   }).join('');
 }
 function readPermGrid(prefix){
-  var o={}; PERM_DEFS.forEach(function(g){g.items.forEach(function(it){var el=document.getElementById(prefix+it.id);o[it.id]=!!(el&&el.checked);});}); return o;
+  var o={}; PERM_DEFS.forEach(function(g){g.items.forEach(function(it){var el=document.getElementById(prefix+it.id);o[it.id]=!!(el&&el.checked&&!el.disabled);});}); return o;
 }
-function renderCoPerms(perms){ var el=document.getElementById('co-perms-grid'); if(el)el.innerHTML=permGridHtml('coperm-',perms); }
-function renderSuPermsForm(perms){ var el=document.getElementById('su-perms-grid'); if(el)el.innerHTML=permGridHtml('superm-',perms); }
-function setAllCoPerms(v){ PERM_IDS.forEach(function(id){var el=document.getElementById('coperm-'+id); if(el)el.checked=v;}); }
+function renderCoPerms(perms){ var el=document.getElementById('co-perms-grid'); if(el){el.innerHTML=permGridHtml('coperm-',perms); applyPermDeps('coperm-');} }
+function renderSuPermsForm(perms){ var el=document.getElementById('su-perms-grid'); if(el){el.innerHTML=permGridHtml('superm-',perms); applyPermDeps('superm-');} }
+function setAllCoPerms(v){ PERM_IDS.forEach(function(id){var el=document.getElementById('coperm-'+id); if(el)el.checked=v;}); applyPermDeps('coperm-'); }
 function permsSummary(perms){
   if(!perms) return 'ללא הרשאות';
   var on=PERM_IDS.filter(function(id){return perms[id];});
@@ -1330,6 +1348,6 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 1.6</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 1.7</div>
 </body>
 </html>

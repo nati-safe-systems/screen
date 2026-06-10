@@ -1332,6 +1332,23 @@ function isMasterUser(){
   return !IS_ADMIN && co && (CURRENT_USER||"").toLowerCase()===(co.username||"").toLowerCase();
 }
 /* אילו הרשאות הלקוח רשאי להעניק = ההרשאות שלו עצמו, פחות ניהול-משתמשים */
+var PERM_DEPS_T={
+  type_scroll:'edit_message',
+  type_static:'edit_message',
+  type_pdf:'edit_message',
+  scroll_speed:'type_scroll',
+  ads_manage:'disp_ads'
+};
+function applyUserPermDeps(){
+  PERM_IDS_T.forEach(function(id){
+    var dep=PERM_DEPS_T[id]; if(!dep) return;
+    var el=document.getElementById('uperm-'+id); if(!el) return;
+    var p=document.getElementById('uperm-'+dep);
+    var ok=p && p.checked && !p.disabled;
+    if(!ok){ el.checked=false; el.disabled=true; if(el.parentNode) el.parentNode.style.opacity=0.45; }
+    else { el.disabled=false; if(el.parentNode) el.parentNode.style.opacity=''; }
+  });
+}
 function grantablePermDefs(){
   var P=CURRENT_PERMS||{};
   var allowAll=IS_ADMIN; // אדמין יכול להעניק הכל
@@ -1349,7 +1366,7 @@ function userPermGridHtml(perms){
     var rows=g.items.map(function(it){
       var ck=perms[it.id]?' checked':'';
       return '<label class="td-chk" style="display:flex;align-items:center;gap:6px;">'+
-        '<input type="checkbox" id="uperm-'+it.id+'"'+ck+'> '+it.label+'</label>';
+        '<input type="checkbox" id="uperm-'+it.id+'"'+ck+' onchange="applyUserPermDeps()"> '+it.label+'</label>';
     }).join('');
     return '<div style="margin-bottom:10px;"><div style="color:#8b949e;font-size:12px;font-weight:700;margin-bottom:4px;">'+g.cat+'</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;">'+rows+'</div></div>';
@@ -1359,7 +1376,7 @@ function readUserPermGrid(){
   var o={};
   grantablePermDefs().forEach(function(g){g.items.forEach(function(it){
     var el=document.getElementById('uperm-'+it.id);
-    o[it.id]=!!(el&&el.checked);
+    o[it.id]=!!(el&&el.checked&&!el.disabled);
   });});
   return o;
 }
@@ -1367,6 +1384,7 @@ function setAllUserPerms(v){
   grantablePermDefs().forEach(function(g){g.items.forEach(function(it){
     var el=document.getElementById('uperm-'+it.id); if(el) el.checked=v;
   });});
+  applyUserPermDeps();
 }
 function renderUsersList(){
   var wrap=document.getElementById("users-list");
@@ -1392,6 +1410,7 @@ function resetUserForm(){
   document.getElementById("user-save-btn").textContent="הוסף משתמש";
   document.getElementById("user-cancel-btn").style.display="none";
   document.getElementById("user-perms-grid").innerHTML=userPermGridHtml({edit_message:true});
+  applyUserPermDeps();
 }
 function editUser(i){
   var su=_coSubUsers[i]; if(!su)return;
@@ -1403,6 +1422,7 @@ function editUser(i){
   document.getElementById("user-save-btn").textContent="עדכן משתמש";
   document.getElementById("user-cancel-btn").style.display="";
   document.getElementById("user-perms-grid").innerHTML=userPermGridHtml(migratePermsT(su.perms)||{});
+  applyUserPermDeps();
 }
 function delUser(i){
   var su=_coSubUsers[i]; if(!su)return;
@@ -1805,6 +1825,6 @@ window.addEventListener("load",function(){
   }
 });
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 1.6</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 1.7</div>
 </body>
 </html>
