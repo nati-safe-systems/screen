@@ -578,6 +578,7 @@ function makeScRow(s,cm,now){
   var b3=document.createElement('button');b3.className='btn-sm red';b3.textContent='מחק';b3.onclick=function(){delScreen(s.screen_id);};acts.appendChild(b3);
   var b4=document.createElement('button');b4.className='btn-sm blue';b4.textContent='אפס מכשיר';b4.title='מאפשר רישום של מכשיר חדש';b4.onclick=function(){resetDevice(s.screen_id);};acts.appendChild(b4);
   var b5=document.createElement('button');b5.className='btn-sm green';b5.textContent='העתק קישור';b5.title='העתק קישור למסך';b5.onclick=function(){copyScreenUrl(s.screen_id);};acts.appendChild(b5);
+  var b6=document.createElement('button');b6.className='btn-sm blue';b6.textContent='תצוגה מקדימה';b6.title='צפה במסך כפי שמוצג כעת — עוקף רישיון ונעילת מכשיר, לא משנה דבר';b6.onclick=function(){previewScreen(s.screen_id);};acts.insertBefore(b6,acts.firstChild);
   return tr;
 }
 function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -937,6 +938,13 @@ function genToken(){
   return t;
 }
 
+function previewScreen(sid){
+  var s=allScreens.find(function(x){return x.screen_id===sid;});
+  var token=(s&&s.screen_token)?s.screen_token:'';
+  if(!token){ toast('למסך זה אין טוקן — לא ניתן לפתוח תצוגה מקדימה'); return; }
+  var url='https://nati-safe-systems.github.io/screen/?id='+encodeURIComponent(sid)+'&token='+token+'&preview=1';
+  window.open(url,'_blank');
+}
 function copyScreenUrl(sid){
   // מצא את הטוקן של המסך
   var s=allScreens.find(function(x){return x.screen_id===sid;});
