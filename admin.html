@@ -399,6 +399,29 @@ tr:hover td{background:rgba(128,0,0,0.05);}
           <div style="font-size:11px;color:#8b949e;margin-top:4px;">כשמופעל, הלקוח יוכל לסמן אילו רכיבים יוצגו על המסך (ללא כתובת מקורות החדשות). כשכבוי — אין ללקוח שליטה על התצוגה.</div>
         </div>
       </div>
+        <div style="border-top:2px solid rgba(255,204,0,0.25);margin-top:16px;padding-top:14px;">
+          <label style="color:#ffcc00;font-weight:800;display:block;margin-bottom:6px;">תוכן המסך (שליטת מנהל)</label>
+          <div style="font-size:11px;color:#8b949e;margin-bottom:10px;">צפייה ועריכה של הטקסט שמוצג על המסך — גם אם הלקוח שינה סיסמה. שמירה כאן דורסת את מה שהלקוח הזין.</div>
+          <div class="field">
+            <label>סוג התוכן</label>
+            <select id="edit-sc-mtype" onchange="toggleAdminMsgType()">
+              <option value="scroll">גוללת (טקסט נע)</option>
+              <option value="static">קבועה (טקסט נייח)</option>
+              <option value="pdf">PDF / תמונה</option>
+            </select>
+          </div>
+          <div class="field" id="edit-sc-msg-wrap">
+            <label>טקסט ההודעה</label>
+            <div id="edit-sc-msg" contenteditable="true" dir="rtl"
+                 style="min-height:90px;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:10px 12px;color:#e6edf3;font-size:14px;line-height:1.6;overflow:auto;"></div>
+            <div style="font-size:11px;color:#8b949e;margin-top:4px;">הקלד טקסט חופשי. עיצוב קיים של הלקוח נשמר.</div>
+          </div>
+          <div class="field" id="edit-sc-pdf-wrap" style="display:none;">
+            <label>קישור ל-PDF / תמונה</label>
+            <input id="edit-sc-pdfurl" placeholder="https://..." style="font-family:monospace;font-size:12px;direction:ltr;text-align:left;">
+          </div>
+        </div>
+
       <!-- ===== סוף תצוגת המסך ===== -->
     </div>
     <div class="modal-foot">
@@ -714,6 +737,10 @@ function openAddScreen(){
   applyProfile('chareidi');
   document.getElementById('edit-sc-rss').value='';
   Array.prototype.forEach.call(document.querySelectorAll('.ns-src'), function(c){ c.checked=false; });
+  document.getElementById('edit-sc-mtype').value='scroll';
+  document.getElementById('edit-sc-msg').innerHTML='';
+  document.getElementById('edit-sc-pdfurl').value='';
+  toggleAdminMsgType();
   document.getElementById('dc-tenant-edit').checked=false;
   document.getElementById('dc-tenant-ads').checked=false;
   adsList=[]; resetAdForm(); renderAdsAdmin(); toggleAdsMgmt();
@@ -881,10 +908,19 @@ function openEditScreen(sid){
   var sel=document.getElementById('edit-sc-co');
   sel.innerHTML=allCompanies.map(function(c){return '<option value="'+c.company_id+'"'+(c.company_id===s.company_id?' selected':'')+'>'+c.company_name+'</option>';}).join('');
   fillDisplayConfig(parseDC(s.display_config));
+  document.getElementById('edit-sc-mtype').value = s.message_type || 'scroll';
+  document.getElementById('edit-sc-msg').innerHTML = s.message || '';
+  document.getElementById('edit-sc-pdfurl').value = s.pdf_url || '';
+  toggleAdminMsgType();
   document.getElementById('modal-sc-title').textContent='עריכת מסך';
   openModal('modal-sc');
 }
 
+function toggleAdminMsgType(){
+  var t=document.getElementById('edit-sc-mtype').value;
+  document.getElementById('edit-sc-msg-wrap').style.display=(t==='pdf')?'none':'block';
+  document.getElementById('edit-sc-pdf-wrap').style.display=(t==='pdf')?'block':'none';
+}
 function saveScreen(){
   var orig=document.getElementById('edit-sc-orig').value;
   var id=document.getElementById('edit-sc-id').value.trim().toUpperCase();
@@ -906,6 +942,10 @@ function saveScreen(){
     if(tok) body.screen_token=tok;
     var offSel=document.getElementById('edit-sc-offset');
     if(offSel) body.shabbat_offset=parseInt(offSel.value)||20;
+    var mt=document.getElementById('edit-sc-mtype').value;
+    body.message_type=mt;
+    if(mt==='pdf'){ body.pdf_url=document.getElementById('edit-sc-pdfurl').value.trim(); }
+    else { body.message=document.getElementById('edit-sc-msg').innerHTML.trim(); body.pdf_url=''; }
     sf('screens?screen_id=eq.'+encodeURIComponent(orig),{method:'PATCH',body:JSON.stringify(body)}).then(function(){closeModal('modal-sc');toast('המסך עודכן!');loadAll();});
   }
 }
