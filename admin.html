@@ -942,7 +942,7 @@ function previewScreen(sid){
   var s=allScreens.find(function(x){return x.screen_id===sid;});
   var token=(s&&s.screen_token)?s.screen_token:'';
   if(!token){ toast('למסך זה אין טוקן — לא ניתן לפתוח תצוגה מקדימה'); return; }
-  var url='https://nati-safe-systems.github.io/screen/?id='+encodeURIComponent(sid)+'&token='+token+'&preview=1';
+  var url='https://nati-safe-systems.github.io/screen/?id='+encodeURIComponent(sid)+'&token='+token+'&preview=1&_='+Date.now();
   window.open(url,'_blank');
 }
 function copyScreenUrl(sid){
