@@ -435,6 +435,10 @@ input:focus,select:focus{border-color:#58a6ff;}
             <button class="tb-btn" onclick="execCmd('justifyCenter')" title="מרכז">&#8803;</button>
             <button class="tb-btn" onclick="execCmd('justifyLeft')" title="שמאל">L&#8644;</button>
             <div class="rte-sep"></div>
+            <!-- כיוון שורה -->
+            <button class="tb-btn" onclick="setRteDir('rte-editor','rtl')" title="כיוון שורה: עברית (ימין לשמאל)">עב⇄</button>
+            <button class="tb-btn" onclick="setRteDir('rte-editor','ltr')" title="כיוון שורה: אנגלית (שמאל לימין)">⇄EN</button>
+            <div class="rte-sep"></div>
             <!-- רשימות -->
             <button class="tb-btn" onclick="execCmd('insertUnorderedList')" title="רשימת נקודות">&#8226;=</button>
             <button class="tb-btn" onclick="execCmd('insertOrderedList')" title="רשימה ממוספרת">1=</button>
@@ -512,6 +516,8 @@ input:focus,select:focus{border-color:#58a6ff;}
                   <button class="tb-btn" onclick="sfExec('justifyRight')" title="ימין">&#8644;R</button>
                   <button class="tb-btn" onclick="sfExec('justifyCenter')" title="מרכז">&#8803;</button>
                   <button class="tb-btn" onclick="sfExec('justifyLeft')" title="שמאל">L&#8644;</button>
+                  <button class="tb-btn" onclick="setRteDir('sf-rte','rtl')" title="כיוון שורה: עברית (ימין לשמאל)">עב⇄</button>
+                  <button class="tb-btn" onclick="setRteDir('sf-rte','ltr')" title="כיוון שורה: אנגלית (שמאל לימין)">⇄EN</button>
                   <div class="rte-sep"></div>
                   <button class="tb-btn" onclick="sfExec('removeFormat')" title="נקה עיצוב">&#10006;T</button>
                 </div>
@@ -610,6 +616,30 @@ function execCmd(cmd,val){
   document.getElementById("rte-editor").focus();
   document.execCommand(cmd,false,val||null);
   updatePreview();
+}
+function setRteDir(editorId,d){
+  var ed=document.getElementById(editorId); if(!ed)return;
+  ed.focus();
+  var sel=window.getSelection();
+  if(sel&&sel.rangeCount){
+    var node=sel.getRangeAt(0).startContainer;
+    var block=(node.nodeType===3)?node.parentNode:node;
+    while(block&&block!==ed&&block.parentNode!==ed){ block=block.parentNode; }
+    if(!block||block===ed){
+      document.execCommand('formatBlock',false,'div');
+      sel=window.getSelection();
+      if(sel&&sel.rangeCount){
+        node=sel.getRangeAt(0).startContainer;
+        block=(node.nodeType===3)?node.parentNode:node;
+        while(block&&block!==ed&&block.parentNode!==ed){ block=block.parentNode; }
+      }
+    }
+    var target=(block&&block!==ed)?block:ed;
+    target.setAttribute('dir',d);
+    target.style.direction=d;
+    target.style.textAlign=(d==='rtl')?'right':'left';
+  }
+  ed.dispatchEvent(new Event('input',{bubbles:true}));
 }
 function updatePreview(){
   var html=document.getElementById("rte-editor").innerHTML;
