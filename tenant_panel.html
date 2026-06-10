@@ -508,6 +508,34 @@ input:focus,select:focus{border-color:#58a6ff;}
         <div class="rte-preview" id="rte-preview"></div>
       </div>
 
+      <!-- מהירות גלילה -->
+      <div id="tspeed-sec" class="field" style="display:none;">
+        <label>מהירות גלילת הטקסט הגולל</label>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
+          <span style="font-size:12px;color:#8b949e;">איטי</span>
+          <input type="range" id="tspeed" min="30" max="200" step="5" value="80"
+                 oninput="document.getElementById('tspeed-val').textContent=this.value;" style="flex:1;">
+          <span style="font-size:12px;color:#8b949e;">מהיר</span>
+          <span id="tspeed-val" style="font-size:13px;color:#ffcc00;font-weight:700;min-width:32px;text-align:center;">80</span>
+        </div>
+        <div class="hint">משפיע על מהירות ההודעה הגוללת במסך. ברירת מחדל: 80.</div>
+        <button class="btn-save" style="margin-top:8px;padding:8px 16px;" onclick="saveScrollSpeed()">שמור מהירות</button>
+      </div>
+
+      <!-- בהירות רקע -->
+      <div id="tbright-sec" class="field" style="display:none;">
+        <label>בהירות תמונת הרקע</label>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
+          <span style="font-size:12px;color:#8b949e;">כהה</span>
+          <input type="range" id="tbright" min="20" max="100" step="5" value="100"
+                 oninput="document.getElementById('tbright-val').textContent=this.value;" style="flex:1;">
+          <span style="font-size:12px;color:#8b949e;">בהיר</span>
+          <span id="tbright-val" style="font-size:13px;color:#ffcc00;font-weight:700;min-width:32px;text-align:center;">100</span>
+        </div>
+        <div class="hint">מחשיך את תמונת הרקע כדי שהטקסט יהיה קריא יותר. 100 = ללא שינוי.</div>
+        <button class="btn-save" style="margin-top:8px;padding:8px 16px;" onclick="saveBgBrightness()">שמור בהירות</button>
+      </div>
+
       <!-- PDF -->
       <div id="pdf-sec" class="field" style="display:none;">
         <label>קישור PDF מ-Google Drive</label>
@@ -1170,6 +1198,14 @@ function applyTenantDisplaySection(raw){
   document.getElementById("td-ads").checked     = cfg.ads     !==undefined ? !!cfg.ads     : false;
   _tenantAds = Array.isArray(cfg.ads_list) ? cfg.ads_list.slice() : [];
   renderTenantAds();
+  // מהירות גלילה
+  var sp=(cfg.scrollSpeed>0)?cfg.scrollSpeed:80;
+  var spEl=document.getElementById("tspeed"); if(spEl) spEl.value=sp;
+  var spVal=document.getElementById("tspeed-val"); if(spVal) spVal.textContent=sp;
+  // בהירות רקע
+  var br=(cfg.bgBrightness>0)?cfg.bgBrightness:100;
+  var brEl=document.getElementById("tbright"); if(brEl) brEl.value=br;
+  var brVal=document.getElementById("tbright-val"); if(brVal) brVal.textContent=br;
 }
 /* ===== אכיפת הרשאות: מציג רק את הפקדים שהאדמין סימן ===== */
 function _tShow(id,ok){ var el=document.getElementById(id); if(el) el.style.display = ok ? "" : "none"; }
@@ -1201,6 +1237,10 @@ function applyTenantPerms(){
   _tRow('td-ads', !!P.disp_ads);
   // ניהול פרסומות
   _tShow('tenant-ads-sec', !!P.ads_manage);
+  // מהירות גלילה
+  _tShow('tspeed-sec', !!P.scroll_speed);
+  // בהירות רקע
+  _tShow('tbright-sec', !!P.bg_brightness);
 }
 function _tenantBaseDC(){
   // בסיס לשמירה: כל מה שהאדמין קבע נשמר; נדרוס רק את החלק הרלוונטי
@@ -1211,6 +1251,8 @@ function _tenantBaseDC(){
     board:   b.board,  news:   b.news,   ads:     b.ads,
     rss_url: b.rss_url||"",
     protected: b.protected,
+    scrollSpeed: b.scrollSpeed,
+    bgBrightness: b.bgBrightness,
     tenant_can_edit: !!b.tenant_can_edit,
     tenant_ads_edit: !!b.tenant_ads_edit,
     ads_list: Array.isArray(b.ads_list)?b.ads_list.slice():[]
@@ -1267,6 +1309,20 @@ function saveAds(){
   var out=_tenantBaseDC();
   out.ads_list=_tenantAds.slice();
   _tenantSaveDC(out).then(function(){ toast("הפרסומות עודכנו"); });
+}
+function saveScrollSpeed(){
+  if(!(CURRENT_PERMS&&CURRENT_PERMS.scroll_speed)){toast("אין הרשאה");return;}
+  var v=parseInt(document.getElementById("tspeed").value,10)||80;
+  var out=_tenantBaseDC();
+  out.scrollSpeed=v;
+  _tenantSaveDC(out).then(function(){ toast("מהירות הגלילה עודכנה"); });
+}
+function saveBgBrightness(){
+  if(!(CURRENT_PERMS&&CURRENT_PERMS.bg_brightness)){toast("אין הרשאה");return;}
+  var v=parseInt(document.getElementById("tbright").value,10)||100;
+  var out=_tenantBaseDC();
+  out.bgBrightness=v;
+  _tenantSaveDC(out).then(function(){ toast("בהירות הרקע עודכנה"); });
 }
 
 /* ===== ניהול משתמשי משנה ע"י הלקוח הראשי ===== */
@@ -1749,6 +1805,6 @@ window.addEventListener("load",function(){
   }
 });
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 1.5</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 1.6</div>
 </body>
 </html>

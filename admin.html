@@ -347,6 +347,19 @@ tr:hover td{background:rgba(128,0,0,0.05);}
           <div style="font-size:11px;color:#8b949e;margin-top:4px;">משפיע על מהירות ההודעה הגוללת במסך. ברירת מחדל: 80.</div>
         </div>
 
+        <div class="field" style="margin-top:12px;">
+          <label>בהירות תמונת הרקע</label>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
+            <span style="font-size:12px;color:#8b949e;">כהה</span>
+            <input type="range" id="dc-bg-bright" min="20" max="100" step="5" value="100"
+                   oninput="markCustom();document.getElementById('dc-bg-bright-val').textContent=this.value;"
+                   style="flex:1;">
+            <span style="font-size:12px;color:#8b949e;">בהיר</span>
+            <span id="dc-bg-bright-val" style="font-size:13px;color:#ffcc00;font-weight:700;min-width:32px;text-align:center;">100</span>
+          </div>
+          <div style="font-size:11px;color:#8b949e;margin-top:4px;">מחשיך את תמונת הרקע כדי שהטקסט יהיה קריא יותר. 100 = ללא שינוי.</div>
+        </div>
+
         <div class="field" id="dc-rss-wrap" style="margin-top:10px;display:none;">
           <label>מקורות מבזקים</label>
           <div id="news-sources" style="display:flex;flex-direction:column;gap:6px;margin:6px 0;">
@@ -880,6 +893,7 @@ function readDisplayConfig(){
     news:    document.getElementById('dc-news').checked,
     ads:     document.getElementById('dc-ads').checked,
     scrollSpeed: parseInt(document.getElementById('dc-scroll-speed').value,10)||80,
+    bgBrightness: parseInt(document.getElementById('dc-bg-bright').value,10)||100,
     rss_url: document.getElementById('edit-sc-rss').value.trim(),
     news_sources: Array.prototype.slice.call(document.querySelectorAll('.ns-src:checked')).map(function(c){return c.value;}),
     protected: document.getElementById('dc-protected').checked,
@@ -901,6 +915,8 @@ function fillDisplayConfig(cfg){
   document.getElementById('dc-ads').checked     = cfg.ads     !== undefined ? !!cfg.ads     : def.ads;
   document.getElementById('dc-scroll-speed').value = cfg.scrollSpeed || 80;
   document.getElementById('dc-scroll-val').textContent = cfg.scrollSpeed || 80;
+  document.getElementById('dc-bg-bright').value = cfg.bgBrightness || 100;
+  document.getElementById('dc-bg-bright-val').textContent = cfg.bgBrightness || 100;
   document.getElementById('edit-sc-rss').value  = cfg.rss_url || '';
   (function(){ var sel = Array.isArray(cfg.news_sources) ? cfg.news_sources : []; Array.prototype.forEach.call(document.querySelectorAll('.ns-src'), function(c){ c.checked = sel.indexOf(c.value) >= 0; }); })();
   document.getElementById('dc-protected').checked = (cfg.protected!==undefined) ? !!cfg.protected : ((cfg.profile||'chareidi')==='chareidi');
@@ -1314,6 +1330,6 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 1.5</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 1.6</div>
 </body>
 </html>

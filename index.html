@@ -71,7 +71,7 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
 #ai{font-size:0.65vw;color:rgba(255,255,255,0.3);}
 #ai.live{color:#00ff88;}
 #ai.offline{color:#ff5555;}
-.bs{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity 2s ease-in-out;}
+.bs{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity 2s ease-in-out;filter:brightness(var(--bg-bright,1));}
 .bs.active{opacity:1;z-index:2;}
 .bs.previous{opacity:1;z-index:1;}
 #ob{position:absolute;bottom:15px;left:50%;transform:translateX(-50%);background:#c19200;color:#fff;padding:8px 25px;border-radius:8px;font-size:1.4vw;font-weight:800;border:1.5px solid #fff;z-index:5;white-space:nowrap;display:none;}
@@ -493,12 +493,16 @@ function parseDisplayConfig(raw){
     news_sources: Array.isArray(c.news_sources)?c.news_sources:[],
     ads_list:Array.isArray(c.ads_list)?c.ads_list:null,
     protected: c.protected,
-    scrollSpeed: c.scrollSpeed
+    scrollSpeed: c.scrollSpeed,
+    bgBrightness: c.bgBrightness
   };
 }
 
 function applyDisplayConfig(cfg){
   DC=cfg;
+  // בהירות תמונת הרקע (100=ללא שינוי, נמוך יותר=כהה יותר)
+  var _bc=document.getElementById("bc");
+  if(_bc){ var _bb=(cfg.bgBrightness>0)?cfg.bgBrightness:100; _bc.style.setProperty('--bg-bright',(_bb/100)); }
   if(PREVIEW){
     var pb=document.getElementById("preview-badge");
     if(!pb){ pb=document.createElement("div"); pb.id="preview-badge";
