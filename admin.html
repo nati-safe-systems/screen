@@ -455,7 +455,7 @@ tr:hover td{background:rgba(128,0,0,0.05);}
       <input type="hidden" id="co-orig">
       <div class="field"><label>מזהה לקוח</label><input id="co-id" placeholder="COMP-002"></div>
       <div class="field"><label>שם הלקוח</label><input id="co-name" placeholder="שם הלקוח"></div>
-      <div class="field"><label>שם משתמש</label><input id="co-user" placeholder="manager1"></div>
+      <div class="field"><label>שם משתמש</label><input id="co-user" placeholder="manager1" autocapitalize="none" autocorrect="off" spellcheck="false"></div>
       <div class="field"><label>סיסמה</label><div style="position:relative;">
       <input type="password" id="co-pass" placeholder="סיסמה זמנית" style="padding-left:36px;">
       <button type="button" onclick="togglePass('co-pass',this)" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#8b949e;font-size:16px;padding:0;line-height:1;">&#128065;</button>
@@ -476,7 +476,7 @@ tr:hover td{background:rgba(128,0,0,0.05);}
         <div id="sub-users-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;"></div>
         <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px;">
           <div style="display:flex;gap:8px;">
-            <input id="su-user" placeholder="שם משתמש" style="flex:1;">
+            <input id="su-user" placeholder="שם משתמש" autocapitalize="none" autocorrect="off" spellcheck="false" style="flex:1;">
             <input id="su-pass" placeholder="סיסמה" style="flex:1;">
           </div>
           <input id="su-label" placeholder="תפקיד / שם (אופציונלי — למשל: איש שטח)">
@@ -1094,13 +1094,13 @@ function resetSubUserForm(){
   document.getElementById('su-perm-building').checked=false;
 }
 function addSubUser(){
-  var u=document.getElementById('su-user').value.trim();
+  var u=document.getElementById('su-user').value.trim().toLowerCase();
   var p=document.getElementById('su-pass').value.trim();
   var label=document.getElementById('su-label').value.trim();
   if(!u||!p){ toast('מלא שם משתמש וסיסמה'); return; }
   var master=document.getElementById('co-user').value.trim();
-  if(u===master){ toast('שם המשתמש זהה למשתמש הראשי'); return; }
-  if(subUsers.some(function(x){return x.username===u;})){ toast('שם המשתמש כבר קיים'); return; }
+  if(u.toLowerCase()===master.toLowerCase()){ toast('שם המשתמש זהה למשתמש הראשי'); return; }
+  if(subUsers.some(function(x){return (x.username||'').toLowerCase()===u.toLowerCase();})){ toast('שם המשתמש כבר קיים'); return; }
   subUsers.push({username:u,password:p,label:label,perms:{
     message:document.getElementById('su-perm-message').checked,
     ads:document.getElementById('su-perm-ads').checked,
@@ -1228,5 +1228,6 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 1.1</div>
 </body>
 </html>

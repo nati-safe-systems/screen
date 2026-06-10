@@ -219,7 +219,7 @@ input:focus,select:focus{border-color:#58a6ff;}
       <div class="sub">מערכת ניהול לוח מודעות</div>
     </div>
     <div class="field"><label>שם משתמש</label>
-      <input type="text" id="uname" placeholder="שם משתמש" autocomplete="off" onkeydown="if(event.key==='Enter')login()">
+      <input type="text" id="uname" placeholder="שם משתמש" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" onkeydown="if(event.key==='Enter')login()">
     </div>
     <div class="field"><label>סיסמה</label>
       <div style="position:relative;">
@@ -681,11 +681,15 @@ function login(){
   if(!u||!p)return;
   document.getElementById("login-err").style.display="none";
   if(u.toLowerCase()==="admin"){ return adminLogin(p); }
-  // 1) משתמש ראשי (המשרד) — הרשאות מלאות
-  sf("companies?username=eq."+encodeURIComponent(u)+"&password=eq."+encodeURIComponent(p))
-  .then(function(d){
-    if(d&&d.length>0){
-      co=d[0]; CURRENT_PERMS=FULL_PERMS; CURRENT_USER=u; CURRENT_PASS=p; IS_ADMIN=false;
+  var ul=u.toLowerCase();
+  // שם משתמש אינו רגיש לאותיות גדולות/קטנות; סיסמה — כן.
+  sf("companies").then(function(list){
+    list=list||[];
+    // 1) משתמש ראשי (המשרד) — הרשאות מלאות
+    var masterCo=null;
+    list.forEach(function(c){ if(!masterCo && (c.username||"").toLowerCase()===ul && c.password===p) masterCo=c; });
+    if(masterCo){
+      co=masterCo; CURRENT_PERMS=FULL_PERMS; CURRENT_USER=u; CURRENT_PASS=p; IS_ADMIN=false;
       if(co.must_change_password){
         document.getElementById("login-wrap").style.display="none";
         showChPass(true);
@@ -693,22 +697,19 @@ function login(){
       return;
     }
     // 2) משתמש-משנה — הרשאות חלקיות
-    sf("companies?sub_users=cs."+encodeURIComponent(JSON.stringify([{username:u}])))
-    .then(function(d2){
-      var found=null,perms=null;
-      (d2||[]).forEach(function(c){
-        (Array.isArray(c.sub_users)?c.sub_users:[]).forEach(function(su){
-          if(su&&su.username===u&&su.password===p){ found=c; perms=su.perms||{}; }
-        });
+    var found=null,perms=null;
+    list.forEach(function(c){
+      (Array.isArray(c.sub_users)?c.sub_users:[]).forEach(function(su){
+        if(su&&(su.username||"").toLowerCase()===ul&&su.password===p){ found=c; perms=su.perms||{}; }
       });
-      if(found){
-        co=found; CURRENT_PERMS=perms; CURRENT_USER=u; CURRENT_PASS=p; IS_ADMIN=false;
-        enterApp();
-      }else{
-        document.getElementById("login-err").style.display="block";
-      }
-    }).catch(function(){ document.getElementById("login-err").style.display="block"; });
-  });
+    });
+    if(found){
+      co=found; CURRENT_PERMS=perms; CURRENT_USER=u; CURRENT_PASS=p; IS_ADMIN=false;
+      enterApp();
+    }else{
+      document.getElementById("login-err").style.display="block";
+    }
+  }).catch(function(){ document.getElementById("login-err").style.display="block"; });
 }
 
 function adminLogin(p){
@@ -819,7 +820,7 @@ function enterApp(){
   document.getElementById("chpass-wrap").style.display="none";
   document.getElementById("app").style.display="block";
   if(!CURRENT_PERMS) CURRENT_PERMS=FULL_PERMS;
-  document.getElementById("co-label").textContent=co.company_name + (IS_ADMIN?"  •  מנהל":((CURRENT_USER&&CURRENT_USER!==co.username)?"  •  "+CURRENT_USER:""));
+  document.getElementById("co-label").textContent=co.company_name + (IS_ADMIN?"  •  מנהל":((CURRENT_USER&&CURRENT_USER.toLowerCase()!==(co.username||"").toLowerCase())?"  •  "+CURRENT_USER:""));
   // הצג את הלוגו של הלקוח בפינה הימנית-עליונה (במקום הלוגו של נתי)
   var topLogo=document.querySelector(".topbar-logo");
   if(topLogo&&co.logo_b64){
@@ -1480,13 +1481,14 @@ window.addEventListener("load",function(){
       if(!d||!d.length) return;
       var c=d[0];
       if(savedAdmin){ co=c; CURRENT_PERMS=FULL_PERMS; IS_ADMIN=true; CURRENT_USER='admin'; CURRENT_PASS=''; enterApp(); return; }
-      if(c.password===savedPass && savedUser===c.username){ co=c; CURRENT_PERMS=FULL_PERMS; IS_ADMIN=false; CURRENT_USER=savedUser; CURRENT_PASS=savedPass; enterApp(); return; }
+      if(c.password===savedPass && savedUser.toLowerCase()===(c.username||"").toLowerCase()){ co=c; CURRENT_PERMS=FULL_PERMS; IS_ADMIN=false; CURRENT_USER=savedUser; CURRENT_PASS=savedPass; enterApp(); return; }
       var found=null,perms=null;
-      (Array.isArray(c.sub_users)?c.sub_users:[]).forEach(function(su){ if(su&&su.username===savedUser&&su.password===savedPass){found=su;perms=su.perms||{};} });
+      (Array.isArray(c.sub_users)?c.sub_users:[]).forEach(function(su){ if(su&&(su.username||"").toLowerCase()===savedUser.toLowerCase()&&su.password===savedPass){found=su;perms=su.perms||{};} });
       if(found){ co=c; CURRENT_PERMS=perms||savedPerms||{}; IS_ADMIN=false; CURRENT_USER=savedUser; CURRENT_PASS=savedPass; enterApp(); }
     }).catch(function(){});
   }
 });
 </script>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 1.1</div>
 </body>
 </html>
