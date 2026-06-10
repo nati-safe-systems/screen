@@ -498,6 +498,14 @@ function parseDisplayConfig(raw){
 
 function applyDisplayConfig(cfg){
   DC=cfg;
+  if(PREVIEW){
+    var pb=document.getElementById("preview-badge");
+    if(!pb){ pb=document.createElement("div"); pb.id="preview-badge";
+      pb.style.cssText="position:fixed;left:8px;bottom:8px;z-index:99999;background:rgba(0,0,0,0.78);color:#ffcc00;font:700 12px Assistant,Arial,sans-serif;padding:5px 11px;border-radius:8px;border:1px solid #ffcc00;direction:rtl;pointer-events:none;";
+      document.body.appendChild(pb);
+    }
+    pb.textContent="תצוגה מקדימה · מהירות גלילה שנטענה: "+((cfg&&+cfg.scrollSpeed>0)?+cfg.scrollSpeed:80);
+  }
   var sb=document.querySelector(".sidebar");
   // שדה יציב ובלתי תלוי בתיבות הסימון. מסכים ישנים ללא השדה — נגזר מהפרופיל לאחור-תאימות.
   var isChareidi = (cfg.protected!==undefined) ? !!cfg.protected : (cfg.profile==="chareidi");
