@@ -492,7 +492,8 @@ function parseDisplayConfig(raw){
     rss_url: c.rss_url||"",
     news_sources: Array.isArray(c.news_sources)?c.news_sources:[],
     ads_list:Array.isArray(c.ads_list)?c.ads_list:null,
-    protected: c.protected
+    protected: c.protected,
+    scrollSpeed: c.scrollSpeed
   };
 }
 
