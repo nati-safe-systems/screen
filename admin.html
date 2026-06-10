@@ -469,6 +469,26 @@ tr:hover td{background:rgba(128,0,0,0.05);}
         </div>
         <input type="hidden" id="co-logo-b64">
       </div>
+
+      <div style="border-top:2px solid rgba(255,204,0,0.25);margin-top:6px;padding-top:14px;">
+        <label style="color:#ffcc00;font-weight:800;display:block;margin-bottom:6px;">משתמשי משנה (הרשאות מוגבלות)</label>
+        <div style="font-size:11px;color:#8b949e;margin-bottom:10px;">המשתמש הראשי שלמעלה (המשרד) מקבל הרשאות מלאות תמיד. כאן אפשר להוסיף משתמשי שטח עם הרשאות חלקיות בלבד.</div>
+        <div id="sub-users-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;"></div>
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;gap:8px;">
+            <input id="su-user" placeholder="שם משתמש" style="flex:1;">
+            <input id="su-pass" placeholder="סיסמה" style="flex:1;">
+          </div>
+          <input id="su-label" placeholder="תפקיד / שם (אופציונלי — למשל: איש שטח)">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;margin-top:2px;">
+            <label class="dc-chk"><input type="checkbox" id="su-perm-message" checked> עריכת טקסט ההודעה</label>
+            <label class="dc-chk"><input type="checkbox" id="su-perm-ads"> ניהול פרסומות</label>
+            <label class="dc-chk"><input type="checkbox" id="su-perm-display"> שליטה ברכיבי התצוגה</label>
+            <label class="dc-chk"><input type="checkbox" id="su-perm-building"> עריכת שם הבניין</label>
+          </div>
+          <button type="button" class="btn-modal-save" style="align-self:flex-start;padding:8px 16px;" onclick="addSubUser()">+ הוסף משתמש</button>
+        </div>
+      </div>
     </div>
     <div class="modal-foot">
       <button class="btn-modal-cancel" onclick="closeModal('modal-co')">ביטול</button>
@@ -756,6 +776,7 @@ var DC_PROFILES={
 
 /* ----- ניהול פרסומות ----- */
 var adsList=[];
+var subUsers=[];
 var ANIM_LABELS={fade:"דהייה",slide:"החלקה",zoom:"הגדלה",none:"ללא"};
 var SIDE_LABELS={both:"שני הצדדים",left:"שמאל בלבד",right:"ימין בלבד"};
 function toggleAdsMgmt(){
@@ -1005,6 +1026,7 @@ function openAddCompany(){
   document.getElementById('co-logo-preview').style.display='none';
   document.getElementById('co-logo-hint').textContent='לחץ להעלאת לוגו';
   document.getElementById('co-id').disabled=false;
+  subUsers=[]; renderSubUsers(); resetSubUserForm();
   document.getElementById('modal-co-title').textContent='לקוח חדש';
   openModal('modal-co');
 }
@@ -1027,6 +1049,8 @@ function openEditCompany(cid){
     document.getElementById('co-logo-preview').style.display='none';
     document.getElementById('co-logo-hint').textContent='לחץ להעלאת לוגו';
   }
+  subUsers=Array.isArray(c.sub_users)?c.sub_users.slice():[];
+  renderSubUsers(); resetSubUserForm();
   document.getElementById('modal-co-title').textContent='עריכת לקוח';
   openModal('modal-co');
 }
@@ -1044,6 +1068,49 @@ function handleLogoUpload(input){
   reader.readAsDataURL(file);
 }
 
+var SU_PERM_LABELS={message:'הודעה',ads:'פרסומות',display:'תצוגה',building:'שם בניין'};
+function renderSubUsers(){
+  var wrap=document.getElementById('sub-users-list');
+  if(!wrap)return;
+  if(!subUsers.length){ wrap.innerHTML='<div style="font-size:12px;color:#8b949e;">אין משתמשי משנה עדיין.</div>'; return; }
+  wrap.innerHTML=subUsers.map(function(u,i){
+    var perms=Object.keys(SU_PERM_LABELS).filter(function(k){return u.perms&&u.perms[k];}).map(function(k){return SU_PERM_LABELS[k];});
+    var permsTxt=perms.length?perms.join(' · '):'ללא הרשאות';
+    return '<div style="display:flex;align-items:center;gap:8px;background:#161b22;border:1px solid #30363d;border-radius:8px;padding:7px 10px;">'+
+      '<span style="flex:1;font-size:12px;overflow:hidden;">'+
+        '<b>'+escH(u.username||'')+'</b>'+(u.label?' <span style="color:#8b949e;">('+escH(u.label)+')</span>':'')+
+        '<br><span style="color:#3fb950;font-size:11px;">'+escH(permsTxt)+'</span></span>'+
+      '<button type="button" onclick="delSubUser('+i+')" style="background:#5a1a1a;color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;">מחק</button>'+
+    '</div>';
+  }).join('');
+}
+function resetSubUserForm(){
+  document.getElementById('su-user').value='';
+  document.getElementById('su-pass').value='';
+  document.getElementById('su-label').value='';
+  document.getElementById('su-perm-message').checked=true;
+  document.getElementById('su-perm-ads').checked=false;
+  document.getElementById('su-perm-display').checked=false;
+  document.getElementById('su-perm-building').checked=false;
+}
+function addSubUser(){
+  var u=document.getElementById('su-user').value.trim();
+  var p=document.getElementById('su-pass').value.trim();
+  var label=document.getElementById('su-label').value.trim();
+  if(!u||!p){ toast('מלא שם משתמש וסיסמה'); return; }
+  var master=document.getElementById('co-user').value.trim();
+  if(u===master){ toast('שם המשתמש זהה למשתמש הראשי'); return; }
+  if(subUsers.some(function(x){return x.username===u;})){ toast('שם המשתמש כבר קיים'); return; }
+  subUsers.push({username:u,password:p,label:label,perms:{
+    message:document.getElementById('su-perm-message').checked,
+    ads:document.getElementById('su-perm-ads').checked,
+    display:document.getElementById('su-perm-display').checked,
+    building:document.getElementById('su-perm-building').checked
+  }});
+  resetSubUserForm();
+  renderSubUsers();
+}
+function delSubUser(i){ subUsers.splice(i,1); renderSubUsers(); }
 function saveCompany(){
   var orig=document.getElementById('co-orig').value;
   var id=orig||document.getElementById('co-id').value.trim().toUpperCase();
@@ -1054,6 +1121,7 @@ function saveCompany(){
   if(!id||!name||!user){toast('מלא שם, מזהה ומשתמש');return;}
   if(!orig&&!pass){toast('סיסמה חובה ללקוח חדש');return;}
   var body={company_name:name,username:user};
+  body.sub_users=subUsers;
   if(logo)body.logo_b64=logo;
   if(pass){body.password=pass;body.must_change_password=true;}
   if(!orig){
