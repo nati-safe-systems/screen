@@ -593,6 +593,7 @@ var SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN
 var co=null, sid=null, mtype="scroll", fromApp=false;
 var FULL_PERMS={message:true,ads:true,display:true,building:true};
 var CURRENT_PERMS=null, CURRENT_USER='', CURRENT_PASS='', IS_ADMIN=false;
+var ADMIN_FOCUS_SCREEN=null;
 function escTP(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 /* תזמון */
 var schedules=[];           // מודעות מתוזמנות של המסך הנוכחי
@@ -688,7 +689,7 @@ function adminLogin(p){
     IS_ADMIN=true; CURRENT_PERMS=FULL_PERMS; CURRENT_USER="admin"; CURRENT_PASS="";
     var urlCo=new URLSearchParams(window.location.search).get("co");
     if(urlCo){ loadCompanyAsAdmin(urlCo); }
-    else { showCompanyPicker(); }
+    else { showScreenPicker(); }
   }).catch(function(){ document.getElementById("login-err").style.display="block"; });
 }
 
@@ -699,30 +700,61 @@ function loadCompanyAsAdmin(cid){
   });
 }
 
-function showCompanyPicker(){
-  sf("companies?select=company_id,company_name&order=company_name.asc").then(function(d){
-    var list=d||[];
+function showScreenPicker(){
+  Promise.all([
+    sf("screens?select=screen_id,building_name,company_id&order=building_name.asc"),
+    sf("companies?select=company_id,company_name")
+  ]).then(function(res){
+    var screens=res[0]||[], comps=res[1]||[], cmap={};
+    comps.forEach(function(c){ cmap[c.company_id]=c.company_name; });
     var ov=document.getElementById("admin-co-picker");
     if(!ov){ ov=document.createElement("div"); ov.id="admin-co-picker";
       ov.style.cssText="position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:20px;";
       document.body.appendChild(ov);
     }
-    var html='<div style="background:#161b22;border:1px solid #30363d;border-radius:14px;padding:22px;max-width:440px;width:100%;max-height:80vh;overflow:auto;direction:rtl;">'+
-      '<div style="color:#ffcc00;font-weight:800;font-size:17px;margin-bottom:6px;">כניסת מנהל — בחר לקוח</div>'+
-      '<div style="color:#8b949e;font-size:12px;margin-bottom:14px;">בחר את הלקוח שאליו תיכנס עם הרשאות מלאות.</div>'+
-      '<div style="display:flex;flex-direction:column;gap:8px;">';
-    if(!list.length){ html+='<div style="color:#8b949e;">אין לקוחות.</div>'; }
-    list.forEach(function(c){
-      html+='<button onclick="pickAdminCo(\''+escTP(c.company_id).replace(/\\/g,'')+'\')" style="text-align:right;background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:8px;padding:10px 12px;cursor:pointer;font-size:14px;">'+
-        escTP(c.company_name||c.company_id)+' <span style="color:#8b949e;font-size:12px;">('+escTP(c.company_id)+')</span></button>';
+    var html='<div style="background:#161b22;border:1px solid #30363d;border-radius:14px;padding:22px;max-width:460px;width:100%;max-height:82vh;overflow:auto;direction:rtl;">'+
+      '<div style="color:#ffcc00;font-weight:800;font-size:17px;margin-bottom:6px;">כניסת מנהל — בחר מסך</div>'+
+      '<div style="color:#8b949e;font-size:12px;margin-bottom:14px;">בחר את המסך שאליו תיכנס עם הרשאות מלאות.</div>'+
+      '<input id="admin-pick-search" oninput="filterAdminPick()" placeholder="חיפוש מסך / לקוח..." style="width:100%;background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:8px;padding:8px 10px;margin-bottom:10px;direction:rtl;box-sizing:border-box;">'+
+      '<div id="admin-pick-list" style="display:flex;flex-direction:column;gap:8px;">';
+    if(!screens.length){ html+='<div style="color:#8b949e;">אין מסכים.</div>'; }
+    screens.forEach(function(s){
+      var cn=cmap[s.company_id]||s.company_id;
+      var lbl=(s.building_name||s.screen_id)+' '+cn+' '+s.screen_id;
+      html+='<button class="admin-pick-item" data-search="'+escTP(lbl).toLowerCase()+'" onclick="pickAdminScreen(\''+escTP(s.company_id)+'\',\''+escTP(s.screen_id)+'\')" style="text-align:right;background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:8px;padding:10px 12px;cursor:pointer;font-size:14px;">'+
+        '<b>'+escTP(s.building_name||s.screen_id)+'</b>'+
+        '<br><span style="color:#8b949e;font-size:12px;">'+escTP(cn)+' · '+escTP(s.screen_id)+'</span></button>';
     });
     html+='</div></div>';
     ov.innerHTML=html; ov.style.display="flex";
   });
 }
-function pickAdminCo(cid){
+function filterAdminPick(){
+  var q=(document.getElementById("admin-pick-search").value||"").trim().toLowerCase();
+  Array.prototype.forEach.call(document.querySelectorAll("#admin-pick-list .admin-pick-item"),function(b){
+    b.style.display=(!q||(b.getAttribute("data-search")||"").indexOf(q)>=0)?"block":"none";
+  });
+}
+function pickAdminScreen(cid,sid){
   var ov=document.getElementById("admin-co-picker"); if(ov)ov.style.display="none";
+  ADMIN_FOCUS_SCREEN=sid;
   loadCompanyAsAdmin(cid);
+  focusAdminScreen(0);
+}
+function focusAdminScreen(tries){
+  if(!ADMIN_FOCUS_SCREEN) return;
+  var safe=ADMIN_FOCUS_SCREEN.replace(/"/g,'');
+  var el=document.querySelector('[data-id="'+safe+'"]');
+  if(el){
+    var t=el.closest('div')||el;
+    t.scrollIntoView({behavior:'smooth',block:'center'});
+    var prev=t.style.boxShadow;
+    t.style.boxShadow='0 0 0 3px #ffcc00';
+    setTimeout(function(){ t.style.boxShadow=prev; },2500);
+    ADMIN_FOCUS_SCREEN=null;
+  } else if((tries||0)<25){
+    setTimeout(function(){ focusAdminScreen((tries||0)+1); },200);
+  } else { ADMIN_FOCUS_SCREEN=null; }
 }
 
 function showChPass(first){
