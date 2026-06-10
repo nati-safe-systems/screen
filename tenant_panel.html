@@ -323,7 +323,7 @@ input:focus,select:focus{border-color:#58a6ff;}
     </div>
     <div class="modal-body">
 
-      <div class="field">
+      <div class="field" id="building-sec">
         <label>שם הבניין</label>
         <div style="display:flex;gap:8px;">
           <input type="text" id="edit-building-name" placeholder="שם הבניין / כתובת" style="flex:1;">
@@ -371,7 +371,7 @@ input:focus,select:focus{border-color:#58a6ff;}
         <div class="hint">העלה את התמונה ל-Google Drive, שתף כ"כל מי שיש לו הקישור", והדבק כאן את הקישור.</div>
       </div>
 
-      <div class="field">
+      <div class="field" id="type-sec">
         <label>סוג תוכן</label>
         <div class="type-grid">
           <div class="type-opt t-scroll" id="opt-scroll" onclick="setType('scroll')">
@@ -471,7 +471,7 @@ input:focus,select:focus{border-color:#58a6ff;}
       </div>
 
       <!-- מודעות מתוזמנות -->
-      <div class="field">
+      <div class="field" id="sched-sec">
         <div class="sched-box">
           <div class="sched-head">
             <div>
@@ -564,11 +564,11 @@ input:focus,select:focus{border-color:#58a6ff;}
 
     </div>
     <div class="modal-foot">
-      <button class="btn-del" onclick="clearMsg()">מחק מודעה קבועה</button>
+      <button class="btn-del" id="btn-del-msg" onclick="clearMsg()">מחק מודעה קבועה</button>
       <div style="display:flex;gap:10px;">
         <button class="btn-cancel" onclick="closeModal()">ביטול</button>
         <button class="btn-preview" onclick="openPreview()">תצוגה מקדימה</button>
-        <button class="btn-save" onclick="saveMsg()">שמור ועדכן מסך</button>
+        <button class="btn-save" id="btn-save-msg" onclick="saveMsg()">שמור ועדכן מסך</button>
       </div>
     </div>
   </div>
@@ -597,7 +597,27 @@ input:focus,select:focus{border-color:#58a6ff;}
 var SB="https://cxtrrejclkhqhkqbicmz.supabase.co";
 var SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dHJyZWpjbGtocWhrcWJpY216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTk3MDksImV4cCI6MjA5NTU3NTcwOX0._7wB4YwrYEnK6hWuR6YqcFxRb05OLnWvOelIC-ahIEQ";
 var co=null, sid=null, mtype="scroll", fromApp=false;
-var FULL_PERMS={message:true,ads:true,display:true,building:true};
+var PERM_IDS_T=['edit_message','type_scroll','type_static','type_pdf','scroll_speed','disp_clock','disp_zmanim','disp_parasha','disp_board','disp_news','disp_ads','ads_manage','bg_brightness','building_name'];
+function allPermsT(){ var o={}; PERM_IDS_T.forEach(function(id){o[id]=true;}); return o; }
+function migratePermsT(perms){
+  if(!perms||typeof perms!=='object') return null;
+  var hasNew=PERM_IDS_T.some(function(id){return id in perms;});
+  if(hasNew) return perms;
+  var hasOld=('message'in perms)||('ads'in perms)||('display'in perms)||('building'in perms);
+  if(!hasOld) return perms;
+  var o={};
+  if(perms.message){o.edit_message=true;o.type_scroll=true;o.type_static=true;o.type_pdf=true;}
+  if(perms.display){o.disp_clock=true;o.disp_zmanim=true;o.disp_parasha=true;o.disp_board=true;o.disp_news=true;o.disp_ads=true;}
+  if(perms.ads){o.ads_manage=true;}
+  if(perms.building){o.building_name=true;}
+  return o;
+}
+function companyPerms(c){
+  if(c&&c.perms&&typeof c.perms==='object'&&Object.keys(c.perms).length){ return migratePermsT(c.perms)||allPermsT(); }
+  return allPermsT(); /* אין הרשאות שמורות = הכל מותר (תאימות לאחור) */
+}
+function intersectPerms(a,b){ var o={}; PERM_IDS_T.forEach(function(id){o[id]=!!(a&&a[id])&&!!(b&&b[id]);}); return o; }
+var FULL_PERMS=allPermsT();
 var CURRENT_PERMS=null, CURRENT_USER='', CURRENT_PASS='', IS_ADMIN=false;
 var ADMIN_FOCUS_SCREEN=null;
 function escTP(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -689,7 +709,7 @@ function login(){
     var masterCo=null;
     list.forEach(function(c){ if(!masterCo && (c.username||"").toLowerCase()===ul && c.password===p) masterCo=c; });
     if(masterCo){
-      co=masterCo; CURRENT_PERMS=FULL_PERMS; CURRENT_USER=u; CURRENT_PASS=p; IS_ADMIN=false;
+      co=masterCo; CURRENT_PERMS=companyPerms(masterCo); CURRENT_USER=u; CURRENT_PASS=p; IS_ADMIN=false;
       if(co.must_change_password){
         document.getElementById("login-wrap").style.display="none";
         showChPass(true);
@@ -704,7 +724,7 @@ function login(){
       });
     });
     if(found){
-      co=found; CURRENT_PERMS=perms; CURRENT_USER=u; CURRENT_PASS=p; IS_ADMIN=false;
+      co=found; CURRENT_PERMS=intersectPerms(companyPerms(found), migratePermsT(perms)||{}); CURRENT_USER=u; CURRENT_PASS=p; IS_ADMIN=false;
       enterApp();
     }else{
       document.getElementById("login-err").style.display="block";
@@ -1026,6 +1046,7 @@ function openEdit(el){
       closeSchedForm();
       renderSchedList();
     }
+    applyTenantPerms();
     document.getElementById("edit-modal").classList.add("open");
   });
 }
@@ -1051,25 +1072,46 @@ function parseDCfg(raw){
 function applyTenantDisplaySection(raw){
   var cfg=parseDCfg(raw)||{};
   _tenantDC=cfg;
-  // --- שליטה בתצוגה (רכיבי המסך) ---
-  var sec=document.getElementById("tenant-display-sec");
-  if(cfg.tenant_can_edit){
-    sec.style.display="block";
-    // ברירת מחדל לאחור-תאימות: מסך ישן = חרדי מלא
-    document.getElementById("td-clock").checked   = cfg.clock   !==undefined ? !!cfg.clock   : true;
-    document.getElementById("td-zmanim").checked  = cfg.zmanim  !==undefined ? !!cfg.zmanim  : true;
-    document.getElementById("td-parasha").checked = cfg.parasha !==undefined ? !!cfg.parasha : true;
-    document.getElementById("td-board").checked   = cfg.board   !==undefined ? !!cfg.board   : true;
-    document.getElementById("td-news").checked    = cfg.news    !==undefined ? !!cfg.news    : false;
-    document.getElementById("td-ads").checked     = cfg.ads     !==undefined ? !!cfg.ads     : false;
-  } else { sec.style.display="none"; }
-  // --- ניהול פרסומות (הרשאה נפרדת) ---
-  var asec=document.getElementById("tenant-ads-sec");
-  if(cfg.tenant_ads_edit){
-    asec.style.display="block";
-    _tenantAds = Array.isArray(cfg.ads_list) ? cfg.ads_list.slice() : [];
-    renderTenantAds();
-  } else { asec.style.display="none"; _tenantAds=[]; }
+  // טעינת הערכים הנוכחיים (ברירת מחדל לאחור-תאימות: מסך ישן = חרדי מלא)
+  document.getElementById("td-clock").checked   = cfg.clock   !==undefined ? !!cfg.clock   : true;
+  document.getElementById("td-zmanim").checked  = cfg.zmanim  !==undefined ? !!cfg.zmanim  : true;
+  document.getElementById("td-parasha").checked = cfg.parasha !==undefined ? !!cfg.parasha : true;
+  document.getElementById("td-board").checked   = cfg.board   !==undefined ? !!cfg.board   : true;
+  document.getElementById("td-news").checked    = cfg.news    !==undefined ? !!cfg.news    : false;
+  document.getElementById("td-ads").checked     = cfg.ads     !==undefined ? !!cfg.ads     : false;
+  _tenantAds = Array.isArray(cfg.ads_list) ? cfg.ads_list.slice() : [];
+  renderTenantAds();
+}
+/* ===== אכיפת הרשאות: מציג רק את הפקדים שהאדמין סימן ===== */
+function _tShow(id,ok){ var el=document.getElementById(id); if(el) el.style.display = ok ? "" : "none"; }
+function _tRow(inputId,ok){ var el=document.getElementById(inputId); if(el){ var lab=el.closest('label'); if(lab) lab.style.display = ok ? "" : "none"; } }
+function applyTenantPerms(){
+  var P=CURRENT_PERMS||{};
+  // שם הבניין
+  _tShow('building-sec', !!P.building_name);
+  // עריכת הודעה
+  _tShow('txt-sec', !!P.edit_message);
+  _tShow('sched-sec', !!P.edit_message);
+  _tShow('btn-save-msg', !!P.edit_message);
+  _tShow('btn-del-msg', !!P.edit_message);
+  if(!P.edit_message){ _tShow('pdf-sec',false); _tShow('pdf-anim-sec',false); }
+  // סוג תוכן
+  var anyType = P.type_scroll||P.type_static||P.type_pdf;
+  _tShow('type-sec', !!(P.edit_message && anyType));
+  _tShow('opt-scroll', !!P.type_scroll);
+  _tShow('opt-static', !!P.type_static);
+  _tShow('opt-pdf', !!P.type_pdf);
+  // רכיבי המסך
+  var anyDisp = P.disp_clock||P.disp_zmanim||P.disp_parasha||P.disp_board||P.disp_news||P.disp_ads;
+  _tShow('tenant-display-sec', !!anyDisp);
+  _tRow('td-clock', !!P.disp_clock);
+  _tRow('td-zmanim', !!P.disp_zmanim);
+  _tRow('td-parasha', !!P.disp_parasha);
+  _tRow('td-board', !!P.disp_board);
+  _tRow('td-news', !!P.disp_news);
+  _tRow('td-ads', !!P.disp_ads);
+  // ניהול פרסומות
+  _tShow('tenant-ads-sec', !!P.ads_manage);
 }
 function _tenantBaseDC(){
   // בסיס לשמירה: כל מה שהאדמין קבע נשמר; נדרוס רק את החלק הרלוונטי
@@ -1091,7 +1133,8 @@ function _tenantSaveDC(out){
     .then(function(){ _tenantDC=out; });
 }
 function saveDisplayConfig(){
-  if(!_tenantDC||!_tenantDC.tenant_can_edit){toast("אין הרשאה");return;}
+  var P=CURRENT_PERMS||{};
+  if(!(P.disp_clock||P.disp_zmanim||P.disp_parasha||P.disp_board||P.disp_news||P.disp_ads)){toast("אין הרשאה");return;}
   var out=_tenantBaseDC();
   out.clock   = document.getElementById("td-clock").checked;
   out.zmanim  = document.getElementById("td-zmanim").checked;
@@ -1131,7 +1174,7 @@ function tAddAd(){
 }
 function tDelAd(i){ _tenantAds.splice(i,1); renderTenantAds(); }
 function saveAds(){
-  if(!_tenantDC||!_tenantDC.tenant_ads_edit){toast("אין הרשאה");return;}
+  if(!(CURRENT_PERMS&&CURRENT_PERMS.ads_manage)){toast("אין הרשאה");return;}
   var out=_tenantBaseDC();
   out.ads_list=_tenantAds.slice();
   _tenantSaveDC(out).then(function(){ toast("הפרסומות עודכנו"); });
@@ -1481,14 +1524,14 @@ window.addEventListener("load",function(){
       if(!d||!d.length) return;
       var c=d[0];
       if(savedAdmin){ co=c; CURRENT_PERMS=FULL_PERMS; IS_ADMIN=true; CURRENT_USER='admin'; CURRENT_PASS=''; enterApp(); return; }
-      if(c.password===savedPass && savedUser.toLowerCase()===(c.username||"").toLowerCase()){ co=c; CURRENT_PERMS=FULL_PERMS; IS_ADMIN=false; CURRENT_USER=savedUser; CURRENT_PASS=savedPass; enterApp(); return; }
+      if(c.password===savedPass && savedUser.toLowerCase()===(c.username||"").toLowerCase()){ co=c; CURRENT_PERMS=companyPerms(c); IS_ADMIN=false; CURRENT_USER=savedUser; CURRENT_PASS=savedPass; enterApp(); return; }
       var found=null,perms=null;
       (Array.isArray(c.sub_users)?c.sub_users:[]).forEach(function(su){ if(su&&(su.username||"").toLowerCase()===savedUser.toLowerCase()&&su.password===savedPass){found=su;perms=su.perms||{};} });
-      if(found){ co=c; CURRENT_PERMS=perms||savedPerms||{}; IS_ADMIN=false; CURRENT_USER=savedUser; CURRENT_PASS=savedPass; enterApp(); }
+      if(found){ co=c; CURRENT_PERMS=intersectPerms(companyPerms(c), migratePermsT(perms)||{}); IS_ADMIN=false; CURRENT_USER=savedUser; CURRENT_PASS=savedPass; enterApp(); }
     }).catch(function(){});
   }
 });
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 1.1</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 1.4</div>
 </body>
 </html>
