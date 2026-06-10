@@ -591,6 +591,9 @@ input:focus,select:focus{border-color:#58a6ff;}
 var SB="https://cxtrrejclkhqhkqbicmz.supabase.co";
 var SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dHJyZWpjbGtocWhrcWJpY216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTk3MDksImV4cCI6MjA5NTU3NTcwOX0._7wB4YwrYEnK6hWuR6YqcFxRb05OLnWvOelIC-ahIEQ";
 var co=null, sid=null, mtype="scroll", fromApp=false;
+var FULL_PERMS={message:true,ads:true,display:true,building:true};
+var CURRENT_PERMS=null, CURRENT_USER='', CURRENT_PASS='', IS_ADMIN=false;
+function escTP(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 /* תזמון */
 var schedules=[];           // מודעות מתוזמנות של המסך הנוכחי
 var sfIndex=-1;             // אינדקס בעריכה (-1 = חדשה)
@@ -645,16 +648,81 @@ function login(){
   var u=document.getElementById("uname").value.trim();
   var p=document.getElementById("upass").value.trim();
   if(!u||!p)return;
+  document.getElementById("login-err").style.display="none";
+  if(u.toLowerCase()==="admin"){ return adminLogin(p); }
+  // 1) משתמש ראשי (המשרד) — הרשאות מלאות
   sf("companies?username=eq."+encodeURIComponent(u)+"&password=eq."+encodeURIComponent(p))
   .then(function(d){
     if(d&&d.length>0){
-      co=d[0];
+      co=d[0]; CURRENT_PERMS=FULL_PERMS; CURRENT_USER=u; CURRENT_PASS=p; IS_ADMIN=false;
       if(co.must_change_password){
         document.getElementById("login-wrap").style.display="none";
         showChPass(true);
       }else{enterApp();}
-    }else{document.getElementById("login-err").style.display="block";}
+      return;
+    }
+    // 2) משתמש-משנה — הרשאות חלקיות
+    sf("companies?sub_users=cs."+encodeURIComponent(JSON.stringify([{username:u}])))
+    .then(function(d2){
+      var found=null,perms=null;
+      (d2||[]).forEach(function(c){
+        (Array.isArray(c.sub_users)?c.sub_users:[]).forEach(function(su){
+          if(su&&su.username===u&&su.password===p){ found=c; perms=su.perms||{}; }
+        });
+      });
+      if(found){
+        co=found; CURRENT_PERMS=perms; CURRENT_USER=u; CURRENT_PASS=p; IS_ADMIN=false;
+        enterApp();
+      }else{
+        document.getElementById("login-err").style.display="block";
+      }
+    }).catch(function(){ document.getElementById("login-err").style.display="block"; });
   });
+}
+
+function adminLogin(p){
+  // מפתח-על קבוע: שם משתמש admin + סיסמת המנהל (settings.admin_pass)
+  sf("settings?key=eq.admin_pass&select=value").then(function(d){
+    var ap=(d&&d[0])?d[0].value:null;
+    if(!ap||p!==ap){ document.getElementById("login-err").style.display="block"; return; }
+    IS_ADMIN=true; CURRENT_PERMS=FULL_PERMS; CURRENT_USER="admin"; CURRENT_PASS="";
+    var urlCo=new URLSearchParams(window.location.search).get("co");
+    if(urlCo){ loadCompanyAsAdmin(urlCo); }
+    else { showCompanyPicker(); }
+  }).catch(function(){ document.getElementById("login-err").style.display="block"; });
+}
+
+function loadCompanyAsAdmin(cid){
+  sf("companies?company_id=eq."+encodeURIComponent(cid)).then(function(d){
+    if(d&&d.length>0){ co=d[0]; CURRENT_PERMS=FULL_PERMS; IS_ADMIN=true; CURRENT_USER="admin"; enterApp(); }
+    else { toast("הלקוח לא נמצא"); }
+  });
+}
+
+function showCompanyPicker(){
+  sf("companies?select=company_id,company_name&order=company_name.asc").then(function(d){
+    var list=d||[];
+    var ov=document.getElementById("admin-co-picker");
+    if(!ov){ ov=document.createElement("div"); ov.id="admin-co-picker";
+      ov.style.cssText="position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;padding:20px;";
+      document.body.appendChild(ov);
+    }
+    var html='<div style="background:#161b22;border:1px solid #30363d;border-radius:14px;padding:22px;max-width:440px;width:100%;max-height:80vh;overflow:auto;direction:rtl;">'+
+      '<div style="color:#ffcc00;font-weight:800;font-size:17px;margin-bottom:6px;">כניסת מנהל — בחר לקוח</div>'+
+      '<div style="color:#8b949e;font-size:12px;margin-bottom:14px;">בחר את הלקוח שאליו תיכנס עם הרשאות מלאות.</div>'+
+      '<div style="display:flex;flex-direction:column;gap:8px;">';
+    if(!list.length){ html+='<div style="color:#8b949e;">אין לקוחות.</div>'; }
+    list.forEach(function(c){
+      html+='<button onclick="pickAdminCo(\''+escTP(c.company_id).replace(/\\/g,'')+'\')" style="text-align:right;background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:8px;padding:10px 12px;cursor:pointer;font-size:14px;">'+
+        escTP(c.company_name||c.company_id)+' <span style="color:#8b949e;font-size:12px;">('+escTP(c.company_id)+')</span></button>';
+    });
+    html+='</div></div>';
+    ov.innerHTML=html; ov.style.display="flex";
+  });
+}
+function pickAdminCo(cid){
+  var ov=document.getElementById("admin-co-picker"); if(ov)ov.style.display="none";
+  loadCompanyAsAdmin(cid);
 }
 
 function showChPass(first){
@@ -676,7 +744,8 @@ function changePass(){
   e.style.display="none";
   sf("companies?company_id=eq."+encodeURIComponent(co.company_id),{method:"PATCH",body:JSON.stringify({password:p1,must_change_password:false,password_changed_at:new Date().toISOString()})})
   .then(function(){
-    co.password=p1;co.must_change_password=false;
+    co.password=p1;co.must_change_password=false;CURRENT_PASS=p1;
+    sessionStorage.setItem('nati_co_pass',p1);
     document.getElementById("chpass-wrap").style.display="none";
     if(fromApp){document.getElementById("app").style.display="block";toast("הסיסמה עודכנה!");}
     else{enterApp();}
@@ -687,7 +756,8 @@ function enterApp(){
   document.getElementById("login-wrap").style.display="none";
   document.getElementById("chpass-wrap").style.display="none";
   document.getElementById("app").style.display="block";
-  document.getElementById("co-label").textContent=co.company_name;
+  if(!CURRENT_PERMS) CURRENT_PERMS=FULL_PERMS;
+  document.getElementById("co-label").textContent=co.company_name + (IS_ADMIN?"  •  מנהל":((CURRENT_USER&&CURRENT_USER!==co.username)?"  •  "+CURRENT_USER:""));
   // הצג את הלוגו של הלקוח בפינה הימנית-עליונה (במקום הלוגו של נתי)
   var topLogo=document.querySelector(".topbar-logo");
   if(topLogo&&co.logo_b64){
@@ -695,7 +765,10 @@ function enterApp(){
     topLogo.alt=co.company_name||"לוגו";
   }
   sessionStorage.setItem('nati_co_logged',co.company_id);
-  sessionStorage.setItem('nati_co_pass',co.password);
+  sessionStorage.setItem('nati_co_pass',CURRENT_PASS||'');
+  sessionStorage.setItem('nati_user',CURRENT_USER||'');
+  sessionStorage.setItem('nati_is_admin',IS_ADMIN?'1':'0');
+  sessionStorage.setItem('nati_perms',JSON.stringify(CURRENT_PERMS||FULL_PERMS));
   fillCoBg(co.logo_b64||'');
   // הצג לוגו לקוח בתחתית
   var footer=document.getElementById("co-footer");
@@ -722,8 +795,12 @@ function enterApp(){
 
 function logout(){
   co=null;
+  CURRENT_PERMS=null; CURRENT_USER=''; CURRENT_PASS=''; IS_ADMIN=false;
   sessionStorage.removeItem('nati_co_logged');
   sessionStorage.removeItem('nati_co_pass');
+  sessionStorage.removeItem('nati_user');
+  sessionStorage.removeItem('nati_is_admin');
+  sessionStorage.removeItem('nati_perms');
   document.getElementById("app").style.display="none";
   document.getElementById("login-wrap").style.display="flex";
   document.getElementById("uname").value="";
@@ -1329,16 +1406,22 @@ window.addEventListener("load",function(){
   }
   var savedCo=sessionStorage.getItem('nati_co_logged');
   var savedPass=sessionStorage.getItem('nati_co_pass');
-  if(savedCo&&savedPass){
-    // התחבר מחדש אוטומטית
+  var savedUser=sessionStorage.getItem('nati_user')||'';
+  var savedAdmin=sessionStorage.getItem('nati_is_admin')==='1';
+  var savedPerms=null; try{ savedPerms=JSON.parse(sessionStorage.getItem('nati_perms')||'null'); }catch(e){}
+  if(savedCo){
     var SB2="https://cxtrrejclkhqhkqbicmz.supabase.co";
     var SK2="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dHJyZWpjbGtocWhrcWJpY216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTk3MDksImV4cCI6MjA5NTU3NTcwOX0._7wB4YwrYEnK6hWuR6YqcFxRb05OLnWvOelIC-ahIEQ";
     fetch(SB2+"/rest/v1/companies?company_id=eq."+encodeURIComponent(savedCo),{
       headers:{"apikey":SK2,"Authorization":"Bearer "+SK2}
     }).then(function(r){return r.json();}).then(function(d){
-      if(d&&d.length>0&&d[0].password===savedPass){
-        co=d[0];enterApp();
-      }
+      if(!d||!d.length) return;
+      var c=d[0];
+      if(savedAdmin){ co=c; CURRENT_PERMS=FULL_PERMS; IS_ADMIN=true; CURRENT_USER='admin'; CURRENT_PASS=''; enterApp(); return; }
+      if(c.password===savedPass && savedUser===c.username){ co=c; CURRENT_PERMS=FULL_PERMS; IS_ADMIN=false; CURRENT_USER=savedUser; CURRENT_PASS=savedPass; enterApp(); return; }
+      var found=null,perms=null;
+      (Array.isArray(c.sub_users)?c.sub_users:[]).forEach(function(su){ if(su&&su.username===savedUser&&su.password===savedPass){found=su;perms=su.perms||{};} });
+      if(found){ co=c; CURRENT_PERMS=perms||savedPerms||{}; IS_ADMIN=false; CURRENT_USER=savedUser; CURRENT_PASS=savedPass; enterApp(); }
     }).catch(function(){});
   }
 });
