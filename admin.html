@@ -1128,7 +1128,6 @@ var PERM_DEPS={
   type_scroll:'edit_message',
   type_static:'edit_message',
   type_pdf:'edit_message',
-  scroll_speed:'type_scroll',
   ads_manage:'disp_ads'
 };
 function applyPermDeps(prefix){
@@ -1137,8 +1136,8 @@ function applyPermDeps(prefix){
     var el=document.getElementById(prefix+id); if(!el) return;
     var p=document.getElementById(prefix+dep);
     var ok=p && p.checked && !p.disabled;
-    if(!ok){ el.checked=false; el.disabled=true; if(el.parentNode) el.parentNode.style.opacity=0.45; }
-    else { el.disabled=false; if(el.parentNode) el.parentNode.style.opacity=''; }
+    if(!ok){ el.checked=false; el.disabled=true; if(el.parentNode){ el.parentNode.style.opacity=0.45; el.parentNode.title='כדי לאפשר, יש לסמן קודם: '+(PERM_LABELS[dep]||dep); } }
+    else { el.disabled=false; if(el.parentNode){ el.parentNode.style.opacity=''; el.parentNode.title=''; } }
   });
 }
 var coPerms={};
@@ -1350,6 +1349,6 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 1.8</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 1.9</div>
 </body>
 </html>
