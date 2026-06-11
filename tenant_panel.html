@@ -710,6 +710,9 @@ var PERM_DEFS_T=[
 var PERM_IDS_T=[]; PERM_DEFS_T.forEach(function(g){g.items.forEach(function(it){PERM_IDS_T.push(it.id);});});
 var PERM_LABELS_T={}; PERM_DEFS_T.forEach(function(g){g.items.forEach(function(it){PERM_LABELS_T[it.id]=it.label;});});
 function allPermsT(){ var o={}; PERM_IDS_T.forEach(function(id){o[id]=true;}); return o; }
+/* ברירת מחדל ללקוח: רכיבים מתקדמים כבויים עד שהאדמין מאשר אותם במפורש */
+var PERM_DEFAULT_OFF_T=['disp_news','disp_ads','ads_manage','manage_users'];
+function defaultClientPerms(){ var o={}; PERM_IDS_T.forEach(function(id){o[id]=PERM_DEFAULT_OFF_T.indexOf(id)<0;}); return o; }
 function migratePermsT(perms){
   if(!perms||typeof perms!=='object') return null;
   var hasNew=PERM_IDS_T.some(function(id){return id in perms;});
@@ -724,8 +727,8 @@ function migratePermsT(perms){
   return o;
 }
 function companyPerms(c){
-  if(c&&c.perms&&typeof c.perms==='object'&&Object.keys(c.perms).length){ return migratePermsT(c.perms)||allPermsT(); }
-  return allPermsT(); /* אין הרשאות שמורות = הכל מותר (תאימות לאחור) */
+  if(c&&c.perms&&typeof c.perms==='object'&&Object.keys(c.perms).length){ return migratePermsT(c.perms)||defaultClientPerms(); }
+  return defaultClientPerms(); /* אין הרשאות שמורות = רק היכולות הבסיסיות, ללא חדשות/פרסומות/ניהול */
 }
 function intersectPerms(a,b){ var o={}; PERM_IDS_T.forEach(function(id){o[id]=!!(a&&a[id])&&!!(b&&b[id]);}); return o; }
 var FULL_PERMS=allPermsT();
@@ -1825,6 +1828,6 @@ window.addEventListener("load",function(){
   }
 });
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 1.7</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 1.8</div>
 </body>
 </html>
