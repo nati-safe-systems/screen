@@ -31,9 +31,14 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
 .sho-row:last-child{border-bottom:none;}
 .sho-val{color:#ffcc00;font-weight:900;}
 .sho-molad{font-size:1.4vw;color:#a3d1ff;text-align:center;margin-top:12px;line-height:1.5;}
-.shb-mev{margin-top:10px;padding:8px 10px;border-top:1px solid rgba(255,204,0,0.35);text-align:center;line-height:1.5;}
-.shb-mev .mev-t{display:block;color:#ffcc00;font-weight:800;font-size:1.15vw;margin-bottom:3px;}
-.shb-mev .mev-l{display:block;color:#e6edf3;font-size:1.0vw;}
+.shb-mev{margin-top:6px;background:linear-gradient(180deg,rgba(128,0,0,0.55),rgba(60,0,0,0.55));border:2px solid #ffcc00;border-radius:12px;padding:7px 12px;text-align:center;line-height:1.4;box-shadow:0 0 16px rgba(255,204,0,0.18);}
+.shb-mev .mev-t{display:block;color:#ffcc00;font-weight:800;font-size:1.2vw;letter-spacing:1px;border-bottom:1px solid rgba(255,204,0,0.6);padding-bottom:4px;margin-bottom:5px;text-shadow:0 0 8px rgba(255,204,0,0.4);}
+.shb-mev .mev-r{display:block;color:#fff;font-weight:700;font-size:1.12vw;margin-bottom:4px;}
+.shb-mev .mev-m{display:block;color:#a3d1ff;font-weight:600;font-size:1.0vw;}
+.wm .shb-mev{padding:5px 10px;}
+.wm .shb-mev .mev-t{font-size:1.05vw;}
+.wm .shb-mev .mev-r{font-size:1.0vw;}
+.wm .shb-mev .mev-m{font-size:0.92vw;}
 
 .sidebar{width:380px;background:rgba(10,15,30,0.98);color:white;display:flex;flex-direction:column;border-left:2px solid rgba(255,255,255,0.1);z-index:10;}
 .bb{flex-grow:1;position:relative;overflow:hidden;}
@@ -1158,7 +1163,7 @@ function upd(){
     document.getElementById("si").textContent=fmt(shIn);document.getElementById("so2").textContent=fmt(tm.tz);document.getElementById("rt").textContent=fmt(tm.rt);
     document.getElementById("sho-in").textContent=fmt(shIn);document.getElementById("sho-out").textContent=fmt(tm.tz);document.getElementById("sho-rt").textContent=fmt(tm.rt);
     if(mev && DC && DC.zmanim){
-      mevEl.innerHTML='<span class="mev-t">'+hc_mevTitle()+'</span><span class="mev-l">'+hc_mevRosh(mev)+'</span><span class="mev-l">'+hc_mevMolad(mev)+'</span>';
+      mevEl.innerHTML='<span class="mev-t">✡ שבת מברכים ✡</span><span class="mev-r">'+hc_mevRosh(mev)+'</span><span class="mev-m">'+hc_mevMolad(mev)+'</span>';
       mevEl.style.display="block";
     }else{ mevEl.style.display="none"; }
   }else{document.getElementById("shb").style.display="none";scc.className="sc";mevEl.style.display="none";}
