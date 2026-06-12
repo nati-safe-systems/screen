@@ -31,6 +31,9 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
 .sho-row:last-child{border-bottom:none;}
 .sho-val{color:#ffcc00;font-weight:900;}
 .sho-molad{font-size:1.4vw;color:#a3d1ff;text-align:center;margin-top:12px;line-height:1.5;}
+.shb-mev{margin-top:10px;padding:8px 10px;border-top:1px solid rgba(255,204,0,0.35);text-align:center;line-height:1.5;}
+.shb-mev .mev-t{display:block;color:#ffcc00;font-weight:800;font-size:1.15vw;margin-bottom:3px;}
+.shb-mev .mev-l{display:block;color:#e6edf3;font-size:1.0vw;}
 
 .sidebar{width:380px;background:rgba(10,15,30,0.98);color:white;display:flex;flex-direction:column;border-left:2px solid rgba(255,255,255,0.1);z-index:10;}
 .bb{flex-grow:1;position:relative;overflow:hidden;}
@@ -222,6 +225,7 @@ body.has-ticker .sidebar,body.has-ticker .adbar,body.has-ticker .bb{margin-botto
       <div class="zr"><span id="lo">יציאת שבת</span><span class="zv" id="so2">--:--</span></div>
       <div class="zr"><span>רבינו תם</span><span class="zv" id="rt">--:--</span></div>
     </div>
+    <div id="shb-mev" class="shb-mev" style="display:none;"></div>
   </div>
   <div id="side-ads" class="side-ads"></div>
   <div class="ft">
@@ -881,17 +885,119 @@ function gwp(){
 function ghol(){var src=pD||aD;if(!src||!src.items)return null;for(var i=0;i<src.items.length;i++)if(src.items[i].category==="holiday")return src.items[i].hebrew||src.items[i].title;return null;}
 
 function gsmi(){
-  var src=pN||aN;
-  if(!src||!src.items)return null;
-  var rc=null,mol=null;
-  for(var i=0;i<src.items.length;i++){var it=src.items[i];if(it.category==="roshchodesh")rc=it.hebrew||it.title;if(it.category==="molad")mol=it.hebrew||it.title;}
-  return rc?{rc:rc,mol:mol}:null;
+  var n=new Date();
+  return hc_mevarchim(n.getFullYear(), n.getMonth()+1, n.getDate());
 }
 
 function gfi(m,d){
   var fs=[["צום גדליה","תשרי",[3,4]],["צום עשרה בטבת","טבת",[10]],["תענית אסתר","אדר",[13]],["שבעה עשר בתמוז","תמוז",[17]],["תשעה באב","אב",[9]]];
   for(var i=0;i<fs.length;i++)if(fs[i][1]===m&&fs[i][2].indexOf(d)>=0)return fs[i][0];
   return null;
+}
+
+/* ===== מנוע לוח עברי + מולד (עצמאי, מדויק, מאומת מול Hebcal) ===== */
+function hc_mod(a,n){return ((a%n)+n)%n;}
+function hc_q(a,n){return Math.floor(a/n);}
+function hc_gregLeap(y){return (y%4===0)&&(y%100!==0||y%400===0);}
+function hc_gregToRD(y,m,d){
+  var n=365*(y-1)+hc_q(y-1,4)-hc_q(y-1,100)+hc_q(y-1,400);
+  var md=[31,(hc_gregLeap(y)?29:28),31,30,31,30,31,31,30,31,30,31];
+  for(var i=0;i<m-1;i++)n+=md[i];
+  return n+d;
+}
+function hc_wd(rd){return hc_mod(rd,7);} /* 0=ראשון */
+var HC_EPOCH=-1373427;
+function hc_leap(y){return hc_mod(7*y+1,19)<7;}
+function hc_monthsInYear(y){return hc_leap(y)?13:12;}
+function hc_elapsedDays(year){
+  var me=hc_q(235*year-234,19);
+  var pe=12084+13753*me;
+  var day=29*me+hc_q(pe,25920);
+  if(hc_mod(3*(day+1),7)<3)day+=1;
+  return day;
+}
+function hc_nyDelay(year){
+  var a=hc_elapsedDays(year-1),b=hc_elapsedDays(year),c=hc_elapsedDays(year+1);
+  if(c-b===356)return 2; if(b-a===382)return 1; return 0;
+}
+function hc_newYear(year){return HC_EPOCH+hc_elapsedDays(year)+hc_nyDelay(year);}
+function hc_daysInYear(year){return hc_newYear(year+1)-hc_newYear(year);}
+function hc_longChesh(y){return hc_daysInYear(y)%10===5;}
+function hc_shortKis(y){return hc_daysInYear(y)%10===3;}
+function hc_monthLen(year,month){
+  if([2,4,6,10,13].indexOf(month)>=0)return 29;
+  if(month===12&&!hc_leap(year))return 29;
+  if(month===8&&!hc_longChesh(year))return 29;
+  if(month===9&&hc_shortKis(year))return 29;
+  return 30;
+}
+function hc_order(y){var a=[],m;for(m=7;m<=hc_monthsInYear(y);m++)a.push(m);for(m=1;m<=6;m++)a.push(m);return a;}
+function hc_toRD(year,month,day){
+  var rd=hc_newYear(year)-1, ord=hc_order(year), i;
+  for(i=0;i<ord.length;i++){ if(ord[i]===month)break; rd+=hc_monthLen(year,ord[i]); }
+  return rd+day;
+}
+function hc_fromRD(rd){
+  var year=Math.floor((rd-HC_EPOCH)/366)+1;
+  while(hc_newYear(year+1)<=rd)year++;
+  while(hc_newYear(year)>rd)year--;
+  var ord=hc_order(year), cur=hc_newYear(year), month=7, i;
+  for(i=0;i<ord.length;i++){ var ml=hc_monthLen(year,ord[i]); if(rd<cur+ml){month=ord[i];break;} cur+=ml; }
+  return {year:year,month:month,day:rd-cur+1};
+}
+function hc_monthName(year,month){
+  if(hc_leap(year)){ if(month===12)return 'אדר א׳'; if(month===13)return 'אדר ב׳'; }
+  return ['','ניסן','אייר','סיוון','תמוז','אב','אלול','תשרי','חשוון','כסלו','טבת','שבט','אדר'][month];
+}
+function hc_nextMonth(year,month){
+  var mim=hc_monthsInYear(year);
+  if(month===6)return {year:year+1,month:7};
+  if(month===mim)return {year:year,month:1};
+  var ord=hc_order(year); return {year:year,month:ord[ord.indexOf(month)+1]};
+}
+/* מולד: מחזיר יום-בשבוע אזרחי, שעה, דקות, חלקים */
+function hc_molad(year,month){
+  var mt=hc_q(235*year-234,19), ord=hc_order(year), off=ord.indexOf(month);
+  var M=mt+off;
+  var total=31524 + M*765433;
+  var pos=hc_mod(total,181440);
+  var dayIdx=hc_q(pos,25920);
+  var within=pos-dayIdx*25920;
+  var minsAfter6=Math.floor(within/18);
+  var chalakim=within-minsAfter6*18;
+  var civilMin=hc_mod(18*60+minsAfter6,24*60);
+  var h24=Math.floor(civilMin/60), min=civilMin%60;
+  var civWk=hc_mod(dayIdx-1,7);
+  if(civilMin< 18*60) civWk=hc_mod(civWk+1,7);
+  return {civWk:civWk,h24:h24,min:min,chalakim:chalakim};
+}
+var HC_DOW=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+function hc_partOfDay(h){ if(h>=5&&h<12)return 'בבוקר'; if(h>=12&&h<18)return 'אחר הצהריים'; if(h>=18&&h<22)return 'בערב'; return 'בלילה'; }
+/* מידע שבת מברכים עבור תאריך נתון (מסתכל על השבת הקרובה/נוכחית) */
+function hc_mevarchim(gy,gm,gd){
+  var rd=hc_gregToRD(gy,gm,gd), wd=hc_wd(rd);
+  var satRD=(wd===6)?rd:rd+(6-wd);
+  var sh=hc_fromRD(satRD);
+  var nm=hc_nextMonth(sh.year,sh.month);
+  if(nm.month===7)return null; /* אין מברכים לפני תשרי */
+  var firstNext=hc_toRD(nm.year,nm.month,1);
+  var outLen=hc_monthLen(sh.year,sh.month);
+  var rcFirst=(outLen===30)?firstNext-1:firstNext;
+  var gap=rcFirst-satRD;
+  if(gap<1||gap>7)return null;
+  var rcDays=(outLen===30)?[hc_wd(rcFirst),hc_wd(rcFirst+1)]:[hc_wd(firstNext)];
+  return {monthName:hc_monthName(nm.year,nm.month),rcWeekdays:rcDays,molad:hc_molad(nm.year,nm.month)};
+}
+/* טקסטים מעוצבים */
+function hc_mevTitle(){ return 'השבת שבת מברכים'; }
+function hc_mevRosh(info){
+  var days=info.rcWeekdays.map(function(w){return 'יום '+HC_DOW[w];});
+  var when=(days.length>1)?('בימים '+info.rcWeekdays.map(function(w){return HC_DOW[w];}).join(' ו')):('ביום '+HC_DOW[info.rcWeekdays[0]]);
+  return 'ראש חודש '+info.monthName+' יחול '+when;
+}
+function hc_mevMolad(info){
+  var m=info.molad;
+  return 'המולד: יום '+HC_DOW[m.civWk]+', '+m.h24+':'+String(m.min).padStart(2,'0')+' '+hc_partOfDay(m.h24)+' ו-'+m.chalakim+' חלקים';
 }
 
 /* תאריך עברי */
@@ -1019,10 +1125,9 @@ function upd(){
   document.getElementById("ie").textContent=ch||ec||"";
 
   var fn=gfi(hd.month,hd.day);
-  var sm=(now.getDay()===6)?gsmi():null;
+  var mev=gsmi();
   var spb=document.getElementById("spb");
   if(fn){spb.style.display="block";document.getElementById("spt").textContent="צום: "+fn;document.getElementById("spc").textContent="כניסה: "+fmt(tm.sunset-(18/60))+" יציאה: "+fmt(tm.tz);}
-  else if(sm){spb.style.display="block";document.getElementById("spt").textContent="שבת מברכים";var inf=(sm.rc?"ראש חודש: "+sm.rc:"")+(sm.mol?" מולד: "+sm.mol:"");document.getElementById("spc").textContent=inf;}
   else{spb.style.display="none";}
 
   var zh="";
@@ -1047,11 +1152,16 @@ function upd(){
   var shIn=tm.sunset-((window._shabbatOffset||20)/60);
   var isWE=(now.getDay()===4&&cur>=tm.tz)||now.getDay()===5||now.getDay()===6;
   var scc=document.getElementById("sc");
+  var mevEl=document.getElementById("shb-mev");
   if(isWE||ec||ch){
     document.getElementById("shb").style.display="block";scc.className="sc wm";
     document.getElementById("si").textContent=fmt(shIn);document.getElementById("so2").textContent=fmt(tm.tz);document.getElementById("rt").textContent=fmt(tm.rt);
     document.getElementById("sho-in").textContent=fmt(shIn);document.getElementById("sho-out").textContent=fmt(tm.tz);document.getElementById("sho-rt").textContent=fmt(tm.rt);
-  }else{document.getElementById("shb").style.display="none";scc.className="sc";}
+    if(mev && DC && DC.zmanim){
+      mevEl.innerHTML='<span class="mev-t">'+hc_mevTitle()+'</span><span class="mev-l">'+hc_mevRosh(mev)+'</span><span class="mev-l">'+hc_mevMolad(mev)+'</span>';
+      mevEl.style.display="block";
+    }else{ mevEl.style.display="none"; }
+  }else{document.getElementById("shb").style.display="none";scc.className="sc";mevEl.style.display="none";}
 
   var isSh=(now.getDay()===5&&cur>=shIn)||(now.getDay()===6&&cur<tm.rt);
   var isCh=(ec&&cur>=shIn)||(ch&&cur<tm.rt&&now.getDay()!==6);
@@ -1069,8 +1179,8 @@ function upd(){
     var smInfo=gsmi();
     var moladEl=document.getElementById("sho-molad");
     if(isSh&&smInfo){
-      var mt=(smInfo.rc?"ראש חודש: "+smInfo.rc:"")+(smInfo.mol?" | מולד: "+smInfo.mol:"");
-      moladEl.textContent=mt; moladEl.style.display="block";
+      moladEl.innerHTML='<b style="color:#ffcc00;">'+hc_mevTitle()+'</b><br>'+hc_mevRosh(smInfo)+'<br>'+hc_mevMolad(smInfo);
+      moladEl.style.display="block";
     }else{moladEl.style.display="none";}
     sho.style.display="flex";
     document.getElementById("mq-wrap").style.display="none";
