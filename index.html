@@ -1199,7 +1199,23 @@ function upd(){
       msgShown=true;
     }
   }
+  fitSidebar();
 }
+
+/* התאמה דינמית: אם תוכן הסרגל גולש מהגובה הזמין — הקטן אותו כך שהכל ייכנס.
+   במסך רגיל (טלוויזיה) שבו הכל נכנס — לא משתנה דבר. */
+function fitSidebar(){
+  var sc=document.getElementById("sc");
+  if(!sc) return;
+  var avail=sc.clientHeight, need=sc.scrollHeight;
+  var s=(avail>0 && need>avail+1) ? Math.max(0.5, avail/need) : 1;
+  var t=(s<1) ? ("scale("+s.toFixed(3)+")") : "none";
+  if(sc.style.transform!==t){
+    sc.style.transformOrigin="top center";
+    sc.style.transform=t;
+  }
+}
+window.addEventListener("resize", function(){ try{ fitSidebar(); }catch(e){} });
 
 /* ---- Slideshow ---- */
 var si=0,sl=document.querySelectorAll(".bs");
