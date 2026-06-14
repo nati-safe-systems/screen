@@ -53,6 +53,8 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
 .sc{padding:0.8vh 1.2vw;display:flex;flex-direction:column;flex-grow:1;min-height:0;overflow:hidden;}
 #timer{font-size:3.8vw;font-weight:900;color:#00ff88;text-align:center;line-height:1;}
 #dh{font-size:1.3vw;color:#a3d1ff;text-align:center;font-weight:800;margin-bottom:4px;}
+#rch{font-size:1.25vw;color:#ffcc00;text-align:center;font-weight:900;margin:5px auto;letter-spacing:1px;padding:3px 10px;border:1px solid rgba(255,204,0,0.55);border-radius:10px;background:rgba(255,204,0,0.08);text-shadow:0 0 8px rgba(255,204,0,0.4);max-width:90%;}
+.wm #rch{font-size:1.05vw;}
 #dow{font-size:1.3vw;color:#a3d1ff;text-align:center;font-weight:900;margin:4px 0;letter-spacing:1px;}
 .ic{background:rgba(255,255,255,0.05);border:1px solid rgba(255,204,0,0.3);border-radius:12px;padding:5px;text-align:center;margin-bottom:4px;}
 #par{font-size:1.55vw;color:#ffcc00;font-family:"Frank Ruhl Libre",serif;font-weight:900;display:block;text-align:center;}
@@ -177,7 +179,7 @@ body.has-ticker .sidebar,body.has-ticker .adbar,body.has-ticker .bb{margin-botto
 .sidebar.show-greg .dg{display:block;}
 .wm .dg{font-size:1.1vw;}
 /* הסתרת בלוקים בסיידבר לפי קונפיג */
-.sidebar.hide-clock #timer,.sidebar.hide-clock #dow,.sidebar.hide-clock #dh,.sidebar.hide-clock #dg{display:none!important;}
+.sidebar.hide-clock #timer,.sidebar.hide-clock #dow,.sidebar.hide-clock #dh,.sidebar.hide-clock #dg,.sidebar.hide-clock #rch{display:none!important;}
 .sidebar.hide-parasha .ic{display:none!important;}
 .sidebar.hide-zmanim .zc,.sidebar.hide-zmanim .wt,.sidebar.hide-zmanim #shb,
 .sidebar.hide-zmanim #spb{display:none!important;}
@@ -220,6 +222,7 @@ body.has-ticker .sidebar,body.has-ticker .adbar,body.has-ticker .bb{margin-botto
     <div id="dg" class="dg">טוען...</div>
     <div id="dow">טוען...</div>
     <div id="dh">טוען...</div>
+    <div id="rch" style="display:none;"></div>
     <div class="ic"><span id="par">טוען...</span><span id="ie" class="ist"></span></div>
     <div id="spb"><span class="st" id="spt"></span><span id="spc"></span></div>
     <div class="zc" id="zl"></div>
@@ -1004,6 +1007,26 @@ function hc_mevMolad(info){
   var m=info.molad;
   return 'המולד: יום '+HC_DOW[m.civWk]+', '+m.h24+':'+String(m.min).padStart(2,'0')+' '+hc_partOfDay(m.h24)+' ו-'+m.chalakim+' חלקים';
 }
+/* האם היום ראש חודש? מחזיר טקסט להצגה, או '' אם לא */
+function hc_roshChodesh(gy,gm,gd){
+  var rd=hc_gregToRD(gy,gm,gd);
+  var hd=hc_fromRD(rd);
+  if(hd.day===30){
+    /* יום ל' של חודש מלא = א' דר"ח של החודש הבא */
+    var nm=hc_nextMonth(hd.year,hd.month);
+    if(nm.month===7)return ''; /* א' דר"ח תשרי = ראש השנה, לא מציגים */
+    return 'א\u05f3 דר"ח '+hc_monthName(nm.year,nm.month);
+  }
+  if(hd.day===1){
+    if(hd.month===7)return ''; /* א' תשרי = ראש השנה */
+    /* בודקים את אורך החודש הקודם: אם 30 -> זה ב' דר"ח, אם 29 -> ראש חודש יום אחד */
+    var prevRD=rd-1, prev=hc_fromRD(prevRD);
+    var prevLen=hc_monthLen(prev.year,prev.month);
+    if(prevLen===30)return 'ב\u05f3 דר"ח '+hc_monthName(hd.year,hd.month);
+    return 'ראש חודש '+hc_monthName(hd.year,hd.month);
+  }
+  return '';
+}
 
 /* תאריך עברי */
 var rh={2024:"2024-10-03",2025:"2025-09-23",2026:"2026-09-12",2027:"2027-10-02",2028:"2028-09-21",2029:"2029-09-10",2030:"2030-09-28",2031:"2031-09-18"};
@@ -1123,6 +1146,9 @@ function upd(){
   document.getElementById("dg").textContent=now.toLocaleDateString("he-IL",{day:"numeric",month:"long",year:"numeric"});
   document.getElementById("dow").textContent="יום "+["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"][now.getDay()];
   document.getElementById("dh").textContent=gdl(hdDisp.day)+" ב"+hdDisp.month+" "+gdy(hdDisp.year);
+  var rchEl=document.getElementById("rch");
+  var rchTxt=hc_roshChodesh(now.getFullYear(),now.getMonth()+1,now.getDate());
+  if(rchTxt){rchEl.textContent=rchTxt;rchEl.style.display="block";}else{rchEl.style.display="none";}
   document.getElementById("par").textContent=gwp()||"פרשת השבוע";
 
   var ch=ghol()||gjh(hd.month,hd.day);
