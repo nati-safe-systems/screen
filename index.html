@@ -268,6 +268,7 @@ body.has-ticker .sidebar,body.has-ticker .adbar,body.has-ticker .bb{margin-botto
   <div class="nt-viewport"><div class="nt-track" id="nt-track"></div></div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 
 var SUPA = "https://cxtrrejclkhqhkqbicmz.supabase.co";
@@ -763,12 +764,101 @@ function effectiveAd(s){
   };
 }
 
+/* ===== PDF.js: דפדוף עמודים אמיתי דרך פרוקסי GAS ===== */
+var _pdfState = { timer:null, doc:null, token:0 };
+function stopPdf(){
+  if(_pdfState.timer){ clearTimeout(_pdfState.timer); _pdfState.timer=null; }
+  _pdfState.doc=null;
+  _pdfState.token++;
+}
+function b64ToUint8(b64){
+  var bin=atob(b64), len=bin.length, bytes=new Uint8Array(len);
+  for(var i=0;i<len;i++) bytes[i]=bin.charCodeAt(i);
+  return bytes;
+}
+function startPdf(pdfUrl, secPerPage, cols, animPdf){
+  stopPdf();
+  var myToken=_pdfState.token;
+  var stText=document.getElementById("st-text");
+  var animCls=(animPdf==="fade")?"pdf-anim-fade":(animPdf==="slide")?"pdf-anim-slide":"";
+  cols=(+cols===2)?2:1;
+  var secMs=((+secPerPage>0)?+secPerPage:10)*1000;
+
+  stText.className="";
+  stText.innerHTML='<div style="color:#fff;font-size:1.6vw;font-weight:700;">טוען מסמך...</div>';
+
+  if(typeof pdfjsLib==="undefined"){
+    stText.innerHTML='<div style="color:#fff;font-size:1.4vw;">ספריית PDF טרם נטענה — בדוק חיבור אינטרנט</div>';
+    return;
+  }
+  pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+  var proxy=GAS+"?action=pdf&url="+encodeURIComponent(pdfUrl)+"&_="+Date.now();
+  fetch(proxy,{cache:"no-store"})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(myToken!==_pdfState.token) return null;
+      if(!d||!d.ok||!d.b64) throw new Error((d&&d.error)?d.error:"לא התקבל קובץ");
+      return pdfjsLib.getDocument({data:b64ToUint8(d.b64)}).promise;
+    })
+    .then(function(doc){
+      if(!doc||myToken!==_pdfState.token) return;
+      _pdfState.doc=doc;
+      var total=doc.numPages, page=1;
+      function renderInto(pageNum, canvas){
+        return doc.getPage(pageNum).then(function(pg){
+          if(myToken!==_pdfState.token) return;
+          var box=canvas.parentElement.getBoundingClientRect();
+          var avW=(box.width/cols)-24, avH=box.height-24;
+          var v1=pg.getViewport({scale:1});
+          var scale=Math.min(avW/v1.width, avH/v1.height);
+          if(!(scale>0)||!isFinite(scale)) scale=1;
+          var vp=pg.getViewport({scale:scale});
+          canvas.width=vp.width; canvas.height=vp.height;
+          return pg.render({canvasContext:canvas.getContext("2d"), viewport:vp}).promise;
+        });
+      }
+      function showFrame(){
+        if(myToken!==_pdfState.token) return;
+        var html='<div class="'+animCls+'" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:1.5vw;padding:1.5vh 1.5vw;box-sizing:border-box;">';
+        for(var c=0;c<cols;c++){
+          html+='<canvas id="pdf-cv-'+c+'" style="max-width:100%;max-height:100%;background:#fff;border-radius:6px;box-shadow:0 8px 30px rgba(0,0,0,0.6);"></canvas>';
+        }
+        html+='</div>';
+        stText.className=""; stText.innerHTML=html;
+        var jobs=[];
+        for(var c2=0;c2<cols;c2++){
+          var pn=page+c2, cv=document.getElementById("pdf-cv-"+c2);
+          if(!cv) continue;
+          if(pn<=total){ jobs.push(renderInto(pn, cv)); }
+          else{ cv.style.display="none"; }
+        }
+        Promise.all(jobs).then(function(){
+          if(myToken!==_pdfState.token) return;
+          if(total<=cols) return;
+          _pdfState.timer=setTimeout(function(){
+            page+=cols; if(page>total) page=1;
+            showFrame();
+          }, secMs);
+        });
+      }
+      showFrame();
+    })
+    .catch(function(e){
+      if(myToken!==_pdfState.token) return;
+      var st=document.getElementById("st-text");
+      st.className="";
+      st.innerHTML='<div style="color:#fff;font-size:1.3vw;">שגיאה בטעינת ה-PDF: '+((e&&e.message)||e)+'</div>';
+    });
+}
+  
 function showMessage(s) {
   var mqWrap=document.getElementById("mq-wrap");
   var mqMover=document.getElementById("mq-mover");
   var stWrap=document.getElementById("st-wrap");
-  var stText=document.getElementById("st-text");
+ var stText=document.getElementById("st-text");
 
+  stopPdf();
   mqWrap.style.display="none";
   stWrap.style.display="none";
   mqMover.style.animation="none";
@@ -791,13 +881,11 @@ function showMessage(s) {
       '</div>';
   }
 
-  if(mtype==="pdf") {
+if(mtype==="pdf") {
     var pdfUrl=eff.pdf_url||"";
-    if(!pdfUrl) return;
-    var animCls=(animPdf==="fade")?"pdf-anim-fade":(animPdf==="slide")?"pdf-anim-slide":"";
-    stText.className=animCls;
-    stText.innerHTML='<iframe src="'+pdfUrl+'" style="width:100%;height:100%;border:none;position:absolute;inset:0;" allowfullscreen></iframe>';
+    if(!pdfUrl){ stopPdf(); return; }
     stWrap.style.display="flex";
+    startPdf(pdfUrl, eff.pdf_sec, eff.pdf_cols, animPdf);
   } else if(mtype==="static") {
     stText.className="";
     stText.innerHTML=coLogo+msg;
@@ -1213,9 +1301,10 @@ function upd(){
       moladEl.innerHTML='<b style="color:#ffcc00;">'+hc_mevTitle()+'</b><br>'+hc_mevRosh(smInfo)+'<br>'+hc_mevMolad(smInfo);
       moladEl.style.display="block";
     }else{moladEl.style.display="none";}
-    sho.style.display="flex";
+  sho.style.display="flex";
     document.getElementById("mq-wrap").style.display="none";
     document.getElementById("st-wrap").style.display="none";
+    stopPdf();
     msgShown=false;
   }else{
     sho.style.display="none";
