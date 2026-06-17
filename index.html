@@ -507,7 +507,9 @@ function parseDisplayConfig(raw){
     ads_list:Array.isArray(c.ads_list)?c.ads_list:null,
     protected: c.protected,
     scrollSpeed: c.scrollSpeed,
-    bgBrightness: c.bgBrightness
+    bgBrightness: c.bgBrightness,
+    pdf_sec: c.pdf_sec,
+    pdf_cols: c.pdf_cols
   };
 }
 
@@ -747,7 +749,8 @@ function effectiveAd(s){
   if(best){
     return {message:best.message||"", message_type:best.message_type||"scroll",
       pdf_url:best.pdf_url||"", anim_pdf:best.anim_pdf||"none",
-      _key:"sch|"+(best.start||"")+"|"+(best.message||best.pdf_url||"")+"|"+(best.message_type||"")+"|"+(best.anim_pdf||"")};
+      pdf_sec:(+best.pdf_sec||0), pdf_cols:(+best.pdf_cols||1),
+      _key:"sch|"+(best.start||"")+"|"+(best.message||best.pdf_url||"")+"|"+(best.message_type||"")+"|"+(best.anim_pdf||"")+"|"+(best.pdf_sec||"")+"|"+(best.pdf_cols||"")};
   }
   // 2) אחרת — המודעה הקבועה (ללא תאריכים). תאימות לאחור עם msg_start/msg_end/message_expiry.
   var msg=s.message||"";
@@ -757,10 +760,12 @@ function effectiveAd(s){
   if(!inWindow) msg="";
   var mtype=s.message_type||"scroll";
   var pdf=inWindow?(s.pdf_url||""):"";
+  var dc=parseDisplayConfig(s.display_config)||{};
   return {
     message:msg, message_type:mtype, pdf_url:pdf,
     anim_pdf:s.anim_pdf||"none",
-    _key:"def|"+(inWindow?"on":"off")+"|"+msg+"|"+mtype+"|"+(s.pdf_url||"")+"|"+(s.anim_pdf||"")
+    pdf_sec:(+dc.pdf_sec||0), pdf_cols:(+dc.pdf_cols||1),
+    _key:"def|"+(inWindow?"on":"off")+"|"+msg+"|"+mtype+"|"+(s.pdf_url||"")+"|"+(s.anim_pdf||"")+"|"+(dc.pdf_sec||"")+"|"+(dc.pdf_cols||"")
   };
 }
 
@@ -914,7 +919,7 @@ if(mtype==="pdf") {
 
 /* ---- Poll message ---- */
 function pollMsg() {
-  sbFetch("screens?screen_id=eq."+encodeURIComponent(SID)+"&select=message,message_type,anim_pdf,msg_start,msg_end,message_expiry,pdf_url,schedules,license_expiry")
+  sbFetch("screens?screen_id=eq."+encodeURIComponent(SID)+"&select=message,message_type,anim_pdf,msg_start,msg_end,message_expiry,pdf_url,schedules,license_expiry,display_config")
   .then(function(d){
     if(!d||!d.length) return;
     var s=d[0];
