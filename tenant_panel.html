@@ -553,6 +553,25 @@ input:focus,select:focus{border-color:#58a6ff;}
         </select>
       </div>
 
+      <!-- עמודי PDF (רק ל-PDF) -->
+      <div id="pdf-page-sec" class="field" style="display:none;">
+        <label>הצגת עמודי ה-PDF</label>
+        <div style="display:flex;gap:12px;">
+          <div style="flex:1;">
+            <div class="hint" style="margin-bottom:4px;">שניות לכל עמוד</div>
+            <input type="number" id="pdf-sec-val" min="1" value="10" style="width:100%;">
+          </div>
+          <div style="flex:1;">
+            <div class="hint" style="margin-bottom:4px;">עמודים בו-זמנית</div>
+            <select id="pdf-cols" style="width:100%;">
+              <option value="1">עמוד אחד</option>
+              <option value="2">שני עמודים זה לצד זה</option>
+            </select>
+          </div>
+        </div>
+        <div class="hint">אם ל-PDF יש כמה עמודים — כל כמה שניות מתחלף עמוד.</div>
+      </div>
+
       <!-- מודעות מתוזמנות -->
       <div class="field" id="sched-sec">
         <div class="sched-box">
@@ -620,6 +639,24 @@ input:focus,select:focus{border-color:#58a6ff;}
                 <option value="fade">עמעום (הופעה הדרגתית)</option>
                 <option value="slide">החלקה פנימה</option>
               </select>
+            </div>
+
+            <div class="field" id="sf-pdf-page-sec" style="display:none;">
+              <label>הצגת עמודי ה-PDF</label>
+              <div class="sf-row">
+                <div class="sf-col">
+                  <label>שניות לכל עמוד</label>
+                  <input type="number" id="sf-pdf-sec-val" min="1" value="10">
+                </div>
+                <div class="sf-col">
+                  <label>עמודים בו-זמנית</label>
+                  <select id="sf-pdf-cols">
+                    <option value="1">עמוד אחד</option>
+                    <option value="2">שני עמודים זה לצד זה</option>
+                  </select>
+                </div>
+              </div>
+              <div class="hint">אם ל-PDF יש כמה עמודים — כל כמה שניות מתחלף עמוד.</div>
             </div>
 
             <div class="field">
@@ -1160,6 +1197,7 @@ function openEdit(el){
       document.getElementById("rte-editor").innerHTML=s.message||"";
       document.getElementById("pdf-url").value=s.pdf_url||"";
       document.getElementById("pdf-anim").value=s.anim_pdf||"none";
+      (function(){ var _d=_tenantDC||{}; document.getElementById("pdf-sec-val").value=_d.pdf_sec||10; document.getElementById("pdf-cols").value=(_d.pdf_cols==2||_d.pdf_cols==='2')?"2":"1"; })();
       updatePreview();
       setType(s.message_type||"scroll");
       schedules=parseSchedules(s.schedules);
@@ -1222,7 +1260,7 @@ function applyTenantPerms(){
   _tShow('sched-sec', !!P.edit_message);
   _tShow('btn-save-msg', !!P.edit_message);
   _tShow('btn-del-msg', !!P.edit_message);
-  if(!P.edit_message){ _tShow('pdf-sec',false); _tShow('pdf-anim-sec',false); }
+  if(!P.edit_message){ _tShow('pdf-sec',false); _tShow('pdf-anim-sec',false); _tShow('pdf-page-sec',false); }
   // סוג תוכן
   var anyType = P.type_scroll||P.type_static||P.type_pdf;
   _tShow('type-sec', !!(P.edit_message && anyType));
@@ -1258,7 +1296,9 @@ function _tenantBaseDC(){
     bgBrightness: b.bgBrightness,
     tenant_can_edit: !!b.tenant_can_edit,
     tenant_ads_edit: !!b.tenant_ads_edit,
-    ads_list: Array.isArray(b.ads_list)?b.ads_list.slice():[]
+    ads_list: Array.isArray(b.ads_list)?b.ads_list.slice():[],
+    pdf_sec: b.pdf_sec,
+    pdf_cols: b.pdf_cols
   };
 }
 function _tenantSaveDC(out){
@@ -1489,6 +1529,7 @@ function setType(t){
   document.getElementById("txt-sec").style.display=t==="pdf"?"none":"block";
   document.getElementById("pdf-sec").style.display=t==="pdf"?"block":"none";
   document.getElementById("pdf-anim-sec").style.display=t==="pdf"?"block":"none";
+  document.getElementById("pdf-page-sec").style.display=t==="pdf"?"block":"none";
 }
 
 function drvUrl(u){var m=u.match(/file\/d\/([^/]+)/);return m?"https://drive.google.com/file/d/"+m[1]+"/preview":u;}
@@ -1496,7 +1537,7 @@ function drvUrl(u){var m=u.match(/file\/d\/([^/]+)/);return m?"https://drive.goo
 function saveMsg(){
   var html=document.getElementById("rte-editor").innerHTML;
   var pdf=document.getElementById("pdf-url").value.trim();
-  sf("screens?screen_id=eq."+encodeURIComponent(sid),{method:"PATCH",body:JSON.stringify({
+  var body={
     message:html,
     message_type:mtype,
     anim_pdf:mtype==="pdf"?document.getElementById("pdf-anim").value:"none",
@@ -1505,7 +1546,15 @@ function saveMsg(){
     msg_end:null,
     message_expiry:null,
     schedules:JSON.stringify(schedules)
-  })}).then(function(){closeModal();toast("עודכן!");loadScreens();});
+  };
+  if(mtype==="pdf"){
+    var _dc=_tenantBaseDC();
+    _dc.pdf_sec=parseInt(document.getElementById("pdf-sec-val").value,10)||10;
+    _dc.pdf_cols=(document.getElementById("pdf-cols").value==="2")?2:1;
+    body.display_config=JSON.stringify(_dc);
+    _tenantDC=_dc;
+  }
+  sf("screens?screen_id=eq."+encodeURIComponent(sid),{method:"PATCH",body:JSON.stringify(body)}).then(function(){closeModal();toast("עודכן!");loadScreens();});
 }
 
 function clearMsg(){
@@ -1678,6 +1727,7 @@ function sfSetType(t){
   document.getElementById("sf-txt-sec").style.display=t==="pdf"?"none":"block";
   document.getElementById("sf-pdf-sec").style.display=t==="pdf"?"block":"none";
   document.getElementById("sf-pdf-anim-sec").style.display=t==="pdf"?"block":"none";
+  document.getElementById("sf-pdf-page-sec").style.display=t==="pdf"?"block":"none";
 }
 function openSchedForm(){
   sfIndex=-1;
@@ -1686,6 +1736,8 @@ function openSchedForm(){
   document.getElementById("sf-rte").innerHTML="";
   document.getElementById("sf-pdf-url").value="";
   document.getElementById("sf-pdf-anim").value="none";
+  document.getElementById("sf-pdf-sec-val").value="10";
+  document.getElementById("sf-pdf-cols").value="1";
   dtStartVal=null; dtEndVal=null;
   if(dpStart)dpStart.refresh(); if(dpEnd)dpEnd.refresh();
   document.getElementById("sf-wrap").classList.add("open");
@@ -1699,6 +1751,8 @@ function editSched(i){
   document.getElementById("sf-rte").innerHTML=sc.message||"";
   document.getElementById("sf-pdf-url").value=sc.pdf_url_raw||"";
   document.getElementById("sf-pdf-anim").value=sc.anim_pdf||"none";
+  document.getElementById("sf-pdf-sec-val").value=sc.pdf_sec||10;
+  document.getElementById("sf-pdf-cols").value=(sc.pdf_cols==2||sc.pdf_cols==='2')?"2":"1";
   dtStartVal=sc.start||null; dtEndVal=sc.end||null;
   if(dpStart)dpStart.refresh(); if(dpEnd)dpEnd.refresh();
   document.getElementById("sf-wrap").classList.add("open");
@@ -1717,6 +1771,8 @@ function saveSchedForm(){
     pdf_url: sfType==="pdf"?drvUrl(pdfRaw):"",
     pdf_url_raw: sfType==="pdf"?pdfRaw:"",
     anim_pdf: sfType==="pdf"?document.getElementById("sf-pdf-anim").value:"none",
+    pdf_sec: sfType==="pdf"?(parseInt(document.getElementById("sf-pdf-sec-val").value,10)||10):10,
+    pdf_cols: sfType==="pdf"?((document.getElementById("sf-pdf-cols").value==="2")?2:1):1,
     start: dtStartVal,
     end: dtEndVal
   };
