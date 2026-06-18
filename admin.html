@@ -421,6 +421,7 @@ tr:hover td{background:rgba(128,0,0,0.05);}
               <option value="scroll">גוללת (טקסט נע)</option>
               <option value="static">קבועה (טקסט נייח)</option>
               <option value="pdf">PDF / תמונה</option>
+              <option value="scrollpdf">גלילה + PDF (טקסט נגלל ואז PDF)</option>
             </select>
           </div>
           <div class="field" id="edit-sc-msg-wrap">
@@ -446,6 +447,11 @@ tr:hover td{background:rgba(128,0,0,0.05);}
               </div>
             </div>
             <div style="font-size:11px;color:#8b949e;margin-top:4px;">אם ל-PDF יש כמה עמודים — כל כמה שניות מתחלף עמוד. אפשר להציג עמוד אחד, או שניים זה לצד זה.</div>
+            <div class="field" id="edit-sc-pdfshow-wrap" style="display:none;margin-top:10px;">
+              <label>משך הצגת ה-PDF בכל סבב (שניות)</label>
+              <input id="edit-sc-pdfshow" type="number" min="1" value="20">
+              <div style="font-size:11px;color:#8b949e;margin-top:4px;">במצב "גלילה + PDF": הטקסט נגלל מעבר אחד, ואז ה-PDF מוצג למשך הזמן הזה — וחוזר חלילה.</div>
+            </div>
           </div>
         </div>
 
@@ -915,7 +921,8 @@ function readDisplayConfig(){
     tenant_ads_edit: document.getElementById('dc-tenant-ads').checked,
     ads_list: adsList.slice(),
     pdf_sec: parseInt(document.getElementById('edit-sc-pdfsec').value,10)||10,
-    pdf_cols: (document.getElementById('edit-sc-pdfcols').value==='2') ? 2 : 1
+    pdf_cols: (document.getElementById('edit-sc-pdfcols').value==='2') ? 2 : 1,
+    pdf_show_sec: parseInt(document.getElementById('edit-sc-pdfshow').value,10)||20
   };
 }
 function fillDisplayConfig(cfg){
@@ -940,6 +947,7 @@ function fillDisplayConfig(cfg){
   document.getElementById('dc-tenant-ads').checked = !!cfg.tenant_ads_edit;
   document.getElementById('edit-sc-pdfsec').value = cfg.pdf_sec || 10;
   document.getElementById('edit-sc-pdfcols').value = (cfg.pdf_cols==2||cfg.pdf_cols==='2') ? '2' : '1';
+  document.getElementById('edit-sc-pdfshow').value = cfg.pdf_show_sec || 20;
   adsList = Array.isArray(cfg.ads_list) ? cfg.ads_list.slice() : [];
   resetAdForm();
   renderAdsAdmin();
@@ -982,7 +990,8 @@ function openEditScreen(sid){
 function toggleAdminMsgType(){
   var t=document.getElementById('edit-sc-mtype').value;
   document.getElementById('edit-sc-msg-wrap').style.display=(t==='pdf')?'none':'block';
-  document.getElementById('edit-sc-pdf-wrap').style.display=(t==='pdf')?'block':'none';
+  document.getElementById('edit-sc-pdf-wrap').style.display=(t==='pdf'||t==='scrollpdf')?'block':'none';
+  document.getElementById('edit-sc-pdfshow-wrap').style.display=(t==='scrollpdf')?'block':'none';
 }
 function saveScreen(){
   var orig=document.getElementById('edit-sc-orig').value;
@@ -1008,6 +1017,7 @@ function saveScreen(){
     var mt=document.getElementById('edit-sc-mtype').value;
     body.message_type=mt;
     if(mt==='pdf'){ body.pdf_url=document.getElementById('edit-sc-pdfurl').value.trim(); }
+    else if(mt==='scrollpdf'){ body.pdf_url=document.getElementById('edit-sc-pdfurl').value.trim(); body.message=document.getElementById('edit-sc-msg').innerHTML.trim(); }
     else { body.message=document.getElementById('edit-sc-msg').innerHTML.trim(); body.pdf_url=''; }
     sf('screens?screen_id=eq.'+encodeURIComponent(orig),{method:'PATCH',body:JSON.stringify(body)}).then(function(){closeModal('modal-sc');toast('המסך עודכן!');loadAll();});
   }

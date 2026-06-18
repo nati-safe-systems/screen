@@ -509,7 +509,8 @@ function parseDisplayConfig(raw){
     scrollSpeed: c.scrollSpeed,
     bgBrightness: c.bgBrightness,
     pdf_sec: c.pdf_sec,
-    pdf_cols: c.pdf_cols
+    pdf_cols: c.pdf_cols,
+    pdf_show_sec: c.pdf_show_sec
   };
 }
 
@@ -749,8 +750,8 @@ function effectiveAd(s){
   if(best){
     return {message:best.message||"", message_type:best.message_type||"scroll",
       pdf_url:best.pdf_url||"", anim_pdf:best.anim_pdf||"none",
-      pdf_sec:(+best.pdf_sec||0), pdf_cols:(+best.pdf_cols||1),
-      _key:"sch|"+(best.start||"")+"|"+(best.message||best.pdf_url||"")+"|"+(best.message_type||"")+"|"+(best.anim_pdf||"")+"|"+(best.pdf_sec||"")+"|"+(best.pdf_cols||"")};
+      pdf_sec:(+best.pdf_sec||0), pdf_cols:(+best.pdf_cols||1), pdf_show_sec:(+best.pdf_show_sec||0),
+      _key:"sch|"+(best.start||"")+"|"+(best.message||best.pdf_url||"")+"|"+(best.message_type||"")+"|"+(best.anim_pdf||"")+"|"+(best.pdf_sec||"")+"|"+(best.pdf_cols||"")+"|"+(best.pdf_show_sec||"")};
   }
   // 2) אחרת — המודעה הקבועה (ללא תאריכים). תאימות לאחור עם msg_start/msg_end/message_expiry.
   var msg=s.message||"";
@@ -764,8 +765,8 @@ function effectiveAd(s){
   return {
     message:msg, message_type:mtype, pdf_url:pdf,
     anim_pdf:s.anim_pdf||"none",
-    pdf_sec:(+dc.pdf_sec||0), pdf_cols:(+dc.pdf_cols||1),
-    _key:"def|"+(inWindow?"on":"off")+"|"+msg+"|"+mtype+"|"+(s.pdf_url||"")+"|"+(s.anim_pdf||"")+"|"+(dc.pdf_sec||"")+"|"+(dc.pdf_cols||"")
+    pdf_sec:(+dc.pdf_sec||0), pdf_cols:(+dc.pdf_cols||1), pdf_show_sec:(+dc.pdf_show_sec||0),
+    _key:"def|"+(inWindow?"on":"off")+"|"+msg+"|"+mtype+"|"+(s.pdf_url||"")+"|"+(s.anim_pdf||"")+"|"+(dc.pdf_sec||"")+"|"+(dc.pdf_cols||"")+"|"+(dc.pdf_show_sec||"")
   };
 }
 
@@ -857,6 +858,66 @@ function startPdf(pdfUrl, secPerPage, cols, animPdf){
     });
 }
   
+/* ===== מצב משולב: גלילת טקסט מעבר אחד, ואז PDF ל-X שניות, וחוזר חלילה ===== */
+var _comboState = { token:0, timer:null, onEnd:null, mover:null };
+function stopCombo(){
+  _comboState.token++;
+  if(_comboState.timer){ clearTimeout(_comboState.timer); _comboState.timer=null; }
+  if(_comboState.onEnd && _comboState.mover){ try{ _comboState.mover.removeEventListener("animationend", _comboState.onEnd); }catch(e){} }
+  _comboState.onEnd=null; _comboState.mover=null;
+}
+function startCombo(msg, coLogo, pdfUrl, secPerPage, cols, animPdf, showSec){
+  stopCombo(); stopPdf();
+  var myT = _comboState.token;
+  var mqWrap=document.getElementById("mq-wrap");
+  var mqMover=document.getElementById("mq-mover");
+  var stWrap=document.getElementById("st-wrap");
+  showSec = (+showSec>0)?+showSec:20;
+
+  function doScroll(){
+    if(myT!==_comboState.token) return;
+    stopPdf();
+    stWrap.style.display="none";
+    mqMover.style.animation="none";
+    mqMover.innerHTML=coLogo+msg;
+    mqWrap.style.display="block";
+    requestAnimationFrame(function(){
+      if(myT!==_comboState.token) return;
+      var wH=mqWrap.offsetHeight||600;
+      var mH=mqMover.offsetHeight||200;
+      var speed=(typeof DC!=="undefined"&&DC&&+DC.scrollSpeed>0)?+DC.scrollSpeed:80;
+      var dur=(wH+mH)/speed;
+      var styleId="mq-style";
+      var old=document.getElementById(styleId); if(old)old.remove();
+      var stl=document.createElement("style"); stl.id=styleId;
+      stl.textContent="@keyframes mqRoll{0%{transform:translateY("+wH+"px);}100%{transform:translateY(-"+mH+"px);}}";
+      document.head.appendChild(stl);
+      mqMover.style.transform="translateY("+wH+"px)";
+      mqMover.style.animation="mqRoll "+dur.toFixed(1)+"s linear 1";
+      var onEnd=function(){
+        try{ mqMover.removeEventListener("animationend", onEnd); }catch(e){}
+        if(myT!==_comboState.token) return;
+        doPdf();
+      };
+      _comboState.onEnd=onEnd; _comboState.mover=mqMover;
+      mqMover.addEventListener("animationend", onEnd);
+    });
+  }
+  function doPdf(){
+    if(myT!==_comboState.token) return;
+    mqWrap.style.display="none";
+    mqMover.style.animation="none";
+    stWrap.style.display="flex";
+    startPdf(pdfUrl, secPerPage, cols, animPdf);
+    _comboState.timer=setTimeout(function(){
+      if(myT!==_comboState.token) return;
+      stopPdf();
+      doScroll();
+    }, showSec*1000);
+  }
+  doScroll();
+}
+
 function showMessage(s) {
   var mqWrap=document.getElementById("mq-wrap");
   var mqMover=document.getElementById("mq-mover");
@@ -864,6 +925,7 @@ function showMessage(s) {
  var stText=document.getElementById("st-text");
 
   stopPdf();
+  stopCombo();
   mqWrap.style.display="none";
   stWrap.style.display="none";
   mqMover.style.animation="none";
@@ -874,7 +936,7 @@ function showMessage(s) {
   var msg=eff.message||"";
   var mtype=eff.message_type||"scroll";
   var animPdf=eff.anim_pdf||"none";
-  if(!msg.trim()&&mtype!=="pdf") return;
+  if(!msg.trim()&&mtype!=="pdf"&&mtype!=="scrollpdf") return;
 
   // בנה לוגו חברה אם קיים
   var coLogo="";
@@ -886,7 +948,19 @@ function showMessage(s) {
       '</div>';
   }
 
-if(mtype==="pdf") {
+if(mtype==="scrollpdf") {
+    var cpUrl=eff.pdf_url||"";
+    if(cpUrl && msg.trim()){
+      startCombo(msg, coLogo, cpUrl, eff.pdf_sec, eff.pdf_cols, animPdf, eff.pdf_show_sec);
+      return;
+    } else if(cpUrl){
+      stWrap.style.display="flex";
+      startPdf(cpUrl, eff.pdf_sec, eff.pdf_cols, animPdf);
+      return;
+    }
+    mtype="scroll"; // אין PDF — נופל לגלילה רגילה
+  }
+  if(mtype==="pdf") {
     var pdfUrl=eff.pdf_url||"";
     if(!pdfUrl){ stopPdf(); return; }
     stWrap.style.display="flex";
@@ -1310,6 +1384,7 @@ function upd(){
     document.getElementById("mq-wrap").style.display="none";
     document.getElementById("st-wrap").style.display="none";
     stopPdf();
+    stopCombo();
     msgShown=false;
   }else{
     sho.style.display="none";

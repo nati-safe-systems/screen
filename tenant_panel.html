@@ -441,6 +441,10 @@ input:focus,select:focus{border-color:#58a6ff;}
             <div class="type-icon">&#128196;</div>
             <div class="type-lbl">PDF</div>
           </div>
+          <div class="type-opt" id="opt-scrollpdf" onclick="setType('scrollpdf')">
+            <div class="type-icon">&#128240;</div>
+            <div class="type-lbl">גלילה + PDF</div>
+          </div>
         </div>
       </div>
 
@@ -572,6 +576,13 @@ input:focus,select:focus{border-color:#58a6ff;}
         <div class="hint">אם ל-PDF יש כמה עמודים — כל כמה שניות מתחלף עמוד.</div>
       </div>
 
+      <!-- משך הצגת PDF במצב גלילה+PDF -->
+      <div id="pdf-show-sec" class="field" style="display:none;">
+        <label>משך הצגת ה-PDF בכל סבב (שניות)</label>
+        <input type="number" id="pdf-show-val" min="1" value="20" style="width:100%;">
+        <div class="hint">הטקסט נגלל מעבר אחד, ואז ה-PDF מוצג למשך הזמן הזה — וחוזר חלילה.</div>
+      </div>
+
       <!-- מודעות מתוזמנות -->
       <div class="field" id="sched-sec">
         <div class="sched-box">
@@ -594,6 +605,7 @@ input:focus,select:focus{border-color:#58a6ff;}
                 <div class="type-opt t-scroll" id="sf-opt-scroll" onclick="sfSetType('scroll')"><div class="type-icon">&#8593;</div><div class="type-lbl">גוללת</div></div>
                 <div class="type-opt" id="sf-opt-static" onclick="sfSetType('static')"><div class="type-icon">&#128204;</div><div class="type-lbl">קבועה</div></div>
                 <div class="type-opt" id="sf-opt-pdf" onclick="sfSetType('pdf')"><div class="type-icon">&#128196;</div><div class="type-lbl">PDF</div></div>
+                <div class="type-opt" id="sf-opt-scrollpdf" onclick="sfSetType('scrollpdf')"><div class="type-icon">&#128240;</div><div class="type-lbl">גלילה + PDF</div></div>
               </div>
             </div>
 
@@ -657,6 +669,12 @@ input:focus,select:focus{border-color:#58a6ff;}
                 </div>
               </div>
               <div class="hint">אם ל-PDF יש כמה עמודים — כל כמה שניות מתחלף עמוד.</div>
+            </div>
+
+            <div class="field" id="sf-pdf-show-sec" style="display:none;">
+              <label>משך הצגת ה-PDF בכל סבב (שניות)</label>
+              <input type="number" id="sf-pdf-show-val" min="1" value="20">
+              <div class="hint">הטקסט נגלל מעבר אחד, ואז ה-PDF מוצג למשך הזמן הזה — וחוזר חלילה.</div>
             </div>
 
             <div class="field">
@@ -1197,7 +1215,7 @@ function openEdit(el){
       document.getElementById("rte-editor").innerHTML=s.message||"";
       document.getElementById("pdf-url").value=s.pdf_url||"";
       document.getElementById("pdf-anim").value=s.anim_pdf||"none";
-      (function(){ var _d=_tenantDC||{}; document.getElementById("pdf-sec-val").value=_d.pdf_sec||10; document.getElementById("pdf-cols").value=(_d.pdf_cols==2||_d.pdf_cols==='2')?"2":"1"; })();
+      (function(){ var _d=_tenantDC||{}; document.getElementById("pdf-sec-val").value=_d.pdf_sec||10; document.getElementById("pdf-cols").value=(_d.pdf_cols==2||_d.pdf_cols==='2')?"2":"1"; document.getElementById("pdf-show-val").value=_d.pdf_show_sec||20; })();
       updatePreview();
       setType(s.message_type||"scroll");
       schedules=parseSchedules(s.schedules);
@@ -1260,13 +1278,14 @@ function applyTenantPerms(){
   _tShow('sched-sec', !!P.edit_message);
   _tShow('btn-save-msg', !!P.edit_message);
   _tShow('btn-del-msg', !!P.edit_message);
-  if(!P.edit_message){ _tShow('pdf-sec',false); _tShow('pdf-anim-sec',false); _tShow('pdf-page-sec',false); }
+  if(!P.edit_message){ _tShow('pdf-sec',false); _tShow('pdf-anim-sec',false); _tShow('pdf-page-sec',false); _tShow('pdf-show-sec',false); }
   // סוג תוכן
   var anyType = P.type_scroll||P.type_static||P.type_pdf;
   _tShow('type-sec', !!(P.edit_message && anyType));
   _tShow('opt-scroll', !!P.type_scroll);
   _tShow('opt-static', !!P.type_static);
   _tShow('opt-pdf', !!P.type_pdf);
+  _tShow('opt-scrollpdf', !!P.type_pdf);
   // רכיבי המסך
   var anyDisp = P.disp_clock||P.disp_zmanim||P.disp_parasha||P.disp_board||P.disp_news||P.disp_ads;
   _tShow('tenant-display-sec', !!anyDisp);
@@ -1523,13 +1542,16 @@ function parseSchedules(raw){
 
 function setType(t){
   mtype=t;
+  var isPdf=(t==="pdf"||t==="scrollpdf");
   document.getElementById("opt-scroll").className="type-opt"+(t==="scroll"?" t-scroll":"");
   document.getElementById("opt-static").className="type-opt"+(t==="static"?" t-static":"");
   document.getElementById("opt-pdf").className="type-opt"+(t==="pdf"?" t-pdf":"");
+  document.getElementById("opt-scrollpdf").className="type-opt"+(t==="scrollpdf"?" t-pdf":"");
   document.getElementById("txt-sec").style.display=t==="pdf"?"none":"block";
-  document.getElementById("pdf-sec").style.display=t==="pdf"?"block":"none";
-  document.getElementById("pdf-anim-sec").style.display=t==="pdf"?"block":"none";
-  document.getElementById("pdf-page-sec").style.display=t==="pdf"?"block":"none";
+  document.getElementById("pdf-sec").style.display=isPdf?"block":"none";
+  document.getElementById("pdf-anim-sec").style.display=isPdf?"block":"none";
+  document.getElementById("pdf-page-sec").style.display=isPdf?"block":"none";
+  document.getElementById("pdf-show-sec").style.display=t==="scrollpdf"?"block":"none";
 }
 
 function drvUrl(u){var m=u.match(/file\/d\/([^/]+)/);return m?"https://drive.google.com/file/d/"+m[1]+"/preview":u;}
@@ -1537,20 +1559,22 @@ function drvUrl(u){var m=u.match(/file\/d\/([^/]+)/);return m?"https://drive.goo
 function saveMsg(){
   var html=document.getElementById("rte-editor").innerHTML;
   var pdf=document.getElementById("pdf-url").value.trim();
+  var isPdf=(mtype==="pdf"||mtype==="scrollpdf");
   var body={
     message:html,
     message_type:mtype,
-    anim_pdf:mtype==="pdf"?document.getElementById("pdf-anim").value:"none",
-    pdf_url:mtype==="pdf"?drvUrl(pdf):"",
+    anim_pdf:isPdf?document.getElementById("pdf-anim").value:"none",
+    pdf_url:isPdf?drvUrl(pdf):"",
     msg_start:null,
     msg_end:null,
     message_expiry:null,
     schedules:JSON.stringify(schedules)
   };
-  if(mtype==="pdf"){
+  if(isPdf){
     var _dc=_tenantBaseDC();
     _dc.pdf_sec=parseInt(document.getElementById("pdf-sec-val").value,10)||10;
     _dc.pdf_cols=(document.getElementById("pdf-cols").value==="2")?2:1;
+    _dc.pdf_show_sec=parseInt(document.getElementById("pdf-show-val").value,10)||20;
     body.display_config=JSON.stringify(_dc);
     _tenantDC=_dc;
   }
@@ -1685,7 +1709,7 @@ function initPickers(){
 }
 
 /* ============ מנוע מודעות מתוזמנות ============ */
-function typeLabel(t){return t==="pdf"?"PDF":(t==="static"?"קבועה":"גוללת");}
+function typeLabel(t){return t==="pdf"?"PDF":(t==="scrollpdf"?"גלילה + PDF":(t==="static"?"קבועה":"גוללת"));}
 function schedActiveNow(sc){
   var now=new Date();
   if(sc.start&&new Date(sc.start)>now)return false;
@@ -1721,13 +1745,16 @@ function delSched(i){if(!confirm("למחוק מודעה מתוזמנת זו?"))r
 function sfExec(cmd,val){document.getElementById("sf-rte").focus();document.execCommand(cmd,false,val||null);}
 function sfSetType(t){
   sfType=t;
+  var isPdf=(t==="pdf"||t==="scrollpdf");
   document.getElementById("sf-opt-scroll").className="type-opt"+(t==="scroll"?" t-scroll":"");
   document.getElementById("sf-opt-static").className="type-opt"+(t==="static"?" t-static":"");
   document.getElementById("sf-opt-pdf").className="type-opt"+(t==="pdf"?" t-pdf":"");
+  document.getElementById("sf-opt-scrollpdf").className="type-opt"+(t==="scrollpdf"?" t-pdf":"");
   document.getElementById("sf-txt-sec").style.display=t==="pdf"?"none":"block";
-  document.getElementById("sf-pdf-sec").style.display=t==="pdf"?"block":"none";
-  document.getElementById("sf-pdf-anim-sec").style.display=t==="pdf"?"block":"none";
-  document.getElementById("sf-pdf-page-sec").style.display=t==="pdf"?"block":"none";
+  document.getElementById("sf-pdf-sec").style.display=isPdf?"block":"none";
+  document.getElementById("sf-pdf-anim-sec").style.display=isPdf?"block":"none";
+  document.getElementById("sf-pdf-page-sec").style.display=isPdf?"block":"none";
+  document.getElementById("sf-pdf-show-sec").style.display=t==="scrollpdf"?"block":"none";
 }
 function openSchedForm(){
   sfIndex=-1;
@@ -1738,6 +1765,7 @@ function openSchedForm(){
   document.getElementById("sf-pdf-anim").value="none";
   document.getElementById("sf-pdf-sec-val").value="10";
   document.getElementById("sf-pdf-cols").value="1";
+  document.getElementById("sf-pdf-show-val").value="20";
   dtStartVal=null; dtEndVal=null;
   if(dpStart)dpStart.refresh(); if(dpEnd)dpEnd.refresh();
   document.getElementById("sf-wrap").classList.add("open");
@@ -1753,6 +1781,7 @@ function editSched(i){
   document.getElementById("sf-pdf-anim").value=sc.anim_pdf||"none";
   document.getElementById("sf-pdf-sec-val").value=sc.pdf_sec||10;
   document.getElementById("sf-pdf-cols").value=(sc.pdf_cols==2||sc.pdf_cols==='2')?"2":"1";
+  document.getElementById("sf-pdf-show-val").value=sc.pdf_show_sec||20;
   dtStartVal=sc.start||null; dtEndVal=sc.end||null;
   if(dpStart)dpStart.refresh(); if(dpEnd)dpEnd.refresh();
   document.getElementById("sf-wrap").classList.add("open");
@@ -1762,17 +1791,21 @@ function closeSchedForm(){document.getElementById("sf-wrap").classList.remove("o
 function saveSchedForm(){
   var msg=document.getElementById("sf-rte").innerHTML;
   var pdfRaw=document.getElementById("sf-pdf-url").value.trim();
+  var hasText=!!document.getElementById("sf-rte").textContent.trim();
   if(sfType==="pdf"){ if(!pdfRaw){toast("הזן קישור PDF");return;} }
-  else { if(!document.getElementById("sf-rte").textContent.trim()){toast("הזן טקסט למודעה");return;} }
+  else if(sfType==="scrollpdf"){ if(!pdfRaw){toast("הזן קישור PDF");return;} if(!hasText){toast("הזן טקסט לגלילה");return;} }
+  else { if(!hasText){toast("הזן טקסט למודעה");return;} }
   if(dtStartVal&&dtEndVal&&new Date(dtEndVal)<new Date(dtStartVal)){toast("תאריך הסיום לפני ההתחלה");return;}
+  var isPdf=(sfType==="pdf"||sfType==="scrollpdf");
   var rec={
     message: sfType==="pdf"?"":msg,
     message_type: sfType,
-    pdf_url: sfType==="pdf"?drvUrl(pdfRaw):"",
-    pdf_url_raw: sfType==="pdf"?pdfRaw:"",
-    anim_pdf: sfType==="pdf"?document.getElementById("sf-pdf-anim").value:"none",
-    pdf_sec: sfType==="pdf"?(parseInt(document.getElementById("sf-pdf-sec-val").value,10)||10):10,
-    pdf_cols: sfType==="pdf"?((document.getElementById("sf-pdf-cols").value==="2")?2:1):1,
+    pdf_url: isPdf?drvUrl(pdfRaw):"",
+    pdf_url_raw: isPdf?pdfRaw:"",
+    anim_pdf: isPdf?document.getElementById("sf-pdf-anim").value:"none",
+    pdf_sec: isPdf?(parseInt(document.getElementById("sf-pdf-sec-val").value,10)||10):10,
+    pdf_cols: isPdf?((document.getElementById("sf-pdf-cols").value==="2")?2:1):1,
+    pdf_show_sec: (sfType==="scrollpdf")?(parseInt(document.getElementById("sf-pdf-show-val").value,10)||20):20,
     start: dtStartVal,
     end: dtEndVal
   };
