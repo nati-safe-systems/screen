@@ -8,6 +8,8 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:Assistant,sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh;}
+html,body{overscroll-behavior:none;}
+.modal-bg,.modal-body{overscroll-behavior:contain;}
 
 /* LOGIN */
 #login-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
@@ -1377,6 +1379,22 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 2.0</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 2.1</div>
+<script>
+/* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
+(function(){
+  function openOverlays(){
+    return Array.prototype.slice.call(document.querySelectorAll('.modal-bg.open'));
+  }
+  try{ history.pushState({nsafe:1},''); }catch(e){}
+  window.addEventListener('popstate', function(){
+    var ov=openOverlays();
+    if(ov.length){
+      ov[ov.length-1].classList.remove('open');
+      try{ history.pushState({nsafe:1},''); }catch(e){}
+    }
+  });
+})();
+</script>
 </body>
 </html>

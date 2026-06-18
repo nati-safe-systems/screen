@@ -8,6 +8,8 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:Assistant,sans-serif;background:linear-gradient(135deg,#0d1117 0%,#161b22 100%);color:#e6edf3;min-height:100vh;}
+html,body{overscroll-behavior:none;}
+.modal-bg,.modal-body{overscroll-behavior:contain;}
 .center-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
 .card{background:rgba(22,27,34,0.97);border:1px solid #30363d;border-radius:20px;padding:44px 40px;width:100%;max-width:400px;box-shadow:0 24px 64px rgba(0,0,0,0.5);}
 .logo-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:28px;}
@@ -1916,6 +1918,22 @@ window.addEventListener("load",function(){
   }
 });
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 2.0</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 2.1</div>
+<script>
+/* ניווט מובייל: כפתור "חזור" סוגר חלון/טופס פתוח במקום לצאת מהאפליקציה */
+(function(){
+  function openOverlays(){
+    return Array.prototype.slice.call(document.querySelectorAll('.modal-bg.open, .sf-wrap.open, .dt-pop.open'));
+  }
+  try{ history.pushState({nsafe:1},''); }catch(e){}
+  window.addEventListener('popstate', function(){
+    var ov=openOverlays();
+    if(ov.length){
+      ov[ov.length-1].classList.remove('open');
+      try{ history.pushState({nsafe:1},''); }catch(e){}
+    }
+  });
+})();
+</script>
 </body>
 </html>
