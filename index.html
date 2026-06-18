@@ -871,6 +871,7 @@ function stopCombo(){
   if(_comboState.onEnd && _comboState.mover){ try{ _comboState.mover.removeEventListener("transitionend", _comboState.onEnd); _comboState.mover.removeEventListener("animationend", _comboState.onEnd); }catch(e){} }
   _comboState.onEnd=null; _comboState.mover=null;
   var _mv=document.getElementById("mq-mover"); if(_mv){ _mv.style.transition="none"; }
+  var _ly=document.getElementById("cb-pdf-layer"); if(_ly){ _ly.style.transition="none"; _ly.style.opacity="1"; _ly.style.display="none"; _ly.innerHTML=""; }
 }
 function startCombo(msg, coLogo, pdfUrl, secPerPage, cols, animPdf, showSec){
   stopCombo();
@@ -881,16 +882,23 @@ function startCombo(msg, coLogo, pdfUrl, secPerPage, cols, animPdf, showSec){
   showSec = (+showSec>0)?+showSec:20;
   cols=(+cols===2)?2:1;
   var secMs=((+secPerPage>0)?+secPerPage:10)*1000;
-  var SPD=80; // ברירת מחדל למהירות גלילה
+  var SPD=80;
   var renderScale=1;
 
   stWrap.style.display="none";
   mqWrap.style.display="block";
-  mqMover.style.animation="none";
-  mqMover.style.transition="none";
-  mqMover.innerHTML="";
+  mqMover.style.animation="none"; mqMover.style.transition="none"; mqMover.innerHTML="";
 
-  /* טוען את ה-PDF פעם אחת ברקע, כדי שיהיה מוכן מיד כשהוא צריך לעלות */
+  /* שכבת PDF נפרדת בתוך אזור הגלילה — נעה בנפרד מהטקסט */
+  var layer=document.getElementById("cb-pdf-layer");
+  if(!layer){
+    layer=document.createElement("div");
+    layer.id="cb-pdf-layer";
+    layer.style.cssText="position:absolute;left:0;right:0;top:0;bottom:0;overflow:hidden;pointer-events:none;z-index:1;";
+    mqWrap.appendChild(layer);
+  }
+  layer.style.display="block"; layer.style.opacity="1"; layer.style.transition="none"; layer.innerHTML="";
+
   function loadDoc(){
     if(typeof pdfjsLib==="undefined") return Promise.reject(new Error("pdfjs"));
     pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
@@ -917,29 +925,26 @@ function startCombo(msg, coLogo, pdfUrl, secPerPage, cols, animPdf, showSec){
       return pg.render({canvasContext:canvas.getContext("2d"), viewport:vp}).promise;
     });
   }
-
   function speedNow(){ return (typeof DC!=="undefined"&&DC&&+DC.scrollSpeed>0)?+DC.scrollSpeed:SPD; }
 
-  // בונה את התוכן (טקסט + רווח + PDF) ומתחיל את העלייה למרכז
   function cycle(doc){
     if(myT!==_comboState.token) return;
-    if(!doc){ scrollOnly(); return; }
-    var vpW=mqWrap.clientWidth||800, vpH=mqWrap.clientHeight||600;
+    var H=mqWrap.clientHeight||600, W=mqWrap.clientWidth||800;
+    if(!doc){ scrollOnly(H); return; }
     doc.getPage(1).then(function(pg){
       if(myT!==_comboState.token) return;
       var u=pg.getViewport({scale:1});
-      var maxW=vpW*(cols===2?0.46:0.85), maxH=vpH*0.68;
+      var maxW=W*(cols===2?0.46:0.85), maxH=H*0.7;
       renderScale=Math.min(maxW/u.width, maxH/u.height);
       if(!(renderScale>0)||!isFinite(renderScale)) renderScale=1;
 
-      var html='<div id="cb-text">'+coLogo+msg+'</div>';
-      html+='<div style="height:7vh;"></div>';
-      html+='<div id="cb-pdf" style="display:flex;justify-content:center;align-items:center;gap:1.5vw;">';
-      for(var c=0;c<cols;c++){ html+='<canvas id="pdf-cv-'+c+'" style="background:#fff;border-radius:6px;box-shadow:0 8px 30px rgba(0,0,0,0.6);"></canvas>'; }
-      html+='</div>';
-      mqMover.style.transition="none";
-      mqMover.style.animation="none";
-      mqMover.innerHTML=html;
+      var ph='<div id="cb-pdf" style="position:absolute;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:1.5vw;will-change:transform;">';
+      for(var c=0;c<cols;c++){ ph+='<canvas id="pdf-cv-'+c+'" style="background:#fff;border-radius:6px;box-shadow:0 8px 30px rgba(0,0,0,0.6);"></canvas>'; }
+      ph+='</div>';
+      layer.style.transition="none"; layer.style.opacity="1"; layer.innerHTML=ph;
+
+      mqMover.style.transition="none"; mqMover.style.animation="none";
+      mqMover.innerHTML=coLogo+msg;
 
       var total=doc.numPages;
       var jobs=[];
@@ -948,70 +953,78 @@ function startCombo(msg, coLogo, pdfUrl, secPerPage, cols, animPdf, showSec){
         if(myT!==_comboState.token) return;
         requestAnimationFrame(function(){
           if(myT!==_comboState.token) return;
-          var moverH=mqMover.offsetHeight;
           var pdfBlock=document.getElementById("cb-pdf");
-          var pdfTop=pdfBlock?pdfBlock.offsetTop:0, pdfH=pdfBlock?pdfBlock.offsetHeight:0;
-          var yStart=vpH;
-          var yCenter=Math.round(vpH/2 - (pdfTop + pdfH/2));
+          var pdfH=pdfBlock?pdfBlock.offsetHeight:0;
+          var textH=mqMover.offsetHeight||200;
+          var G=Math.round(H*0.08);
           var sp=speedNow();
-          var riseDur=Math.max(0.4,(yStart - yCenter)/sp);
-          mqMover.style.transition="none";
-          mqMover.style.transform="translateY("+yStart+"px)";
-          void mqMover.offsetHeight; // reflow
+          var centerY=Math.round(H/2 - pdfH/2);
+          var textStart=H, textEnd=-textH;
+          var pdfStart=H+textH+G;
+          var Dt=Math.max(0.4,(textStart-textEnd)/sp);
+          var Dp=Math.max(0.4,(pdfStart-centerY)/sp);
+
+          mqMover.style.transition="none"; mqMover.style.transform="translateY("+textStart+"px)";
+          pdfBlock.style.transition="none"; pdfBlock.style.transform="translateY("+pdfStart+"px)";
+          void mqWrap.offsetHeight;
           requestAnimationFrame(function(){
             if(myT!==_comboState.token) return;
-            mqMover.style.transition="transform "+riseDur.toFixed(2)+"s linear";
-            mqMover.style.transform="translateY("+yCenter+"px)";
+            mqMover.style.transition="transform "+Dt.toFixed(2)+"s linear";
+            mqMover.style.transform="translateY("+textEnd+"px)";
+            pdfBlock.style.transition="transform "+Dp.toFixed(2)+"s linear";
+            pdfBlock.style.transform="translateY("+centerY+"px)";
             var onRise=function(){
-              try{ mqMover.removeEventListener("transitionend", onRise); }catch(e){}
+              try{ pdfBlock.removeEventListener("transitionend", onRise); }catch(e){}
               if(myT!==_comboState.token) return;
-              holdAndFlip(doc, total, yCenter, moverH);
+              holdAndFlip(doc, total);
             };
-            _comboState.onEnd=onRise; _comboState.mover=mqMover;
-            mqMover.addEventListener("transitionend", onRise);
+            _comboState.onEnd=onRise; _comboState.mover=pdfBlock;
+            pdfBlock.addEventListener("transitionend", onRise);
           });
         });
       });
-    }).catch(function(){ if(myT===_comboState.token) scrollOnly(); });
+    }).catch(function(){ if(myT===_comboState.token) scrollOnly(mqWrap.clientHeight||600); });
   }
 
-  function holdAndFlip(doc, total, yCenter, moverH){
+  function holdAndFlip(doc, total){
     if(myT!==_comboState.token) return;
     var startTs=Date.now(), page=1;
     function flip(){
       if(myT!==_comboState.token) return;
       var left=showSec*1000-(Date.now()-startTs);
-      if(left<=0){ exitUp(yCenter, moverH); return; }
-      if(total<=cols){ _comboState.timer=setTimeout(function(){ exitUp(yCenter, moverH); }, left); return; }
+      if(left<=0){ fadeOut(); return; }
+      if(total<=cols){ _comboState.timer=setTimeout(function(){ fadeOut(); }, left); return; }
       _comboState.timer=setTimeout(function(){
         if(myT!==_comboState.token) return;
         page+=cols; if(page>total) page=1;
         var jobs=[];
         for(var c=0;c<cols;c++){ var pn=page+c, cv=document.getElementById("pdf-cv-"+c); if(!cv) continue; if(pn<=total){ cv.style.display=""; jobs.push(renderPageTo(doc,pn,cv)); } else { cv.style.display="none"; } }
-        Promise.all(jobs).then(function(){ if(myT!==_comboState.token) return; if(Date.now()-startTs>=showSec*1000){ exitUp(yCenter, moverH); } else { flip(); } });
+        Promise.all(jobs).then(function(){ if(myT!==_comboState.token) return; if(Date.now()-startTs>=showSec*1000){ fadeOut(); } else { flip(); } });
       }, Math.min(secMs, left));
     }
     flip();
   }
 
-  function exitUp(yCenter, moverH){
+  function fadeOut(){
     if(myT!==_comboState.token) return;
-    var yEnd=-(moverH+20);
-    var dur=Math.max(0.4,(yCenter - yEnd)/speedNow());
-    mqMover.style.transition="transform "+dur.toFixed(2)+"s linear";
-    mqMover.style.transform="translateY("+yEnd+"px)";
-    var onExit=function(){
-      try{ mqMover.removeEventListener("transitionend", onExit); }catch(e){}
+    var fired=false;
+    function next(){
+      if(fired) return; fired=true;
+      try{ layer.removeEventListener("transitionend", onFade); }catch(e){}
       if(myT!==_comboState.token) return;
       docP.then(function(doc){ if(myT===_comboState.token) cycle(doc); });
-    };
-    _comboState.onEnd=onExit; _comboState.mover=mqMover;
-    mqMover.addEventListener("transitionend", onExit);
+    }
+    var onFade=function(){ next(); };
+    layer.style.transition="opacity 0.8s ease";
+    layer.style.opacity="0";
+    _comboState.onEnd=onFade; _comboState.mover=layer;
+    layer.addEventListener("transitionend", onFade);
+    _comboState.timer=setTimeout(next, 1000); // גיבוי אם transitionend לא נורה
   }
 
-  // נפילה אחורה: אם אין PDF — גלילת טקסט רגילה אינסופית
-  function scrollOnly(){
+  function scrollOnly(H){
     if(myT!==_comboState.token) return;
+    if(layer){ layer.style.display="none"; }
     mqMover.style.transition="none"; mqMover.style.animation="none";
     mqMover.innerHTML=coLogo+msg;
     requestAnimationFrame(function(){
@@ -1565,6 +1578,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 2.4</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 2.5</div>
 </body>
 </html>
