@@ -805,7 +805,12 @@ function startPdf(pdfUrl, secPerPage, cols, animPdf){
     .then(function(d){
       if(myToken!==_pdfState.token) return null;
       if(!d||!d.ok||!d.b64) throw new Error((d&&d.error)?d.error:"לא התקבל קובץ");
-      return pdfjsLib.getDocument({data:b64ToUint8(d.b64)}).promise;
+      return pdfjsLib.getDocument({
+        data:b64ToUint8(d.b64),
+        cMapUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/",
+        cMapPacked:true,
+        standardFontDataUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/"
+      }).promise;
     })
     .then(function(doc){
       if(!doc||myToken!==_pdfState.token) return;
@@ -1453,6 +1458,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 2.1</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 2.2</div>
 </body>
 </html>
