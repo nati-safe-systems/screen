@@ -868,8 +868,9 @@ var _comboState = { token:0, timer:null, onEnd:null, mover:null };
 function stopCombo(){
   _comboState.token++;
   if(_comboState.timer){ clearTimeout(_comboState.timer); _comboState.timer=null; }
-  if(_comboState.onEnd && _comboState.mover){ try{ _comboState.mover.removeEventListener("animationend", _comboState.onEnd); }catch(e){} }
+  if(_comboState.onEnd && _comboState.mover){ try{ _comboState.mover.removeEventListener("transitionend", _comboState.onEnd); _comboState.mover.removeEventListener("animationend", _comboState.onEnd); }catch(e){} }
   _comboState.onEnd=null; _comboState.mover=null;
+  var _mv=document.getElementById("mq-mover"); if(_mv){ _mv.style.transition="none"; }
 }
 function startCombo(msg, coLogo, pdfUrl, secPerPage, cols, animPdf, showSec){
   stopCombo();
@@ -877,14 +878,19 @@ function startCombo(msg, coLogo, pdfUrl, secPerPage, cols, animPdf, showSec){
   var mqWrap=document.getElementById("mq-wrap");
   var mqMover=document.getElementById("mq-mover");
   var stWrap=document.getElementById("st-wrap");
-  var stText=document.getElementById("st-text");
   showSec = (+showSec>0)?+showSec:20;
   cols=(+cols===2)?2:1;
   var secMs=((+secPerPage>0)?+secPerPage:10)*1000;
-  var animCls=(animPdf==="fade")?"pdf-anim-fade":(animPdf==="slide")?"pdf-anim-slide":"";
+  var SPD=80; // ברירת מחדל למהירות גלילה
+  var renderScale=1;
 
-  /* טוען את ה-PDF פעם אחת ברקע (בזמן שהטקסט נגלל), כדי שיופיע מיד וללא "טוען מסמך" */
-  var docPromise=null;
+  stWrap.style.display="none";
+  mqWrap.style.display="block";
+  mqMover.style.animation="none";
+  mqMover.style.transition="none";
+  mqMover.innerHTML="";
+
+  /* טוען את ה-PDF פעם אחת ברקע, כדי שיהיה מוכן מיד כשהוא צריך לעלות */
   function loadDoc(){
     if(typeof pdfjsLib==="undefined") return Promise.reject(new Error("pdfjs"));
     pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
@@ -900,89 +906,128 @@ function startCombo(msg, coLogo, pdfUrl, secPerPage, cols, animPdf, showSec){
         }).promise;
       });
   }
-  docPromise = loadDoc().catch(function(){ return null; });
+  var docP = loadDoc().catch(function(){ return null; });
 
-  function renderInto(doc, pageNum, canvas){
+  function renderPageTo(doc, pageNum, canvas){
     return doc.getPage(pageNum).then(function(pg){
       if(myT!==_comboState.token) return;
-      var box=canvas.parentElement.getBoundingClientRect();
-      var avW=(box.width/cols)-24, avH=box.height-24;
-      var v1=pg.getViewport({scale:1});
-      var scale=Math.min(avW/v1.width, avH/v1.height);
-      if(!(scale>0)||!isFinite(scale)) scale=1;
-      var vp=pg.getViewport({scale:scale});
+      var vp=pg.getViewport({scale:renderScale});
       canvas.width=vp.width; canvas.height=vp.height;
+      canvas.style.width=vp.width+"px"; canvas.style.height=vp.height+"px";
       return pg.render({canvasContext:canvas.getContext("2d"), viewport:vp}).promise;
     });
   }
 
-  function showPdfWindow(doc){
+  function speedNow(){ return (typeof DC!=="undefined"&&DC&&+DC.scrollSpeed>0)?+DC.scrollSpeed:SPD; }
+
+  // בונה את התוכן (טקסט + רווח + PDF) ומתחיל את העלייה למרכז
+  function cycle(doc){
     if(myT!==_comboState.token) return;
-    mqWrap.style.display="none";
-    mqMover.style.animation="none";
-    stWrap.style.display="flex";
-    if(!doc){ _comboState.timer=setTimeout(function(){ if(myT===_comboState.token) doScroll(); }, 1500); return; }
-    var total=doc.numPages, page=1, startTs=Date.now();
-    function frame(){
+    if(!doc){ scrollOnly(); return; }
+    var vpW=mqWrap.clientWidth||800, vpH=mqWrap.clientHeight||600;
+    doc.getPage(1).then(function(pg){
       if(myT!==_comboState.token) return;
-      var html='<div class="'+animCls+'" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:1.5vw;padding:1.5vh 1.5vw;box-sizing:border-box;">';
-      for(var c=0;c<cols;c++){ html+='<canvas id="pdf-cv-'+c+'" style="max-width:100%;max-height:100%;background:#fff;border-radius:6px;box-shadow:0 8px 30px rgba(0,0,0,0.6);"></canvas>'; }
+      var u=pg.getViewport({scale:1});
+      var maxW=vpW*(cols===2?0.46:0.85), maxH=vpH*0.68;
+      renderScale=Math.min(maxW/u.width, maxH/u.height);
+      if(!(renderScale>0)||!isFinite(renderScale)) renderScale=1;
+
+      var html='<div id="cb-text">'+coLogo+msg+'</div>';
+      html+='<div style="height:7vh;"></div>';
+      html+='<div id="cb-pdf" style="display:flex;justify-content:center;align-items:center;gap:1.5vw;">';
+      for(var c=0;c<cols;c++){ html+='<canvas id="pdf-cv-'+c+'" style="background:#fff;border-radius:6px;box-shadow:0 8px 30px rgba(0,0,0,0.6);"></canvas>'; }
       html+='</div>';
-      stText.className=""; stText.innerHTML=html;
+      mqMover.style.transition="none";
+      mqMover.style.animation="none";
+      mqMover.innerHTML=html;
+
+      var total=doc.numPages;
       var jobs=[];
-      for(var c2=0;c2<cols;c2++){
-        var pn=page+c2, cv=document.getElementById("pdf-cv-"+c2);
-        if(!cv) continue;
-        if(pn<=total){ jobs.push(renderInto(doc, pn, cv)); } else { cv.style.display="none"; }
-      }
+      for(var c2=0;c2<cols;c2++){ var pn=1+c2, cv=document.getElementById("pdf-cv-"+c2); if(pn<=total&&cv){ jobs.push(renderPageTo(doc,pn,cv)); } else if(cv){ cv.style.display="none"; } }
       Promise.all(jobs).then(function(){
         if(myT!==_comboState.token) return;
-        var elapsed=Date.now()-startTs, left=showSec*1000-elapsed;
-        if(left<=0){ doScroll(); return; }
-        if(total<=cols){ _comboState.timer=setTimeout(function(){ if(myT===_comboState.token) doScroll(); }, left); return; }
-        _comboState.timer=setTimeout(function(){
+        requestAnimationFrame(function(){
           if(myT!==_comboState.token) return;
-          page+=cols; if(page>total) page=1;
-          if(Date.now()-startTs>=showSec*1000){ doScroll(); } else { frame(); }
-        }, Math.min(secMs, left));
+          var moverH=mqMover.offsetHeight;
+          var pdfBlock=document.getElementById("cb-pdf");
+          var pdfTop=pdfBlock?pdfBlock.offsetTop:0, pdfH=pdfBlock?pdfBlock.offsetHeight:0;
+          var yStart=vpH;
+          var yCenter=Math.round(vpH/2 - (pdfTop + pdfH/2));
+          var sp=speedNow();
+          var riseDur=Math.max(0.4,(yStart - yCenter)/sp);
+          mqMover.style.transition="none";
+          mqMover.style.transform="translateY("+yStart+"px)";
+          void mqMover.offsetHeight; // reflow
+          requestAnimationFrame(function(){
+            if(myT!==_comboState.token) return;
+            mqMover.style.transition="transform "+riseDur.toFixed(2)+"s linear";
+            mqMover.style.transform="translateY("+yCenter+"px)";
+            var onRise=function(){
+              try{ mqMover.removeEventListener("transitionend", onRise); }catch(e){}
+              if(myT!==_comboState.token) return;
+              holdAndFlip(doc, total, yCenter, moverH);
+            };
+            _comboState.onEnd=onRise; _comboState.mover=mqMover;
+            mqMover.addEventListener("transitionend", onRise);
+          });
+        });
       });
-    }
-    frame();
+    }).catch(function(){ if(myT===_comboState.token) scrollOnly(); });
   }
 
-  function doScroll(){
+  function holdAndFlip(doc, total, yCenter, moverH){
     if(myT!==_comboState.token) return;
-    stWrap.style.display="none";
-    mqMover.style.animation="none";
+    var startTs=Date.now(), page=1;
+    function flip(){
+      if(myT!==_comboState.token) return;
+      var left=showSec*1000-(Date.now()-startTs);
+      if(left<=0){ exitUp(yCenter, moverH); return; }
+      if(total<=cols){ _comboState.timer=setTimeout(function(){ exitUp(yCenter, moverH); }, left); return; }
+      _comboState.timer=setTimeout(function(){
+        if(myT!==_comboState.token) return;
+        page+=cols; if(page>total) page=1;
+        var jobs=[];
+        for(var c=0;c<cols;c++){ var pn=page+c, cv=document.getElementById("pdf-cv-"+c); if(!cv) continue; if(pn<=total){ cv.style.display=""; jobs.push(renderPageTo(doc,pn,cv)); } else { cv.style.display="none"; } }
+        Promise.all(jobs).then(function(){ if(myT!==_comboState.token) return; if(Date.now()-startTs>=showSec*1000){ exitUp(yCenter, moverH); } else { flip(); } });
+      }, Math.min(secMs, left));
+    }
+    flip();
+  }
+
+  function exitUp(yCenter, moverH){
+    if(myT!==_comboState.token) return;
+    var yEnd=-(moverH+20);
+    var dur=Math.max(0.4,(yCenter - yEnd)/speedNow());
+    mqMover.style.transition="transform "+dur.toFixed(2)+"s linear";
+    mqMover.style.transform="translateY("+yEnd+"px)";
+    var onExit=function(){
+      try{ mqMover.removeEventListener("transitionend", onExit); }catch(e){}
+      if(myT!==_comboState.token) return;
+      docP.then(function(doc){ if(myT===_comboState.token) cycle(doc); });
+    };
+    _comboState.onEnd=onExit; _comboState.mover=mqMover;
+    mqMover.addEventListener("transitionend", onExit);
+  }
+
+  // נפילה אחורה: אם אין PDF — גלילת טקסט רגילה אינסופית
+  function scrollOnly(){
+    if(myT!==_comboState.token) return;
+    mqMover.style.transition="none"; mqMover.style.animation="none";
     mqMover.innerHTML=coLogo+msg;
-    mqWrap.style.display="block";
     requestAnimationFrame(function(){
       if(myT!==_comboState.token) return;
-      var wH=mqWrap.offsetHeight||600;
-      var mH=mqMover.offsetHeight||200;
-      var speed=(typeof DC!=="undefined"&&DC&&+DC.scrollSpeed>0)?+DC.scrollSpeed:80;
-      var dur=(wH+mH)/speed;
-      var styleId="mq-style";
-      var old=document.getElementById(styleId); if(old)old.remove();
-      var stl=document.createElement("style"); stl.id=styleId;
+      var wH=mqWrap.offsetHeight||600, mH=mqMover.offsetHeight||200;
+      var dur=(wH+mH)/speedNow();
+      var old=document.getElementById("mq-style"); if(old)old.remove();
+      var stl=document.createElement("style"); stl.id="mq-style";
       stl.textContent="@keyframes mqRoll{0%{transform:translateY("+wH+"px);}100%{transform:translateY(-"+mH+"px);}}";
       document.head.appendChild(stl);
       mqMover.style.transform="translateY("+wH+"px)";
-      mqMover.style.animation="mqRoll "+dur.toFixed(1)+"s linear 1";
-      var onEnd=function(){
-        try{ mqMover.removeEventListener("animationend", onEnd); }catch(e){}
-        if(myT!==_comboState.token) return;
-        doPdf();
-      };
-      _comboState.onEnd=onEnd; _comboState.mover=mqMover;
-      mqMover.addEventListener("animationend", onEnd);
+      mqMover.style.animation="mqRoll "+dur.toFixed(1)+"s linear infinite";
     });
   }
-  function doPdf(){
-    if(myT!==_comboState.token) return;
-    docPromise.then(function(doc){ if(myT===_comboState.token) showPdfWindow(doc); });
-  }
-  doScroll();
+
+  docP.then(function(doc){ if(myT===_comboState.token) cycle(doc); });
 }
 
 function showMessage(s) {
@@ -1520,6 +1565,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 2.3</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 2.4</div>
 </body>
 </html>
