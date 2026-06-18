@@ -872,16 +872,86 @@ function stopCombo(){
   _comboState.onEnd=null; _comboState.mover=null;
 }
 function startCombo(msg, coLogo, pdfUrl, secPerPage, cols, animPdf, showSec){
-  stopCombo(); stopPdf();
+  stopCombo();
   var myT = _comboState.token;
   var mqWrap=document.getElementById("mq-wrap");
   var mqMover=document.getElementById("mq-mover");
   var stWrap=document.getElementById("st-wrap");
+  var stText=document.getElementById("st-text");
   showSec = (+showSec>0)?+showSec:20;
+  cols=(+cols===2)?2:1;
+  var secMs=((+secPerPage>0)?+secPerPage:10)*1000;
+  var animCls=(animPdf==="fade")?"pdf-anim-fade":(animPdf==="slide")?"pdf-anim-slide":"";
+
+  /* טוען את ה-PDF פעם אחת ברקע (בזמן שהטקסט נגלל), כדי שיופיע מיד וללא "טוען מסמך" */
+  var docPromise=null;
+  function loadDoc(){
+    if(typeof pdfjsLib==="undefined") return Promise.reject(new Error("pdfjs"));
+    pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    return fetch(GAS+"?action=pdf&url="+encodeURIComponent(pdfUrl)+"&_="+Date.now(),{cache:"no-store"})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(!d||!d.ok||!d.b64) throw new Error("no data");
+        return pdfjsLib.getDocument({
+          data:b64ToUint8(d.b64),
+          cMapUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/",
+          cMapPacked:true,
+          standardFontDataUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/"
+        }).promise;
+      });
+  }
+  docPromise = loadDoc().catch(function(){ return null; });
+
+  function renderInto(doc, pageNum, canvas){
+    return doc.getPage(pageNum).then(function(pg){
+      if(myT!==_comboState.token) return;
+      var box=canvas.parentElement.getBoundingClientRect();
+      var avW=(box.width/cols)-24, avH=box.height-24;
+      var v1=pg.getViewport({scale:1});
+      var scale=Math.min(avW/v1.width, avH/v1.height);
+      if(!(scale>0)||!isFinite(scale)) scale=1;
+      var vp=pg.getViewport({scale:scale});
+      canvas.width=vp.width; canvas.height=vp.height;
+      return pg.render({canvasContext:canvas.getContext("2d"), viewport:vp}).promise;
+    });
+  }
+
+  function showPdfWindow(doc){
+    if(myT!==_comboState.token) return;
+    mqWrap.style.display="none";
+    mqMover.style.animation="none";
+    stWrap.style.display="flex";
+    if(!doc){ _comboState.timer=setTimeout(function(){ if(myT===_comboState.token) doScroll(); }, 1500); return; }
+    var total=doc.numPages, page=1, startTs=Date.now();
+    function frame(){
+      if(myT!==_comboState.token) return;
+      var html='<div class="'+animCls+'" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:1.5vw;padding:1.5vh 1.5vw;box-sizing:border-box;">';
+      for(var c=0;c<cols;c++){ html+='<canvas id="pdf-cv-'+c+'" style="max-width:100%;max-height:100%;background:#fff;border-radius:6px;box-shadow:0 8px 30px rgba(0,0,0,0.6);"></canvas>'; }
+      html+='</div>';
+      stText.className=""; stText.innerHTML=html;
+      var jobs=[];
+      for(var c2=0;c2<cols;c2++){
+        var pn=page+c2, cv=document.getElementById("pdf-cv-"+c2);
+        if(!cv) continue;
+        if(pn<=total){ jobs.push(renderInto(doc, pn, cv)); } else { cv.style.display="none"; }
+      }
+      Promise.all(jobs).then(function(){
+        if(myT!==_comboState.token) return;
+        var elapsed=Date.now()-startTs, left=showSec*1000-elapsed;
+        if(left<=0){ doScroll(); return; }
+        if(total<=cols){ _comboState.timer=setTimeout(function(){ if(myT===_comboState.token) doScroll(); }, left); return; }
+        _comboState.timer=setTimeout(function(){
+          if(myT!==_comboState.token) return;
+          page+=cols; if(page>total) page=1;
+          if(Date.now()-startTs>=showSec*1000){ doScroll(); } else { frame(); }
+        }, Math.min(secMs, left));
+      });
+    }
+    frame();
+  }
 
   function doScroll(){
     if(myT!==_comboState.token) return;
-    stopPdf();
     stWrap.style.display="none";
     mqMover.style.animation="none";
     mqMover.innerHTML=coLogo+msg;
@@ -910,15 +980,7 @@ function startCombo(msg, coLogo, pdfUrl, secPerPage, cols, animPdf, showSec){
   }
   function doPdf(){
     if(myT!==_comboState.token) return;
-    mqWrap.style.display="none";
-    mqMover.style.animation="none";
-    stWrap.style.display="flex";
-    startPdf(pdfUrl, secPerPage, cols, animPdf);
-    _comboState.timer=setTimeout(function(){
-      if(myT!==_comboState.token) return;
-      stopPdf();
-      doScroll();
-    }, showSec*1000);
+    docPromise.then(function(doc){ if(myT===_comboState.token) showPdfWindow(doc); });
   }
   doScroll();
 }
@@ -1458,6 +1520,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 2.2</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 2.3</div>
 </body>
 </html>
