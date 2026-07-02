@@ -441,11 +441,13 @@ function gfi(m,d,dow){
 /* תאריך עברי */
 var rh={2024:"2024-10-03",2025:"2025-09-23",2026:"2026-09-12",2027:"2027-10-02",2028:"2028-09-21",2029:"2029-09-10",2030:"2030-09-28",2031:"2031-09-18"};
 function ghd(date){
-  var gy=date.getFullYear(),rT=new Date(rh[gy]),rN=new Date(rh[gy+1]),rP=new Date(rh[gy-1]);
+  var gy=date.getFullYear();
+  var rT=new Date(rh[gy]+"T00:00:00"),rN=new Date(rh[gy+1]+"T00:00:00"),rP=new Date(rh[gy-1]+"T00:00:00");
   var hy,rS,rE;
   if(date>=rT){hy=gy+3761;rS=rT;rE=rN;}else{hy=gy+3760;rS=rP;rE=rT;}
   var yL=Math.round((rE-rS)/86400000),iL=yL>360;
-  var dp=Math.floor((date-rS)/86400000);
+  var d0=new Date(date.getFullYear(),date.getMonth(),date.getDate());
+  var dp=Math.round((d0-rS)/86400000);
   var mo=[{n:"תשרי",l:30},{n:"חשוון",l:(yL===355||yL===385)?30:29},{n:"כסלו",l:(yL===353||yL===383)?29:30},{n:"טבת",l:29},{n:"שבט",l:30}];
   if(iL){mo.push({n:"אדר א",l:30},{n:"אדר ב",l:29});}else{mo.push({n:"אדר",l:29});}
   mo.push({n:"ניסן",l:30},{n:"אייר",l:29},{n:"סיוון",l:30},{n:"תמוז",l:29},{n:"אב",l:30},{n:"אלול",l:29});
