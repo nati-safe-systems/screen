@@ -423,9 +423,18 @@ function gsmi(){
   return rc?{rc:rc,mol:mol}:null;
 }
 
-function gfi(m,d){
-  var fs=[["צום גדליה","תשרי",[3,4]],["צום עשרה בטבת","טבת",[10]],["תענית אסתר","אדר",[13]],["שבעה עשר בתמוז","תמוז",[17]],["תשעה באב","אב",[9]]];
-  for(var i=0;i<fs.length;i++)if(fs[i][1]===m&&fs[i][2].indexOf(d)>=0)return fs[i][0];
+function gfi(m,d,dow){
+  // dow: 0=ראשון ... 6=שבת. מטפל בצום נדחה.
+  // צום גדליה (ג' תשרי) — אם בשבת נדחה לראשון (ד')
+  if(m==="תשרי"){ if(d===3&&dow!==6)return "צום גדליה"; if(d===4&&dow===0)return "צום גדליה"; }
+  // עשרה בטבת (י' טבת) — לעולם לא בשבת
+  if(m==="טבת"&&d===10)return "צום עשרה בטבת";
+  // תענית אסתר (י"ג אדר) — אם בשבת מקדימים לחמישי (י"א). בשנה מעוברת באדר ב'.
+  if(m==="אדר"||m==="אדר ב"){ if(d===13&&dow!==6)return "תענית אסתר"; if(d===11&&dow===4)return "תענית אסתר"; }
+  // שבעה עשר בתמוז (י"ז תמוז) — אם בשבת נדחה לראשון (י"ח)
+  if(m==="תמוז"){ if(d===17&&dow!==6)return "שבעה עשר בתמוז"; if(d===18&&dow===0)return "שבעה עשר בתמוז"; }
+  // תשעה באב (ט' אב) — אם בשבת נדחה לראשון (י')
+  if(m==="אב"){ if(d===9&&dow!==6)return "תשעה באב"; if(d===10&&dow===0)return "תשעה באב"; }
   return null;
 }
 
@@ -553,10 +562,10 @@ function upd(){
   var chDisp=gholName()||gjhName(hd.month,hd.day);
   document.getElementById("ie").textContent=chDisp||ec||"";
 
-  var fn=gfi(hd.month,hd.day);
+  var fn=gfi(hd.month,hd.day,hcd.getDay());
   var sm=(now.getDay()===6)?gsmi():null;
   var spb=document.getElementById("spb");
-  if(fn){spb.style.display="block";document.getElementById("spt").textContent="צום: "+fn;if(fn==="תשעה באב"){document.getElementById("spc").innerHTML="תחילת הצום · אמש בשקיעה<br>סיום הצום · צאת הכוכבים <span class=\"spv\">"+fmt(tm.tz)+"</span>";}else{document.getElementById("spc").innerHTML="תחילת הצום · עלות השחר <span class=\"spv\">"+fmt(tm.alot)+"</span><br>סיום הצום · צאת הכוכבים <span class=\"spv\">"+fmt(tm.tz)+"</span>";}}
+  if(fn){spb.style.display="block";document.getElementById("spt").textContent=(/^(צום|תענית)/.test(fn)?fn:"צום "+fn);if(fn==="תשעה באב"){document.getElementById("spc").innerHTML="תחילת הצום · אמש בשקיעה<br>סיום הצום · צאת הכוכבים <span class=\"spv\">"+fmt(tm.tz)+"</span>";}else{document.getElementById("spc").innerHTML="תחילת הצום · עלות השחר <span class=\"spv\">"+fmt(tm.alot)+"</span><br>סיום הצום · צאת הכוכבים <span class=\"spv\">"+fmt(tm.tz)+"</span>";}}
   else if(sm){spb.style.display="block";document.getElementById("spt").textContent="שבת מברכים";var inf=(sm.rc?"ראש חודש: "+sm.rc:"")+(sm.mol?" מולד: "+sm.mol:"");document.getElementById("spc").textContent=inf;}
   else{spb.style.display="none";}
 
@@ -657,6 +666,8 @@ function start(){
         setInterval(function(){var t=tdy();if(t!==lad){fhcal(t,null);fparasha(t,function(){loadNextSat(null);});}},3600000);
         setInterval(function(){if(Date.now()-llc>LCI)chkLic(null);},LCI);
         setInterval(pollMsg,15000);
+        // רענון יומי אוטומטי ב-03:30 — קולט עדכונים חדשים ומונע תקיעות
+        setInterval(function(){var n=new Date();if(n.getHours()===3&&n.getMinutes()>=30&&n.getMinutes()<35){if(!window._dailyReloaded){window._dailyReloaded=true;location.reload();}}else if(n.getHours()!==3){window._dailyReloaded=false;}},60000);
       });
     });
   });
