@@ -167,6 +167,7 @@ var GAS  = "https://script.google.com/macros/s/AKfycbyMATppr6lZ1MqJlFF_E_Y-9XuKN
 var LOC  = {lat:31.78, lon:35.21, elev:800};
 var SID   = new URLSearchParams(window.location.search).get("id") || "DEFAULT";
 var TOKEN = new URLSearchParams(window.location.search).get("token") || "";
+var PREVIEW = new URLSearchParams(window.location.search).get("preview") === "1";
 document.getElementById("lock-sid").textContent = "מזהה מסך: " + SID;
 
 var ok=false, aD=null, aN=null, lad="", llc=0, LCI=3600000;
@@ -222,6 +223,8 @@ function chkLic(cb) {
         document.getElementById("lock").style.display="flex";
         if(cb)cb(); return;
       }
+      // מצב תצוגה מקדימה — עוקף רק את נעילת המכשיר (טוקן המסך כבר נבדק למעלה)
+      if(PREVIEW){ proceedWithScreen(s,myToken,cb); return; }
       // בדיקת device token
       var savedToken = s.device_token || "";
       if(savedToken === "") {
@@ -552,7 +555,7 @@ function upd(){
   var fn=gfi(hd.month,hd.day);
   var sm=(now.getDay()===6)?gsmi():null;
   var spb=document.getElementById("spb");
-  if(fn){spb.style.display="block";document.getElementById("spt").textContent="צום: "+fn;document.getElementById("spc").textContent="כניסה: "+fmt(tm.sunset-(18/60))+" יציאה: "+fmt(tm.tz);}
+  if(fn){spb.style.display="block";document.getElementById("spt").textContent="צום: "+fn;if(fn==="תשעה באב"){document.getElementById("spc").textContent="תחילת הצום: אמש בשקיעה · סיום הצום (צאת הכוכבים): "+fmt(tm.tz);}else{document.getElementById("spc").textContent="תחילת הצום (עלות השחר): "+fmt(tm.alot)+" · סיום הצום (צאת הכוכבים): "+fmt(tm.tz);}}
   else if(sm){spb.style.display="block";document.getElementById("spt").textContent="שבת מברכים";var inf=(sm.rc?"ראש חודש: "+sm.rc:"")+(sm.mol?" מולד: "+sm.mol:"");document.getElementById("spc").textContent=inf;}
   else{spb.style.display="none";}
 
