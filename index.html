@@ -40,8 +40,9 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
 .ic{background:rgba(255,255,255,0.05);border:1px solid rgba(255,204,0,0.3);border-radius:12px;padding:5px;text-align:center;margin-bottom:4px;}
 #par{font-size:1.55vw;color:#ffcc00;font-family:"Frank Ruhl Libre",serif;font-weight:900;display:block;text-align:center;}
 .ist{font-size:0.95vw;color:#fff;font-weight:700;display:block;margin-top:2px;text-align:center;}
-#spb{display:none;background:rgba(0,80,160,0.35);border:1px solid rgba(100,180,255,0.4);border-radius:10px;padding:5px 8px;margin-bottom:4px;font-size:0.9vw;color:#cce8ff;line-height:1.4;}
-#spb .st{font-weight:800;color:#88ccff;font-size:1vw;display:block;margin-bottom:2px;}
+#spb{display:none;background:rgba(0,80,160,0.35);border:1px solid rgba(100,180,255,0.4);border-radius:10px;padding:8px 10px;margin-bottom:4px;font-size:0.95vw;color:#cce8ff;line-height:1.6;text-align:center;}
+#spb .spv{color:#fff;font-weight:800;font-size:1.05vw;}
+#spb .st{font-weight:800;color:#88ccff;font-size:1.15vw;display:block;margin-bottom:4px;}
 .zc{display:flex;flex-direction:column;gap:3px;padding:2px 0;}
 .zr{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.08);font-size:1.25vw;font-weight:600;}
 .zv{color:#00ff88;font-weight:800;font-size:1.35vw;}
@@ -555,7 +556,7 @@ function upd(){
   var fn=gfi(hd.month,hd.day);
   var sm=(now.getDay()===6)?gsmi():null;
   var spb=document.getElementById("spb");
-  if(fn){spb.style.display="block";document.getElementById("spt").textContent="צום: "+fn;if(fn==="תשעה באב"){document.getElementById("spc").textContent="תחילת הצום: אמש בשקיעה · סיום הצום (צאת הכוכבים): "+fmt(tm.tz);}else{document.getElementById("spc").textContent="תחילת הצום (עלות השחר): "+fmt(tm.alot)+" · סיום הצום (צאת הכוכבים): "+fmt(tm.tz);}}
+  if(fn){spb.style.display="block";document.getElementById("spt").textContent="צום: "+fn;if(fn==="תשעה באב"){document.getElementById("spc").innerHTML="תחילת הצום · אמש בשקיעה<br>סיום הצום · צאת הכוכבים <span class=\"spv\">"+fmt(tm.tz)+"</span>";}else{document.getElementById("spc").innerHTML="תחילת הצום · עלות השחר <span class=\"spv\">"+fmt(tm.alot)+"</span><br>סיום הצום · צאת הכוכבים <span class=\"spv\">"+fmt(tm.tz)+"</span>";}}
   else if(sm){spb.style.display="block";document.getElementById("spt").textContent="שבת מברכים";var inf=(sm.rc?"ראש חודש: "+sm.rc:"")+(sm.mol?" מולד: "+sm.mol:"");document.getElementById("spc").textContent=inf;}
   else{spb.style.display="none";}
 
