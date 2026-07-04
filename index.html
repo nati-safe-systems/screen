@@ -578,7 +578,7 @@ function upd(){
   zh+='<div class="zr"><span>סו"ז קר"ש גר"א</span><span class="zv">'+fmt(tm.szG)+'</span></div>';
   zh+='<div class="zr"><span>חצות</span><span class="zv">'+fmt(tm.noon)+'</span></div>';
   zh+='<div class="zr"><span>מנחה גדולה</span><span class="zv">'+fmt(tm.mincha)+'</span></div>';
-  zh+='<div class="zr"><span>שקיעה</span><span class="zv">'+fmt(tm.sunset)+'</span></div>';
+  zh+='<div class="zr"><span>שקיעה</span><span class="zv" style="color:#ffcc00">'+fmt(tm.sunset)+'</span></div>';
   zh+='<div class="zr"><span>צאת הכוכבים</span><span class="zv">'+fmt(tm.tz)+'</span></div>';
   zh+='<div class="zr"><span>רבינו תם</span><span class="zv">'+fmt(tm.rt)+'</span></div>';
   document.getElementById("zl").innerHTML=zh;
@@ -667,7 +667,7 @@ function start(){
       loadNextSat(function(){
         upd();
       setInterval(upd,1000);
-        setInterval(function(){var t=tdy();if(t!==lad){fhcal(t,null);fparasha(t,function(){loadNextSat(null);});}},3600000);
+        setInterval(function(){var t=tdy();if(t!==lad){fhcal(t,null);fparasha(t,function(){loadNextSat(null);});}},60000);
         setInterval(function(){if(Date.now()-llc>LCI)chkLic(null);},LCI);
         setInterval(pollMsg,15000);
         // רענון יומי אוטומטי ב-03:30 — קולט עדכונים חדשים ומונע תקיעות
