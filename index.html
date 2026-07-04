@@ -1125,6 +1125,8 @@ function pollMsg() {
     var s=d[0];
     if(!PREVIEW && new Date(s.license_expiry)<=new Date()){ok=false;document.getElementById("lock").style.display="flex";return;}
     s.company_logo=curData?curData.company_logo:"";
+    // רענון חי של הגדרות התצוגה (רקע, בהירות, פרופיל, הרשאות) בכל poll
+    applyDisplayConfig(parseDisplayConfig(s.display_config));
     var newKey=effectiveAd(s)._key;
     curData=s;
     if(newKey!==window._curAdKey){
@@ -1409,14 +1411,20 @@ function gzo(d){
   var tz=-d.getTimezoneOffset()/60;
   var nn=(12-LOC.lon/15)+tz-(eq/60);
   var sr=nn-(ha/15),ss=nn+(ha/15);
-  return {alot:sr-1.2,sunrise:sr,szM:sr-1.2+((ss+1.2-(sr-1.2))/12)*3,szG:sr+((ss-sr)/12)*3,noon:nn,mincha:nn+0.5,sunset:ss,tz:ss+(41/60),rt:ss+(72/60)};
+  // מג"א לפי 19.8° מתחת לאופק (עלות/צאת אסטרונומי לחישוב היום)
+  var cH198=(Math.cos((90+19.8)*rad)-Math.sin(LOC.lat*rad)*Math.sin(dc))/(Math.cos(LOC.lat*rad)*Math.cos(dc));
+  var ha198=Math.acos(Math.max(-1,Math.min(1,cH198)))/rad;
+  var alot198=nn-(ha198/15),tzeit198=nn+(ha198/15);
+  var szM198=alot198+((tzeit198-alot198)/12)*3;
+  // עלות השחר בתצוגה: 72 דקות קבועות לפני הנץ
+  return {alot:sr-1.2,sunrise:sr,szM:szM198,szG:sr+((ss-sr)/12)*3,noon:nn,mincha:nn+0.5,sunset:ss,tz:ss+(41/60),rt:ss+(72/60)};
 }
 
 function gzm2(n){
   return {
-    alot:    gzm("alotHaShachar"),
+    alot:    gzm("alot72min"),
     sunrise: gzm("sunrise"),
-    szM:     gzm("sofZmanShmaMGA16Point1"),
+    szM:     gzm("sofZmanShmaMGA19Point8"),
     szG:     gzm("sofZmanShma"),
     noon:    gzm("chatzot"),
     mincha:  gzm("minchaGedola"),
@@ -1570,7 +1578,7 @@ function start(){
       setInterval(upd,1000);
         setInterval(function(){var t=tdy();if(t!==lad){fhcal(t,null);fparasha(t,function(){loadNextSat(null);});}},60000);
         setInterval(function(){if(Date.now()-llc>LCI)chkLic(null);},LCI);
-        setInterval(pollMsg,15000);
+        setInterval(pollMsg,180000);
       });
     });
   });
@@ -1579,6 +1587,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 2.6</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 2.8</div>
 </body>
 </html>
