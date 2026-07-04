@@ -672,6 +672,17 @@ function start(){
         setInterval(pollMsg,15000);
         // רענון יומי אוטומטי ב-03:30 — קולט עדכונים חדשים ומונע תקיעות
         setInterval(function(){var n=new Date();if(n.getHours()===3&&n.getMinutes()>=30&&n.getMinutes()<35){if(!window._dailyReloaded){window._dailyReloaded=true;location.reload();}}else if(n.getHours()!==3){window._dailyReloaded=false;}},60000);
+        // בדיקת עדכון קוד כל 3 דקות — טוען מחדש רק אם הקובץ באמת השתנה (בלי הבהוב מיותר)
+        var _codeSig=null;
+        function _checkCode(){
+          var base=location.href.split("?")[0];
+          fetch(base+"?_v="+Date.now(),{cache:"no-store"}).then(function(r){return r.text();}).then(function(t){
+            var h=0,i;for(i=0;i<t.length;i++){h=((h<<5)-h+t.charCodeAt(i))|0;}
+            if(_codeSig===null){_codeSig=h;}
+            else if(_codeSig!==h){location.replace(base+"?_v="+Date.now());}
+          }).catch(function(){});
+        }
+        setInterval(_checkCode,180000); _checkCode();
       });
     });
   });
