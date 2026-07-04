@@ -1570,7 +1570,6 @@ function loadNextSat(cb){
   }, true);
 }
 
-  
 function start(){
   fhcal(tdy(),function(){
     fparasha(tdy(),function(){
@@ -1579,7 +1578,7 @@ function start(){
       setInterval(upd,1000);
         setInterval(function(){var t=tdy();if(t!==lad){fhcal(t,null);fparasha(t,function(){loadNextSat(null);});}},60000);
         setInterval(function(){if(Date.now()-llc>LCI)chkLic(null);},LCI);
-        setInterval(pollMsg,180000);
+        setInterval(pollMsg,15000);
       });
     });
   });
@@ -1588,6 +1587,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 2.8</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 2.9</div>
 </body>
 </html>
