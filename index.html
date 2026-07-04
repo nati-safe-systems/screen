@@ -1422,7 +1422,7 @@ function gzo(d){
 
 function gzm2(n){
   return {
-    alot:    gzm("alot72min"),
+    alot:    (function(){var s=gzm("sunrise");return isNaN(s)?NaN:s-1.2;})(),
     sunrise: gzm("sunrise"),
     szM:     gzm("sofZmanShmaMGA19Point8"),
     szG:     gzm("sofZmanShma"),
@@ -1587,6 +1587,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 2.9</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 3.0</div>
 </body>
 </html>
