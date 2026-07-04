@@ -52,10 +52,10 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
 .sidebar.side-ads-on .side-ads{display:block;flex-grow:1;position:relative;overflow:hidden;border-top:2px solid rgba(255,255,255,0.1);}
 .sc{padding:0.8vh 1.2vw;display:flex;flex-direction:column;flex-grow:1;min-height:0;overflow:hidden;justify-content:space-between;}
 #timer{font-size:3.8vw;font-weight:900;color:#00ff88;text-align:center;line-height:1;}
-#dh{font-size:1.3vw;color:#a3d1ff;text-align:center;font-weight:800;margin-bottom:4px;}
+#dh{font-size:1.3vw;color:#a3d1ff;text-align:center;font-weight:800;margin:2px 0 6px;}
 #rch{font-size:1.25vw;color:#ffcc00;text-align:center;font-weight:900;margin:5px auto;letter-spacing:1px;padding:3px 10px;border:1px solid rgba(255,204,0,0.55);border-radius:10px;background:rgba(255,204,0,0.08);text-shadow:0 0 8px rgba(255,204,0,0.4);max-width:90%;}
 .wm #rch{font-size:1.05vw;}
-#dow{font-size:1.3vw;color:#a3d1ff;text-align:center;font-weight:900;margin:4px 0;letter-spacing:1px;}
+#dow{font-size:1.3vw;color:#a3d1ff;text-align:center;font-weight:900;margin:2px 0;letter-spacing:1px;}
 .ic{background:rgba(255,255,255,0.05);border:1px solid rgba(255,204,0,0.3);border-radius:12px;padding:5px;text-align:center;margin-bottom:4px;}
 #par{font-size:1.55vw;color:#ffcc00;font-family:"Frank Ruhl Libre",serif;font-weight:900;display:block;text-align:center;}
 .ist{font-size:0.95vw;color:#fff;font-weight:700;display:block;margin-top:2px;text-align:center;}
@@ -1422,7 +1422,7 @@ function gzo(d){
 
 function gzm2(n){
   return {
-    alot:    (function(){var s=gzm("sunrise");return isNaN(s)?NaN:s-1.2;})(),
+    alot:    gzm("alotHaShachar"),
     sunrise: gzm("sunrise"),
     szM:     gzm("sofZmanShmaMGA19Point8"),
     szG:     gzm("sofZmanShma"),
@@ -1587,6 +1587,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 3.0</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 3.2</div>
 </body>
 </html>
