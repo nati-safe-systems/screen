@@ -1185,7 +1185,25 @@ function gwp(){
   return null;
 }
 
-function ghol(){var src=pD||aD;if(!src||!src.items)return null;for(var i=0;i<src.items.length;i++)if(src.items[i].category==="holiday")return src.items[i].hebrew||src.items[i].title;return null;}
+function ghol(){
+  // רק נתוני היום (aD), לא טווח הפרשה השבועי, כדי לא לתפוס חג מיום אחר בשבוע
+  var src=aD;
+  if(!src||!src.items)return null;
+  // צומות וימים מיוחדים שאינם יום-טוב — אסור שיפעילו מצב "חג שמח" עם כניסה/יציאה
+  var notYT=["צום","תענית","תשעה באב","עשרה בטבת","שבעה עשר בתמוז","יז בתמוז","י\"ז בתמוז","צום גדליה","תענית אסתר","ראש חודש","חנוכה","פורים","ל\"ג בעומר","לג בעומר","יום העצמאות","יום הזיכרון","יום ירושלים","יום השואה"];
+  for(var i=0;i<src.items.length;i++){
+    var it=src.items[i];
+    if(it.category!=="holiday")continue;
+    if(it.subcat==="fast")continue;               // צום — דילוג
+    if(it.yomtov===false)continue;                // מסומן מפורשות כלא יו"ט
+    var nm=it.hebrew||it.title||"";
+    var skip=false;
+    for(var j=0;j<notYT.length;j++){ if(nm.indexOf(notYT[j])!==-1){skip=true;break;} }
+    if(skip)continue;
+    return nm;                                     // יום טוב אמיתי בלבד
+  }
+  return null;
+}
 
 function gsmi(){
   var n=new Date();
@@ -1364,12 +1382,18 @@ function gdy(y){
   return "ה'"+s.substring(0,s.length-1)+'"'+s.substring(s.length-1);
 }
 
+// ימים טובים בלבד — אלה שמפעילים מצב חג עם כניסה/יציאה (הדלקת נר/הבדלה)
 function gjh(m,d){
   if(m==="תשרי"){if(d===1||d===2)return "ראש השנה";if(d===10)return "יום כיפור";if(d>=15&&d<=21)return "חג הסוכות";if(d===22)return "שמחת תורה";}
+  if(m==="ניסן"&&d>=15&&d<=21)return "חג הפסח";
+  if(m==="סיוון"&&(d===6||d===7))return "חג השבועות";
+  return "";
+}
+// ימים מיוחדים לתצוגת תווית בלבד — לא מפעילים מצב חג (חנוכה/פורים/ל"ג בעומר)
+function gjml(m,d){
   if(m==="כסלו"&&d>=25)return "חנוכה";if(m==="טבת"&&d<=2)return "חנוכה";
-  if(m==="אדר"&&d===14)return "פורים";if(m==="ניסן"&&d>=15&&d<=21)return "חג הפסח";
-  if(m==="אייר"&&d===18)return "לג בעומר";if(m==="סיוון"&&d===6)return "חג השבועות";
-  if(m==="תמוז"&&d===17)return "יז בתמוז";if(m==="אב"&&d===9)return "תשעה באב";
+  if(m==="אדר"&&d===14)return "פורים";if(m==="אדר ב"&&d===14)return "פורים";
+  if(m==="אייר"&&d===18)return "ל\"ג בעומר";
   return "";
 }
 
@@ -1454,7 +1478,8 @@ function upd(){
 
   var ch=ghol()||gjh(hd.month,hd.day);
   var ec=gec(hd.month,hd.day);
-  document.getElementById("ie").textContent=ch||ec||"";
+  var minorLbl=gjml(hd.month,hd.day);
+  document.getElementById("ie").textContent=ch||ec||minorLbl||"";
 
   var fn=gfi(hd.month,hd.day);
   var mev=gsmi();
@@ -1587,6 +1612,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 3.3</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 3.4</div>
 </body>
 </html>
