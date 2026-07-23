@@ -557,7 +557,7 @@ function applyDisplayConfig(cfg){
   if(adbar){
     // בצד שמאל: מודעות ש'שני הצדדים' או 'שמאל בלבד'
     if(cfg.ads){ adbar.style.display="flex"; startAds(adsForSide(cfg.ads_list,"left"),"adbar-body","main"); }
-    else{ adbar.style.display="none"; stopAds("main"); }
+    else{ adbar.style.display="none"; stopAds("main"); _adsSig["main"]=null; }
   }
 
   // --- פרסומות בסיידבר במקום הזמנים (כשהזמנים כבויים והפרסומות פעילות) ---
@@ -565,7 +565,7 @@ function applyDisplayConfig(cfg){
   // איזון גודל התמונות בין שני הצדדים — רק כששני הצדדים מציגים פרסומות
   document.body.classList.toggle("dual-ads", wantSide);
   if(wantSide){ startAds(adsForSide(cfg.ads_list,"right"),"side-ads","side"); }
-  else{ stopAds("side"); var _sa=document.getElementById("side-ads"); if(_sa) _sa.innerHTML=""; }
+  else{ stopAds("side"); _adsSig["side"]=null; var _sa=document.getElementById("side-ads"); if(_sa) _sa.innerHTML=""; }
 
   // --- מבזקי חדשות (טיקר תחתון) ---
   var ticker=document.getElementById("news-ticker");
@@ -690,11 +690,17 @@ function adsForSide(list, sideKey){
     return s==="both" || s===sideKey;
   });
 }
+var _adsSig={};  // חתימת הרשימה האחרונה לכל רצועה — למניעת אתחול הסבב בכל poll
 function startAds(list, bodyId, tkey){
   bodyId = bodyId || "adbar-body";
   tkey   = tkey   || "main";
   var body=document.getElementById(bodyId);
   if(!body)return;
+  // אם הרשימה זהה לזו שכבר רצה — לא נוגעים בסבב (אחרת ה-poll כל 15 שנ' מאפס אותו למודעה 1)
+  var sig="";
+  try{ sig=JSON.stringify(list||[]); }catch(e){ sig=String((list||[]).length); }
+  if(_adsSig[tkey]===sig && body.querySelector(".ad-slide")) return;
+  _adsSig[tkey]=sig;
   stopAds(tkey);
   // אם אין רשימת פרסומות מוגדרת — הצג הודעת מקום
   if(!list||!list.length){
@@ -1648,6 +1654,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 3.5</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 3.6</div>
 </body>
 </html>
