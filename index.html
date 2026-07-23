@@ -59,8 +59,9 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
 .ic{background:rgba(255,255,255,0.05);border:1px solid rgba(255,204,0,0.3);border-radius:12px;padding:5px;text-align:center;margin-bottom:4px;}
 #par{font-size:1.55vw;color:#ffcc00;font-family:"Frank Ruhl Libre",serif;font-weight:900;display:block;text-align:center;}
 .ist{font-size:0.95vw;color:#fff;font-weight:700;display:block;margin-top:2px;text-align:center;}
-#spb{display:none;background:rgba(0,80,160,0.35);border:1px solid rgba(100,180,255,0.4);border-radius:10px;padding:5px 8px;margin-bottom:4px;font-size:0.9vw;color:#cce8ff;line-height:1.4;}
-#spb .st{font-weight:800;color:#88ccff;font-size:1vw;display:block;margin-bottom:2px;}
+#spb{display:none;background:linear-gradient(180deg,rgba(0,95,190,0.55),rgba(0,55,125,0.45));border:1px solid rgba(130,205,255,0.65);border-radius:12px;padding:9px 10px;margin-bottom:6px;font-size:1.05vw;color:#eaf6ff;line-height:1.5;text-align:center;box-shadow:0 0 16px rgba(80,170,255,0.35), inset 0 0 14px rgba(130,205,255,0.12);}
+#spb .st{font-weight:900;color:#a8dcff;font-size:1.45vw;display:block;margin-bottom:5px;letter-spacing:0.5px;text-align:center;text-shadow:0 0 12px rgba(130,205,255,0.6);}
+#spb #spc{display:block;text-align:center;font-weight:700;font-size:1.02vw;color:#e6f4ff;}
 .zc{display:flex;flex-direction:column;gap:2px;padding:1px 0;margin-top:6px;}
 .zr{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.08);font-size:1.25vw;font-weight:600;}
 .zv{color:#00ff88;font-weight:800;font-size:1.35vw;}
@@ -107,6 +108,8 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
   backdrop-filter:blur(6px);
 }
 #building-title::before{content:"לוח המודעות של";font-size:1.3vw;font-weight:700;color:rgba(255,204,0,0.6);letter-spacing:4px;text-transform:uppercase;line-height:1;}
+#chag-greet{display:none;text-align:center;margin-top:10px;font-family:"Frank Ruhl Libre",serif;font-size:2.1vw;font-weight:900;letter-spacing:2px;color:#ffd86b;text-shadow:0 0 18px rgba(255,200,80,0.55), 0 3px 14px rgba(0,0,0,0.9);animation:greetGlow 3.5s ease-in-out infinite;}
+@keyframes greetGlow{0%,100%{opacity:.88;}50%{opacity:1;}}
 #building-title-name{font-size:3vw;font-weight:900;line-height:1;font-family:"Frank Ruhl Libre",serif;letter-spacing:2px;text-shadow:0 3px 15px rgba(0,0,0,0.95);}
 
 #mq-wrap{position:absolute;left:0;right:0;bottom:0;top:140px;z-index:6;overflow:hidden;pointer-events:none;display:none;background:rgba(0,0,0,0.45);}
@@ -253,6 +256,7 @@ body.has-ticker .sidebar,body.has-ticker .adbar,body.has-ticker .bb{margin-botto
   <div id="ob"></div>
   <div id="building-title-bg"></div>
   <div id="building-title"><span id="building-title-name"></span></div>
+  <div id="chag-greet"></div>
   <div id="mq-wrap"><div id="mq-mover"></div></div>
   <div id="st-wrap"><div id="st-text"></div></div>
 </div>
@@ -1384,16 +1388,44 @@ function gdy(y){
 
 // ימים טובים בלבד — אלה שמפעילים מצב חג עם כניסה/יציאה (הדלקת נר/הבדלה)
 function gjh(m,d){
-  if(m==="תשרי"){if(d===1||d===2)return "ראש השנה";if(d===10)return "יום כיפור";if(d>=15&&d<=21)return "חג הסוכות";if(d===22)return "שמחת תורה";}
-  if(m==="ניסן"&&d>=15&&d<=21)return "חג הפסח";
-  if(m==="סיוון"&&(d===6||d===7))return "חג השבועות";
+  // ארץ ישראל: יום אחד בלבד לכל יו"ט. חול המועד אינו יו"ט ואינו מפעיל כניסה/יציאה.
+  if(m==="תשרי"){
+    if(d===1||d===2)return "ראש השנה";      // שני ימי ר"ה
+    if(d===10)return "יום כיפור";
+    if(d===15)return "חג הסוכות";            // יו"ט ראשון בלבד
+    if(d===22)return "שמחת תורה";            // שמיני עצרת/שמח"ת — יום אחד בא"י
+  }
+  if(m==="ניסן"){
+    if(d===15)return "חג הפסח";              // יו"ט ראשון
+    if(d===21)return "שביעי של פסח";
+  }
+  if(m==="סיוון"&&d===6)return "חג השבועות"; // יום אחד בא"י
   return "";
 }
 // ימים מיוחדים לתצוגת תווית בלבד — לא מפעילים מצב חג (חנוכה/פורים/ל"ג בעומר)
 function gjml(m,d){
+  if(m==="תשרי"&&d>=16&&d<=20)return "חול המועד סוכות";
+  if(m==="תשרי"&&d===21)return "הושענא רבה";
+  if(m==="ניסן"&&d>=16&&d<=20)return "חול המועד פסח";
   if(m==="כסלו"&&d>=25)return "חנוכה";if(m==="טבת"&&d<=2)return "חנוכה";
   if(m==="אדר"&&d===14)return "פורים";if(m==="אדר ב"&&d===14)return "פורים";
   if(m==="אייר"&&d===18)return "ל\"ג בעומר";
+  return "";
+}
+
+// ברכת חג לכותרת העליונה — מוצגת רק בחגים ובעשרת ימי תשובה
+function ggreet(m,d){
+  if(m==="תשרי"){
+    if(d===1||d===2)return "כתיבה וחתימה טובה";
+    if(d>=3&&d<=10)return "גמר חתימה טובה";     // עשי"ת עד מוצאי יוה"כ
+    if(d===15||d===22)return "חג שמח";
+    if(d>=16&&d<=21)return "מועדים לשמחה";
+  }
+  if(m==="ניסן"){
+    if(d===15||d===21)return "חג פסח כשר ושמח";
+    if(d>=16&&d<=20)return "מועדים לשמחה";
+  }
+  if(m==="סיוון"&&d===6)return "חג שבועות שמח";
   return "";
 }
 
@@ -1480,6 +1512,10 @@ function upd(){
   var ec=gec(hd.month,hd.day);
   var minorLbl=gjml(hd.month,hd.day);
   document.getElementById("ie").textContent=ch||ec||minorLbl||"";
+  // ברכת חג בכותרת העליונה
+  var gEl=document.getElementById("chag-greet");
+  if(gEl){var gTxt=ggreet(hd.month,hd.day);
+    if(gTxt){gEl.textContent=gTxt;gEl.style.display="block";}else{gEl.style.display="none";}}
 
   var fn=gfi(hd.month,hd.day);
   var mev=gsmi();
@@ -1612,6 +1648,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 3.4</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 3.5</div>
 </body>
 </html>
