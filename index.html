@@ -489,7 +489,7 @@ function proceedWithScreen(s, myToken, cb) {
 }
 
 /* ===== נתי SAFE: מנוע תצוגה מודולרי לפי קהל יעד ===== */
-var DC=null, _newsTimer=null, _adTimer=null;
+var DC=null, _newsTimer=null, _adTimer=null, _newsSig=null;
 var _adTimers={};   // טיימר נפרד לכל אזור פרסומת: main (רצועה) / side (סיידבר)
 function stopAds(key){ if(_adTimers[key]){ clearTimeout(_adTimers[key]); _adTimers[key]=null; } }
 
@@ -581,6 +581,7 @@ function applyDisplayConfig(cfg){
     ticker.style.display="none";
     document.body.classList.remove("has-ticker");
     if(_newsTimer){clearInterval(_newsTimer);_newsTimer=null;}
+    _newsSig=null;
   }
 }
 
@@ -597,6 +598,13 @@ function startNews(src){
   });
   urls = urls.filter(function(u,i){ return urls.indexOf(u)===i; });  // ללא כפילויות
   if(!urls.length)return;
+
+  /* אם רשימת המקורות זהה לזו שכבר רצה והטיקר מלא — לא נוגעים בו.
+     אחרת ה-poll כל 15 שנ' היה מאתחל את הגלילה ומושך RSS מחדש. */
+  var _sig = urls.join("|");
+  var _tr  = document.querySelector("#news-ticker .nt-track");
+  if(_newsSig === _sig && _tr && _tr.children.length && _newsTimer) return;
+  _newsSig = _sig;
 
   function load(){
     var errs=[];
@@ -1702,6 +1710,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 3.8</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 3.9</div>
 </body>
 </html>
