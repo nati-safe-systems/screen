@@ -1698,6 +1698,13 @@ function upd(){
   var isCh=(ec&&cur>=shIn)||(ch&&cur<tm.rt&&now.getDay()!==6);
   // מסך ללא זמני הלכה (חילוני/מסחרי) — אל תציג השתלטות שבת/חג
   if(DC && !DC.zmanim){ isSh=false; isCh=false; }
+
+  /* ===== מצב בדיקה — הוסף לכתובת ?test=shabbat או ?test=chag =====
+     גורם למסך להתנהג כאילו שבת/חג עכשיו, בלי להמתין לזמן האמיתי.
+     ?test=off או הסרת הפרמטר — חוזר להתנהגות רגילה.               */
+  var _tp=(location.search.match(/[?&]test=([a-z]+)/i)||[])[1];
+  if(_tp==="shabbat"){ isSh=true; isCh=false; }
+  else if(_tp==="chag"){ isSh=false; isCh=true; }
   var sho=document.getElementById("sho");
   var shoBg=document.getElementById("sho-bg");
 
@@ -1843,6 +1850,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 4.3</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 4.4</div>
 </body>
 </html>
