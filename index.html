@@ -229,8 +229,8 @@ body.portrait .bsd{display:inline;margin:0 0 0 10px;font-size:calc(var(--sbs) * 
 /* פריסת שלוש עמודות: שעון | זמני היום | שבת */
 body.portrait .sc{
   display:grid;
-  grid-template-columns:1fr 1.15fr 1fr;
-  column-gap:1.6vw;row-gap:0;
+  grid-template-columns:1fr 1.3fr 1fr;
+  column-gap:1.4vw;row-gap:0;
   align-items:start;
   padding:1.1vh 1.6vw 1.3vh;
   flex-grow:0;
@@ -244,6 +244,7 @@ body.portrait .ic     {grid-column:2;grid-row:1;}
 body.portrait #spb    {grid-column:2;grid-row:2;}
 body.portrait .zc     {grid-column:2;grid-row:3;margin-top:4px;}
 body.portrait .wt     {grid-column:2;grid-row:4;}
+body.portrait #wx     {grid-column:1;grid-row:6;margin-top:5px;}
 body.portrait #shb    {grid-column:3;grid-row:1;}
 body.portrait #shb-mev{grid-column:3;grid-row:2;}
 body.portrait .sc-spacer{display:none;}
@@ -287,21 +288,27 @@ body.portrait #news-ticker .nt-label{font-size:2.2vw;}
 /* ===================== מזג אוויר ===================== */
 .wx{
   display:none;
-  background:linear-gradient(180deg,rgba(0,80,160,0.45),rgba(0,45,105,0.35));
-  border:1px solid rgba(130,205,255,0.5);border-radius:10px;
-  padding:5px 8px;margin:4px 0;
-  color:#eaf6ff;text-align:center;line-height:1.3;
-  box-shadow:inset 0 0 10px rgba(130,205,255,0.08);
+  background:rgba(0,70,145,0.30);
+  border:1px solid rgba(130,205,255,0.32);border-radius:8px;
+  padding:3px 7px;margin:3px 0;
+  color:#dceeff;line-height:1.25;
+  white-space:nowrap;overflow:hidden;
 }
-.sidebar.wx-on .wx{display:block;}
-.wx-top{display:flex;align-items:center;justify-content:center;gap:8px;}
-.wx-ic{font-size:calc(var(--sbs,1) * 1.7vw);line-height:1;}
-.wx-t{font-size:calc(var(--sbs,1) * 1.8vw);font-weight:900;color:#fff;}
-.wx-d{font-size:calc(var(--sbs,1) * 0.85vw);font-weight:700;opacity:0.92;}
-.wx-r{font-size:calc(var(--sbs,1) * 0.8vw);opacity:0.8;margin-top:2px;}
-.wm .wx{padding:4px 6px;margin:3px 0;}
-body.portrait .wx-ic{font-size:calc(var(--sbs) * 1.5vw);}
-body.portrait .wx-t{font-size:calc(var(--sbs) * 1.6vw);}
+.sidebar.wx-on .wx{display:flex;align-items:center;justify-content:center;gap:6px;}
+.wx-ic{font-size:calc(var(--sbs,1) * 0.95vw);line-height:1;}
+.wx-t{font-size:calc(var(--sbs,1) * 1.0vw);font-weight:800;color:#fff;}
+.wx-d{font-size:calc(var(--sbs,1) * 0.75vw);font-weight:600;opacity:0.85;}
+.wx-r{font-size:calc(var(--sbs,1) * 0.72vw);opacity:0.7;}
+.wx-r::before{content:"·";margin-left:5px;opacity:0.6;}
+.wm .wx{padding:2px 6px;margin:2px 0;}
+.wm .wx-r{display:none;}
+body.portrait .wx-ic{font-size:calc(var(--sbs) * 0.8vw);}
+body.portrait .wx-t{font-size:calc(var(--sbs) * 0.85vw);}
+body.portrait .wx-d{font-size:calc(var(--sbs) * 0.62vw);}
+body.portrait .wx-r{font-size:calc(var(--sbs) * 0.6vw);}
+/* בשבת ובערב שבת — הזמנים קודמים. מזג האוויר מתכווץ ולא מתחרה עליהם. */
+.sidebar.shabbat-on .wx-r{display:none;}
+.sidebar.shabbat-on .wx{padding:2px 6px;}
 
 </style>
 </head>
@@ -806,8 +813,8 @@ function wxEnsureEl(){
   if(old) old.remove();
   var el=document.createElement("div");
   el.id="wx"; el.className="wx"; el.setAttribute("data-pos",pos);
-  el.innerHTML='<div class="wx-top"><span class="wx-ic">…</span><span class="wx-t">--°</span></div>'+
-               '<div class="wx-d"></div><div class="wx-r"></div>';
+  el.innerHTML='<span class="wx-ic">…</span><span class="wx-t">--°</span>'+
+               '<span class="wx-d"></span><span class="wx-r"></span>';
   if(pos==="clock"){
     var anchor=document.getElementById("dh")||document.getElementById("timer");
     if(anchor&&anchor.parentNode) anchor.parentNode.insertBefore(el,anchor.nextSibling);
@@ -835,8 +842,11 @@ function wxFetch(){
     el.querySelector(".wx-d").textContent=info[0];
     if(d.daily&&d.daily.temperature_2m_max){
       var hi=Math.round(d.daily.temperature_2m_max[0]), lo=Math.round(d.daily.temperature_2m_min[0]);
-      el.querySelector(".wx-r").textContent="מקס' "+hi+"° · מינ' "+lo+"°";
+      el.querySelector(".wx-r").textContent=hi+"°/"+lo+"°";
     }
+    /* כשקופסת זמני שבת מוצגת — מסמנים, כדי שמזג האוויר יתכווץ ולא יכסה כלום */
+    var sb2=document.querySelector(".sidebar"), shb=document.getElementById("shb");
+    if(sb2) sb2.classList.toggle("shabbat-on", !!(shb && shb.style.display!=="none" && shb.offsetHeight>0));
   }).catch(function(){});
 }
 
@@ -2255,6 +2265,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 4.7</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 4.7.1</div>
 </body>
 </html>
