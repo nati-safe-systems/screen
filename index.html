@@ -294,25 +294,61 @@ body.portrait #news-ticker .nt-label{font-size:2.2vw;}
   color:#dceeff;line-height:1.25;
   white-space:nowrap;overflow:hidden;
 }
-.sidebar.wx-on .wx{display:flex;align-items:center;justify-content:center;gap:6px;}
+.sidebar.wx-on .wx{display:block;}
 .wx-ic{font-size:calc(var(--sbs,1) * 0.95vw);line-height:1;}
 .wx-t{font-size:calc(var(--sbs,1) * 1.0vw);font-weight:800;color:#fff;}
 .wx-d{font-size:calc(var(--sbs,1) * 0.75vw);font-weight:600;opacity:0.85;}
 .wx-r{font-size:calc(var(--sbs,1) * 0.72vw);opacity:0.7;}
-.wx-r::before{content:"·";margin-left:5px;opacity:0.6;}
 .wm .wx{padding:2px 6px;margin:2px 0;}
-.wm .wx-r{display:none;}
+.wm .wx-days{font-size:0.95em;}
 body.portrait .wx-ic{font-size:calc(var(--sbs) * 0.8vw);}
 body.portrait .wx-t{font-size:calc(var(--sbs) * 0.85vw);}
 body.portrait .wx-d{font-size:calc(var(--sbs) * 0.62vw);}
 body.portrait .wx-r{font-size:calc(var(--sbs) * 0.6vw);}
 /* בשבת ובערב שבת — הזמנים קודמים. מזג האוויר מתכווץ ולא מתחרה עליהם. */
-.sidebar.shabbat-on .wx-r{display:none;}
+.sidebar.shabbat-on .wx-days{margin-top:2px;padding-top:2px;}
 .sidebar.shabbat-on .wx{padding:2px 6px;}
 
+
+/* כותרת בית הכנסת — עוברת לראש המסך במאונך */
+#top-band{display:none;}
+body.portrait #top-band{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  width:100%;flex-shrink:0;padding:7px 0 8px;
+  background:linear-gradient(135deg,rgba(62,0,0,0.96) 0%,rgba(38,0,0,0.98) 100%);
+  border-bottom:2px solid rgba(255,204,0,0.4);
+  box-shadow:0 5px 22px rgba(0,0,0,0.7);
+}
+body.portrait #top-band #building-title-bg{display:none;}
+body.portrait #top-band #building-title{
+  position:static;left:auto;transform:none;padding:0 20px;backdrop-filter:none;
+  text-shadow:0 3px 12px rgba(0,0,0,0.9);
+}
+body.portrait #top-band #chag-greet{position:static;margin-top:3px;}
+body.portrait #building-title-name{font-size:5.2vw;}
+body.portrait #building-title::before{font-size:2.1vw;}
+body.portrait #mq-wrap,body.portrait #st-wrap{top:0;}
+
+/* פוטר זכויות — יורד לתחתית המסך במאונך */
+body.portrait > .ft{width:100%;order:99;flex-shrink:0;border-top:1px solid rgba(255,255,255,0.1);}
+body.portrait.ticker-on > .ft{margin-bottom:60px;}
+
+/* מזג אוויר מפורט */
+.wx-now{display:flex;align-items:center;justify-content:center;gap:7px;}
+.wx-ic svg,.wx-di svg{display:block;}
+.wx-days{display:flex;justify-content:center;gap:10px;margin-top:4px;
+  border-top:1px solid rgba(130,205,255,0.18);padding-top:3px;}
+.wx-day{display:flex;align-items:center;gap:4px;}
+.wx-dl{font-size:calc(var(--sbs,1) * 0.7vw);opacity:0.72;}
+.wx-dt{font-size:calc(var(--sbs,1) * 0.75vw);font-weight:700;}
+body.portrait .wx-dl{font-size:calc(var(--sbs) * 0.58vw);}
+body.portrait .wx-dt{font-size:calc(var(--sbs) * 0.62vw);}
+.wm .wx-days{margin-top:2px;padding-top:2px;}
 </style>
 </head>
 <body>
+
+<div id="top-band"></div>
 
 <div id="preview-badge" style="display:none;position:fixed;top:12px;left:12px;z-index:99999;background:rgba(88,166,255,0.9);color:#fff;font-family:Assistant,sans-serif;font-size:14px;font-weight:800;padding:6px 14px;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,0.4);">תצוגה מקדימה</div>
 
@@ -774,6 +810,23 @@ function parseDisplayConfig(raw){
 /* ============ נתי SAFE: כיוון מסך (מאוזן / מאונך) ============ */
 /* מקור ההגדרה: display_config.orientation = "auto" | "landscape" | "portrait"
    ברירת מחדל "auto" — לפי יחס הצדדים של המסך בפועל. */
+/* מעביר את כותרת בית הכנסת לראש המסך ואת הפוטר לתחתיתו — במאונך בלבד */
+function layoutChrome(isPortrait){
+  var band=document.getElementById("top-band"), bc=document.getElementById("bc");
+  var ft=document.querySelector(".ft"), sb=document.querySelector(".sidebar");
+  var parts=["building-title-bg","building-title","chag-greet"];
+  if(!band||!bc) return;
+  if(isPortrait){
+    parts.forEach(function(id){var e=document.getElementById(id); if(e&&e.parentNode!==band) band.appendChild(e);});
+    if(ft && ft.parentNode!==document.body) document.body.appendChild(ft);
+  }else{
+    parts.forEach(function(id){var e=document.getElementById(id); if(e&&e.parentNode!==bc) bc.appendChild(e);});
+    if(ft && sb && ft.parentNode!==sb) sb.appendChild(ft);
+  }
+  var tk=document.getElementById("news-ticker");
+  document.body.classList.toggle("ticker-on", !!(tk && tk.style.display==="flex"));
+}
+
 function applyOrientation(){
   var mode = (window._orientation || "auto");
   var isPortrait;
@@ -782,6 +835,7 @@ function applyOrientation(){
   else                       isPortrait = (window.innerHeight > window.innerWidth * 1.05);
   document.body.classList.toggle("portrait", isPortrait);
   window._isPortrait = isPortrait;
+  try{ layoutChrome(isPortrait); }catch(e){}
 }
 window.addEventListener("resize", function(){ try{ applyOrientation(); }catch(e){} });
 
@@ -791,16 +845,35 @@ window.addEventListener("resize", function(){ try{ applyOrientation(); }catch(e)
    "zmanim" — בסרגל הצד מתחת לרשימת הזמנים */
 
 var WX_CODES = {
-  0:["בהיר","☀️"], 1:["בהיר בעיקרו","🌤️"], 2:["מעונן חלקית","⛅"], 3:["מעונן","☁️"],
-  45:["ערפל","🌫️"], 48:["ערפל","🌫️"],
-  51:["טפטוף קל","🌦️"], 53:["טפטוף","🌦️"], 55:["טפטוף חזק","🌦️"],
-  61:["גשם קל","🌧️"], 63:["גשם","🌧️"], 65:["גשם חזק","🌧️"],
-  66:["גשם קפוא","🌨️"], 67:["גשם קפוא","🌨️"],
-  71:["שלג קל","❄️"], 73:["שלג","❄️"], 75:["שלג כבד","❄️"], 77:["גרגרי שלג","❄️"],
-  80:["ממטרים","🌦️"], 81:["ממטרים","🌦️"], 82:["ממטרים עזים","⛈️"],
-  85:["ממטרי שלג","🌨️"], 86:["ממטרי שלג","🌨️"],
-  95:["סופת רעמים","⛈️"], 96:["סופת רעמים","⛈️"], 99:["סופת רעמים","⛈️"]
+  0:["בהיר","sun"], 1:["בהיר בעיקרו","sun"], 2:["מעונן חלקית","pcloud"], 3:["מעונן","cloud"],
+  45:["ערפל","fog"], 48:["ערפל","fog"],
+  51:["טפטוף קל","rain"], 53:["טפטוף","rain"], 55:["טפטוף חזק","rain"],
+  56:["טפטוף קפוא","snow"], 57:["טפטוף קפוא","snow"],
+  61:["גשם קל","rain"], 63:["גשם","rain"], 65:["גשם חזק","rain"],
+  66:["גשם קפוא","snow"], 67:["גשם קפוא","snow"],
+  71:["שלג קל","snow"], 73:["שלג","snow"], 75:["שלג כבד","snow"], 77:["גרגרי שלג","snow"],
+  80:["ממטרים","rain"], 81:["ממטרים","rain"], 82:["ממטרים עזים","storm"],
+  85:["ממטרי שלג","snow"], 86:["ממטרי שלג","snow"],
+  95:["סופת רעמים","storm"], 96:["סופת רעמים","storm"], 99:["סופת רעמים","storm"]
 };
+
+/* אייקוני SVG — נצבעים לפי הטמפרטורה/סוג מזג האוויר, ללא תלות בגופן אמוג'י */
+function wxIcon(kind,sz){
+  var s=sz||22, o='<svg viewBox="0 0 32 32" width="'+s+'" height="'+s+'" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">';
+  var SUN='#ffcc33', CL='#cfe4f7', RN='#5bb8ff', SN='#bfe8ff', ST='#ffd633';
+  if(kind==="sun") return o+'<circle cx="16" cy="16" r="6" fill="'+SUN+'" stroke="'+SUN+'"/>'+
+    '<g stroke="'+SUN+'"><path d="M16 3v3M16 26v3M3 16h3M26 16h3M6.8 6.8l2.1 2.1M23.1 23.1l2.1 2.1M25.2 6.8l-2.1 2.1M8.9 23.1l-2.1 2.1"/></g></svg>';
+  if(kind==="pcloud") return o+'<circle cx="12" cy="11" r="5" fill="'+SUN+'" stroke="'+SUN+'"/>'+
+    '<path d="M11 25h12a5 5 0 0 0 .4-10 6.5 6.5 0 0 0-12.3 1.6A4.2 4.2 0 0 0 11 25z" fill="'+CL+'" stroke="'+CL+'"/></svg>';
+  if(kind==="cloud") return o+'<path d="M9 24h14a5.5 5.5 0 0 0 .4-11 7 7 0 0 0-13.4 1.8A4.6 4.6 0 0 0 9 24z" fill="'+CL+'" stroke="'+CL+'"/></svg>';
+  if(kind==="rain") return o+'<path d="M9 19h14a5.5 5.5 0 0 0 .4-11 7 7 0 0 0-13.4 1.8A4.6 4.6 0 0 0 9 19z" fill="'+CL+'" stroke="'+CL+'"/>'+
+    '<g stroke="'+RN+'"><path d="M12 23l-1.5 5M18 23l-1.5 5M24 23l-1.5 5"/></g></svg>';
+  if(kind==="snow") return o+'<path d="M9 19h14a5.5 5.5 0 0 0 .4-11 7 7 0 0 0-13.4 1.8A4.6 4.6 0 0 0 9 19z" fill="'+CL+'" stroke="'+CL+'"/>'+
+    '<g stroke="'+SN+'"><path d="M12 24v4M10 26h4M20 24v4M18 26h4"/></g></svg>';
+  if(kind==="storm") return o+'<path d="M9 18h14a5.5 5.5 0 0 0 .4-11 7 7 0 0 0-13.4 1.8A4.6 4.6 0 0 0 9 18z" fill="#9fb6c9" stroke="#9fb6c9"/>'+
+    '<path d="M17 20l-4 6h4l-2 5" stroke="'+ST+'" fill="none"/></svg>';
+  return o+'<g stroke="'+CL+'"><path d="M5 12h22M7 17h18M5 22h22"/></g></svg>';
+}
 
 function wxEnsureEl(){
   var pos = window._wxPos || "off";
@@ -813,8 +886,12 @@ function wxEnsureEl(){
   if(old) old.remove();
   var el=document.createElement("div");
   el.id="wx"; el.className="wx"; el.setAttribute("data-pos",pos);
-  el.innerHTML='<span class="wx-ic">…</span><span class="wx-t">--°</span>'+
-               '<span class="wx-d"></span><span class="wx-r"></span>';
+  el.innerHTML='<div class="wx-now"><span class="wx-ic"></span><span class="wx-t">--°</span>'+
+               '<span class="wx-d"></span></div>'+
+               '<div class="wx-days">'+
+               '<span class="wx-day"><span class="wx-dl">היום</span><span class="wx-di"></span><span class="wx-dt">--</span></span>'+
+               '<span class="wx-day"><span class="wx-dl">מחר</span><span class="wx-di"></span><span class="wx-dt">--</span></span>'+
+               '</div>';
   if(pos==="clock"){
     var anchor=document.getElementById("dh")||document.getElementById("timer");
     if(anchor&&anchor.parentNode) anchor.parentNode.insertBefore(el,anchor.nextSibling);
@@ -831,18 +908,24 @@ function wxFetch(){
   var el = wxEnsureEl(); if(!el) return;
   var c = (typeof zmCfg==="function") ? zmCfg() : {lat:LOC.lat,lng:LOC.lon};
   var url = "https://api.open-meteo.com/v1/forecast?latitude="+c.lat+"&longitude="+c.lng+
-            "&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min"+
-            "&timezone=Asia%2FJerusalem&forecast_days=1";
+            "&current=temperature_2m,weather_code"+
+            "&daily=weather_code,temperature_2m_max,temperature_2m_min"+
+            "&timezone=Asia%2FJerusalem&forecast_days=2";
   fetch(url).then(function(r){return r.json();}).then(function(d){
     if(!d||!d.current) return;
-    var code=d.current.weather_code, info=WX_CODES[code]||["",""];
-    var t=Math.round(d.current.temperature_2m);
-    el.querySelector(".wx-ic").textContent=info[1];
-    el.querySelector(".wx-t").textContent=t+"°";
+    var code=d.current.weather_code, info=WX_CODES[code]||["","cloud"];
+    var big=(window._isPortrait?20:22);
+    el.querySelector(".wx-ic").innerHTML=wxIcon(info[1],big);
+    el.querySelector(".wx-t").textContent=Math.round(d.current.temperature_2m)+"°";
     el.querySelector(".wx-d").textContent=info[0];
+    var days=el.querySelectorAll(".wx-day");
     if(d.daily&&d.daily.temperature_2m_max){
-      var hi=Math.round(d.daily.temperature_2m_max[0]), lo=Math.round(d.daily.temperature_2m_min[0]);
-      el.querySelector(".wx-r").textContent=hi+"°/"+lo+"°";
+      for(var i=0;i<2&&i<days.length;i++){
+        var dc=(d.daily.weather_code||[])[i], di=WX_CODES[dc]||["","cloud"];
+        days[i].querySelector(".wx-di").innerHTML=wxIcon(di[1],13);
+        days[i].querySelector(".wx-dt").textContent=
+          Math.round(d.daily.temperature_2m_max[i])+"°/"+Math.round(d.daily.temperature_2m_min[i])+"°";
+      }
     }
     /* כשקופסת זמני שבת מוצגת — מסמנים, כדי שמזג האוויר יתכווץ ולא יכסה כלום */
     var sb2=document.querySelector(".sidebar"), shb=document.getElementById("shb");
@@ -910,10 +993,12 @@ function applyDisplayConfig(cfg){
   if(cfg.rss_url){ _src.push(cfg.rss_url); }   // כתובת ידנית (אם קיימת) נוספת לרשימה
   if(cfg.news && _src.length){
     ticker.style.display="flex";
+    document.body.classList.add("ticker-on");
     document.body.classList.add("has-ticker");
     startNews(_src);
   }else{
     ticker.style.display="none";
+    document.body.classList.remove("ticker-on");
     document.body.classList.remove("has-ticker");
     if(_newsTimer){clearInterval(_newsTimer);_newsTimer=null;}
     _newsSig=null;
@@ -2265,6 +2350,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 4.7.1</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 4.8</div>
 </body>
 </html>
