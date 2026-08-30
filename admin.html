@@ -337,6 +337,27 @@ tr:hover td{background:rgba(128,0,0,0.05);}
         </div>
 
         <div class="field" style="margin-top:12px;">
+          <label>כיוון המסך</label>
+          <select id="edit-sc-orient" onchange="markCustom()" style="margin-top:6px;">
+            <option value="auto">אוטומטי — לפי המסך (ברירת מחדל)</option>
+            <option value="landscape">מאוזן — כפוי</option>
+            <option value="portrait">מאונך — כפוי</option>
+          </select>
+        </div>
+
+        <div class="field" style="margin-top:12px;">
+          <label>מזג אוויר</label>
+          <select id="edit-sc-wx" onchange="markCustom()" style="margin-top:6px;">
+            <option value="off">כבוי</option>
+            <option value="clock">בכותרת — מתחת לשעה והתאריך</option>
+            <option value="zmanim">בסרגל הצד — מתחת לזמנים</option>
+          </select>
+          <div style="font-size:12px;color:#8b949e;margin-top:5px;">
+            לפי המיקום של המסך. תוכל להחליף בין שתי האפשרויות ולראות איזו יושבת טוב יותר.
+          </div>
+        </div>
+
+        <div class="field" style="margin-top:12px;">
           <label>מקור הזמנים ההלכתיים</label>
           <select id="edit-sc-zmsrc" onchange="markCustom()" style="margin-top:6px;">
             <option value="hebcal">Hebcal (ברירת מחדל)</option>
@@ -937,7 +958,9 @@ function readDisplayConfig(){
     pdf_sec: parseInt(document.getElementById('edit-sc-pdfsec').value,10)||10,
     pdf_cols: (document.getElementById('edit-sc-pdfcols').value==='2') ? 2 : 1,
     pdf_show_sec: parseInt(document.getElementById('edit-sc-pdfshow').value,10)||20,
-    zmanim_source: (document.getElementById('edit-sc-zmsrc')||{}).value === 'engine' ? 'engine' : 'hebcal'
+    zmanim_source: (document.getElementById('edit-sc-zmsrc')||{}).value === 'engine' ? 'engine' : 'hebcal',
+    orientation: (document.getElementById('edit-sc-orient')||{}).value || 'auto',
+    weather_pos: (document.getElementById('edit-sc-wx')||{}).value || 'off'
   };
 }
 function fillDisplayConfig(cfg){
@@ -957,6 +980,8 @@ function fillDisplayConfig(cfg){
   document.getElementById('dc-bg-bright-val').textContent = cfg.bgBrightness || 100;
   document.getElementById('edit-sc-rss').value  = cfg.rss_url || '';
   var _zs=document.getElementById('edit-sc-zmsrc'); if(_zs) _zs.value = (cfg.zmanim_source==='engine')?'engine':'hebcal';
+  var _or=document.getElementById('edit-sc-orient'); if(_or) _or.value = cfg.orientation || 'auto';
+  var _wx=document.getElementById('edit-sc-wx'); if(_wx) _wx.value = cfg.weather_pos || 'off';
   (function(){ var sel = Array.isArray(cfg.news_sources) ? cfg.news_sources : []; Array.prototype.forEach.call(document.querySelectorAll('.ns-src'), function(c){ c.checked = sel.indexOf(c.value) >= 0; }); })();
   document.getElementById('dc-protected').checked = (cfg.protected!==undefined) ? !!cfg.protected : ((cfg.profile||'chareidi')==='chareidi');
   document.getElementById('dc-tenant-edit').checked = !!cfg.tenant_can_edit;
