@@ -323,6 +323,13 @@ var SID   = new URLSearchParams(window.location.search).get("id") || "DEFAULT";
 var TOKEN = new URLSearchParams(window.location.search).get("token") || "";
 var PREVIEW = new URLSearchParams(window.location.search).get("preview") === "1";
 var ZMCHECK = new URLSearchParams(window.location.search).get("zmcheck") === "1";
+if(ZMCHECK){
+  /* מסך הבדיקה עצמאי: רץ גם ללא רישיון/טוקן, ולא מציג שום תוכן של לקוח */
+  window.addEventListener("load", function(){
+    function r(){ try{ zmRenderCheck(); }catch(e){ console.error(e); } }
+    r(); setInterval(r, 60000);
+  });
+}
 var TESTMODE = (new URLSearchParams(window.location.search).get("test")||"").toLowerCase(); // shabbat | chag | ""
 if(PREVIEW){var _pb=document.getElementById("preview-badge");if(_pb)_pb.style.display="block";}
 document.getElementById("lock-sid").textContent = "מזהה מסך: " + SID;
@@ -1677,11 +1684,13 @@ function zm_q(v,q){if(v===null||isNaN(v))return v;if(!q)return v;return Math.rou
 /* קונפיג פר-מסך. ברירת מחדל: LOC של המסך. */
 function zmCfg(){
   var c=(window.DC&&window.DC.zm)||{};
+  var u=new URLSearchParams(window.location.search);
+  function ov(n,v){ var x=u.get(n); return (x!==null&&x!=="")?+x:v; }
   return {
-    lat: (c.lat!==undefined)?+c.lat:(LOC.lat||31.7683),
-    lng: (c.lng!==undefined)?+c.lng:(LOC.lon||35.2137),
-    elev:(c.elev!==undefined)?+c.elev:(LOC.elev||754),
-    candle:(window._shabbatOffset>0)?window._shabbatOffset:40,
+    lat: ov("lat",  (c.lat!==undefined)?+c.lat:(LOC.lat||31.7683)),
+    lng: ov("lng",  (c.lng!==undefined)?+c.lng:(LOC.lon||35.2137)),
+    elev:ov("elev", (c.elev!==undefined)?+c.elev:(LOC.elev||754)),
+    candle: ov("candle", (window._shabbatOffset>0)?window._shabbatOffset:40),
     tzeitDeg:(c.tzeitDeg>0)?+c.tzeitDeg:8.5,
     mgaDeg:(c.mgaDeg>0)?+c.mgaDeg:19.8,
     mga72Deg:(c.mga72Deg>0)?+c.mga72Deg:16.1,
@@ -1846,7 +1855,7 @@ function gzm2(n){
 function upd(){
   if(!ok)return;
   var now=new Date(),tm=gzm2(now),cur=now.getHours()+now.getMinutes()/60;
-  if(ZMCHECK){ if(!window._zmCheckT||Date.now()-window._zmCheckT>60000){ window._zmCheckT=Date.now(); try{ zmRenderCheck(); }catch(e){} } }
+
   var hcd=new Date(now);if(cur>=tm.tz)hcd.setDate(hcd.getDate()+1);
   var hd=ghd(hcd);
   // תאריך התצוגה מתחלף בחצות יחד עם היום בשבוע (לא בשקיעה)
@@ -2065,6 +2074,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 4.6</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 4.6.2</div>
 </body>
 </html>
