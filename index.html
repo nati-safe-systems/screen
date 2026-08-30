@@ -322,6 +322,7 @@ var LOC  = {lat:31.78, lon:35.21, elev:800};
 var SID   = new URLSearchParams(window.location.search).get("id") || "DEFAULT";
 var TOKEN = new URLSearchParams(window.location.search).get("token") || "";
 var PREVIEW = new URLSearchParams(window.location.search).get("preview") === "1";
+var ZMCHECK = new URLSearchParams(window.location.search).get("zmcheck") === "1";
 var TESTMODE = (new URLSearchParams(window.location.search).get("test")||"").toLowerCase(); // shabbat | chag | ""
 if(PREVIEW){var _pb=document.getElementById("preview-badge");if(_pb)_pb.style.display="block";}
 document.getElementById("lock-sid").textContent = "מזהה מסך: " + SID;
@@ -649,12 +650,15 @@ function parseDisplayConfig(raw){
     sho_images: Array.isArray(c.sho_images)&&c.sho_images.length?c.sho_images:SHO_DEFAULT_IMAGES,  // תמונות רקע למסך שבת/חג
     sho_layout: c.sho_layout||"card",                          // card | float | bar
     sho_dim:    (c.sho_dim!==undefined)?c.sho_dim:"mid",       // light | mid | dark
-    sho_sec:    (c.sho_sec>0)?c.sho_sec:12                      // שניות לכל תמונה
+    sho_sec:    (c.sho_sec>0)?c.sho_sec:12,                     // שניות לכל תמונה
+    zmanim_source: (c.zmanim_source==="engine")?"engine":"hebcal", // מקור הזמנים
+    zm: (c.zm && typeof c.zm==="object")?c.zm:{}                 // lat/lng/elev/tzeitDeg/mgaDeg/rtMin
   };
 }
 
 function applyDisplayConfig(cfg){
   DC=cfg;
+  window._zmSrc = (cfg && cfg.zmanim_source==="engine") ? "engine" : "hebcal";
   // בהירות תמונת הרקע (100=ללא שינוי, נמוך יותר=כהה יותר)
   var _bc=document.getElementById("bc");
   if(_bc){ var _bb=(cfg.bgBrightness>0)?cfg.bgBrightness:100; _bc.style.setProperty('--bg-bright',(_bb/100)); }
@@ -1625,8 +1629,196 @@ function gzo(d){
   return {alot:sr-1.2,sunrise:sr,szM:szM198,szG:sr+((ss-sr)/12)*3,noon:nn,mincha:nn+0.5,sunset:ss,tz:ss+(41/60),rt:ss+(72/60)};
 }
 
-function gzm2(n){
+/* ===================================================================
+   מנוע זמנים הלכתיים — נתי SAFE  ·  v1.0
+   מכויל מול הלוח הספירלי (אופק בית שמש, אלול תשפ"ו): 67/67 התאמות.
+   ברירת מחדל: כבוי. הזמנים ממשיכים להגיע מ-Hebcal בדיוק כמו קודם.
+   הפעלה: display_config.zmanim_source = "engine"
+   בדיקה : הוסף ?zmcheck=1 לכתובת המסך
+   =================================================================== */
+var ZM_RAD=Math.PI/180, ZM_DEG=180/Math.PI, ZM_R=6356900, ZM_Z=90+50/60;
+
+function zm_jd(y,m,d){if(m<=2){y-=1;m+=12;}var A=Math.floor(y/100),B=2-A+Math.floor(A/4);
+  return Math.floor(365.25*(y+4716))+Math.floor(30.6001*(m+1))+d+B-1524.5;}
+function zm_jc(j){return (j-2451545.0)/36525.0;}
+function zm_L0(t){var L=280.46646+t*(36000.76983+t*0.0003032);return ((L%360)+360)%360;}
+function zm_M(t){return 357.52911+t*(35999.05029-0.0001537*t);}
+function zm_e(t){return 0.016708634-t*(0.000042037+0.0000001267*t);}
+function zm_C(t){var m=zm_M(t)*ZM_RAD;
+  return Math.sin(m)*(1.914602-t*(0.004817+0.000014*t))+Math.sin(2*m)*(0.019993-0.000101*t)+Math.sin(3*m)*0.000289;}
+function zm_lam(t){var o=zm_L0(t)+zm_C(t),om=125.04-1934.136*t;return o-0.00569-0.00478*Math.sin(om*ZM_RAD);}
+function zm_eps(t){var s=21.448-t*(46.8150+t*(0.00059-t*0.001813));
+  return (23.0+(26.0+s/60.0)/60.0)+0.00256*Math.cos((125.04-1934.136*t)*ZM_RAD);}
+function zm_decl(t){return Math.asin(Math.sin(zm_eps(t)*ZM_RAD)*Math.sin(zm_lam(t)*ZM_RAD))*ZM_DEG;}
+function zm_eot(t){var ep=zm_eps(t)*ZM_RAD,l0=zm_L0(t)*ZM_RAD,e=zm_e(t),m=zm_M(t)*ZM_RAD;
+  var y=Math.tan(ep/2);y*=y;
+  return (y*Math.sin(2*l0)-2*e*Math.sin(m)+4*e*y*Math.sin(m)*Math.cos(2*l0)
+    -0.5*y*y*Math.sin(4*l0)-1.25*e*e*Math.sin(2*m))*ZM_DEG*4.0;}
+function zm_elev(mt){if(!mt||mt<=0)return 0;return Math.acos(ZM_R/(ZM_R+mt))*ZM_DEG;}
+function zm_ha(lat,dec,zen){var la=lat*ZM_RAD,de=dec*ZM_RAD,z=zen*ZM_RAD;
+  var c=(Math.cos(z)/(Math.cos(la)*Math.cos(de)))-Math.tan(la)*Math.tan(de);
+  if(c<-1||c>1)return null;return Math.acos(c)*ZM_DEG;}
+function zm_ev(y,m,d,lat,lng,tz,zen,rise){var jd=zm_jd(y,m,d),t=zm_jc(jd);
+  var h=zm_ha(lat,zm_decl(t),zen);if(h===null)return null;
+  var u=720+4*(-lng-(rise?h:-h))-zm_eot(t);
+  t=zm_jc(jd+u/1440);h=zm_ha(lat,zm_decl(t),zen);if(h===null)return null;
+  u=720+4*(-lng-(rise?h:-h))-zm_eot(t);return u+tz;}
+function zm_noon(y,m,d,lng,tz){var jd=zm_jd(y,m,d),t=zm_jc(jd+0.5+lng/360);
+  var n=720-4*lng-zm_eot(t);t=zm_jc(jd+n/1440);n=720-4*lng-zm_eot(t);return n+tz;}
+function zm_tzoff(dt){try{
+  var f=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Jerusalem',hour12:false,
+    year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  var p={},a=f.formatToParts(dt);for(var i=0;i<a.length;i++)p[a[i].type]=a[i].value;
+  var u=Date.UTC(+p.year,p.month-1,+p.day,p.hour==='24'?0:+p.hour,+p.minute,+p.second);
+  return Math.round((u-Math.floor(dt.getTime()/1000)*1000)/60000);
+}catch(e){return -dt.getTimezoneOffset();}}
+function zm_q(v,q){if(v===null||isNaN(v))return v;if(!q)return v;return Math.round(v*60/q)*q/60;}
+
+/* קונפיג פר-מסך. ברירת מחדל: LOC של המסך. */
+function zmCfg(){
+  var c=(window.DC&&window.DC.zm)||{};
   return {
+    lat: (c.lat!==undefined)?+c.lat:(LOC.lat||31.7683),
+    lng: (c.lng!==undefined)?+c.lng:(LOC.lon||35.2137),
+    elev:(c.elev!==undefined)?+c.elev:(LOC.elev||754),
+    candle:(window._shabbatOffset>0)?window._shabbatOffset:40,
+    tzeitDeg:(c.tzeitDeg>0)?+c.tzeitDeg:8.5,
+    mgaDeg:(c.mgaDeg>0)?+c.mgaDeg:19.8,
+    mga72Deg:(c.mga72Deg>0)?+c.mga72Deg:16.1,
+    rtMin:(c.rtMin>0)?+c.rtMin:72
+  };
+}
+
+/* מחזיר את אותם מפתחות ואותו פורמט (שעות עשרוניות) כמו gzm2 */
+function zmEngineTimes(dt){
+  dt=dt||new Date();
+  var c=zmCfg(), tz=zm_tzoff(dt);
+  var loc=new Date(dt.getTime()+tz*60000);
+  var Y=loc.getUTCFullYear(),M=loc.getUTCMonth()+1,D=loc.getUTCDate();
+  var zEl=ZM_Z+zm_elev(c.elev), zMi=ZM_Z;
+  function ev(z,r){return zm_ev(Y,M,D,c.lat,c.lng,tz,z,r);}
+  function dg(x,r){return ev(90+x,r);}
+  var riseM=ev(zMi,true), setM=ev(zMi,false), setE=ev(zEl,false), netzE=ev(zEl,true);
+  var noon=zm_noon(Y,M,D,c.lng,tz), shaa=(setM-riseM)/12;
+  var alM=dg(c.mgaDeg,true), tzM=dg(c.mgaDeg,false), shM=(tzM-alM)/12;
+  var o={
+    alot:    alM,
+    sunrise: zm_q(netzE,15),
+    szM:     alM+3*shM,
+    szG:     riseM+3*shaa,
+    noon:    noon,
+    mincha:  riseM+6.5*shaa,
+    sunset:  zm_q(setE,15),
+    tz:      dg(c.tzeitDeg,false),
+    rt:      zm_q(setE+c.rtMin,15),
+    /* נוספים — לא בשימוש בתצוגה, מוצגים רק בבדיקה */
+    _alot72: dg(c.mga72Deg,true),
+    _szM72:  dg(c.mga72Deg,true)+3*((dg(c.mga72Deg,false)-dg(c.mga72Deg,true))/12),
+    _tfM:    alM+4*shM,
+    _tfG:    riseM+4*shaa,
+    _mk:     riseM+9.5*shaa,
+    _plag:   riseM+10.75*shaa,
+    _candle: zm_q(setE-c.candle,15),
+    _setMishor: setM
+  };
+  for(var k in o) o[k]=(o[k]===null||isNaN(o[k]))?NaN:o[k]/60;  /* דקות → שעות עשרוניות */
+  return o;
+}
+
+/* ---- מצב צל: רישום ההפרשים ל-localStorage, ללא שינוי בתצוגה ---- */
+function zmShadowLog(H,E){
+  if(!E)return;
+  try{
+    var ds=tds(new Date()), raw=localStorage.getItem("zm_shadow")||"{}", db=JSON.parse(raw);
+    if(db[ds])return;                       /* פעם ביום בלבד */
+    var rec={};
+    ["alot","sunrise","szM","szG","noon","mincha","sunset","tz","rt"].forEach(function(k){
+      if(isNaN(H[k])||isNaN(E[k]))return;
+      rec[k]=Math.round((E[k]-H[k])*60);    /* הפרש בדקות: מנוע פחות Hebcal */
+    });
+    db[ds]=rec;
+    var keys=Object.keys(db).sort();
+    while(keys.length>90){delete db[keys.shift()];}
+    localStorage.setItem("zm_shadow",JSON.stringify(db));
+  }catch(e){}
+}
+
+/* ---- מסך בדיקה: ?zmcheck=1 ---- */
+function zmFmt(v){if(v===null||isNaN(v))return "--:--";
+  var h=Math.floor(v)%24;if(h<0)h+=24;var m=Math.floor(v*60)%60;if(m<0)m+=60;
+  return (h<10?"0"+h:h)+":"+(m<10?"0"+m:m);}
+
+function zmRenderCheck(){
+  var el=document.getElementById("zm-check");
+  if(!el){el=document.createElement("div");el.id="zm-check";
+    el.style.cssText="position:fixed;inset:0;z-index:999999;background:#0d1117;color:#e6edf3;"+
+      "font:12px/1.45 Assistant,Arial,sans-serif;direction:rtl;overflow:auto;padding:14px;";
+    document.body.appendChild(el);}
+  var H=window._zmH||{}, E=window._zmE;
+  var lbl={alot:'עלות השחר',sunrise:'הנץ',szM:'סו"ז ק"ש מג"א',szG:'סו"ז ק"ש גר"א',
+           noon:'חצות',mincha:'מנחה גדולה',sunset:'שקיעה',tz:'צאת הכוכבים',rt:'רבינו תם'};
+  var c=zmCfg();
+  var h='<div style="font-size:16px;font-weight:700;margin-bottom:4px;">בדיקת זמנים — מצב צל</div>'+
+    '<div style="color:#8b949e;margin-bottom:10px;">מקור פעיל: <b style="color:#ffcc00">'+
+    ((window._zmSrc==="engine")?"מנוע מקומי":"Hebcal")+'</b> · '+
+    'קו רוחב '+c.lat+' · קו אורך '+c.lng+' · גובה '+c.elev+' מ\' · נרות '+c.candle+' דק\'</div>';
+
+  h+='<table style="border-collapse:collapse;margin-bottom:16px;"><tr style="background:#161b22">'+
+     '<th style="padding:4px 10px;text-align:right">זמן</th><th style="padding:4px 10px">Hebcal</th>'+
+     '<th style="padding:4px 10px">מנוע</th><th style="padding:4px 10px">הפרש</th></tr>';
+  for(var k in lbl){
+    var a=H[k],b=E?E[k]:NaN;
+    var d=(isNaN(a)||isNaN(b))?"":Math.round((b-a)*60);
+    var col=(d===""||d===0)?"#8b949e":(Math.abs(d)>=2?"#ff6b6b":"#ffcc00");
+    h+='<tr style="border-top:1px solid #21262d"><td style="padding:3px 10px">'+lbl[k]+'</td>'+
+       '<td style="padding:3px 10px;text-align:center">'+zmFmt(a)+'</td>'+
+       '<td style="padding:3px 10px;text-align:center">'+zmFmt(b)+'</td>'+
+       '<td style="padding:3px 10px;text-align:center;color:'+col+'">'+(d===""?"":(d>0?"+":"")+d)+'</td></tr>';
+  }
+  h+='</table>';
+
+  /* 30 יום קדימה — להשוואה מול הלוח המודפס */
+  h+='<div style="font-size:14px;font-weight:700;margin:6px 0;">30 יום קדימה (מנוע בלבד) — השווה מול הלוח המודפס</div>';
+  h+='<table style="border-collapse:collapse;font-size:11px;"><tr style="background:#161b22">'+
+     ['תאריך','עה"ש','הנץ','ק"ש מג"א','ק"ש גר"א','תפילה גר"א','חצות','מנ"ג','מנ"ק','פלג','נרות','שקיעה','צאה"כ','ר"ת']
+     .map(function(t){return '<th style="padding:3px 6px;white-space:nowrap">'+t+'</th>';}).join('')+'</tr>';
+  var base=new Date();
+  for(var i=0;i<30;i++){
+    var d=new Date(base.getFullYear(),base.getMonth(),base.getDate()+i,12,0,0);
+    var z=zmEngineTimes(d);
+    h+='<tr style="border-top:1px solid #21262d"><td style="padding:2px 6px;white-space:nowrap">'+
+       d.getDate()+"/"+(d.getMonth()+1)+'</td>'+
+       [z.alot,z.sunrise,z.szM,z.szG,z._tfG,z.noon,z.mincha,z._mk,z._plag,z._candle,z.sunset,z.tz,z.rt]
+       .map(function(v){return '<td style="padding:2px 6px;text-align:center">'+zmFmt(v)+'</td>';}).join('')+'</tr>';
+  }
+  h+='</table>';
+
+  /* היסטוריית מצב צל */
+  try{
+    var db=JSON.parse(localStorage.getItem("zm_shadow")||"{}"), ks=Object.keys(db).sort().reverse();
+    if(ks.length){
+      h+='<div style="font-size:14px;font-weight:700;margin:16px 0 6px;">היסטוריית הפרשים (מנוע פחות Hebcal, בדקות)</div>';
+      h+='<table style="border-collapse:collapse;font-size:11px;"><tr style="background:#161b22">'+
+         '<th style="padding:3px 6px">תאריך</th>'+
+         Object.keys(lbl).map(function(k){return '<th style="padding:3px 6px">'+lbl[k]+'</th>';}).join('')+'</tr>';
+      ks.slice(0,30).forEach(function(ds){
+        h+='<tr style="border-top:1px solid #21262d"><td style="padding:2px 6px">'+ds+'</td>'+
+           Object.keys(lbl).map(function(k){
+             var v=db[ds][k];
+             var col=(v===undefined)?"#8b949e":(Math.abs(v)>=2?"#ff6b6b":(v===0?"#3fb950":"#ffcc00"));
+             return '<td style="padding:2px 6px;text-align:center;color:'+col+'">'+
+                    (v===undefined?"—":(v>0?"+":"")+v)+'</td>';}).join('')+'</tr>';
+      });
+      h+='</table>';
+    }
+  }catch(e){}
+
+  h+='<div style="margin-top:16px;color:#8b949e">להסתרה: הסר <b>?zmcheck=1</b> מהכתובת.</div>';
+  el.innerHTML=h;
+}
+
+function gzm2(n){
+  var H={
     alot:    gzm("alotHaShachar"),
     sunrise: gzm("sunrise"),
     szM:     gzm("sofZmanShmaMGA19Point8"),
@@ -1637,12 +1829,24 @@ function gzm2(n){
     tz:      gzm("tzeit85deg"),
     rt:      gzm("tzeit72min")
   };
+  var E=null;
+  try{ E=zmEngineTimes(n||new Date()); }catch(e){ E=null; }
+  window._zmH=H; window._zmE=E;
+  try{ zmShadowLog(H,E); }catch(e){}
+  /* מקור פעיל: hebcal (ברירת מחדל) או engine — נקבע מ-display_config */
+  if(window._zmSrc==="engine" && E) return E;
+  /* רשת ביטחון: אם Hebcal לא החזיר ערך, השלם מהמנוע במקום --:-- */
+  if(E && window._zmFallback!==false){
+    for(var k in H){ if(isNaN(H[k]) && !isNaN(E[k])) H[k]=E[k]; }
+  }
+  return H;
 }
 
 /* ---- Update display ---- */
 function upd(){
   if(!ok)return;
   var now=new Date(),tm=gzm2(now),cur=now.getHours()+now.getMinutes()/60;
+  if(ZMCHECK){ if(!window._zmCheckT||Date.now()-window._zmCheckT>60000){ window._zmCheckT=Date.now(); try{ zmRenderCheck(); }catch(e){} } }
   var hcd=new Date(now);if(cur>=tm.tz)hcd.setDate(hcd.getDate()+1);
   var hd=ghd(hcd);
   // תאריך התצוגה מתחלף בחצות יחד עם היום בשבוע (לא בשקיעה)
@@ -1861,6 +2065,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 4.5</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 4.6</div>
 </body>
 </html>

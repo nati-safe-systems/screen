@@ -337,6 +337,18 @@ tr:hover td{background:rgba(128,0,0,0.05);}
         </div>
 
         <div class="field" style="margin-top:12px;">
+          <label>מקור הזמנים ההלכתיים</label>
+          <select id="edit-sc-zmsrc" onchange="markCustom()" style="margin-top:6px;">
+            <option value="hebcal">Hebcal (ברירת מחדל)</option>
+            <option value="engine">מנוע מקומי — מכויל ללוח</option>
+          </select>
+          <div style="font-size:12px;color:#8b949e;margin-top:5px;">
+            מצב צל פעיל תמיד: המנוע רץ ברקע ורושם הפרשים גם כשהמקור הוא Hebcal.
+            לבדיקה פתח את המסך עם <b>?zmcheck=1</b> בסוף הכתובת.
+          </div>
+        </div>
+
+        <div class="field" style="margin-top:12px;">
           <label>מהירות גלילת הטקסט הגולל</label>
           <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
             <span style="font-size:12px;color:#8b949e;">איטי</span>
@@ -924,7 +936,8 @@ function readDisplayConfig(){
     ads_list: adsList.slice(),
     pdf_sec: parseInt(document.getElementById('edit-sc-pdfsec').value,10)||10,
     pdf_cols: (document.getElementById('edit-sc-pdfcols').value==='2') ? 2 : 1,
-    pdf_show_sec: parseInt(document.getElementById('edit-sc-pdfshow').value,10)||20
+    pdf_show_sec: parseInt(document.getElementById('edit-sc-pdfshow').value,10)||20,
+    zmanim_source: (document.getElementById('edit-sc-zmsrc')||{}).value === 'engine' ? 'engine' : 'hebcal'
   };
 }
 function fillDisplayConfig(cfg){
@@ -943,6 +956,7 @@ function fillDisplayConfig(cfg){
   document.getElementById('dc-bg-bright').value = cfg.bgBrightness || 100;
   document.getElementById('dc-bg-bright-val').textContent = cfg.bgBrightness || 100;
   document.getElementById('edit-sc-rss').value  = cfg.rss_url || '';
+  var _zs=document.getElementById('edit-sc-zmsrc'); if(_zs) _zs.value = (cfg.zmanim_source==='engine')?'engine':'hebcal';
   (function(){ var sel = Array.isArray(cfg.news_sources) ? cfg.news_sources : []; Array.prototype.forEach.call(document.querySelectorAll('.ns-src'), function(c){ c.checked = sel.indexOf(c.value) >= 0; }); })();
   document.getElementById('dc-protected').checked = (cfg.protected!==undefined) ? !!cfg.protected : ((cfg.profile||'chareidi')==='chareidi');
   document.getElementById('dc-tenant-edit').checked = !!cfg.tenant_can_edit;
