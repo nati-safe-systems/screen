@@ -1305,22 +1305,14 @@ function applyTenantPerms(){
   _tShow('tbright-sec', !!P.bg_brightness);
 }
 function _tenantBaseDC(){
-  // בסיס לשמירה: כל מה שהאדמין קבע נשמר; נדרוס רק את החלק הרלוונטי
-  var b=_tenantDC||{};
-  return {
-    profile: b.profile||"custom",
-    clock:   b.clock,  zmanim: b.zmanim, parasha: b.parasha,
-    board:   b.board,  news:   b.news,   ads:     b.ads,
-    rss_url: b.rss_url||"",
-    protected: b.protected,
-    scrollSpeed: b.scrollSpeed,
-    bgBrightness: b.bgBrightness,
-    tenant_can_edit: !!b.tenant_can_edit,
-    tenant_ads_edit: !!b.tenant_ads_edit,
-    ads_list: Array.isArray(b.ads_list)?b.ads_list.slice():[],
-    pdf_sec: b.pdf_sec,
-    pdf_cols: b.pdf_cols
-  };
+  /* בסיס לשמירה: העתקה מלאה של הקונפיג הקיים.
+     הרשימה הידנית שהייתה כאן השמיטה שדות (מקור זמנים, כיוון מסך, מזג אוויר,
+     מקורות חדשות, הגדרות מסך שבת) — והם נמחקו בכל שמירה של הדייר. */
+  var b=_tenantDC||{}, o={};
+  for(var k in b){ if(Object.prototype.hasOwnProperty.call(b,k)) o[k]=b[k]; }
+  if(!o.profile) o.profile="custom";
+  if(Array.isArray(b.ads_list)) o.ads_list=b.ads_list.slice();
+  return o;
 }
 function _tenantSaveDC(out){
   return sf("screens?screen_id=eq."+encodeURIComponent(sid),

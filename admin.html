@@ -939,7 +939,11 @@ function toggleRssField(){
     document.getElementById('dc-news').checked ? 'flex' : 'none';
 }
 function readDisplayConfig(){
-  return {
+  /* חשוב: מתחילים מהקונפיג הקיים ורק דורסים את השדות שיש להם פקד בטופס הזה.
+     בלי זה — כל שמירה מוחקת שדות ששייכים לפאנל הדייר, והם חוזרים לברירת המחדל. */
+  var out = {};
+  for(var _k in _rawDC){ if(Object.prototype.hasOwnProperty.call(_rawDC,_k)) out[_k]=_rawDC[_k]; }
+  var mine = {
     profile: document.getElementById('edit-sc-profile').value,
     clock:   document.getElementById('dc-clock').checked,
     zmanim:  document.getElementById('dc-zmanim').checked,
@@ -962,9 +966,14 @@ function readDisplayConfig(){
     orientation: (document.getElementById('edit-sc-orient')||{}).value || 'auto',
     weather_pos: (document.getElementById('edit-sc-wx')||{}).value || 'off'
   };
+  for(var _m in mine){ if(Object.prototype.hasOwnProperty.call(mine,_m)) out[_m]=mine[_m]; }
+  return out;
 }
+var _rawDC = {};   /* ה-display_config כפי שנטען מהשרת — בסיס למיזוג בשמירה */
+
 function fillDisplayConfig(cfg){
   cfg = cfg || {};
+  _rawDC = cfg;
   // ברירת מחדל לאחור-תאימות: מסך ישן ללא קונפיג = חרדי מלא
   var def = DC_PROFILES.chareidi;
   document.getElementById('edit-sc-profile').value = cfg.profile || 'chareidi';
@@ -1060,7 +1069,21 @@ function saveScreen(){
     if(mt==='pdf'){ body.pdf_url=document.getElementById('edit-sc-pdfurl').value.trim(); }
     else if(mt==='scrollpdf'){ body.pdf_url=document.getElementById('edit-sc-pdfurl').value.trim(); body.message=document.getElementById('edit-sc-msg').innerHTML.trim(); }
     else { body.message=document.getElementById('edit-sc-msg').innerHTML.trim(); body.pdf_url=''; }
-    sf('screens?screen_id=eq.'+encodeURIComponent(orig),{method:'PATCH',body:JSON.stringify(body)}).then(function(){closeModal('modal-sc');toast('המסך עודכן!');loadAll();});
+    /* מיזוג מול המצב העדכני בשרת — מונע דריסה של שינוי שהדייר עשה בינתיים */
+    sf('screens?screen_id=eq.'+encodeURIComponent(orig)+'&select=display_config')
+      .then(function(rows){
+        var live = (rows&&rows[0]) ? (parseDC(rows[0].display_config)||{}) : {};
+        var merged = {};
+        for(var k1 in live){ if(Object.prototype.hasOwnProperty.call(live,k1)) merged[k1]=live[k1]; }
+        var form = readDisplayConfig();
+        for(var k2 in form){ if(Object.prototype.hasOwnProperty.call(form,k2)) merged[k2]=form[k2]; }
+        body.display_config = JSON.stringify(merged);
+      })
+      .catch(function(){})
+      .then(function(){
+        return sf('screens?screen_id=eq.'+encodeURIComponent(orig),{method:'PATCH',body:JSON.stringify(body)});
+      })
+      .then(function(){closeModal('modal-sc');toast('המסך עודכן!');loadAll();});
   }
 }
 
