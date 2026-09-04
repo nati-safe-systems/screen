@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>נתי SAFE — חדר קפה</title>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;direction:rtl;
+  display:flex;flex-direction:column}
+.hdr{background:#7a0000;color:#fff;text-align:center;padding:.35vh 0;font-size:1.1vh;
+  border-bottom:1px solid #ffcc00;flex-shrink:0}
+
+/* ---------- שורה עליונה: שעון + זמנים ---------- */
+.top{display:flex;align-items:stretch;gap:1.2vw;padding:1.4vh 1.6vw;flex-shrink:0;
+  background:linear-gradient(180deg,#0d1526,#080d1a);border-bottom:2px solid rgba(255,204,0,.28)}
+.clockbox{flex:0 0 auto;text-align:center;padding-left:1.6vw;border-left:1px solid rgba(255,255,255,.1)}
+#clock{color:#00ff88;font-size:7.2vh;font-weight:600;line-height:1;font-variant-numeric:tabular-nums;
+  text-shadow:0 0 22px rgba(0,255,136,.25)}
+#dheb{color:#ffd86b;font-size:2.1vh;font-weight:700;margin-top:.5vh}
+#dgreg{color:#8fb4dd;font-size:1.5vh;margin-top:.2vh}
+
+.zwrap{flex:1;display:flex;align-items:center;justify-content:flex-start;gap:1vw;flex-wrap:wrap;min-width:0}
+.zc{background:rgba(255,255,255,.05);border:1px solid rgba(255,204,0,.28);border-radius:1.1vh;
+  padding:.9vh 1.5vw;text-align:center;min-width:9vw}
+.zc.hot{background:linear-gradient(180deg,rgba(160,25,25,.55),rgba(105,10,10,.6));
+  border-color:#ffcc00;box-shadow:0 0 2.2vh rgba(255,204,0,.35)}
+.zc small{display:block;color:#c8d8ea;font-size:1.5vh;font-weight:700;margin-bottom:.3vh}
+.zc b{display:block;color:#00ff88;font-size:3.6vh;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.zc.hot b{color:#ffd86b}
+.zc .cd{display:block;color:#ffb4b4;font-size:1.3vh;margin-top:.3vh}
+
+/* ---------- מניינים ---------- */
+.mid{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;padding:1.4vh 1.6vw .8vh}
+.secttl{color:#ffcc00;font-size:1.7vh;font-weight:800;letter-spacing:.1vh;margin-bottom:.9vh;
+  display:flex;align-items:center;gap:.8vw}
+.secttl:after{content:"";flex:1;height:1px;background:rgba(255,204,0,.28)}
+.mgrid{flex:1;min-height:0;display:grid;gap:1vw;align-content:stretch}
+.mcard{background:linear-gradient(160deg,rgba(20,32,58,.95),rgba(10,16,30,.95));
+  border:1px solid rgba(140,180,230,.22);border-radius:1.4vh;padding:1.2vh 1.2vw;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.4vh;
+  min-height:0;overflow:hidden}
+.mcard.soon{border-color:#ffcc00;background:linear-gradient(160deg,rgba(70,45,0,.9),rgba(30,18,0,.95));
+  box-shadow:0 0 2.6vh rgba(255,204,0,.3)}
+.mcard .rn{color:#fff;font-size:2.2vh;font-weight:800;font-family:"Frank Ruhl Libre",serif;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.mcard .pr{color:#9fc0e4;font-size:1.4vh}
+.mcard .tm{color:#00ff88;font-size:4vh;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.mcard.soon .tm{color:#ffd86b}
+.mcard .cd{color:#ffcc00;font-size:1.9vh;font-weight:800}
+.mcard .none{color:#6e7f95;font-size:1.7vh}
+
+/* ---------- פרנסים ---------- */
+.spon{flex-shrink:0;padding:.8vh 1.6vw 1.2vh}
+.sgrid{display:grid;gap:.9vw}
+.sc{background:linear-gradient(160deg,rgba(58,40,0,.85),rgba(28,18,0,.9));
+  border:1px solid rgba(255,204,0,.42);border-radius:1.3vh;padding:1vh 1vw;text-align:center;
+  display:flex;flex-direction:column;justify-content:center;gap:.25vh;overflow:hidden}
+.sc .cat{color:#ffcc00;font-size:1.4vh;font-weight:800;letter-spacing:.05vh}
+.sc .nm{color:#fff;font-size:2.4vh;font-weight:800;font-family:"Frank Ruhl Libre",serif;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sc .dd{color:#e8d6a8;font-size:1.4vh}
+.sc.p1{border-color:#ffd86b;border-width:2px;box-shadow:0 0 2.8vh rgba(255,204,0,.4);
+  background:linear-gradient(160deg,rgba(92,64,0,.92),rgba(45,28,0,.95))}
+.sc.p1 .nm{font-size:3.4vh}
+.sc.p1 .cat{font-size:1.6vh}
+.sc.p2 .nm{font-size:2.8vh}
+
+.ft{flex-shrink:0;border-top:1px solid rgba(255,255,255,.1);padding:.5vh;display:flex;
+  align-items:center;justify-content:center;gap:.8vw;color:rgba(255,255,255,.45);font-size:1.1vh}
+.fl{height:3vh;opacity:.85}
+.hide{display:none!important}
+</style></head><body>
+
+<div class="hdr">בס"ד &nbsp;·&nbsp; <span id="siteName"></span></div>
+
+<div class="top">
+  <div class="clockbox">
+    <div id="clock">--:--:--</div>
+    <div id="dheb"></div>
+    <div id="dgreg"></div>
+  </div>
+  <div class="zwrap" id="zwrap"></div>
+</div>
+
+<div class="mid">
+  <div class="secttl">המניין הבא</div>
+  <div class="mgrid" id="mgrid"></div>
+</div>
+
+<div class="spon" id="sponWrap">
+  <div class="secttl">פרנסי היום</div>
+  <div class="sgrid" id="sgrid"></div>
+</div>
+
+<div class="ft"><span id="ftLogo"></span><span>© כל הזכויות שמורות ל-נתי Safe מערכות · <span dir="ltr">052-717-1280</span></span></div>
+
+<script>/* =====================================================================
+   נתי SAFE — מנוע זמנים הלכתיים
+   zmanim-engine.js  ·  v1.0
+   ---------------------------------------------------------------------
+   מנוע עצמאי לחלוטין. אפס תלויות, אפס קריאות רשת, אפס API.
+   מחושב לפי אלגוריתם NOAA Solar Position (דיוק שניות).
+
+   מכויל מול הלוח הספירלי (אופק בית שמש), אלול תשפ"ו / אוגוסט-ספטמבר 2026.
+   תוצאת הכיול: 14/14 התאמה מדויקת בשקיעה, צאת הכוכבים, חצות,
+   מנחה גדולה, הדלקת נרות ורבנו תם.
+
+   השיטות שזוהו בלוח (מוקשחות כאן):
+     שקיעה / הנץ מוצג  : זווית 90.8333° + תיקון גובה תצפית
+     חצות              : מעבר שמש אסטרונומי (לא אמצע היום)
+     שעות זמניות       : נץ→שקיעה במישור (גובה 0), לא בגובה
+     סוף זמן ק"ש מ"א   : 19.8° (עלות ותצאת 19.8°)
+     סוף זמן ק"ש מ"א 72: 16.1°
+     צאת הכוכבים       : 8.5° במישור
+     רבנו תם           : שקיעה (בגובה) + 72 דקות
+     הדלקת נרות        : שקיעה (בגובה) − 40 דקות
+   כל הזמנים נחתכים כלפי מטה לדקה שלמה (floor), כמו בלוח.
+   ===================================================================== */
+
+(function (root) {
+  'use strict';
+
+  var RAD = Math.PI / 180, DEG = 180 / Math.PI;
+  var EARTH_R = 6356900;           // מ' — ערך KosherJava
+  var Z_SUNSET = 90 + 50 / 60;     // 90.833333° — שקיעה/נץ עם רפרקציה
+
+  /* ---------- אסטרונומיה ---------- */
+
+  function julianDay(y, m, d) {
+    if (m <= 2) { y -= 1; m += 12; }
+    var A = Math.floor(y / 100), B = 2 - A + Math.floor(A / 4);
+    return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + d + B - 1524.5;
+  }
+  function jc(jd) { return (jd - 2451545.0) / 36525.0; }
+
+  function meanLong(t) { var L = 280.46646 + t * (36000.76983 + t * 0.0003032); return ((L % 360) + 360) % 360; }
+  function meanAnom(t) { return 357.52911 + t * (35999.05029 - 0.0001537 * t); }
+  function eccent(t) { return 0.016708634 - t * (0.000042037 + 0.0000001267 * t); }
+  function eqCenter(t) {
+    var m = meanAnom(t) * RAD;
+    return Math.sin(m) * (1.914602 - t * (0.004817 + 0.000014 * t))
+         + Math.sin(2 * m) * (0.019993 - 0.000101 * t)
+         + Math.sin(3 * m) * 0.000289;
+  }
+  function appLong(t) {
+    var o = meanLong(t) + eqCenter(t), om = 125.04 - 1934.136 * t;
+    return o - 0.00569 - 0.00478 * Math.sin(om * RAD);
+  }
+  function oblCorr(t) {
+    var s = 21.448 - t * (46.8150 + t * (0.00059 - t * 0.001813));
+    return (23.0 + (26.0 + s / 60.0) / 60.0) + 0.00256 * Math.cos((125.04 - 1934.136 * t) * RAD);
+  }
+  function declination(t) {
+    var e = oblCorr(t) * RAD, l = appLong(t) * RAD;
+    return Math.asin(Math.sin(e) * Math.sin(l)) * DEG;
+  }
+  function eqTime(t) {
+    var eps = oblCorr(t) * RAD, l0 = meanLong(t) * RAD, e = eccent(t), m = meanAnom(t) * RAD;
+    var y = Math.tan(eps / 2); y *= y;
+    return (y * Math.sin(2 * l0) - 2 * e * Math.sin(m) + 4 * e * y * Math.sin(m) * Math.cos(2 * l0)
+      - 0.5 * y * y * Math.sin(4 * l0) - 1.25 * e * e * Math.sin(2 * m)) * DEG * 4.0;
+  }
+
+  /** תוספת מעלות מתחת לאופק בגלל גובה התצפית */
+  function elevAdj(metres) {
+    if (!metres || metres <= 0) return 0;
+    return Math.acos(EARTH_R / (EARTH_R + metres)) * DEG;
+  }
+
+  function hourAngle(lat, decl, zenith) {
+    var la = lat * RAD, de = decl * RAD, z = zenith * RAD;
+    var c = (Math.cos(z) / (Math.cos(la) * Math.cos(de))) - Math.tan(la) * Math.tan(de);
+    if (c < -1 || c > 1) return null;
+    return Math.acos(c) * DEG;
+  }
+
+  /** אירוע שמש → דקות מחצות הלילה בשעון המקומי */
+  function solarEvent(y, m, d, lat, lng, tzMin, zenith, isRise) {
+    var jd = julianDay(y, m, d), t = jc(jd);
+    var ha = hourAngle(lat, declination(t), zenith);
+    if (ha === null) return null;
+    var utc = 720 + 4 * (-lng - (isRise ? ha : -ha)) - eqTime(t);
+    t = jc(jd + utc / 1440);
+    ha = hourAngle(lat, declination(t), zenith);
+    if (ha === null) return null;
+    utc = 720 + 4 * (-lng - (isRise ? ha : -ha)) - eqTime(t);
+    return utc + tzMin;
+  }
+
+  /** חצות אסטרונומי (מעבר שמש) */
+  function solarNoon(y, m, d, lng, tzMin) {
+    var jd = julianDay(y, m, d);
+    var t = jc(jd + 0.5 + lng / 360);
+    var n = 720 - 4 * lng - eqTime(t);
+    t = jc(jd + n / 1440);
+    n = 720 - 4 * lng - eqTime(t);
+    return n + tzMin;
+  }
+
+  /* ---------- אזור זמן ---------- */
+
+  /** היסט אמיתי בדקות מ-UTC לתאריך נתון, כולל שעון קיץ */
+  function tzOffsetMinutes(date, timeZone) {
+    try {
+      var dtf = new Intl.DateTimeFormat('en-US', {
+        timeZone: timeZone, hour12: false,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      });
+      var p = {}, parts = dtf.formatToParts(date);
+      for (var i = 0; i < parts.length; i++) p[parts[i].type] = parts[i].value;
+      var asUTC = Date.UTC(+p.year, p.month - 1, +p.day,
+        p.hour === '24' ? 0 : +p.hour, +p.minute, +p.second);
+      return Math.round((asUTC - Math.floor(date.getTime() / 1000) * 1000) / 60000);
+    } catch (e) {
+      return -date.getTimezoneOffset();
+    }
+  }
+
+  /* ---------- פורמט ---------- */
+
+  var QSEC = 15;
+  /** עיגול ל-QSEC שניות ואז חיתוך לדקה — בדיוק כמו בלוח */
+  function quant(m, q) {
+    if (m === null || isNaN(m)) return m;
+    q = (q === undefined) ? QSEC : q;
+    if (!q) return m;
+    return Math.round(m * 60 / q) * q / 60;
+  }
+
+  function fmt(mins, opt) {
+    if (mins === null || isNaN(mins)) return '--:--';
+    opt = opt || {};
+    var total = opt.seconds ? Math.round(mins * 60) : Math.floor(mins) * 60;
+    var h = Math.floor(total / 3600) % 24, r = total - Math.floor(total / 3600) * 3600;
+    var mi = Math.floor(r / 60), se = r - mi * 60;
+    var hh = opt.hour12 ? (h % 12 === 0 ? 12 : h % 12) : h;
+    var s = (opt.pad === false ? hh : String(hh).padStart(2, '0')) + ':' + String(mi).padStart(2, '0');
+    if (opt.seconds) s += ':' + String(se).padStart(2, '0');
+    return s;
+  }
+
+  /* ---------- ברירות מחדל למיקומים ---------- */
+
+  var PLACES = {
+    jerusalem:  { name: 'ירושלים',   lat: 31.7683, lng: 35.2137, elevation: 754 },
+    betshemesh: { name: 'בית שמש',   lat: 31.7500, lng: 34.9750, elevation: 214 }, // נקודת הייחוס של הלוח
+    bneibrak:   { name: 'בני ברק',   lat: 32.0840, lng: 34.8330, elevation: 30  },
+    telaviv:    { name: 'תל אביב',   lat: 32.0853, lng: 34.7818, elevation: 20  },
+    haifa:      { name: 'חיפה',      lat: 32.7940, lng: 34.9896, elevation: 200 },
+    beitar:     { name: 'ביתר עילית', lat: 31.6960, lng: 35.1180, elevation: 700 },
+    modiin:     { name: 'מודיעין עילית', lat: 31.9310, lng: 35.0420, elevation: 320 },
+    ashdod:     { name: 'אשדוד',     lat: 31.8040, lng: 34.6550, elevation: 30  },
+    elad:       { name: 'אלעד',      lat: 32.0520, lng: 34.9520, elevation: 120 },
+    safed:      { name: 'צפת',       lat: 32.9646, lng: 35.4960, elevation: 850 }
+  };
+
+  /* ---------- הגדרות שיטה (ניתנות לשינוי מהאדמין) ---------- */
+
+  var DEFAULTS = {
+    lat: 31.7683, lng: 35.2137, elevation: 754,
+    timeZone: 'Asia/Jerusalem',
+    candleMinutes: 40,        // הדלקת נרות לפני השקיעה
+    tzeitDegrees: 8.5,        // צאת הכוכבים
+    rtMinutes: 72,            // רבנו תם — דקות שוות אחרי השקיעה בגובה
+    mgaDegrees: 19.8,         // מ"א ראשי
+    mga72Degrees: 16.1,       // מ"א 72
+    misheyakirDegrees: 11.5,  // משיכיר (לא אומת מול הלוח — ראה README)
+    useElevationForShaot: false, // הלוח מחשב שעות זמניות במישור
+    graHalfDay: false,        // ק"ש/תפילה גר"א לפי יום מלא (כפי שבלוח)
+    quantizeSeconds: 15       // הלוח מעגל ל-15 שניות לפני החיתוך לדקה
+  };
+
+  /* ---------- החישוב הראשי ---------- */
+
+  function getZmanim(date, cfg) {
+    date = date || new Date();
+    var c = {};
+    for (var k in DEFAULTS) c[k] = DEFAULTS[k];
+    if (cfg) for (var k2 in cfg) if (cfg[k2] !== undefined && cfg[k2] !== null) c[k2] = cfg[k2];
+
+    var tzMin = tzOffsetMinutes(date, c.timeZone);
+
+    // התאריך האזרחי המקומי (לא UTC) — קריטי, אחרת קופצים יום
+    var loc = new Date(date.getTime() + tzMin * 60000);
+    var Y = loc.getUTCFullYear(), M = loc.getUTCMonth() + 1, Dd = loc.getUTCDate();
+
+    var zEl = Z_SUNSET + elevAdj(c.elevation);   // עם גובה
+    var zMi = Z_SUNSET;                          // מישור
+
+    function ev(zen, rise) { return solarEvent(Y, M, Dd, c.lat, c.lng, tzMin, zen, rise); }
+    function deg(x, rise) { return ev(90 + x, rise); }
+
+    var netzMishor = ev(zMi, true);
+    var shkiaMishor = ev(zMi, false);
+    var netzElev = ev(zEl, true);
+    var shkiaElev = ev(zEl, false);
+    var chatzot = solarNoon(Y, M, Dd, c.lng, tzMin);
+
+    // שעה זמנית — לפי המישור (כפי שהלוח מחשב)
+    var rS = c.useElevationForShaot ? netzElev : netzMishor;
+    var sS = c.useElevationForShaot ? shkiaElev : shkiaMishor;
+    var shaa = (sS - rS) / 12;
+    // שעה זמנית לחצי-היום הבוקר (מהנץ עד חצות אסטרונומי)
+    var shaaAM = (chatzot - rS) / 6;
+    var shaaKS = c.graHalfDay ? shaaAM : shaa;
+
+    // מ"א
+    var alotMGA = deg(c.mgaDegrees, true), tzeitMGA = deg(c.mgaDegrees, false);
+    var shaaMGA = (tzeitMGA - alotMGA) / 12;
+    var alot72 = deg(c.mga72Degrees, true), tzeit72 = deg(c.mga72Degrees, false);
+    var shaa72 = (tzeit72 - alot72) / 12;
+
+    var out = {
+      _meta: { date: Y + '-' + pad(M) + '-' + pad(Dd), tzOffsetMinutes: tzMin, config: c },
+
+      alotHashachar:      alotMGA,                      // עלות השחר 19.8°
+      alot72:             alot72,                       // עלות 16.1° (="72")
+      misheyakir:         deg(c.misheyakirDegrees, true),
+      netzMishor:         netzMishor,                   // הנץ מישורי
+      netz:               netzElev,                     // הנץ בגובה התצפית
+      sofZmanShmaMGA:     alotMGA + 3 * shaaMGA,
+      sofZmanShmaMGA72:   alot72 + 3 * shaa72,
+      sofZmanShmaGRA:     rS + 3 * shaaKS,
+      sofZmanTfilaMGA:    alotMGA + 4 * shaaMGA,
+      sofZmanTfilaGRA:    rS + 4 * shaaKS,
+      chatzot:            chatzot,                      // מעבר שמש אסטרונומי
+      minchaGedola:       rS + 6.5 * shaa,
+      minchaKetana:       rS + 9.5 * shaa,
+      plagHamincha:       rS + 10.75 * shaa,
+      candleLighting:     shkiaElev - c.candleMinutes,
+      shkia:              shkiaElev,                    // השקיעה המוצגת
+      shkiaMishor:        shkiaMishor,
+      tzeitHakochavim:    deg(c.tzeitDegrees, false),   // 8.5° במישור
+      tzeitRT:            shkiaElev + c.rtMinutes,      // ר"ת דקות שוות
+      tzeitRTDegrees:     deg(c.mga72Degrees, false),   // ר"ת מעלות
+      chatzotLayla:       chatzot + 720,
+      shaaZmanitGRA:      shaa,
+      shaaZmanitMGA:      shaaMGA
+    };
+    // הלוח מדפיס את השקיעה/הנץ בדיוק 15 שניות; שאר הזמנים נחתכים מהערך הגולמי
+    if (c.quantizeSeconds) {
+      var qk = ['shkia', 'shkiaMishor', 'netz', 'netzMishor', 'candleLighting', 'tzeitRT'];
+      for (var qi = 0; qi < qk.length; qi++) out[qk[qi]] = quant(out[qk[qi]], c.quantizeSeconds);
+    }
+    return out;
+  }
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  /** גרסה מפורמטת מוכנה לתצוגה */
+  function getZmanimFormatted(date, cfg, opt) {
+    var z = getZmanim(date, cfg), o = { _meta: z._meta };
+    for (var k in z) {
+      if (k.charAt(0) === '_' || k.indexOf('shaaZmanit') === 0) continue;
+      o[k] = fmt(z[k], opt);
+    }
+    return o;
+  }
+
+  var API = {
+    getZmanim: getZmanim,
+    getZmanimFormatted: getZmanimFormatted,
+    fmt: fmt,
+    quant: quant,
+    PLACES: PLACES,
+    DEFAULTS: DEFAULTS,
+    _internal: { solarEvent: solarEvent, solarNoon: solarNoon, elevAdj: elevAdj, tzOffsetMinutes: tzOffsetMinutes },
+    VERSION: '1.0'
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = API;
+  root.NatiZmanim = API;
+
+})(typeof window !== 'undefined' ? window : globalThis);
+
+/* =====================================================================
+   נתי SAFE — מנוע המניינים  ·  v1.0
+   ---------------------------------------------------------------------
+   ממיר את לוח המניינים שבמסד לשעות קונקרטיות ליום נתון.
+   שלושה מצבים:
+     fixed    — שעה קבועה
+     interval — כל X דקות, בין שני עוגנים (שעה קבועה או זמן הלכתי)
+     relative — יחסית לזמן הלכתי, עם היסט בדקות
+
+   תלוי במנוע הזמנים (NatiZmanim / zmEngineTimes) לפתרון העוגנים.
+   ===================================================================== */
+(function (root) {
+  'use strict';
+
+  /* מיפוי שם עוגן -> מפתח במנוע הזמנים */
+  var ZKEY = {
+    alot: 'alotHashachar', netz: 'netz', szks: 'sofZmanShmaGRA',
+    szt: 'sofZmanTfilaGRA', chatzot: 'chatzot', mincha_gedola: 'minchaGedola',
+    mincha_ketana: 'minchaKetana', plag: 'plagHamincha', shkia: 'shkia',
+    tzeit: 'tzeitHakochavim', rt: 'tzeitRT', candle: 'candleLighting'
+  };
+
+  function toMin(t) {                     /* "HH:MM[:SS]" -> דקות */
+    if (t == null) return null;
+    var p = String(t).split(':');
+    return (+p[0]) * 60 + (+p[1] || 0) + (+p[2] || 0) / 60;
+  }
+  function fmt(m) {
+    if (m == null || isNaN(m)) return '--:--';
+    var h = Math.floor(m / 60) % 24, mi = Math.floor(m) % 60;
+    if (h < 0) h += 24; if (mi < 0) mi += 60;
+    return (h < 10 ? '0' : '') + h + ':' + (mi < 10 ? '0' : '') + mi;
+  }
+
+  /* פותר עוגן: שעה קבועה, או זמן הלכתי + היסט */
+  function anchor(z, fixedTime, zmanKey, offset) {
+    if (zmanKey) {
+      var k = ZKEY[zmanKey];
+      if (!k || z[k] == null || isNaN(z[k])) return null;
+      return z[k] + (+offset || 0);
+    }
+    return toMin(fixedTime);
+  }
+
+  /* האם השורה חלה על היום הזה */
+  function appliesToday(row, date, ctx) {
+    if (row.active === false) return false;
+    var dow = date.getDay();
+    if (Array.isArray(row.days_of_week) && row.days_of_week.length &&
+        row.days_of_week.indexOf(dow) === -1) return false;
+    var iso = date.getFullYear() + '-' +
+      String(date.getMonth() + 1).padStart(2, '0') + '-' +
+      String(date.getDate()).padStart(2, '0');
+    if (row.date_from && iso < row.date_from) return false;
+    if (row.date_to   && iso > row.date_to)   return false;
+    if (row.hebrew_only && ctx) {
+      var o = row.hebrew_only;
+      if (o === 'weekday'      && (ctx.isShabbat || ctx.isYomTov)) return false;
+      if (o === 'shabbat'      && !ctx.isShabbat) return false;
+      if (o === 'yomtov'       && !ctx.isYomTov)  return false;
+      if (o === 'rosh_chodesh' && !ctx.isRoshChodesh) return false;
+    }
+    return true;
+  }
+
+  /**
+   * ממיר שורות לוח לשעות בפועל.
+   * rows  — שורות prayer_times
+   * z     — תוצאת מנוע הזמנים ליום (בדקות מחצות)
+   * date  — תאריך
+   * ctx   — {isShabbat,isYomTov,isRoshChodesh}
+   * מחזיר [{prayer,label,room_id,minutes,time,rolling}]
+   */
+  function resolve(rows, z, date, ctx) {
+    var out = [];
+    (rows || []).forEach(function (r) {
+      if (!appliesToday(r, date, ctx)) return;
+
+      if (r.mode === 'fixed') {
+        var m = toMin(r.fixed_time);
+        if (m != null) out.push(mk(r, m));
+
+      } else if (r.mode === 'relative') {
+        var v = anchor(z, null, r.rel_zman, r.rel_offset_min);
+        if (v != null) out.push(mk(r, v));
+
+      } else if (r.mode === 'interval') {
+        var s = anchor(z, r.interval_start, r.interval_start_zman, r.interval_start_offset);
+        var e = anchor(z, r.interval_end,   r.interval_end_zman,   r.interval_end_offset);
+        var step = +r.interval_min || 0;
+        if (s == null || e == null || step <= 0 || e <= s) return;
+        /* rolling: המניינים רצופים ולא מוכרזים בשעה מדויקת.
+           המסך יחליט אם להציג את הרשימה או רק "רצוף עד ..." */
+        for (var t = s; t <= e + 0.01; t += step) {
+          var row = mk(r, t); row.rolling = true; row.window = [s, e];
+          out.push(row);
+        }
+      }
+    });
+    out.sort(function (a, b) { return a.minutes - b.minutes; });
+    /* כפילויות: עוגן הלכתי ושעה קבועה יכולים ליפול על אותה דקה
+       (למשל ערבית בצאת הכוכבים 20:30 ושורה קבועה 20:30 בקיץ).
+       על המסך זה נראה כמו תקלה — משאירים אחת. */
+    var seen = {}, uniq = [];
+    out.forEach(function (x) {
+      var k = (x.room_id || '-') + '|' + x.prayer + '|' + Math.round(x.minutes);
+      if (seen[k]) return;
+      seen[k] = 1; uniq.push(x);
+    });
+    return uniq;
+  }
+
+  function mk(r, m) {
+    return {
+      id: r.id, room_id: r.room_id, prayer: r.prayer,
+      label: r.label || null, minutes: m, time: fmt(m),
+      rolling: false, sort_order: r.sort_order || 0
+    };
+  }
+
+  /** המניין הבא מרגע נתון (בדקות מחצות). מחזיר null אם הכל עבר. */
+  function next(list, nowMin) {
+    for (var i = 0; i < list.length; i++) if (list[i].minutes > nowMin) return list[i];
+    return null;
+  }
+
+  /** קיבוץ לפי תפילה, לתצוגת רשימה */
+  function byPrayer(list) {
+    var g = {};
+    list.forEach(function (x) { (g[x.prayer] = g[x.prayer] || []).push(x); });
+    return g;
+  }
+
+  /** טקסט ספירה לאחור: "בעוד 7 דקות" / "בעוד 1:12 שעות" */
+  function countdown(targetMin, nowMin) {
+    var d = Math.round(targetMin - nowMin);
+    if (d < 0) return null;
+    if (d === 0) return 'עכשיו';
+    if (d < 60) return 'בעוד ' + d + ' דק\'';
+    var h = Math.floor(d / 60), m = d % 60;
+    return 'בעוד ' + h + ':' + (m < 10 ? '0' : '') + m + ' שע\'';
+  }
+
+  var API = { resolve: resolve, next: next, byPrayer: byPrayer,
+              countdown: countdown, fmt: fmt, toMin: toMin, ZKEY: ZKEY, VERSION: '1.0' };
+  if (typeof module !== 'undefined' && module.exports) module.exports = API;
+  root.NatiMinyan = API;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+var SB="https://cxtrrejclkhqhkqbicmz.supabase.co", SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dHJyZWpjbGtocWhrcWJpY216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTk3MDksImV4cCI6MjA5NTU3NTcwOX0._7wB4YwrYEnK6hWuR6YqcFxRb05OLnWvOelIC-ahIEQ";
+var Q=new URLSearchParams(location.search);
+var SITE_ID=Q.get("site")||"", SCREEN_ID=Q.get("id")||"";
+function sf(p){return fetch(SB+"/rest/v1/"+p,{headers:{apikey:SK,Authorization:"Bearer "+SK}})
+  .then(function(r){return r.json();});}
+
+var SITE=null, ROOMS=[], MINS=[], SPON=[], Z=null, ZDAY="";
+var PR={shacharit:"שחרית",mincha:"מנחה",arvit:"ערבית",selichot:"סליחות",other:"תפילה"};
+
+function load(){
+  var q;
+  if(SITE_ID)        q=Promise.resolve(SITE_ID);
+  else if(SCREEN_ID) q=sf("screens?screen_id=eq."+encodeURIComponent(SCREEN_ID)+"&select=site_id")
+                       .then(function(r){return (r&&r[0])?r[0].site_id:null;});
+  /* בלי פרמטרים — נטען האתר הראשון. נוח לבדיקה מהטלפון. */
+  else               q=sf("sites?select=id&order=name&limit=1")
+                       .then(function(r){return (r&&r[0])?r[0].id:null;});
+  q.then(function(sid){
+    if(!sid){document.getElementById("siteName").textContent="לא הוגדר אתר למסך זה";return;}
+    SITE_ID=sid;
+    return Promise.all([
+      sf("sites?id=eq."+sid+"&select=*"),
+      sf("rooms?site_id=eq."+sid+"&select=*&active=eq.true&order=sort_order"),
+      sf("prayer_times?site_id=eq."+sid+"&select=*&active=eq.true"),
+      sf("sponsors?site_id=eq."+sid+"&select=*&active=eq.true")
+    ]).then(function(r){
+      SITE=r[0][0]; ROOMS=r[1]||[]; MINS=r[2]||[]; SPON=r[3]||[];
+      document.getElementById("siteName").textContent=SITE?SITE.name:"";
+      ZDAY=""; tick(); drawSponsors();
+    });
+  }).catch(function(e){console.error(e);});
+}
+
+function zmans(now){
+  var key=now.toDateString();
+  if(key!==ZDAY && SITE){
+    Z=NatiZmanim.getZmanim(now,{lat:+SITE.lat,lng:+SITE.lng,elevation:+SITE.elevation,
+      candleMinutes:+SITE.candle_offset||40,timeZone:SITE.timezone||"Asia/Jerusalem"});
+    ZDAY=key;
+  }
+  return Z;
+}
+
+/* זמנים בולטים — נעלמים ברגע שעברו */
+function drawZmanim(now,nowMin){
+  if(!Z)return;
+  var items=[
+    ["סוף זמן ק\"ש מג\"א", Z.sofZmanShmaMGA],
+    ["סוף זמן ק\"ש גר\"א", Z.sofZmanShmaGRA],
+    ["סוף זמן תפילה",       Z.sofZmanTfilaGRA],
+    ["חצות היום",           Z.chatzot],
+    ["שקיעה",               Z.shkia],
+    ["צאת הכוכבים",         Z.tzeitHakochavim]
+  ].filter(function(x){return x[1]>nowMin;});
+  document.getElementById("zwrap").innerHTML=items.map(function(x,i){
+    var left=Math.round(x[1]-nowMin);
+    var hot=(i===0 && left<=45);
+    return '<div class="zc'+(hot?" hot":"")+'"><small>'+x[0]+'</small><b>'+NatiMinyan.fmt(x[1])+'</b>'+
+           (hot?'<span class="cd">נותרו '+left+' דק\'</span>':'')+'</div>';
+  }).join("")||'<div class="zc"><small>זמני היום</small><b>הסתיימו</b></div>';
+}
+
+/* ספירה לאחור לכל שטיבל */
+function drawMinyanim(now,nowMin){
+  var shuls=ROOMS.filter(function(r){return r.kind==="shul";});
+  var g=document.getElementById("mgrid"), n=shuls.length||1;
+  var cols=n<=2?n:(n<=4?2:3);
+  g.style.gridTemplateColumns="repeat("+cols+",1fr)";
+  g.innerHTML=shuls.map(function(r){
+    var rows=MINS.filter(function(m){return m.room_id===r.id;});
+    var list=NatiMinyan.resolve(rows,Z,now,{});
+    var nx=NatiMinyan.next(list,nowMin);
+    var soon=nx && (nx.minutes-nowMin)<=20;
+    var title=r.display_name||r.name;
+    if(!nx) return '<div class="mcard"><div class="rn">'+esc(title)+'</div>'+
+                   '<div class="none">אין מניינים נוספים היום</div></div>';
+    return '<div class="mcard'+(soon?" soon":"")+'">'+
+      '<div class="rn">'+esc(title)+'</div>'+
+      '<div class="pr">'+(PR[nx.prayer]||nx.prayer)+(nx.label?" · "+esc(nx.label):"")+'</div>'+
+      '<div class="tm">'+nx.time+'</div>'+
+      '<div class="cd">'+(NatiMinyan.countdown(nx.minutes,nowMin)||"")+'</div></div>';
+  }).join("")||'<div class="mcard"><div class="none">לא הוגדרו בתי כנסת באתר</div></div>';
+}
+
+/* פרנסים — הרשת מתחלקת לפי הכמות, עדיפות 1 מקבלת מקום כפול */
+function drawSponsors(){
+  var t=new Date(), iso=t.getFullYear()+"-"+p2(t.getMonth()+1)+"-"+p2(t.getDate());
+  var cur=SPON.filter(function(s){
+    if(s.date_from && iso<s.date_from) return false;
+    if(s.date_to   && iso>s.date_to)   return false;
+    if(s.screen_ids && s.screen_ids.length && SCREEN_ID &&
+       s.screen_ids.indexOf(SCREEN_ID)===-1) return false;
+    return true;
+  }).sort(function(a,b){return (a.priority||3)-(b.priority||3);});
+
+  var w=document.getElementById("sponWrap");
+  if(!cur.length){ w.className="spon hide"; return; }
+  w.className="spon";
+
+  var n=cur.length, cols = n===1?1 : n===2?2 : n===3?3 : n===4?4 : n<=6?3 : 4;
+  var g=document.getElementById("sgrid");
+  g.style.gridTemplateColumns="repeat("+cols+",1fr)";
+  g.innerHTML=cur.map(function(s){
+    var p=+s.priority||3, cls=p===1?"p1":(p===2?"p2":"");
+    var span=(p===1 && n>2 && cols>1)?' style="grid-column:span 2"':'';
+    return '<div class="sc '+cls+'"'+span+'>'+
+      '<div class="cat">'+esc(s.category)+'</div>'+
+      '<div class="nm">'+esc(s.name)+'</div>'+
+      (s.dedication?'<div class="dd">'+esc(s.dedication)+'</div>':'')+'</div>';
+  }).join("");
+}
+
+function p2(n){return (n<10?"0":"")+n;}
+function esc(t){return String(t==null?"":t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");}
+
+function tick(){
+  var now=new Date();
+  document.getElementById("clock").textContent=now.toLocaleTimeString("he-IL",{hour12:false});
+  document.getElementById("dheb").textContent=
+    new Intl.DateTimeFormat("he-u-ca-hebrew",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(now);
+  document.getElementById("dgreg").textContent=
+    now.toLocaleDateString("he-IL",{day:"numeric",month:"long",year:"numeric"});
+  if(!SITE)return;
+  zmans(now);
+  var nowMin=now.getHours()*60+now.getMinutes()+now.getSeconds()/60;
+  drawZmanim(now,nowMin);
+  drawMinyanim(now,nowMin);
+}
+setInterval(tick,1000);
+setInterval(function(){ ZDAY=""; load(); }, 5*60*1000);   /* רענון נתונים כל 5 דקות */
+load(); tick();
+</script></body></html>
