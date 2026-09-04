@@ -333,16 +333,32 @@ body{font-family:Assistant,Arial,sans-serif;background:#0d1117;color:#e6edf3;pad
    * opts.year     — להוסיף את השנה                (ברירת מחדל: true)
    * opts.fullYear — "ה׳תשפ״ו" במקום "תשפ״ו"       (ברירת מחדל: false)
    * opts.prefix   — "באלול" עם בי״ת              (ברירת מחדל: true)
+   * opts.shkiaMinutes — שעת השקיעה בדקות; מפעיל את תצוגת "אור ל..."
+   * opts.dual     — false כדי לבטל את "אור ל..."   (ברירת מחדל: true)
    */
+  /* שם היום בלבד, בלי שנה — לשימוש ב"אור ל..." */
+  function dayOnly(date, samMonth) {
+    var p = parts(date);
+    var d = gematria(p.day);
+    return samMonth ? d : d + ' ' + 'ב' + p.month;
+  }
+
   function format(date, opts) {
     date = date || new Date();
     opts = opts || {};
-    /* היום העברי מתחיל בשקיעה. אם נמסרה שעת שקיעה ועברנו אותה —
-       מציגים כבר את התאריך של מחר, כמו בלוח. */
-    if (opts.shkiaMinutes != null) {
+
+    /* היום העברי נכנס בשקיעה, אבל התצוגה מתחלפת בחצות.
+       בין השקיעה לחצות מוצגים שניהם: "כ״א באלול · אור לכ״ב".
+       אחרי חצות נשאר התאריך החדש בלבד. */
+    var evening = false, tomorrow = null;
+    if (opts.shkiaMinutes != null && opts.dual !== false) {
       var nowMin = date.getHours() * 60 + date.getMinutes();
-      if (nowMin >= opts.shkiaMinutes) date = new Date(date.getTime() + 86400000);
+      if (nowMin >= opts.shkiaMinutes) {
+        evening = true;
+        tomorrow = new Date(date.getTime() + 86400000);
+      }
     }
+
     var p = parts(date);
     var d = gematria(p.day);
     var m = p.month;
@@ -357,9 +373,16 @@ body{font-family:Assistant,Arial,sans-serif;background:#0d1117;color:#e6edf3;pad
       if (opts.fullYear) y = 'ה' + '\u05F3' + gematria(p.year % 1000);
       s += ' ' + y;
     }
+    /* "אור ל..." — אם החודש זהה מציגים רק את היום */
+    if (evening && tomorrow) {
+      var pt = parts(tomorrow);
+      var nxt = (pt.month === p.month) ? gematria(pt.day)
+                                       : gematria(pt.day) + ' ' + 'ב' + pt.month;
+      s += ' \u00b7 ' + 'אור ל' + nxt;
+    }
+
     if (opts.weekday) {
       var wd = date.getDay();
-      if (opts.shkiaMinutes != null) wd = date.getDay();
       s = (wd === 6 ? 'שבת קודש' : 'יום ' + DOW[wd]) + ', ' + s;
     }
     return s;

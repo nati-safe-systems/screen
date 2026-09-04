@@ -52,7 +52,8 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 
 /* ---------- פרנסים ---------- */
 .spon{flex-shrink:0;padding:.8vh 1.6vw 1.2vh}
-.sgrid{display:grid;gap:.9vw}
+.sgrid{display:flex;flex-direction:column;gap:.7vh}
+.srow{display:grid;gap:.9vw}
 .sc{background:linear-gradient(160deg,rgba(58,40,0,.85),rgba(28,18,0,.9));
   border:1px solid rgba(255,204,0,.42);border-radius:1.3vh;padding:1vh 1vw;text-align:center;
   display:flex;flex-direction:column;justify-content:center;gap:.25vh;overflow:hidden}
@@ -60,11 +61,15 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 .sc .nm{color:#fff;font-size:2.4vh;font-weight:800;font-family:"Frank Ruhl Libre",serif;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sc .dd{color:#e8d6a8;font-size:1.4vh}
-.sc.p1{border-color:#ffd86b;border-width:2px;box-shadow:0 0 2.8vh rgba(255,204,0,.4);
-  background:linear-gradient(160deg,rgba(92,64,0,.92),rgba(45,28,0,.95))}
-.sc.p1 .nm{font-size:3.4vh}
-.sc.p1 .cat{font-size:1.6vh}
-.sc.p2 .nm{font-size:2.8vh}
+/* דרגה 1 — הגדולה ביותר. כל מי שבדרגה זו מקבל בדיוק אותו גודל. */
+.srow.t1 .sc{border-color:#ffd86b;border-width:2px;box-shadow:0 0 2.8vh rgba(255,204,0,.4);
+  background:linear-gradient(160deg,rgba(92,64,0,.92),rgba(45,28,0,.95));padding:1.4vh 1vw}
+.srow.t1 .nm{font-size:3.4vh}
+.srow.t1 .cat{font-size:1.7vh}
+.srow.t1 .dd{font-size:1.6vh}
+.srow.t2 .nm{font-size:2.8vh}
+.srow.t4 .nm,.srow.t5 .nm{font-size:2vh}
+.srow.t4 .sc,.srow.t5 .sc{padding:.7vh .8vw}
 
 .ft{flex-shrink:0;border-top:1px solid rgba(255,255,255,.1);padding:.5vh;display:flex;
   align-items:center;justify-content:center;gap:.8vw;color:rgba(255,255,255,.45);font-size:1.1vh}
@@ -168,16 +173,32 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
    * opts.year     — להוסיף את השנה                (ברירת מחדל: true)
    * opts.fullYear — "ה׳תשפ״ו" במקום "תשפ״ו"       (ברירת מחדל: false)
    * opts.prefix   — "באלול" עם בי״ת              (ברירת מחדל: true)
+   * opts.shkiaMinutes — שעת השקיעה בדקות; מפעיל את תצוגת "אור ל..."
+   * opts.dual     — false כדי לבטל את "אור ל..."   (ברירת מחדל: true)
    */
+  /* שם היום בלבד, בלי שנה — לשימוש ב"אור ל..." */
+  function dayOnly(date, samMonth) {
+    var p = parts(date);
+    var d = gematria(p.day);
+    return samMonth ? d : d + ' ' + 'ב' + p.month;
+  }
+
   function format(date, opts) {
     date = date || new Date();
     opts = opts || {};
-    /* היום העברי מתחיל בשקיעה. אם נמסרה שעת שקיעה ועברנו אותה —
-       מציגים כבר את התאריך של מחר, כמו בלוח. */
-    if (opts.shkiaMinutes != null) {
+
+    /* היום העברי נכנס בשקיעה, אבל התצוגה מתחלפת בחצות.
+       בין השקיעה לחצות מוצגים שניהם: "כ״א באלול · אור לכ״ב".
+       אחרי חצות נשאר התאריך החדש בלבד. */
+    var evening = false, tomorrow = null;
+    if (opts.shkiaMinutes != null && opts.dual !== false) {
       var nowMin = date.getHours() * 60 + date.getMinutes();
-      if (nowMin >= opts.shkiaMinutes) date = new Date(date.getTime() + 86400000);
+      if (nowMin >= opts.shkiaMinutes) {
+        evening = true;
+        tomorrow = new Date(date.getTime() + 86400000);
+      }
     }
+
     var p = parts(date);
     var d = gematria(p.day);
     var m = p.month;
@@ -192,9 +213,16 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
       if (opts.fullYear) y = 'ה' + '\u05F3' + gematria(p.year % 1000);
       s += ' ' + y;
     }
+    /* "אור ל..." — אם החודש זהה מציגים רק את היום */
+    if (evening && tomorrow) {
+      var pt = parts(tomorrow);
+      var nxt = (pt.month === p.month) ? gematria(pt.day)
+                                       : gematria(pt.day) + ' ' + 'ב' + pt.month;
+      s += ' \u00b7 ' + 'אור ל' + nxt;
+    }
+
     if (opts.weekday) {
       var wd = date.getDay();
-      if (opts.shkiaMinutes != null) wd = date.getDay();
       s = (wd === 6 ? 'שבת קודש' : 'יום ' + DOW[wd]) + ', ' + s;
     }
     return s;
@@ -719,7 +747,9 @@ function drawMinyanim(now,nowMin){
   }).join("")||'<div class="mcard"><div class="none">לא הוגדרו בתי כנסת באתר</div></div>';
 }
 
-/* פרנסים — הרשת מתחלקת לפי הכמות, עדיפות 1 מקבלת מקום כפול */
+/* פרנסים — כל דרגת בולטות מקבלת שורה משלה.
+   שני פילנתרופים יופיעו זה לצד זה, שניהם גדולים ושווים בגודלם.
+   שלושה — שלושה בשורה. אף אחד לא "בולע" את השני. */
 function drawSponsors(){
   var t=new Date(), iso=t.getFullYear()+"-"+p2(t.getMonth()+1)+"-"+p2(t.getDate());
   var cur=SPON.filter(function(s){
@@ -728,25 +758,31 @@ function drawSponsors(){
     if(s.screen_ids && s.screen_ids.length && SCREEN_ID &&
        s.screen_ids.indexOf(SCREEN_ID)===-1) return false;
     return true;
-  }).sort(function(a,b){return (a.priority||3)-(b.priority||3);});
+  });
 
   var w=document.getElementById("sponWrap");
   if(!cur.length){ w.className="spon hide"; return; }
   w.className="spon";
 
   var pt=(window.innerHeight>window.innerWidth);
-  var n=cur.length, cols = pt ? (n===1?1:2)
-        : (n===1?1 : n===2?2 : n===3?3 : n===4?4 : n<=6?3 : 4);
-  var g=document.getElementById("sgrid");
-  g.style.gridTemplateColumns="repeat("+cols+",1fr)";
-  g.innerHTML=cur.map(function(s){
-    var p=+s.priority||3, cls=p===1?"p1":(p===2?"p2":"");
-    var span=(p===1 && n>2 && cols>1)?' style="grid-column:span 2"':'';
-    return '<div class="sc '+cls+'"'+span+'>'+
-      '<div class="cat">'+esc(s.category)+'</div>'+
-      '<div class="nm">'+esc(s.name)+'</div>'+
-      (s.dedication?'<div class="dd">'+esc(s.dedication)+'</div>':'')+'</div>';
-  }).join("");
+  var tiers={};
+  cur.forEach(function(s){ var p=Math.min(5,Math.max(1,+s.priority||3));
+    (tiers[p]=tiers[p]||[]).push(s); });
+
+  var maxCols={1:3,2:4,3:5,4:5,5:6};
+  var html="";
+  Object.keys(tiers).sort().forEach(function(p){
+    var g=tiers[p], n=g.length;
+    var cols=Math.min(n, pt ? (p<=2?1:2) : maxCols[p]);
+    html+='<div class="srow t'+p+'" style="grid-template-columns:repeat('+cols+',1fr)">'+
+      g.map(function(s){
+        return '<div class="sc">'+
+          '<div class="cat">'+esc(s.category)+'</div>'+
+          '<div class="nm">'+esc(s.name)+'</div>'+
+          (s.dedication?'<div class="dd">'+esc(s.dedication)+'</div>':'')+'</div>';
+      }).join("")+'</div>';
+  });
+  document.getElementById("sgrid").innerHTML=html;
 }
 
 function p2(n){return (n<10?"0":"")+n;}
