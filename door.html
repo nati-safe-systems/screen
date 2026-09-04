@@ -653,7 +653,9 @@ function load(){
       document.getElementById("ded").textContent=ROOM.dedication||"";
       return Promise.all([
         sf("sites?id=eq."+ROOM.site_id+"&select=*"),
-        sf("prayer_times?site_id=eq."+ROOM.site_id+"&room_id=eq."+ROOM_ID+"&select=*&active=eq.true")
+        /* כולל מניינים שהוגדרו "כל החדרים" (room_id ריק) */
+        sf("prayer_times?site_id=eq."+ROOM.site_id+"&select=*&active=eq.true"+
+           "&or=(room_id.eq."+ROOM_ID+",room_id.is.null)")
       ]).then(function(r2){SITE=r2[0][0];MINS=r2[1]||[];ZDAY="";tick();});
     });
   }).catch(function(e){console.error(e);});
@@ -674,7 +676,17 @@ function render(now,nowMin){
   var all=NatiMinyan.resolve(MINS,Z,now,{});
   var nx=NatiMinyan.next(all,nowMin);
 
-  if(!nx){ b.innerHTML='<div class="empty">אין מניינים נוספים היום</div>'; return; }
+  if(!nx){
+    if(now.getDay()===5){        /* ערב שבת */
+      b.innerHTML='<div class="cdwrap"><div class="lbl">ערב שבת קודש</div>'+
+        '<div class="big" style="font-size:9vh">'+NatiMinyan.fmt(Z.candleLighting)+'</div>'+
+        '<div class="unit">הדלקת נרות</div>'+
+        '<div class="at">שקיעה '+NatiMinyan.fmt(Z.shkia)+' · צאת השבת '+NatiMinyan.fmt(Z.tzeitHakochavim)+'</div></div>';
+      return;
+    }
+    b.innerHTML='<div class="empty">'+(MINS.length?"כל המניינים להיום הסתיימו":"לא הוגדרו מניינים לחדר זה")+'</div>';
+    return;
+  }
 
   /* מניינים רצופים (מנחה) — מציגים יעד ולא שעות, כי מניין מתחיל
      כשהקודם נגמר ואי אפשר להתחייב לשעה. */

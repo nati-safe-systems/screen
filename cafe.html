@@ -727,18 +727,53 @@ function drawZmanim(now,nowMin){
 /* ספירה לאחור לכל שטיבל */
 function drawMinyanim(now,nowMin){
   var shuls=ROOMS.filter(function(r){return r.kind==="shul";});
+
+  /* ערב שבת אחרי שהמניינים נגמרו — הקוביות הריקות לא משרתות אף אחד.
+     במקומן: לוח כניסת שבת. */
+  var isErev=(now.getDay()===5);
+  if(isErev){
+    var anyNext=false;
+    shuls.forEach(function(r){
+      var rr=MINS.filter(function(m){return m.room_id===r.id||!m.room_id;});
+      if(NatiMinyan.next(NatiMinyan.resolve(rr,Z,now,{}),nowMin)) anyNext=true;
+    });
+    if(!anyNext){
+      document.querySelector(".secttl").textContent="ערב שבת קודש";
+      var g0=document.getElementById("mgrid");
+      g0.style.gridTemplateColumns="1fr";
+      g0.innerHTML='<div class="mcard soon" style="gap:1.2vh">'+
+        '<div class="rn" style="font-size:4vh">שבת שלום ומבורך</div>'+
+        '<div style="display:flex;gap:3vw;flex-wrap:wrap;justify-content:center">'+
+          '<div><div class="pr">הדלקת נרות</div><div class="tm">'+NatiMinyan.fmt(Z.candleLighting)+'</div></div>'+
+          '<div><div class="pr">שקיעה</div><div class="tm">'+NatiMinyan.fmt(Z.shkia)+'</div></div>'+
+          '<div><div class="pr">צאת השבת</div><div class="tm">'+NatiMinyan.fmt(Z.tzeitHakochavim)+'</div></div>'+
+        '</div>'+
+        (Z.candleLighting>nowMin
+          ? '<div class="cd">'+(NatiMinyan.countdown(Z.candleLighting,nowMin)||"")+' להדלקת נרות</div>'
+          : '<div class="cd">שבת נכנסה</div>')+
+        '</div>';
+      return;
+    }
+    document.querySelector(".secttl").textContent="המניין הבא";
+  }
   var g=document.getElementById("mgrid"), n=shuls.length||1;
   var portrait=(window.innerHeight>window.innerWidth);
   var cols = portrait ? (n<=3?1:2) : (n<=2?n:(n<=4?2:3));
   g.style.gridTemplateColumns="repeat("+cols+",1fr)";
   g.innerHTML=shuls.map(function(r){
-    var rows=MINS.filter(function(m){return m.room_id===r.id;});
+    /* מניין ללא חדר = "כל החדרים", ולכן חל גם כאן */
+    var rows=MINS.filter(function(m){return m.room_id===r.id || !m.room_id;});
     var list=NatiMinyan.resolve(rows,Z,now,{});
     var nx=NatiMinyan.next(list,nowMin);
     var soon=nx && (nx.minutes-nowMin)<=20;
     var title=r.display_name||r.name;
-    if(!nx) return '<div class="mcard"><div class="rn">'+esc(title)+'</div>'+
-                   '<div class="none">אין מניינים נוספים היום</div></div>';
+    if(!nx){
+      /* הפרדה חשובה: "לא הוגדרו" זו בעיית הגדרה, "הסתיימו" זה מצב תקין */
+      var msg = rows.length===0 ? "לא הוגדרו מניינים לחדר זה"
+              : (list.length===0 ? "אין מניינים ביום זה" : "כל המניינים להיום הסתיימו");
+      return '<div class="mcard"><div class="rn">'+esc(title)+'</div>'+
+             '<div class="none">'+msg+'</div></div>';
+    }
     return '<div class="mcard'+(soon?" soon":"")+'">'+
       '<div class="rn">'+esc(title)+'</div>'+
       '<div class="pr">'+(PR[nx.prayer]||nx.prayer)+(nx.label?" · "+esc(nx.label):"")+'</div>'+
