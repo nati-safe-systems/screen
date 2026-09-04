@@ -33,11 +33,19 @@ button.dz:hover{color:#ff6b6b}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 @media(max-width:620px){.grid{grid-template-columns:1fr}}
 .hide{display:none}
+#saved{position:fixed;bottom:16px;left:16px;z-index:99;background:#0f2f1a;border:1px solid #2ea043;
+  color:#7ee787;border-radius:20px;padding:6px 15px;font-size:13px;font-weight:700;
+  opacity:0;transform:translateY(8px);transition:.25s;pointer-events:none}
+#saved.on{opacity:1;transform:translateY(0)}
+.autos{font-size:11.5px;color:#3fb950;background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);
+  border-radius:6px;padding:6px 10px;margin-bottom:12px;line-height:1.5}
 </style></head><body>
 
 <h1>ניהול חדרים ומניינים</h1>
 <div class="sub">נתי SAFE · לוח אחד לכל הבניין. מה שנשמר כאן מופיע בכל המסכים.</div>
+<div class="autos">אין כפתור שמירה — כל שדה נשמר לבד ברגע שאתה יוצא ממנו. אישור ירוק יופיע בפינה.</div>
 <div id="msg" class="msg"></div>
+<div id="saved">נשמר ✓</div>
 
 <div class="card">
   <h2>אתר</h2>
@@ -523,6 +531,9 @@ function say(t,bad){var m=document.getElementById("msg");m.textContent=t;
   if(!bad) window._mt=setTimeout(function(){m.style.display="none";},3500);}
 
 var SITES=[],SITE=null,ROOMS=[],MINS=[];
+function flash(){var e=document.getElementById("saved");if(!e)return;
+  e.className="on";clearTimeout(window._ft);
+  window._ft=setTimeout(function(){e.className="";},1400);}
 var PRAYERS={shacharit:"שחרית",mincha:"מנחה",arvit:"ערבית",selichot:"סליחות",other:"אחר"};
 var ZM={shkia:"שקיעה",tzeit:"צאת הכוכבים",netz:"הנץ החמה",alot:"עלות השחר",
         chatzot:"חצות",plag:"פלג המנחה",mincha_gedola:"מנחה גדולה",mincha_ketana:"מנחה קטנה",candle:"הדלקת נרות"};
@@ -556,13 +567,15 @@ function pickSite(){var id=document.getElementById("siteSel").value;
 
 function saveSite(){sf("sites?id=eq."+SITE.id,{method:"PATCH",body:JSON.stringify({
   lat:+s_lat.value,lng:+s_lng.value,elevation:+s_elev.value,candle_offset:+s_candle.value})})
-  .then(function(){say("נשמר");boot();}).catch(function(){say("שמירה נכשלה",1);});}
+  .then(function(){flash();boot();}).catch(function(e){say("שמירה נכשלה: "+(e.message||e),1);});}
 
 function addRoom(){ if(!SITE)return say("בחר אתר",1);
   sf("rooms",{method:"POST",body:JSON.stringify({site_id:SITE.id,name:"חדר חדש",kind:"shul",sort_order:ROOMS.length})})
   .then(function(){pickSite();}); }
 function saveRoom(i,f,v){var r=ROOMS[i];r[f]=v;
-  sf("rooms?id=eq."+r.id,{method:"PATCH",body:JSON.stringify(mkObj(f,v))}).then(function(){preview();});}
+  sf("rooms?id=eq."+r.id,{method:"PATCH",body:JSON.stringify(mkObj(f,v))})
+   .then(function(){flash();preview();})
+   .catch(function(e){say("השמירה נכשלה: "+(e.message||e),1);});}
 function mkObj(k,v){var o={};o[k]=v;return o;}
 function delRoom(i){if(!confirm("למחוק את החדר וכל המניינים שבו?"))return;
   sf("rooms?id=eq."+ROOMS[i].id,{method:"DELETE"}).then(function(){say("נמחק");pickSite();});}
@@ -585,7 +598,8 @@ function addMin(){ if(!SITE)return say("בחר אתר",1);
     fixed_time:"07:00",sort_order:MINS.length})}).then(function(){pickSite();});}
 function saveMin(i,f,v){var m=MINS[i];m[f]=(v===""?null:v);
   sf("prayer_times?id=eq."+m.id,{method:"PATCH",body:JSON.stringify(mkObj(f,m[f]))})
-   .then(function(){drawMins();preview();});}
+   .then(function(){flash();drawMins();preview();})
+   .catch(function(e){say("השמירה נכשלה: "+(e.message||e),1);});}
 function delMin(i){sf("prayer_times?id=eq."+MINS[i].id,{method:"DELETE"}).then(function(){pickSite();});}
 
 function drawMins(){
