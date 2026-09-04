@@ -70,6 +70,22 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
   align-items:center;justify-content:center;gap:.8vw;color:rgba(255,255,255,.45);font-size:1.1vh}
 .fl{height:3vh;opacity:.85}
 .hide{display:none!important}
+
+/* מסך מאונך או צר — הפריסה מתארגנת מחדש */
+@media (max-aspect-ratio: 1/1){
+  .top{flex-direction:column;gap:1vh;padding:1.4vh 3vw}
+  .clockbox{padding-left:0;border-left:none;border-bottom:1px solid rgba(255,255,255,.1);
+    padding-bottom:1vh;width:100%}
+  #clock{font-size:6vh}
+  .zwrap{justify-content:center;gap:1.6vw}
+  .zc{min-width:26vw;padding:.8vh 2vw}
+  .zc small{font-size:1.3vh}
+  .zc b{font-size:3vh}
+  .mcard .rn{font-size:2vh}
+  .mcard .tm{font-size:3.4vh}
+  .sc .nm{font-size:2.1vh}
+  .sc.p1 .nm{font-size:2.8vh}
+}
 </style></head><body>
 
 <div class="hdr">בס"ד &nbsp;·&nbsp; <span id="siteName"></span></div>
@@ -95,7 +111,101 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 
 <div class="ft"><span id="ftLogo"></span><span>© כל הזכויות שמורות ל-נתי Safe מערכות · <span dir="ltr">052-717-1280</span></span></div>
 
-<script>/* =====================================================================
+<script>
+/* =====================================================================
+   נתי SAFE — תאריך עברי באותיות  ·  v1.0
+   ---------------------------------------------------------------------
+   Intl מחזיר "21 באלול 5786". בלוח עברי כותבים "כ״א באלול תשפ״ו".
+   המודול הזה עושה את ההמרה, ומשמש את כל המסכים כדי שלא תהיה
+   גרסה אחרת בכל קובץ.
+
+   ההמרה עצמה נשענת על לוח השנה של Intl — מדויק ונתמך בכל דפדפן —
+   ורק העיצוב לאותיות נעשה כאן.
+   ===================================================================== */
+(function (root) {
+  'use strict';
+
+  var ONES = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט'];
+  var TENS = ['', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ'];
+  var HUND = ['', 'ק', 'ר', 'ש', 'ת'];
+
+  /** מספר -> גימטריה. מטפל ב-15 ו-16 (טו/טז) ובמאות מעל 400. */
+  function gematria(n, punctuate) {
+    n = Math.floor(+n);
+    if (!n || n < 0) return '';
+    var s = '';
+    while (n >= 400) { s += 'ת'; n -= 400; }
+    if (n >= 100) { s += HUND[Math.floor(n / 100)]; n %= 100; }
+    if (n === 15) s += 'טו';
+    else if (n === 16) s += 'טז';
+    else {
+      if (n >= 10) { s += TENS[Math.floor(n / 10)]; n %= 10; }
+      if (n > 0) s += ONES[n];
+    }
+    if (punctuate === false) return s;
+    if (s.length === 1) return s + '\u05F3';               // גרש
+    return s.slice(0, -1) + '\u05F4' + s.slice(-1);        // גרשיים
+  }
+
+  /** חלקי התאריך העברי לפי Intl */
+  function parts(date) {
+    var f = new Intl.DateTimeFormat('he-u-ca-hebrew',
+      { day: 'numeric', month: 'long', year: 'numeric' });
+    var o = {}, a = f.formatToParts(date || new Date());
+    for (var i = 0; i < a.length; i++) o[a[i].type] = a[i].value;
+    return {
+      day:   parseInt(String(o.day).replace(/\D/g, ''), 10),
+      month: o.month,
+      year:  parseInt(String(o.year).replace(/\D/g, ''), 10)
+    };
+  }
+
+  var DOW = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+
+  /**
+   * תאריך עברי מעוצב.
+   * opts.weekday  — להוסיף "יום שני," בהתחלה     (ברירת מחדל: false)
+   * opts.year     — להוסיף את השנה                (ברירת מחדל: true)
+   * opts.fullYear — "ה׳תשפ״ו" במקום "תשפ״ו"       (ברירת מחדל: false)
+   * opts.prefix   — "באלול" עם בי״ת              (ברירת מחדל: true)
+   */
+  function format(date, opts) {
+    date = date || new Date();
+    opts = opts || {};
+    /* היום העברי מתחיל בשקיעה. אם נמסרה שעת שקיעה ועברנו אותה —
+       מציגים כבר את התאריך של מחר, כמו בלוח. */
+    if (opts.shkiaMinutes != null) {
+      var nowMin = date.getHours() * 60 + date.getMinutes();
+      if (nowMin >= opts.shkiaMinutes) date = new Date(date.getTime() + 86400000);
+    }
+    var p = parts(date);
+    var d = gematria(p.day);
+    var m = p.month;
+    if (opts.prefix !== false) {
+      // "אלול" -> "באלול" ; "אדר א׳" -> "באדר א׳" ; "תשרי" -> "בתשרי"
+      m = 'ב' + m;
+    }
+    var s = d + ' ' + m;
+
+    if (opts.year !== false) {
+      var y = gematria(p.year % 1000);
+      if (opts.fullYear) y = 'ה' + '\u05F3' + gematria(p.year % 1000);
+      s += ' ' + y;
+    }
+    if (opts.weekday) {
+      var wd = date.getDay();
+      if (opts.shkiaMinutes != null) wd = date.getDay();
+      s = (wd === 6 ? 'שבת קודש' : 'יום ' + DOW[wd]) + ', ' + s;
+    }
+    return s;
+  }
+
+  var API = { format: format, gematria: gematria, parts: parts, DOW: DOW, VERSION: '1.0' };
+  if (typeof module !== 'undefined' && module.exports) module.exports = API;
+  root.NatiHebDate = API;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+/* =====================================================================
    נתי SAFE — מנוע זמנים הלכתיים
    zmanim-engine.js  ·  v1.0
    ---------------------------------------------------------------------
@@ -590,7 +700,8 @@ function drawZmanim(now,nowMin){
 function drawMinyanim(now,nowMin){
   var shuls=ROOMS.filter(function(r){return r.kind==="shul";});
   var g=document.getElementById("mgrid"), n=shuls.length||1;
-  var cols=n<=2?n:(n<=4?2:3);
+  var portrait=(window.innerHeight>window.innerWidth);
+  var cols = portrait ? (n<=3?1:2) : (n<=2?n:(n<=4?2:3));
   g.style.gridTemplateColumns="repeat("+cols+",1fr)";
   g.innerHTML=shuls.map(function(r){
     var rows=MINS.filter(function(m){return m.room_id===r.id;});
@@ -623,7 +734,9 @@ function drawSponsors(){
   if(!cur.length){ w.className="spon hide"; return; }
   w.className="spon";
 
-  var n=cur.length, cols = n===1?1 : n===2?2 : n===3?3 : n===4?4 : n<=6?3 : 4;
+  var pt=(window.innerHeight>window.innerWidth);
+  var n=cur.length, cols = pt ? (n===1?1:2)
+        : (n===1?1 : n===2?2 : n===3?3 : n===4?4 : n<=6?3 : 4);
   var g=document.getElementById("sgrid");
   g.style.gridTemplateColumns="repeat("+cols+",1fr)";
   g.innerHTML=cur.map(function(s){
@@ -643,7 +756,7 @@ function tick(){
   var now=new Date();
   document.getElementById("clock").textContent=now.toLocaleTimeString("he-IL",{hour12:false});
   document.getElementById("dheb").textContent=
-    new Intl.DateTimeFormat("he-u-ca-hebrew",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(now);
+    NatiHebDate.format(now,{weekday:true,shkiaMinutes:(Z?Z.shkia:null)});
   document.getElementById("dgreg").textContent=
     now.toLocaleDateString("he-IL",{day:"numeric",month:"long",year:"numeric"});
   if(!SITE)return;

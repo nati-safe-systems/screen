@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>נתי SAFE — ניהול חדרים ומניינים</title>
+<title>נתי SAFE — ניהול אתר</title>
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -41,11 +41,12 @@ button.dz:hover{color:#ff6b6b}
   border-radius:6px;padding:6px 10px;margin-bottom:12px;line-height:1.5}
 </style></head><body>
 
-<h1>ניהול חדרים ומניינים</h1>
+<h1>ניהול אתר</h1>
 <div class="sub">נתי SAFE · לוח אחד לכל הבניין. מה שנשמר כאן מופיע בכל המסכים.</div>
 <div class="autos">אין כפתור שמירה — כל שדה נשמר לבד ברגע שאתה יוצא ממנו. אישור ירוק יופיע בפינה.</div>
 <div id="msg" class="msg"></div>
 <div id="saved">נשמר ✓</div>
+<datalist id="catlist"><option value="פרנס היום"><option value="פרנס הקפה"><option value="פרנס הכיבוד"><option value="נר למאור"><option value="פרנס המתמידים"><option value="תורם"><option value="הקדשה"></datalist>
 
 <div class="card">
   <h2>אתר</h2>
@@ -74,6 +75,11 @@ button.dz:hover{color:#ff6b6b}
 <div class="card" id="minCard">
   <h2>לוח מניינים <button onclick="addMin()">+ מניין</button></h2>
   <div id="mins"></div>
+</div>
+
+<div class="card" id="sponCard">
+  <h2>פרנסים ותורמים <button onclick="addSpon()">+ פרנס</button></h2>
+  <div id="spons"></div>
 </div>
 
 <div class="card">
@@ -530,7 +536,9 @@ function say(t,bad){var m=document.getElementById("msg");m.textContent=t;
   clearTimeout(window._mt);
   if(!bad) window._mt=setTimeout(function(){m.style.display="none";},3500);}
 
-var SITES=[],SITE=null,ROOMS=[],MINS=[];
+var SITES=[],SITE=null,ROOMS=[],MINS=[],SPONS=[];
+var PRIO={1:"1 — ענק ובולט",2:"2 — גדול",3:"3 — רגיל",4:"4 — קטן",5:"5 — הקטן ביותר"};
+var CATS=["פרנס היום","פרנס הקפה","פרנס הכיבוד","נר למאור","פרנס המתמידים","תורם","הקדשה"];
 function flash(){var e=document.getElementById("saved");if(!e)return;
   e.className="on";clearTimeout(window._ft);
   window._ft=setTimeout(function(){e.className="";},1400);}
@@ -562,8 +570,10 @@ function pickSite(){var id=document.getElementById("siteSel").value;
   s_lat.value=SITE.lat; s_lng.value=SITE.lng; s_elev.value=SITE.elevation; s_candle.value=SITE.candle_offset;
   Promise.all([
     sf("rooms?site_id=eq."+SITE.id+"&select=*&order=sort_order"),
-    sf("prayer_times?site_id=eq."+SITE.id+"&select=*&order=sort_order")
-  ]).then(function(r){ROOMS=r[0]||[];MINS=r[1]||[];drawRooms();drawMins();preview();});}
+    sf("prayer_times?site_id=eq."+SITE.id+"&select=*&order=sort_order"),
+    sf("sponsors?site_id=eq."+SITE.id+"&select=*&order=priority")
+  ]).then(function(r){ROOMS=r[0]||[];MINS=r[1]||[];SPONS=r[2]||[];
+    drawRooms();drawMins();drawSpons();preview();});}
 
 function saveSite(){sf("sites?id=eq."+SITE.id,{method:"PATCH",body:JSON.stringify({
   lat:+s_lat.value,lng:+s_lng.value,elevation:+s_elev.value,candle_offset:+s_candle.value})})
@@ -637,6 +647,40 @@ function drawMins(){
     h+='</div>';
     if(m.mode==="interval") h+='<div class="hint">לדוגמה: כל 15 דק\', משקיעה −90 עד שקיעה −20. מתעדכן לבד כל יום בשנה.</div>';
     return h+'</div>';}).join("")||'<div class="hint">אין מניינים עדיין.</div>';}
+
+/* ---------- פרנסים ---------- */
+function today(){var t=new Date();return t.getFullYear()+"-"+pad2(t.getMonth()+1)+"-"+pad2(t.getDate());}
+function pad2(n){return (n<10?"0":"")+n;}
+
+function addSpon(){ if(!SITE)return say("בחר אתר",1);
+  sf("sponsors",{method:"POST",body:JSON.stringify({site_id:SITE.id,category:"פרנס היום",
+    name:"",priority:3,date_from:today(),date_to:today()})}).then(function(){pickSite();})
+   .catch(function(e){say("שמירה נכשלה: "+(e.message||e),1);});}
+
+function saveSpon(i,f,v){var x=SPONS[i];x[f]=(v===""?null:v);
+  sf("sponsors?id=eq."+x.id,{method:"PATCH",body:JSON.stringify(mkObj(f,x[f]))})
+   .then(function(){flash();drawSpons();})
+   .catch(function(e){say("השמירה נכשלה: "+(e.message||e),1);});}
+
+function delSpon(i){if(!confirm("למחוק?"))return;
+  sf("sponsors?id=eq."+SPONS[i].id,{method:"DELETE"}).then(function(){say("נמחק");pickSite();});}
+
+function drawSpons(){
+  var t=today();
+  document.getElementById("spons").innerHTML=SPONS.map(function(x,i){
+    var live=(!x.date_from||t>=x.date_from)&&(!x.date_to||t<=x.date_to)&&x.active!==false;
+    return '<div class="item" style="'+(live?"border-color:#2ea043":"")+'">'+
+      '<div class="hd"><b>'+(esc(x.name)||"(ללא שם)")+'</b>'+
+      '<span><span class="tag" style="'+(live?"color:#7ee787":"")+'">'+(live?"מוצג היום":"לא בתוקף")+'</span>'+
+      '<button class="dz" onclick="delSpon('+i+')">×</button></span></div>'+
+      '<div class="grid" style="margin-top:6px">'+
+      '<div><label>סוג</label><input list="catlist" value="'+esc(x.category||"")+'" onchange="saveSpon('+i+',\'category\',this.value)"></div>'+
+      '<div><label>שם</label><input value="'+esc(x.name||"")+'" placeholder="ר\' ישראל ישראלי" onchange="saveSpon('+i+',\'name\',this.value)"></div>'+
+      '<div><label>הקדשה</label><input value="'+esc(x.dedication||"")+'" placeholder="לעילוי נשמת / לרפואת" onchange="saveSpon('+i+',\'dedication\',this.value)"></div>'+
+      '<div><label>בולטות</label><select onchange="saveSpon('+i+',\'priority\',+this.value)">'+opts(PRIO,String(x.priority||3))+'</select></div>'+
+      '<div><label>מתאריך</label><input type="date" value="'+(x.date_from||"")+'" onchange="saveSpon('+i+',\'date_from\',this.value)"></div>'+
+      '<div><label>עד תאריך</label><input type="date" value="'+(x.date_to||"")+'" onchange="saveSpon('+i+',\'date_to\',this.value)"></div>'+
+      '</div></div>';}).join("")||'<div class="hint">אין פרנסים. הוסף אחד — הוא יופיע במסך חדר הקפה ובמסך הפרנסים בטווח התאריכים שתגדיר.</div>';}
 
 function opts(o,sel){return Object.keys(o).map(function(k){
   return "<option value='"+k+"'"+(sel===k?" selected":"")+">"+o[k]+"</option>";}).join("");}
