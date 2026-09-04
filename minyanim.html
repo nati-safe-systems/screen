@@ -33,6 +33,14 @@ button.dz:hover{color:#ff6b6b}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 @media(max-width:620px){.grid{grid-template-columns:1fr}}
 .hide{display:none}
+.grp2{border:1px solid #30363d;border-radius:9px;margin-bottom:8px;overflow:hidden}
+.grphd{display:flex;align-items:center;gap:8px;padding:9px 11px;cursor:pointer;background:#0d1117}
+.grphd:hover{background:#131a24}
+.grphd b{flex:1;font-size:14px}
+.grphd .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.grphd .cnt{background:#21262d;color:#8b949e;font-size:11px;padding:1px 8px;border-radius:9px}
+.grphd .arw{color:#8b949e;font-size:11px}
+.grpbd{padding:9px 9px 4px;border-top:1px solid #21262d}
 #saved{position:fixed;bottom:16px;left:16px;z-index:99;background:#0f2f1a;border:1px solid #2ea043;
   color:#7ee787;border-radius:20px;padding:6px 15px;font-size:13px;font-weight:700;
   opacity:0;transform:translateY(8px);transition:.25s;pointer-events:none}
@@ -56,6 +64,8 @@ button.dz:hover{color:#ff6b6b}
     <div style="flex:0"><button onclick="addSite()">הוסף</button></div>
   </div>
   <div id="siteCfg" class="hide">
+    <label>שם האתר</label>
+    <input id="s_name" onchange="saveSiteName()">
     <div class="grid" style="margin-top:9px">
       <div><label>קו רוחב</label><input id="s_lat" type="number" step="0.0001"></div>
       <div><label>קו אורך</label><input id="s_lng" type="number" step="0.0001"></div>
@@ -542,7 +552,12 @@ var CATS=["פרנס היום","פרנס הקפה","פרנס הכיבוד","נר 
 function flash(){var e=document.getElementById("saved");if(!e)return;
   e.className="on";clearTimeout(window._ft);
   window._ft=setTimeout(function(){e.className="";},1400);}
-var PRAYERS={shacharit:"שחרית",mincha:"מנחה",arvit:"ערבית",selichot:"סליחות",other:"אחר"};
+var PRAYERS={unassigned:"טרם הוגדר",selichot:"סליחות",shacharit:"שחרית",mussaf:"מוסף",
+  mincha:"מנחה",arvit:"ערבית",maariv:"מעריב",other:"אחר"};
+/* ערבית = נוסח עדות המזרח, מעריב = נוסח אשכנז. שתי מגירות נפרדות. */
+var PCOLOR={unassigned:"#ff9f43",selichot:"#4fd1c5",shacharit:"#ffcc00",mussaf:"#7ee787",
+  mincha:"#ff8f6b",arvit:"#8ab4f8",maariv:"#c792ea",other:"#8b949e"};
+var PORDER=["unassigned","selichot","shacharit","mussaf","mincha","arvit","maariv","other"];
 var ZM={shkia:"שקיעה",tzeit:"צאת הכוכבים",netz:"הנץ החמה",alot:"עלות השחר",
         chatzot:"חצות",plag:"פלג המנחה",mincha_gedola:"מנחה גדולה",mincha_ketana:"מנחה קטנה",candle:"הדלקת נרות"};
 
@@ -567,6 +582,7 @@ function addSite(){var n=document.getElementById("newSite").value.trim(); if(!n)
 function pickSite(){var id=document.getElementById("siteSel").value;
   SITE=SITES.filter(function(s){return s.id===id;})[0]; if(!SITE)return;
   document.getElementById("siteCfg").className="";
+  s_name.value=SITE.name||"";
   s_lat.value=SITE.lat; s_lng.value=SITE.lng; s_elev.value=SITE.elevation; s_candle.value=SITE.candle_offset;
   Promise.all([
     sf("rooms?site_id=eq."+SITE.id+"&select=*&order=sort_order"),
@@ -574,6 +590,11 @@ function pickSite(){var id=document.getElementById("siteSel").value;
     sf("sponsors?site_id=eq."+SITE.id+"&select=*&order=priority")
   ]).then(function(r){ROOMS=r[0]||[];MINS=r[1]||[];SPONS=r[2]||[];
     drawRooms();drawMins();drawSpons();preview();});}
+
+function saveSiteName(){
+  var v=document.getElementById("s_name").value.trim(); if(!v)return;
+  sf("sites?id=eq."+SITE.id,{method:"PATCH",body:JSON.stringify({name:v})})
+   .then(function(){flash();boot();}).catch(function(e){say("שמירה נכשלה: "+(e.message||e),1);});}
 
 function saveSite(){sf("sites?id=eq."+SITE.id,{method:"PATCH",body:JSON.stringify({
   lat:+s_lat.value,lng:+s_lng.value,elevation:+s_elev.value,candle_offset:+s_candle.value})})
@@ -602,19 +623,50 @@ function drawRooms(){
       '<div><label>הקדשה</label><input value="'+esc(r.dedication||"")+'" placeholder="לעילוי נשמת..." onchange="saveRoom('+i+',\'dedication\',this.value)"></div>'+
       '</div></div>';}).join("")||'<div class="hint">אין חדרים עדיין.</div>';}
 
+/* מניין חדש נכנס למגירת "טרם הוגדר" ולא פעיל — כדי שלא ידלוף למסכים
+   לפני שבחרת לו תפילה. ברגע שתבחר, הוא מופעל ועובר למגירה הנכונה. */
 function addMin(){ if(!SITE)return say("בחר אתר",1);
   sf("prayer_times",{method:"POST",body:JSON.stringify({site_id:SITE.id,
-    room_id:ROOMS.length?ROOMS[0].id:null,prayer:"shacharit",mode:"fixed",
-    fixed_time:"07:00",sort_order:MINS.length})}).then(function(){pickSite();});}
+    room_id:ROOMS.length?ROOMS[0].id:null,prayer:"unassigned",mode:"fixed",
+    active:false,fixed_time:"07:00",sort_order:MINS.length})})
+  .then(function(){OPEN.unassigned=true;return pickSite();})
+  .then(function(){var el=document.querySelector('[data-grp="unassigned"]');
+    if(el)el.scrollIntoView({behavior:"smooth",block:"center"});})
+  .catch(function(e){say("שמירה נכשלה: "+(e.message||e),1);});}
 function saveMin(i,f,v){var m=MINS[i];m[f]=(v===""?null:v);
-  sf("prayer_times?id=eq."+m.id,{method:"PATCH",body:JSON.stringify(mkObj(f,m[f]))})
+  var body=mkObj(f,m[f]);
+  /* בחירת תפילה אמיתית מפעילה את המניין ומעבירה אותו למגירה שלה */
+  if(f==="prayer" && v && v!=="unassigned" && m.active===false){ body.active=true; m.active=true; OPEN[v]=true; }
+  sf("prayer_times?id=eq."+m.id,{method:"PATCH",body:JSON.stringify(body)})
    .then(function(){flash();drawMins();preview();})
    .catch(function(e){say("השמירה נכשלה: "+(e.message||e),1);});}
 function delMin(i){sf("prayer_times?id=eq."+MINS[i].id,{method:"DELETE"}).then(function(){pickSite();});}
 
+var OPEN={};
+function toggleGrp(k){OPEN[k]=!OPEN[k];drawMins();}
+
 function drawMins(){
-  document.getElementById("mins").innerHTML=MINS.map(function(m,i){
-    var h='<div class="item"><div class="hd"><b>'+(PRAYERS[m.prayer]||m.prayer)+'</b>'+
+  var groups={};
+  MINS.forEach(function(m,i){ var k=m.prayer||"other"; (groups[k]=groups[k]||[]).push(i); });
+  var order=PORDER.filter(function(k){return groups[k];})
+    .concat(Object.keys(groups).filter(function(k){return PORDER.indexOf(k)===-1;}));
+  document.getElementById("mins").innerHTML = order.length ? order.map(function(k){
+    var idxs=groups[k], c=PCOLOR[k]||"#8b949e", open=!!OPEN[k];
+    var isNew=(k==="unassigned");
+    return '<div class="grp2" data-grp="'+k+'" style="border-color:'+c+(isNew?';box-shadow:0 0 0 1px '+c:'')+'">'+
+      '<div class="grphd" onclick="toggleGrp(\''+k+'\')">'+
+        '<span class="dot" style="background:'+c+'"></span>'+
+        '<b style="color:'+c+'">'+(PRAYERS[k]||k)+'</b>'+
+        '<span class="cnt">'+idxs.length+'</span>'+
+        '<span class="arw">'+(open?"▲":"▼")+'</span></div>'+
+      (open?'<div class="grpbd">'+idxs.map(drawMinRow).join("")+'</div>':'')+
+    '</div>';
+  }).join("") : '<div class="hint">אין מניינים עדיין. לחץ "+ מניין".</div>';
+}
+
+function drawMinRow(i){ return [i].map(function(i){
+    var m=MINS[i];
+    var h='<div class="item"'+(m.active===false?' style="border-color:#ff9f43"':'')+'><div class="hd"><b>'+(PRAYERS[m.prayer]||m.prayer)+'</b>'+
       '<span><span class="tag">'+({fixed:"שעה קבועה",interval:"כל X דקות",relative:"יחסי לזמן"}[m.mode])+'</span>'+
       '<button class="dz" onclick="delMin('+i+')">×</button></span></div><div class="grid" style="margin-top:6px">'+
       '<div><label>תפילה</label><select onchange="saveMin('+i+',\'prayer\',this.value)">'+opts(PRAYERS,m.prayer)+'</select></div>'+
@@ -646,7 +698,8 @@ function drawMins(){
 
     h+='</div>';
     if(m.mode==="interval") h+='<div class="hint">לדוגמה: כל 15 דק\', משקיעה −90 עד שקיעה −20. מתעדכן לבד כל יום בשנה.</div>';
-    return h+'</div>';}).join("")||'<div class="hint">אין מניינים עדיין.</div>';}
+    if(m.active===false) h+='<div class="hint" style="color:#ff9f43">בחר תפילה כדי להפעיל את המניין ולשייך אותו למגירה.</div>';
+    return h+'</div>';}).join("");}
 
 /* ---------- פרנסים ---------- */
 function today(){var t=new Date();return t.getFullYear()+"-"+pad2(t.getMonth()+1)+"-"+pad2(t.getDate());}

@@ -337,6 +337,20 @@ tr:hover td{background:rgba(128,0,0,0.05);}
         </div>
 
         <div class="field" style="margin-top:12px;">
+          <label>מיקום המסך — לחישוב הזמנים</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px;">
+            <input id="edit-sc-lat"  type="number" step="0.0001" placeholder="קו רוחב"  oninput="markCustom()">
+            <input id="edit-sc-lng"  type="number" step="0.0001" placeholder="קו אורך"  oninput="markCustom()">
+            <input id="edit-sc-elev" type="number" placeholder="גובה במ'" oninput="markCustom()">
+          </div>
+          <div style="font-size:12px;color:#8b949e;margin-top:5px;">
+            נקבע כאן בלבד ולא בפאנל הלקוח. ריק = ברירת המחדל שבקוד.
+            ירושלים 31.7683 / 35.2137 / 754 &nbsp;·&nbsp; בית שמש 31.75 / 34.975 / 214 &nbsp;·&nbsp;
+            בני ברק 32.084 / 34.833 / 30
+          </div>
+        </div>
+
+        <div class="field" style="margin-top:12px;">
           <label>כיוון המסך</label>
           <select id="edit-sc-orient" onchange="markCustom()" style="margin-top:6px;">
             <option value="auto">אוטומטי — לפי המסך (ברירת מחדל)</option>
@@ -964,7 +978,16 @@ function readDisplayConfig(){
     pdf_show_sec: parseInt(document.getElementById('edit-sc-pdfshow').value,10)||20,
     zmanim_source: (document.getElementById('edit-sc-zmsrc')||{}).value === 'engine' ? 'engine' : 'hebcal',
     orientation: (document.getElementById('edit-sc-orient')||{}).value || 'auto',
-    weather_pos: (document.getElementById('edit-sc-wx')||{}).value || 'off'
+    weather_pos: (document.getElementById('edit-sc-wx')||{}).value || 'off',
+    zm: (function(){
+      var la=document.getElementById('edit-sc-lat'), ln=document.getElementById('edit-sc-lng'),
+          el=document.getElementById('edit-sc-elev');
+      var o = (_rawDC && typeof _rawDC.zm==='object' && _rawDC.zm) ? Object.assign({},_rawDC.zm) : {};
+      if(la && la.value!=='') o.lat=+la.value;   else delete o.lat;
+      if(ln && ln.value!=='') o.lng=+ln.value;   else delete o.lng;
+      if(el && el.value!=='') o.elev=+el.value;  else delete o.elev;
+      return o;
+    })()
   };
   for(var _m in mine){ if(Object.prototype.hasOwnProperty.call(mine,_m)) out[_m]=mine[_m]; }
   return out;
@@ -991,6 +1014,10 @@ function fillDisplayConfig(cfg){
   var _zs=document.getElementById('edit-sc-zmsrc'); if(_zs) _zs.value = (cfg.zmanim_source==='engine')?'engine':'hebcal';
   var _or=document.getElementById('edit-sc-orient'); if(_or) _or.value = cfg.orientation || 'auto';
   var _wx=document.getElementById('edit-sc-wx'); if(_wx) _wx.value = cfg.weather_pos || 'off';
+  var _zm=(cfg.zm&&typeof cfg.zm==='object')?cfg.zm:{};
+  var _la=document.getElementById('edit-sc-lat');  if(_la) _la.value=(_zm.lat!=null?_zm.lat:'');
+  var _ln=document.getElementById('edit-sc-lng');  if(_ln) _ln.value=(_zm.lng!=null?_zm.lng:'');
+  var _el=document.getElementById('edit-sc-elev'); if(_el) _el.value=(_zm.elev!=null?_zm.elev:'');
   (function(){ var sel = Array.isArray(cfg.news_sources) ? cfg.news_sources : []; Array.prototype.forEach.call(document.querySelectorAll('.ns-src'), function(c){ c.checked = sel.indexOf(c.value) >= 0; }); })();
   document.getElementById('dc-protected').checked = (cfg.protected!==undefined) ? !!cfg.protected : ((cfg.profile||'chareidi')==='chareidi');
   document.getElementById('dc-tenant-edit').checked = !!cfg.tenant_can_edit;

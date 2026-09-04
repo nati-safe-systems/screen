@@ -59,6 +59,14 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 .ft .mid{text-align:center;flex:1}
 .ft .clk{color:#00ff88;font-size:2.2vh;font-weight:700;font-variant-numeric:tabular-nums}
 .ft .heb{color:#ffd86b;font-size:1.6vh}
+.cdsec{color:#ffcc00;font-size:2.8vh;font-weight:700;margin-top:1.4vh}
+.cdsec .num{color:#fff;font-size:4.2vh;font-weight:900;font-variant-numeric:tabular-nums;
+  text-shadow:0 0 2.4vh rgba(255,204,0,.5)}
+.shrow{display:flex;justify-content:center;gap:5vw;margin-top:2.4vh;
+  border-top:1px solid rgba(255,255,255,.15);padding-top:1.8vh}
+.shrow>div{text-align:center}
+.shrow span{display:block;color:#9fc0e4;font-size:1.9vh;margin-bottom:.4vh}
+.shrow b{display:block;color:#ffd86b;font-size:3.6vh;font-variant-numeric:tabular-nums}
 .hide{display:none!important}
 @media (max-aspect-ratio: 3/4){
   .head h1{font-size:5vh}
@@ -673,15 +681,36 @@ function zmans(now){
 
 function render(now,nowMin){
   var b=document.getElementById("body");
+  if(!Z) return;
   var all=NatiMinyan.resolve(MINS,Z,now,{});
   var nx=NatiMinyan.next(all,nowMin);
 
+  /* שבת — ברכה וזמני כניסה ויציאה. הכותרת עם שם החדר נשארת. */
+  var inShabbat=(now.getDay()===6 && nowMin<Z.tzeitRT) ||
+                (now.getDay()===5 && nowMin>=Z.candleLighting);
+  if(inShabbat){
+    b.innerHTML='<div class="cdwrap">'+
+      '<div class="big" style="font-size:8.5vh;font-family:\'Frank Ruhl Libre\',serif">שבת שלום ומבורך</div>'+
+      '<div class="shrow" style="margin-top:3vh">'+
+        '<div><span>כניסת השבת</span><b>'+NatiMinyan.fmt(Z.candleLighting)+'</b></div>'+
+        '<div><span>צאת השבת</span><b>'+NatiMinyan.fmt(Z.tzeitHakochavim)+'</b></div>'+
+        '<div><span>רבינו תם</span><b>'+NatiMinyan.fmt(Z.tzeitRT)+'</b></div>'+
+      '</div></div>';
+    return;
+  }
+
   if(!nx){
     if(now.getDay()===5){        /* ערב שבת */
+      var cd=cdSec(Z.candleLighting,now);
       b.innerHTML='<div class="cdwrap"><div class="lbl">ערב שבת קודש</div>'+
-        '<div class="big" style="font-size:9vh">'+NatiMinyan.fmt(Z.candleLighting)+'</div>'+
+        '<div class="big" style="font-size:11vh">'+NatiMinyan.fmt(Z.candleLighting)+'</div>'+
         '<div class="unit">הדלקת נרות</div>'+
-        '<div class="at">שקיעה '+NatiMinyan.fmt(Z.shkia)+' · צאת השבת '+NatiMinyan.fmt(Z.tzeitHakochavim)+'</div></div>';
+        (cd?'<div class="cdsec">בעוד <span class="num">'+cd.t+'</span> '+cd.u+' זמן הדלקת נרות</div>':'')+
+        '<div class="shrow">'+
+          '<div><span>שקיעה</span><b>'+NatiMinyan.fmt(Z.shkia)+'</b></div>'+
+          '<div><span>צאת השבת</span><b>'+NatiMinyan.fmt(Z.tzeitHakochavim)+'</b></div>'+
+          '<div><span>רבינו תם</span><b>'+NatiMinyan.fmt(Z.tzeitRT)+'</b></div>'+
+        '</div></div>';
       return;
     }
     b.innerHTML='<div class="empty">'+(MINS.length?"כל המניינים להיום הסתיימו":"לא הוגדרו מניינים לחדר זה")+'</div>';
@@ -721,6 +750,15 @@ function render(now,nowMin){
       return '<div class="li '+cls+'">'+x.time+'</div>';
     }).join("")+'</div>'+
     '<div class="cdline">'+(cd||"")+'</div>';
+}
+
+function p2(n){return (n<10?"0":"")+n;}
+function cdSec(targetMin,now){
+  var nowSec=now.getHours()*3600+now.getMinutes()*60+now.getSeconds();
+  var s=Math.round(targetMin*60)-nowSec;
+  if(s<0)return null;
+  var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;
+  return h>0?{t:h+":"+p2(m)+":"+p2(sec),u:"שעות"}:{t:p2(m)+":"+p2(sec),u:"דקות"};
 }
 
 function tick(){

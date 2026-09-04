@@ -74,6 +74,15 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 .ft{flex-shrink:0;border-top:1px solid rgba(255,255,255,.1);padding:.5vh;display:flex;
   align-items:center;justify-content:center;gap:.8vw;color:rgba(255,255,255,.45);font-size:1.1vh}
 .fl{height:3vh;opacity:.85}
+/* לוח ערב שבת — ריווח נדיב בין הזמנים */
+.shzm{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;
+  gap:1.2vh 4.5vw;margin:.6vh 0}
+.shzm>div{text-align:center;min-width:8vw}
+.shzm .pr{font-size:1.7vh;margin-bottom:.5vh;letter-spacing:.05vh}
+.shzm .tm{font-size:4.4vh;color:#ffd86b}
+.cdbig{font-size:2.6vh}
+.cdbig .num{font-size:3.6vh;font-weight:900;font-variant-numeric:tabular-nums;
+  color:#fff;text-shadow:0 0 2vh rgba(255,204,0,.5)}
 .hide{display:none!important}
 
 /* מסך מאונך או צר — הפריסה מתארגנת מחדש */
@@ -110,7 +119,7 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 </div>
 
 <div class="spon" id="sponWrap">
-  <div class="secttl">פרנסי היום</div>
+  <div class="secttl" id="sponTtl">פרנסי היום</div>
   <div class="sgrid" id="sgrid"></div>
 </div>
 
@@ -730,6 +739,24 @@ function drawMinyanim(now,nowMin){
 
   /* ערב שבת אחרי שהמניינים נגמרו — הקוביות הריקות לא משרתות אף אחד.
      במקומן: לוח כניסת שבת. */
+  /* שבת עצמה — המסך ממשיך לפעול, עם ברכה וזמני היציאה */
+  var isShabbat=(now.getDay()===6 && nowMin<Z.tzeitRT) ||
+                (now.getDay()===5 && nowMin>=Z.candleLighting);
+  if(isShabbat){
+    document.querySelector(".secttl").textContent="שבת קודש";
+    var gs=document.getElementById("mgrid");
+    gs.style.gridTemplateColumns="1fr";
+    gs.innerHTML='<div class="mcard soon" style="gap:2vh;justify-content:center">'+
+      '<div class="rn" style="font-size:5.4vh">שבת שלום ומבורך</div>'+
+      '<div class="shzm">'+
+        '<div><div class="pr">כניסת השבת</div><div class="tm">'+NatiMinyan.fmt(Z.candleLighting)+'</div></div>'+
+        '<div><div class="pr">שקיעה</div><div class="tm">'+NatiMinyan.fmt(Z.shkia)+'</div></div>'+
+        '<div><div class="pr">צאת השבת</div><div class="tm">'+NatiMinyan.fmt(Z.tzeitHakochavim)+'</div></div>'+
+        '<div><div class="pr">רבינו תם</div><div class="tm">'+NatiMinyan.fmt(Z.tzeitRT)+'</div></div>'+
+      '</div></div>';
+    return;
+  }
+
   var isErev=(now.getDay()===5);
   if(isErev){
     var anyNext=false;
@@ -741,16 +768,17 @@ function drawMinyanim(now,nowMin){
       document.querySelector(".secttl").textContent="ערב שבת קודש";
       var g0=document.getElementById("mgrid");
       g0.style.gridTemplateColumns="1fr";
-      g0.innerHTML='<div class="mcard soon" style="gap:1.2vh">'+
-        '<div class="rn" style="font-size:4vh">שבת שלום ומבורך</div>'+
-        '<div style="display:flex;gap:3vw;flex-wrap:wrap;justify-content:center">'+
+      var cd=cdSec(Z.candleLighting,now);
+      g0.innerHTML='<div class="mcard soon" style="gap:2vh;justify-content:center">'+
+        '<div class="rn" style="font-size:4.6vh">שבת שלום ומבורך</div>'+
+        '<div class="shzm">'+
           '<div><div class="pr">הדלקת נרות</div><div class="tm">'+NatiMinyan.fmt(Z.candleLighting)+'</div></div>'+
           '<div><div class="pr">שקיעה</div><div class="tm">'+NatiMinyan.fmt(Z.shkia)+'</div></div>'+
           '<div><div class="pr">צאת השבת</div><div class="tm">'+NatiMinyan.fmt(Z.tzeitHakochavim)+'</div></div>'+
+          '<div><div class="pr">רבינו תם</div><div class="tm">'+NatiMinyan.fmt(Z.tzeitRT)+'</div></div>'+
         '</div>'+
-        (Z.candleLighting>nowMin
-          ? '<div class="cd">'+(NatiMinyan.countdown(Z.candleLighting,nowMin)||"")+' להדלקת נרות</div>'
-          : '<div class="cd">שבת נכנסה</div>')+
+        (cd ? '<div class="cd cdbig">בעוד <span class="num">'+cd.t+'</span> '+cd.u+' זמן הדלקת נרות</div>'
+            : '')+
         '</div>';
       return;
     }
@@ -796,6 +824,9 @@ function drawSponsors(){
   });
 
   var w=document.getElementById("sponWrap");
+  var st=document.getElementById("sponTtl");
+  var dow=t.getDay();
+  if(st) st.textContent=(dow===6||dow===5)?"פרנסי היום ופרנסי השבת":"פרנסי היום";
   if(!cur.length){ w.className="spon hide"; return; }
   w.className="spon";
 
@@ -821,6 +852,16 @@ function drawSponsors(){
 }
 
 function p2(n){return (n<10?"0":"")+n;}
+
+/* ספירה לאחור חיה עם שניות */
+function cdSec(targetMin, now){
+  var nowSec = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
+  var d = Math.round(targetMin*60) - nowSec;
+  if(d<0) return null;
+  var h=Math.floor(d/3600), m=Math.floor((d%3600)/60), sec=d%60;
+  return h>0 ? {t:h+":"+p2(m)+":"+p2(sec), u:"שעות"}
+             : {t:p2(m)+":"+p2(sec),        u:"דקות"};
+}
 function esc(t){return String(t==null?"":t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");}
 
 function tick(){
