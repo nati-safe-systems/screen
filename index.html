@@ -300,6 +300,7 @@ body.portrait #news-ticker .nt-label{font-size:2.2vw;}
 .wx-t{font-size:calc(var(--sbs,1) * 1.0vw);font-weight:800;color:#fff;}
 .wx-d{font-size:calc(var(--sbs,1) * 0.75vw);font-weight:600;opacity:0.85;}
 .wx-r{font-size:calc(var(--sbs,1) * 0.72vw);opacity:0.7;}
+.wx-ttl{display:none;}
 .wm .wx{padding:2px 6px;margin:2px 0;}
 .wm .wx-days{font-size:0.95em;}
 body.portrait .wx-ic{font-size:calc(var(--sbs) * 0.8vw);}
@@ -348,14 +349,18 @@ body.portrait .wx-dl,body.portrait .wx-sep{font-size:calc(var(--sbs) * 0.58vw);}
 body.portrait .wx-hi,body.portrait .wx-lo{font-size:calc(var(--sbs) * 0.66vw);}
 
 /* מזג אוויר ברצועת שם הבניין — פינה שמאלית עליונה */
-#building-title-bg > .wx{position:absolute!important;top:50%;left:10px;transform:translateY(-50%);
+#building-title-bg > .wx{position:absolute!important;top:50%;left:12px;transform:translateY(-50%);
   z-index:7;margin:0;padding:.45em .8em;
   background:linear-gradient(180deg,rgba(0,92,186,0.88),rgba(0,48,108,0.92));
   border:1px solid rgba(130,205,255,0.7);border-radius:.7em;
   display:flex!important;align-items:center;gap:.75em;
   white-space:nowrap;color:#eaf6ff;line-height:1.15;
-  font-size:13px;   /* נקבע מחדש בקוד לפי רוחב האזור */
+  font-size:15px;   /* נקבע מחדש בקוד לפי רוחב האזור */
   box-shadow:0 2px 9px rgba(0,0,0,0.5), inset 0 0 10px rgba(130,205,255,0.15);}
+#building-title-bg > .wx{flex-wrap:wrap;}
+#building-title-bg > .wx .wx-ttl{display:block;width:100%;text-align:center;font-size:.68em;font-weight:800;
+  color:#bfe3ff;letter-spacing:.06em;margin-bottom:.25em;opacity:.95;
+  border-bottom:1px solid rgba(255,255,255,0.22);padding-bottom:.2em;}
 #building-title-bg > .wx .wx-now{flex-direction:row;align-items:center;gap:.4em;}
 #building-title-bg > .wx .wx-ic svg{width:1.7em;height:1.7em;display:block;}
 #building-title-bg > .wx .wx-t{font-size:1.45em;color:#fff;font-weight:900;}
@@ -1033,7 +1038,8 @@ function wxEnsureEl(){
   if(old) old.remove();
   var el=document.createElement("div");
   el.id="wx"; el.className="wx"; el.setAttribute("data-pos",pos);
-  el.innerHTML='<div class="wx-now"><span class="wx-ic"></span>'+
+  el.innerHTML='<div class="wx-ttl">תחזית מזג האוויר</div>'+
+               '<div class="wx-now"><span class="wx-ic"></span>'+
                '<span class="wx-t">--°</span><span class="wx-d">טוען…</span></div>'+
                '<div class="wx-days">'+
                '<div class="wx-day"><span class="wx-dl">היום</span><span class="wx-di"></span>'+
@@ -1066,11 +1072,11 @@ function fitWx(){
   var band=document.getElementById("building-title-bg");
   if(!el || !bc || !band || el.parentNode!==band) return;
   var w=bc.clientWidth||0; if(!w) return;
-  var fs=Math.round(Math.max(9, Math.min(17, w/72)));
+  var fs=Math.round(Math.max(10, Math.min(21, w/58)));
   el.style.fontSize=fs+"px";
   /* לא נוגעים בעיצוב הכותרת. במקום זה מגבילים את הווידג'ט
      לרבע מרוחב האזור, כך שלעולם לא יגיע לטקסט שבמרכז. */
-  var maxW = w*0.25;
+  var maxW = w*0.30;
   if(el.offsetWidth > maxW){
     fs = Math.max(8, Math.floor(fs * maxW / el.offsetWidth));
     el.style.fontSize = fs+"px";
@@ -1275,11 +1281,13 @@ function applyDisplayConfig(cfg){
   if(cfg.news && _src.length){
     ticker.style.display="flex";
     document.body.classList.add("ticker-on");
+    setTimeout(function(){ try{ _fitSoon(); }catch(e){} },250);
     document.body.classList.add("has-ticker");
     startNews(_src);
   }else{
     ticker.style.display="none";
     document.body.classList.remove("ticker-on");
+    setTimeout(function(){ try{ _fitSoon(); }catch(e){} },250);
     document.body.classList.remove("has-ticker");
     if(_newsTimer){clearInterval(_newsTimer);_newsTimer=null;}
     _newsSig=null;
@@ -2587,7 +2595,9 @@ function fitSidebar(){
   if(!sb||!sc) return;
   sc.style.transform="none";                    /* ביטול השיטה הישנה */
 
-  var sig=_fitSignature(sc);
+  /* הגובה הפנוי הוא חלק מהחתימה. כשרצועת המבזקים נדלקת או נכבית
+     הסרגל מקבל גובה אחר — וצריך לחשב מחדש, גם אם התוכן לא השתנה. */
+  var sig=_fitSignature(sc)+"|h"+sc.clientHeight;
   if(sig===_fitSig){                            /* שום דבר לא השתנה */
     sb.style.setProperty("--sbs", _fitVal.toFixed(3));
     return;
@@ -2598,7 +2608,7 @@ function fitSidebar(){
   if(!avail){ return; }
 
   /* חיפוש בינארי אחר קנה-המידה הגדול ביותר שעדיין נכנס */
-  var lo=0.55, hi=1.30, best=lo;
+  var lo=0.55, hi=1.55, best=lo;
   for(var k=0;k<12;k++){
     var mid=(lo+hi)/2;
     sb.style.setProperty("--sbs", mid.toFixed(4));
@@ -2612,6 +2622,16 @@ function _fitSoon(){ try{ _fitSig=""; fitSidebar(); }catch(e){} }
 window.addEventListener("load", _fitSoon);
 if(document.fonts && document.fonts.ready){ document.fonts.ready.then(_fitSoon); }
 window.addEventListener("resize", _fitSoon);
+
+/* שינוי גובה של הסרגל — מבזקים, קופסת שבת, מזג אוויר — מפעיל חישוב מחדש */
+var _lastAvail=0;
+setInterval(function(){
+  try{
+    var sc=document.getElementById("sc"); if(!sc) return;
+    if(sc.clientHeight!==_lastAvail){ _lastAvail=sc.clientHeight; _fitSoon(); }
+    else fitSidebar();
+  }catch(e){}
+}, 4000);
 
 /* ---- Slideshow ---- */
 var si=0,sl=document.querySelectorAll(".bs");
@@ -2655,6 +2675,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 5.5.1</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 5.6</div>
 </body>
 </html>
