@@ -17,17 +17,23 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 .head h1{color:#ffcc00;font-family:"Frank Ruhl Libre",serif;font-size:6.5vh;font-weight:900;
   line-height:1.05;margin-top:.4vh;text-shadow:0 .3vh 1.4vh rgba(0,0,0,.9)}
 .head .ded{color:#ffe9a8;font-size:2vh;margin-top:.5vh}
-.topbar{flex-shrink:0;display:flex;align-items:center;justify-content:center;gap:3vw;
-  padding:1.4vh 2vw;background:linear-gradient(180deg,#0d1526,#080d1a);
-  border-bottom:1px solid rgba(255,255,255,.12)}
-.topbar .clk{color:#00ff88;font-size:7vh;font-weight:600;line-height:1;
-  font-variant-numeric:tabular-nums;text-shadow:0 0 2.4vh rgba(0,255,136,.3)}
-.topbar .dts{text-align:center}
-.topbar .heb{color:#ffd86b;font-size:2.6vh;font-weight:800}
-.topbar .greg{color:#8fb4dd;font-size:1.7vh;margin-top:.3vh}
+.topbar{flex-shrink:0;display:flex;align-items:center;justify-content:center;gap:2.6vw;
+  padding:1.6vh 2vw;background:linear-gradient(180deg,rgba(16,24,44,.9),rgba(8,13,26,.9));
+  border-bottom:1px solid rgba(255,255,255,.1)}
+.topbar .clk{color:#eaf4ff;font-size:6.2vh;font-weight:300;line-height:1;
+  letter-spacing:.06em;font-variant-numeric:tabular-nums;
+  text-shadow:0 0 2.2vh rgba(150,200,255,.25)}
+.topbar .clk .sec{font-size:.55em;color:#7fa8cc;font-weight:400;margin-right:.15em;
+  letter-spacing:0;vertical-align:.32em}
+.topbar .dts{text-align:right;border-right:1px solid rgba(255,255,255,.18);padding-right:2.6vw}
+.topbar .heb{color:#ffd86b;font-size:2.5vh;font-weight:700;letter-spacing:.02em}
+.topbar .greg{color:#8fb4dd;font-size:1.6vh;margin-top:.35vh;font-weight:400}
 .bl{animation:blk 1s step-end infinite}
 @keyframes blk{0%,49%{opacity:1}50%,100%{opacity:.15}}
-#bgimg{position:fixed;inset:0;background-size:cover;background-position:center;z-index:-2}
+#bgimg{position:fixed;inset:0;z-index:-2}
+.bgslide{position:absolute;inset:0;background-size:cover;background-position:center;
+  opacity:0;transition:opacity 1.8s ease-in-out}
+.bgslide.on{opacity:1}
 #bgveil{position:fixed;inset:0;background:rgba(4,8,18,.72);z-index:-1}
 
 /* ---------- גוף ---------- */
@@ -47,11 +53,20 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 
 /* מצב ספירה לאחור */
 .cdwrap{text-align:center}
-.cdwrap .lbl{color:#9fc0e4;font-size:3.2vh;font-weight:700}
-.cdwrap .big{color:#ffd86b;font-size:19vh;font-weight:900;line-height:1;
-  font-variant-numeric:tabular-nums;text-shadow:0 0 5vh rgba(255,204,0,.5)}
-.cdwrap .unit{color:#9fc0e4;font-size:3vh;font-weight:700;margin-top:.6vh}
-.cdwrap .at{color:#00ff88;font-size:4.4vh;font-weight:800;margin-top:1.2vh;font-variant-numeric:tabular-nums}
+.cdwrap .pray{color:#ffcc00;font-family:"Frank Ruhl Libre",serif;font-size:8vh;font-weight:900;
+  line-height:1;letter-spacing:.02em;text-shadow:0 .4vh 1.6vh rgba(0,0,0,.7)}
+.cdwrap .lbl{color:#9fc0e4;font-size:2.9vh;font-weight:600;margin-top:1vh}
+.cdwrap .big{font-size:19vh;font-weight:900;line-height:1;margin-top:.4vh;
+  font-variant-numeric:tabular-nums;transition:color .6s}
+.cdwrap .unit{color:#9fc0e4;font-size:2.6vh;font-weight:600;margin-top:.4vh}
+.cdwrap .at{color:#00ff88;font-size:6.4vh;font-weight:900;margin-top:1.6vh;
+  font-variant-numeric:tabular-nums;text-shadow:0 0 2.4vh rgba(0,255,136,.3)}
+
+/* צבע לפי דחיפות: רחוק = זהב, מתקרב = כתום, ממש קרוב = אדום פועם */
+.cd-far  {color:#ffd86b;text-shadow:0 0 4.5vh rgba(255,204,0,.45)}
+.cd-soon {color:#ff9d3d;text-shadow:0 0 5vh rgba(255,140,40,.55)}
+.cd-now  {color:#ff5f52;text-shadow:0 0 6vh rgba(255,70,60,.65);animation:urg 1.4s ease-in-out infinite}
+@keyframes urg{0%,100%{opacity:1}50%{opacity:.62}}
 
 /* מנחה — יעד השקיעה */
 .deadline{text-align:center}
@@ -95,7 +110,7 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 </div>
 
 <div class="topbar">
-  <div class="clk" id="clk">--<span class="bl">:</span>--<span class="bl">:</span>--</div>
+  <div class="clk" id="clk">--<span class="bl">:</span>--</div>
   <div class="dts"><div class="heb" id="heb"></div><div class="greg" id="greg"></div></div>
 </div>
 
@@ -658,10 +673,35 @@ function sf(p){return fetch(SB+"/rest/v1/"+p,{headers:{apikey:SK,Authorization:"
   .then(function(r){return r.json();});}
 
 var SITE=null,ROOM=null,MINS=[],Z=null,ZDAY="";
-/* תמונת רקע: ?bg=... בכתובת, או display_config.bg_url בהגדרות המסך */
-function setBg(u){ if(!u)return; var e=document.getElementById("bgimg");
-  if(e) e.style.backgroundImage="url("+u+")"; }
-setBg(Q.get("bg"));
+/* מצגת רקע: רשימת תמונות שמתחלפות במעבר רך.
+   מקורות: ?bg=... בכתובת, או display_config.bg_images / bg_url. */
+var _bgList=[], _bgIdx=0, _bgTimer=null;
+function setBg(list, sec){
+  if(typeof list==="string") list=[list];
+  list=(list||[]).filter(function(u){return u && String(u).trim();});
+  if(!list.length) return;
+  _bgList=list;
+  var wrap=document.getElementById("bgimg"); if(!wrap) return;
+  wrap.innerHTML="";
+  _bgList.forEach(function(u,i){
+    var d=document.createElement("div");
+    d.className="bgslide"+(i===0?" on":"");
+    d.style.backgroundImage="url("+u+")";
+    wrap.appendChild(d);
+  });
+  _bgIdx=0;
+  if(_bgTimer) clearInterval(_bgTimer);
+  if(_bgList.length>1){
+    var ms=Math.max(3, (+sec||10))*1000;
+    _bgTimer=setInterval(function(){
+      var els=wrap.children; if(!els.length)return;
+      els[_bgIdx].classList.remove("on");
+      _bgIdx=(_bgIdx+1)%els.length;
+      els[_bgIdx].classList.add("on");
+    }, ms);
+  }
+}
+if(Q.get("bg")) setBg(Q.get("bg").split(","), Q.get("bgsec"));
 var PR={shacharit:"שחרית",mincha:"מנחה",arvit:"ערבית",selichot:"סליחות",other:"תפילה"};
 
 function load(){
@@ -671,7 +711,8 @@ function load(){
         .then(function(r){
           if(!r||!r[0])return null;
           try{ var dc=r[0].display_config; if(typeof dc==="string") dc=JSON.parse(dc);
-               if(dc && dc.bg_url) setBg(dc.bg_url); }catch(e){}
+               if(dc){ var imgs=Array.isArray(dc.bg_images)?dc.bg_images:(dc.bg_url?[dc.bg_url]:[]);
+                       if(imgs.length) setBg(imgs, dc.bg_sec); } }catch(e){}
           return {room_id:r[0].room_id,view:VIEW||r[0].minyan_view};
         });
   else q=sf("rooms?kind=eq.shul&select=id&order=sort_order&limit=1")
@@ -760,8 +801,12 @@ function render(now,nowMin){
 
   if(VIEW==="countdown"){
     var cs=cdSec(nx.minutes,now) || {t:"00:00",u:"דקות"};
-    b.innerHTML='<div class="cdwrap"><div class="lbl">'+(PR[nx.prayer]||nx.prayer)+' — המניין הבא בעוד</div>'+
-      '<div class="big">'+blink(cs.t)+'</div><div class="unit">'+cs.u+'</div>'+
+    var left=nx.minutes-nowMin;
+    var cls = left<=3 ? "cd-now" : (left<=12 ? "cd-soon" : "cd-far");
+    b.innerHTML='<div class="cdwrap">'+
+      '<div class="pray">'+(PR[nx.prayer]||nx.prayer)+(nx.label?" · "+esc(nx.label):"")+'</div>'+
+      '<div class="lbl">המניין הבא בעוד</div>'+
+      '<div class="big '+cls+'">'+blink(cs.t)+'</div><div class="unit">'+cs.u+'</div>'+
       '<div class="at">בשעה '+nx.time+'</div></div>';
     return;
   }
@@ -778,6 +823,7 @@ function render(now,nowMin){
 
 function p2(n){return (n<10?"0":"")+n;}
 /* הופך נקודתיים למהבהבות */
+function esc(t){return String(t==null?"":t).replace(/&/g,"&amp;").replace(/</g,"&lt;");}
 function blink(t){ return String(t).replace(/:/g,'<span class="bl">:</span>'); }
 
 function cdSec(targetMin,now){
@@ -793,7 +839,7 @@ function tick(){
   var hh=now.getHours(), mm=now.getMinutes(), ss=now.getSeconds();
   document.getElementById("clk").innerHTML=
     (hh<10?"0":"")+hh+'<span class="bl">:</span>'+(mm<10?"0":"")+mm+
-    '<span class="bl">:</span>'+(ss<10?"0":"")+ss;
+    '<span class="sec">'+(ss<10?"0":"")+ss+'</span>';
   document.getElementById("greg").textContent=
     now.toLocaleDateString("he-IL",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
   if(!SITE)return;
