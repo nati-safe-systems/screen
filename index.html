@@ -550,6 +550,18 @@ window.addEventListener("load", function(){
   setInterval(function(){ try{ updateEruv(); }catch(e){} }, 60*1000);
   try{ wxFetch(); }catch(e){}
   setInterval(function(){ try{ wxFetch(); }catch(e){} }, 15*60*1000);   /* רענון כל 15 דקות */
+
+  /* שומר: אם הווידג'ט נעלם או שלא הגיעו אליו נתונים — מנסים שוב.
+     מתקן מצב שבו הרכיב נבנה לפני שהתשובה חזרה, או נמחק בדרך. */
+  setInterval(function(){
+    try{
+      if(!window._wxPos || window._wxPos==="off") return;
+      var e=document.getElementById("wx");
+      var empty = !e || (e.querySelector(".wx-t") &&
+                         e.querySelector(".wx-t").textContent.indexOf("--")===0);
+      if(empty) wxFetch();
+    }catch(e){}
+  }, 30000);
 });
 
 if(ZMCHECK){
@@ -1008,7 +1020,7 @@ function wxEnsureEl(){
   var el=document.createElement("div");
   el.id="wx"; el.className="wx"; el.setAttribute("data-pos",pos);
   el.innerHTML='<div class="wx-now"><span class="wx-ic"></span>'+
-               '<span class="wx-t">--°</span><span class="wx-d"></span></div>'+
+               '<span class="wx-t">--°</span><span class="wx-d">טוען…</span></div>'+
                '<div class="wx-days">'+
                '<div class="wx-day"><span class="wx-dl">היום</span><span class="wx-di"></span>'+
                  '<span class="wx-hi">--°</span><span class="wx-sep">/</span><span class="wx-lo">--°</span></div>'+
@@ -1069,8 +1081,11 @@ function wxFetch(){
   }).catch(function(e){
     window._wxState="שגיאה: "+(e && e.message ? e.message : e);
     window._wxFail=(window._wxFail||0)+1;
-    /* כשל — מנסים שוב בעוד דקה, עד 5 פעמים, במקום לחכות 15 דקות */
-    if(window._wxFail<=5) setTimeout(wxFetch,60000);
+    /* מציגים את הסיבה על המסך עצמו, כדי שלא נצטרך לנחש */
+    var eel=document.getElementById("wx");
+    if(eel){ var dd=eel.querySelector(".wx-d");
+      if(dd) dd.textContent="אין חיבור ("+window._wxFail+")"; }
+    if(window._wxFail<=10) setTimeout(wxFetch,60000);
   });
 }
 
@@ -1086,7 +1101,7 @@ function applyDisplayConfig(cfg){
   window._orientation = _newOr;
   window._wxPos       = _newWx;
   if(_orChanged || window._isPortrait===undefined) { try{ applyOrientation(); }catch(e){} }
-  if(_wxChanged) { try{ wxFetch(); }catch(e){} }
+  if(_wxChanged) { window._wxFail=0; try{ wxFetch(); }catch(e){} }
   // בהירות תמונת הרקע (100=ללא שינוי, נמוך יותר=כהה יותר)
   var _bc=document.getElementById("bc");
   if(_bc){ var _bb=(cfg.bgBrightness>0)?cfg.bgBrightness:100; _bc.style.setProperty('--bg-bright',(_bb/100)); }
@@ -2521,6 +2536,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 5.0.2</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 5.0.3</div>
 </body>
 </html>
