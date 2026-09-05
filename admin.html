@@ -337,6 +337,33 @@ tr:hover td{background:rgba(128,0,0,0.05);}
         </div>
 
         <div class="field" style="margin-top:12px;">
+          <label>שיוך לבית כנסת</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;">
+            <select id="edit-sc-site" onchange="siteChanged()"><option value="">— ללא אתר —</option></select>
+            <select id="edit-sc-room" onchange="markCustom()"><option value="">— ללא חדר —</option></select>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+            <select id="edit-sc-purpose" onchange="markCustom()">
+              <option value="main">מסך ראשי</option>
+              <option value="door">מעל דלת חדר</option>
+              <option value="cafe">חדר קפה</option>
+              <option value="lobby">לובי</option>
+              <option value="mikveh">מקווה</option>
+              <option value="sponsors">פרנסים ותורמים</option>
+            </select>
+            <select id="edit-sc-minyanview" onchange="markCustom()">
+              <option value="list">מניינים — רשימת שעות</option>
+              <option value="countdown">מניינים — ספירה לאחור</option>
+              <option value="both">רשימה וספירה יחד</option>
+            </select>
+          </div>
+          <div style="font-size:12px;color:#8b949e;margin-top:5px;line-height:1.5;">
+            אתר וחדר נוצרים במסך "ניהול אתר". השיוך כאן קובע אילו מניינים המסך יציג
+            ואיזה שם יופיע בכותרת שלו.
+          </div>
+        </div>
+
+        <div class="field" style="margin-top:12px;">
           <label>מיקום המסך — לחישוב הזמנים</label>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px;">
             <input id="edit-sc-lat"  type="number" step="0.0001" placeholder="קו רוחב"  oninput="markCustom()">
@@ -347,6 +374,20 @@ tr:hover td{background:rgba(128,0,0,0.05);}
             נקבע כאן בלבד ולא בפאנל הלקוח. ריק = ברירת המחדל שבקוד.
             ירושלים 31.7683 / 35.2137 / 754 &nbsp;·&nbsp; בית שמש 31.75 / 34.975 / 214 &nbsp;·&nbsp;
             בני ברק 32.084 / 34.833 / 30
+          </div>
+        </div>
+
+        <div class="field" style="margin-top:12px;">
+          <label>תמונות רקע</label>
+          <div id="bgList" style="margin-top:6px;"></div>
+          <button type="button" onclick="bgAdd()" style="background:#21262d;border:1px solid #30363d;color:#ffcc00;border-radius:6px;padding:5px 12px;font:inherit;font-size:13px;cursor:pointer;margin-top:4px;">+ תמונה</button>
+          <div style="display:flex;align-items:center;gap:9px;margin-top:8px;">
+            <span style="font-size:13px;color:#8b949e;">החלפה כל</span>
+            <input id="edit-sc-bgsec" type="number" min="3" max="120" value="10" oninput="markCustom()" style="width:80px;">
+            <span style="font-size:13px;color:#8b949e;">שניות</span>
+          </div>
+          <div style="font-size:12px;color:#8b949e;margin-top:5px;">
+            תמונה אחת = רקע קבוע. כמה תמונות = מצגת עם מעבר רך.
           </div>
         </div>
 
@@ -861,6 +902,12 @@ function openAddScreen(){
   document.getElementById('edit-sc-expiry').value=new Date(new Date().setFullYear(new Date().getFullYear()+1)).toISOString().slice(0,10);
   var sel=document.getElementById('edit-sc-co');
   sel.innerHTML=allCompanies.map(function(c){return '<option value="'+c.company_id+'">'+c.company_name+'</option>';}).join('');
+  loadSitesRooms().then(function(){
+    var ss=document.getElementById('edit-sc-site'); if(ss) ss.value='';
+    fillRooms('');
+    var pp=document.getElementById('edit-sc-purpose');    if(pp) pp.value='main';
+    var mv=document.getElementById('edit-sc-minyanview'); if(mv) mv.value='list';
+  });
   document.getElementById('modal-sc-title').textContent='מסך חדש';
   document.getElementById('edit-sc-profile').value='chareidi';
   applyProfile('chareidi');
@@ -1001,6 +1048,8 @@ function readDisplayConfig(){
     audio_enabled: !!(document.getElementById('edit-sc-audio')||{}).checked,
     audio_url: ((document.getElementById('edit-sc-audiourl')||{}).value||'').trim(),
     audio_volume: parseInt((document.getElementById('edit-sc-audiovol')||{}).value,10)||40,
+    bg_images: _bgImgs.filter(function(u){return u && u.trim();}),
+    bg_sec: parseInt((document.getElementById('edit-sc-bgsec')||{}).value,10)||10,
     zm: (function(){
       var la=document.getElementById('edit-sc-lat'), ln=document.getElementById('edit-sc-lng'),
           el=document.getElementById('edit-sc-elev');
@@ -1015,6 +1064,40 @@ function readDisplayConfig(){
   return out;
 }
 var _rawDC = {};   /* ה-display_config כפי שנטען מהשרת — בסיס למיזוג בשמירה */
+var _bgImgs = [];
+var _SITES=[], _ROOMS=[];
+function loadSitesRooms(){
+  return Promise.all([
+    sf('sites?select=id,name&order=name'),
+    sf('rooms?select=id,site_id,name,display_name&active=eq.true&order=sort_order')
+  ]).then(function(r){
+    _SITES=Array.isArray(r[0])?r[0]:[]; _ROOMS=Array.isArray(r[1])?r[1]:[];
+    var ss=document.getElementById('edit-sc-site');
+    if(ss) ss.innerHTML='<option value="">— ללא אתר —</option>'+
+      _SITES.map(function(x){return '<option value="'+x.id+'">'+esc2(x.name)+'</option>';}).join('');
+  }).catch(function(){});
+}
+function esc2(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
+function siteChanged(){ fillRooms(''); markCustom(); }
+function fillRooms(sel){
+  var sid=(document.getElementById('edit-sc-site')||{}).value||'';
+  var rs=document.getElementById('edit-sc-room'); if(!rs)return;
+  var list=_ROOMS.filter(function(r){return r.site_id===sid;});
+  rs.innerHTML='<option value="">— ללא חדר —</option>'+
+    list.map(function(r){return '<option value="'+r.id+'"'+(sel===r.id?' selected':'')+'>'+
+      esc2(r.display_name||r.name)+'</option>';}).join('');
+}
+function bgDraw(){
+  var w=document.getElementById('bgList'); if(!w)return;
+  w.innerHTML=_bgImgs.map(function(u,i){
+    return '<div style="display:flex;gap:6px;margin-bottom:5px;align-items:center;">'+
+      '<input value="'+String(u).replace(/"/g,'&quot;')+'" placeholder="כתובת תמונה" '+
+      'oninput="_bgImgs['+i+']=this.value;markCustom()" style="flex:1;">'+
+      '<button type="button" onclick="_bgImgs.splice('+i+',1);bgDraw();markCustom()" '+
+      'style="background:none;border:none;color:#8b949e;font-size:17px;cursor:pointer;">×</button></div>';
+  }).join('') || '<div style="font-size:12px;color:#6e7681;">אין תמונות — יוצג הרקע המובנה.</div>';
+}
+function bgAdd(){ _bgImgs.push(''); bgDraw(); markCustom(); }
 
 function fillDisplayConfig(cfg){
   cfg = cfg || {};
@@ -1036,6 +1119,9 @@ function fillDisplayConfig(cfg){
   var _zs=document.getElementById('edit-sc-zmsrc'); if(_zs) _zs.value = (cfg.zmanim_source==='engine')?'engine':'hebcal';
   var _or=document.getElementById('edit-sc-orient'); if(_or) _or.value = cfg.orientation || 'auto';
   var _wx=document.getElementById('edit-sc-wx'); if(_wx) _wx.value = cfg.weather_pos || 'off';
+  _bgImgs = Array.isArray(cfg.bg_images) ? cfg.bg_images.slice() : (cfg.bg_url?[cfg.bg_url]:[]);
+  bgDraw();
+  var _bs=document.getElementById('edit-sc-bgsec'); if(_bs) _bs.value = cfg.bg_sec || 10;
   var _ae=document.getElementById('edit-sc-audio');    if(_ae) _ae.checked = !!cfg.audio_enabled;
   var _au2=document.getElementById('edit-sc-audiourl'); if(_au2) _au2.value = cfg.audio_url || '';
   var _av=document.getElementById('edit-sc-audiovol');  if(_av){ _av.value = (cfg.audio_volume!=null?cfg.audio_volume:40);
@@ -1082,6 +1168,12 @@ function openEditScreen(sid){
   var sel=document.getElementById('edit-sc-co');
   sel.innerHTML=allCompanies.map(function(c){return '<option value="'+c.company_id+'"'+(c.company_id===s.company_id?' selected':'')+'>'+c.company_name+'</option>';}).join('');
   fillDisplayConfig(parseDC(s.display_config));
+  loadSitesRooms().then(function(){
+    var ss=document.getElementById('edit-sc-site'); if(ss) ss.value = s.site_id || '';
+    fillRooms(s.room_id || '');
+    var pp=document.getElementById('edit-sc-purpose');     if(pp) pp.value = s.purpose || 'main';
+    var mv=document.getElementById('edit-sc-minyanview');  if(mv) mv.value = s.minyan_view || 'list';
+  });
   document.getElementById('edit-sc-mtype').value = s.message_type || 'scroll';
   document.getElementById('edit-sc-msg').innerHTML = s.message || '';
   document.getElementById('edit-sc-pdfurl').value = s.pdf_url || '';
@@ -1104,6 +1196,11 @@ function saveScreen(){
   var exp=document.getElementById('edit-sc-expiry').value;
   if(!id||!name||!exp){toast('מלא את כל השדות');return;}
   var body={screen_id:id,building_name:name,company_id:co,license_expiry:exp};
+  /* שיוך לבית כנסת — עמודות אמיתיות בטבלה, לא בתוך display_config */
+  body.site_id     = (document.getElementById('edit-sc-site')||{}).value || null;
+  body.room_id     = (document.getElementById('edit-sc-room')||{}).value || null;
+  body.purpose     = (document.getElementById('edit-sc-purpose')||{}).value || 'main';
+  body.minyan_view = (document.getElementById('edit-sc-minyanview')||{}).value || 'list';
   body.display_config=JSON.stringify(readDisplayConfig());
   if(!orig){
     body.message='';body.message_type='scroll';

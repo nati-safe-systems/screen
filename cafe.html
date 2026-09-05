@@ -83,6 +83,11 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 .cdbig{font-size:2.6vh}
 .cdbig .num{font-size:3.6vh;font-weight:900;font-variant-numeric:tabular-nums;
   color:#fff;text-shadow:0 0 2vh rgba(255,204,0,.5)}
+#bgimg{position:fixed;inset:0;z-index:-2}
+.bgslide{position:absolute;inset:0;background-size:cover;background-position:center;
+  opacity:0;transition:opacity 1.8s ease-in-out}
+.bgslide.on{opacity:1}
+#bgveil{position:fixed;inset:0;background:rgba(4,8,18,.78);z-index:-1}
 .hide{display:none!important}
 
 /* מסך מאונך או צר — הפריסה מתארגנת מחדש */
@@ -101,6 +106,7 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
   .sc.p1 .nm{font-size:2.8vh}
 }
 </style></head><body>
+<div id="bgimg"></div><div id="bgveil"></div>
 
 <div class="hdr">בס"ד &nbsp;·&nbsp; <span id="siteName"></span></div>
 
@@ -678,13 +684,34 @@ function sf(p){return fetch(SB+"/rest/v1/"+p,{headers:{apikey:SK,Authorization:"
   .then(function(r){return r.json();});}
 
 var SITE=null, ROOMS=[], MINS=[], SPON=[], Z=null, ZDAY="";
+var _bgList=[], _bgIdx=0, _bgTimer=null;
+function setBg(list,sec){
+  if(typeof list==="string") list=[list];
+  list=(list||[]).filter(function(u){return u && String(u).trim();});
+  if(!list.length) return;
+  var wrap=document.getElementById("bgimg"); if(!wrap) return;
+  wrap.innerHTML="";
+  list.forEach(function(u,i){ var d=document.createElement("div");
+    d.className="bgslide"+(i===0?" on":""); d.style.backgroundImage="url("+u+")"; wrap.appendChild(d); });
+  _bgIdx=0; if(_bgTimer) clearInterval(_bgTimer);
+  if(list.length>1){ var ms=Math.max(3,(+sec||10))*1000;
+    _bgTimer=setInterval(function(){ var e=wrap.children; if(!e.length)return;
+      e[_bgIdx].classList.remove("on"); _bgIdx=(_bgIdx+1)%e.length; e[_bgIdx].classList.add("on"); }, ms); }
+}
+if(Q.get("bg")) setBg(Q.get("bg").split(","), Q.get("bgsec"));
 var PR={shacharit:"שחרית",mincha:"מנחה",arvit:"ערבית",selichot:"סליחות",other:"תפילה"};
 
 function load(){
   var q;
   if(SITE_ID)        q=Promise.resolve(SITE_ID);
-  else if(SCREEN_ID) q=sf("screens?screen_id=eq."+encodeURIComponent(SCREEN_ID)+"&select=site_id")
-                       .then(function(r){return (r&&r[0])?r[0].site_id:null;});
+  else if(SCREEN_ID) q=sf("screens?screen_id=eq."+encodeURIComponent(SCREEN_ID)+"&select=site_id,display_config")
+                       .then(function(r){
+                         if(!r||!r[0])return null;
+                         try{ var dc=r[0].display_config; if(typeof dc==="string") dc=JSON.parse(dc);
+                              if(dc){ var im=Array.isArray(dc.bg_images)?dc.bg_images:(dc.bg_url?[dc.bg_url]:[]);
+                                      if(im.length) setBg(im, dc.bg_sec); } }catch(e){}
+                         return r[0].site_id;
+                       });
   /* בלי פרמטרים — נטען האתר הראשון. נוח לבדיקה מהטלפון. */
   else               q=sf("sites?select=id&order=name&limit=1")
                        .then(function(r){return (r&&r[0])?r[0].id:null;});
