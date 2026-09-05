@@ -351,31 +351,31 @@ body.portrait .wx-hi,body.portrait .wx-lo{font-size:calc(var(--sbs) * 0.66vw);}
 /* מזג אוויר ברצועת שם הבניין — פינה שמאלית עליונה */
 #building-title-bg > .wx{
   position:absolute!important;top:50%;left:14px;transform:translateY(-50%);
-  z-index:7;margin:0;padding:.55vw .9vw;max-width:23%;
+  z-index:7;margin:0;padding:.35vw .7vw;max-width:none;overflow:visible;
   background:linear-gradient(180deg,rgba(0,92,186,0.9),rgba(0,46,105,0.94));
-  border:1px solid rgba(130,205,255,0.75);border-radius:.6vw;
-  display:flex!important;flex-direction:column;align-items:center;gap:.3vw;
-  color:#eaf6ff;white-space:nowrap;line-height:1.2;
-  box-shadow:0 2px 10px rgba(0,0,0,0.5), inset 0 0 12px rgba(130,205,255,0.15);}
+  border:1px solid rgba(130,205,255,0.75);border-radius:.5vw;
+  display:flex!important;flex-direction:column;align-items:center;gap:.18vw;
+  color:#eaf6ff;white-space:nowrap;line-height:1.15;
+  box-shadow:0 2px 8px rgba(0,0,0,0.45), inset 0 0 10px rgba(130,205,255,0.13);}
 
 #building-title-bg > .wx .wx-ttl{display:block;width:100%;text-align:center;
-  font-size:.72vw;font-weight:800;color:#bfe3ff;letter-spacing:.04vw;
-  border-bottom:1px solid rgba(255,255,255,0.25);padding-bottom:.22vw;}
+  font-size:.6vw;font-weight:800;color:#bfe3ff;letter-spacing:.02vw;
+  border-bottom:1px solid rgba(255,255,255,0.25);padding-bottom:.14vw;}
 
-#building-title-bg > .wx .wx-now{display:flex;flex-direction:row;align-items:center;gap:.45vw;}
-#building-title-bg > .wx .wx-ic svg{width:1.9vw;height:1.9vw;display:block;}
-#building-title-bg > .wx .wx-t{font-size:1.9vw;font-weight:900;color:#fff;line-height:1;}
-#building-title-bg > .wx .wx-d{display:block;font-size:.72vw;color:#cfe8ff;font-weight:600;}
+#building-title-bg > .wx .wx-now{display:flex;flex-direction:row;align-items:center;gap:.35vw;}
+#building-title-bg > .wx .wx-ic svg{width:1.35vw;height:1.35vw;display:block;}
+#building-title-bg > .wx .wx-t{font-size:1.35vw;font-weight:900;color:#fff;line-height:1;}
+#building-title-bg > .wx .wx-d{display:block;font-size:.6vw;color:#cfe8ff;font-weight:600;}
 
 #building-title-bg > .wx .wx-days{display:flex;flex-direction:row;justify-content:center;
-  gap:.9vw;width:100%;margin:0;border-top:1px solid rgba(255,255,255,0.22);
-  border-right:none;padding:.25vw 0 0 0;}
-#building-title-bg > .wx .wx-day{display:flex;align-items:center;gap:.22vw;}
-#building-title-bg > .wx .wx-dl{font-size:.7vw;color:#bfe3ff;min-width:auto;opacity:1;}
-#building-title-bg > .wx .wx-di svg{width:.95vw;height:.95vw;display:block;}
-#building-title-bg > .wx .wx-hi{font-size:.85vw;color:#ffd08a;font-weight:800;}
-#building-title-bg > .wx .wx-lo{font-size:.85vw;color:#9fd4ff;font-weight:800;}
-#building-title-bg > .wx .wx-sep{font-size:.7vw;opacity:.5;}
+  gap:.7vw;width:100%;margin:0;border-top:1px solid rgba(255,255,255,0.22);
+  border-right:none;padding:.16vw 0 0 0;}
+#building-title-bg > .wx .wx-day{display:flex;align-items:center;gap:.18vw;}
+#building-title-bg > .wx .wx-dl{font-size:.58vw;color:#bfe3ff;min-width:auto;opacity:1;}
+#building-title-bg > .wx .wx-di svg{width:.75vw;height:.75vw;display:block;}
+#building-title-bg > .wx .wx-hi{font-size:.7vw;color:#ffd08a;font-weight:800;}
+#building-title-bg > .wx .wx-lo{font-size:.7vw;color:#9fd4ff;font-weight:800;}
+#building-title-bg > .wx .wx-sep{font-size:.58vw;opacity:.5;}
 body.portrait #building-title-bg > .wx{left:8px;padding:1.2vw 1.8vw;max-width:34%;border-radius:1.2vw;}
 body.portrait #building-title-bg > .wx .wx-ttl{font-size:1.5vw;}
 body.portrait #building-title-bg > .wx .wx-ic svg{width:3.6vw;height:3.6vw;}
@@ -2769,6 +2769,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 5.8</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 5.8.1</div>
 </body>
 </html>
