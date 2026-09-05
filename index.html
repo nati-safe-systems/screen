@@ -295,6 +295,7 @@ body.portrait #news-ticker .nt-label{font-size:2.2vw;}
   white-space:nowrap;overflow:hidden;
 }
 .sidebar.wx-on .wx{display:block;}
+#bc > .wx{display:flex;}
 .wx-ic{font-size:calc(var(--sbs,1) * 0.95vw);line-height:1;}
 .wx-t{font-size:calc(var(--sbs,1) * 1.0vw);font-weight:800;color:#fff;}
 .wx-d{font-size:calc(var(--sbs,1) * 0.75vw);font-weight:600;opacity:0.85;}
@@ -346,16 +347,25 @@ body.portrait.ticker-on > .ft{margin-bottom:60px;}
 body.portrait .wx-dl,body.portrait .wx-sep{font-size:calc(var(--sbs) * 0.58vw);}
 body.portrait .wx-hi,body.portrait .wx-lo{font-size:calc(var(--sbs) * 0.66vw);}
 
-/* מזג אוויר בכותרת המסך */
-.hdr .wx{position:absolute;left:8px;top:50%;transform:translateY(-50%);margin:0;
-  padding:3px 8px;background:rgba(0,0,0,0.32);border-color:rgba(255,255,255,0.22);
-  display:flex!important;align-items:center;gap:8px;}
-.hdr{position:relative;}
-.hdr .wx .wx-days{flex-direction:row;gap:9px;margin:0;border-top:none;border-right:1px solid rgba(255,255,255,0.2);
-  padding:0 9px 0 0;}
-.hdr .wx-t{font-size:1.05vw;}
-.hdr .wx-dl,.hdr .wx-hi,.hdr .wx-lo,.hdr .wx-sep{font-size:0.72vw;}
-.hdr .wx-d{display:none;}
+/* מזג אוויר ברצועת שם הבניין — פינה שמאלית עליונה */
+#bc > .wx{position:absolute!important;top:12px;left:16px;z-index:7;margin:0;
+  padding:6px 12px;background:rgba(0,0,0,0.42);border:1px solid rgba(160,215,255,0.35);
+  border-radius:11px;display:flex!important;align-items:center;gap:12px;
+  backdrop-filter:blur(3px);white-space:nowrap;}
+#bc > .wx .wx-now{gap:7px;}
+#bc > .wx .wx-t{font-size:1.5vw;color:#fff;}
+#bc > .wx .wx-d{font-size:0.85vw;opacity:0.9;}
+#bc > .wx .wx-days{flex-direction:column;gap:2px;margin:0;border-top:none;
+  border-right:1px solid rgba(255,255,255,0.22);padding:0 12px 0 0;}
+#bc > .wx .wx-day{gap:6px;}
+#bc > .wx .wx-dl{font-size:0.8vw;min-width:2.4em;}
+#bc > .wx .wx-hi,#bc > .wx .wx-lo{font-size:0.92vw;}
+#bc > .wx .wx-sep{font-size:0.78vw;}
+body.portrait #bc > .wx{top:8px;left:10px;padding:5px 9px;gap:8px;}
+body.portrait #bc > .wx .wx-t{font-size:3.2vw;}
+body.portrait #bc > .wx .wx-d{font-size:1.8vw;}
+body.portrait #bc > .wx .wx-dl,body.portrait #bc > .wx .wx-sep{font-size:1.6vw;}
+body.portrait #bc > .wx .wx-hi,body.portrait #bc > .wx .wx-lo{font-size:1.9vw;}
 
 /* מזג אוויר במסך השבת */
 #sho-wx{display:none;position:absolute;top:14px;left:16px;z-index:6;
@@ -992,7 +1002,7 @@ function wxEnsureEl(){
   var sb  = document.querySelector(".sidebar");
   if(!sb) return null;
   if(pos==="off"){ sb.classList.remove("wx-on"); if(old) old.remove(); return null; }
-  sb.classList.add("wx-on");
+  if(pos==="header") sb.classList.remove("wx-on"); else sb.classList.add("wx-on");
   if(old && old.getAttribute("data-pos")===pos) return old;
   if(old) old.remove();
   var el=document.createElement("div");
@@ -1006,8 +1016,9 @@ function wxEnsureEl(){
                  '<span class="wx-hi">--°</span><span class="wx-sep">/</span><span class="wx-lo">--°</span></div>'+
                '</div>';
   if(pos==="header"){
-    var hd=document.getElementById("protected-hdr");
-    if(hd) hd.appendChild(el);
+    /* פינה שמאלית עליונה של רצועת שם הבניין */
+    var bc=document.getElementById("bc");
+    if(bc) bc.appendChild(el); else return null;
   }else if(pos==="clock"){
     var anchor=document.getElementById("dh")||document.getElementById("timer");
     if(anchor&&anchor.parentNode) anchor.parentNode.insertBefore(el,anchor.nextSibling);
@@ -2496,6 +2507,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 5.0</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 5.0.1</div>
 </body>
 </html>
