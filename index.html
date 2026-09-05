@@ -336,13 +336,33 @@ body.portrait.ticker-on > .ft{margin-bottom:60px;}
 /* מזג אוויר מפורט */
 .wx-now{display:flex;align-items:center;justify-content:center;gap:7px;}
 .wx-ic svg,.wx-di svg{display:block;}
-.wx-days{display:flex;justify-content:center;gap:10px;margin-top:4px;
+.wx-days{display:flex;flex-direction:column;gap:2px;margin-top:4px;
   border-top:1px solid rgba(130,205,255,0.18);padding-top:3px;}
-.wx-day{display:flex;align-items:center;gap:4px;}
-.wx-dl{font-size:calc(var(--sbs,1) * 0.7vw);opacity:0.72;}
-.wx-dt{font-size:calc(var(--sbs,1) * 0.75vw);font-weight:700;}
-body.portrait .wx-dl{font-size:calc(var(--sbs) * 0.58vw);}
-body.portrait .wx-dt{font-size:calc(var(--sbs) * 0.62vw);}
+.wx-day{display:flex;align-items:center;gap:5px;justify-content:flex-start;white-space:nowrap;}
+.wx-dl{font-size:calc(var(--sbs,1) * 0.72vw);opacity:0.8;min-width:2.2em;text-align:right;font-weight:700;}
+.wx-hi{font-size:calc(var(--sbs,1) * 0.82vw);font-weight:800;color:#ffd08a;}
+.wx-sep{font-size:calc(var(--sbs,1) * 0.7vw);opacity:0.45;}
+.wx-lo{font-size:calc(var(--sbs,1) * 0.82vw);font-weight:800;color:#9fd4ff;}
+body.portrait .wx-dl,body.portrait .wx-sep{font-size:calc(var(--sbs) * 0.58vw);}
+body.portrait .wx-hi,body.portrait .wx-lo{font-size:calc(var(--sbs) * 0.66vw);}
+
+/* מזג אוויר בכותרת המסך */
+.hdr .wx{position:absolute;left:8px;top:50%;transform:translateY(-50%);margin:0;
+  padding:3px 8px;background:rgba(0,0,0,0.32);border-color:rgba(255,255,255,0.22);
+  display:flex!important;align-items:center;gap:8px;}
+.hdr{position:relative;}
+.hdr .wx .wx-days{flex-direction:row;gap:9px;margin:0;border-top:none;border-right:1px solid rgba(255,255,255,0.2);
+  padding:0 9px 0 0;}
+.hdr .wx-t{font-size:1.05vw;}
+.hdr .wx-dl,.hdr .wx-hi,.hdr .wx-lo,.hdr .wx-sep{font-size:0.72vw;}
+.hdr .wx-d{display:none;}
+
+/* מזג אוויר במסך השבת */
+#sho-wx{display:none;position:absolute;top:14px;left:16px;z-index:6;
+  align-items:center;gap:7px;background:rgba(0,0,0,0.35);
+  border:1px solid rgba(255,255,255,0.18);border-radius:9px;padding:5px 11px;
+  color:#e8f2ff;font-size:1vw;font-weight:700;}
+#sho-wx .s{font-size:0.8vw;opacity:0.8;font-weight:600;}
 .wm .wx-days{margin-top:2px;padding-top:2px;}
 
 /* מאונך — הקטנת השעון והתאריכים כדי לפנות מקום למידע יומי נוסף */
@@ -390,6 +410,7 @@ body.portrait #eruv .er-s{font-size:1.55vw;}
 
 <div id="sho">
   <div id="sho-bg"></div>
+  <div id="sho-wx"></div>
   <div id="sho-photos"></div>
   <div id="sho-dim"></div>
   <div class="sho-clock">
@@ -483,6 +504,36 @@ var SID   = new URLSearchParams(window.location.search).get("id") || "DEFAULT";
 var TOKEN = new URLSearchParams(window.location.search).get("token") || "";
 var PREVIEW = new URLSearchParams(window.location.search).get("preview") === "1";
 var ZMCHECK = new URLSearchParams(window.location.search).get("zmcheck") === "1";
+
+/* --- מעקב אחר טעינות מחדש ---
+   הדף עצמו לא מרענן את עצמו. אם הוא בכל זאת נטען מחדש, זה מגיע מבחוץ
+   (ה-WebView נהרג ומופעל שוב). כאן סופרים כדי לדעת אם וכמה. */
+(function(){
+  try{
+    var raw=localStorage.getItem("nsf_boot")||"[]", a=JSON.parse(raw);
+    a.push(Date.now()); while(a.length>60) a.shift();
+    localStorage.setItem("nsf_boot",JSON.stringify(a));
+    window._bootLog=a;
+  }catch(e){ window._bootLog=[]; }
+})();
+
+/* --- ציור מיידי מהערכים האחרונים ---
+   אם המסך נטען מחדש, הוא צובע מיד את מה שהיה, במקום להציג "טוען...".
+   כך גם אם יש רענון — הצופה לא רואה אותו. */
+(function(){
+  try{
+    var c=JSON.parse(localStorage.getItem("nsf_paint")||"{}");
+    for(var k in c){ var e=document.getElementById(k); if(e && c[k]) e.textContent=c[k]; }
+  }catch(e){}
+})();
+function paintCache(){
+  try{
+    var o={}, ids=["dg","dow","dh","par","ai"];
+    ids.forEach(function(id){var e=document.getElementById(id);
+      if(e && e.textContent && e.textContent.indexOf("טוען")===-1) o[id]=e.textContent;});
+    localStorage.setItem("nsf_paint",JSON.stringify(o));
+  }catch(e){}
+}
 window.addEventListener("load", function(){
   try{ applyOrientation(); }catch(e){}
   try{ updateEruv(); }catch(e){}
@@ -829,7 +880,7 @@ function parseDisplayConfig(raw){
     zmanim_source: (c.zmanim_source==="engine")?"engine":"hebcal", // מקור הזמנים
     zm: (c.zm && typeof c.zm==="object")?c.zm:{},                // lat/lng/elev/tzeitDeg/mgaDeg/rtMin
     orientation: (c.orientation==="portrait"||c.orientation==="landscape")?c.orientation:"auto",
-    weather_pos: (c.weather_pos==="clock"||c.weather_pos==="zmanim")?c.weather_pos:"off"
+    weather_pos: (c.weather_pos==="clock"||c.weather_pos==="zmanim"||c.weather_pos==="header")?c.weather_pos:"off"
   };
 }
 
@@ -946,13 +997,18 @@ function wxEnsureEl(){
   if(old) old.remove();
   var el=document.createElement("div");
   el.id="wx"; el.className="wx"; el.setAttribute("data-pos",pos);
-  el.innerHTML='<div class="wx-now"><span class="wx-ic"></span><span class="wx-t">--°</span>'+
-               '<span class="wx-d"></span></div>'+
+  el.innerHTML='<div class="wx-now"><span class="wx-ic"></span>'+
+               '<span class="wx-t">--°</span><span class="wx-d"></span></div>'+
                '<div class="wx-days">'+
-               '<span class="wx-day"><span class="wx-dl">היום</span><span class="wx-di"></span><span class="wx-dt">--</span></span>'+
-               '<span class="wx-day"><span class="wx-dl">מחר</span><span class="wx-di"></span><span class="wx-dt">--</span></span>'+
+               '<div class="wx-day"><span class="wx-dl">היום</span><span class="wx-di"></span>'+
+                 '<span class="wx-hi">--°</span><span class="wx-sep">/</span><span class="wx-lo">--°</span></div>'+
+               '<div class="wx-day"><span class="wx-dl">מחר</span><span class="wx-di"></span>'+
+                 '<span class="wx-hi">--°</span><span class="wx-sep">/</span><span class="wx-lo">--°</span></div>'+
                '</div>';
-  if(pos==="clock"){
+  if(pos==="header"){
+    var hd=document.getElementById("protected-hdr");
+    if(hd) hd.appendChild(el);
+  }else if(pos==="clock"){
     var anchor=document.getElementById("dh")||document.getElementById("timer");
     if(anchor&&anchor.parentNode) anchor.parentNode.insertBefore(el,anchor.nextSibling);
   }else{
@@ -982,9 +1038,18 @@ function wxFetch(){
     if(d.daily&&d.daily.temperature_2m_max){
       for(var i=0;i<2&&i<days.length;i++){
         var dc=(d.daily.weather_code||[])[i], di=WX_CODES[dc]||["","cloud"];
-        days[i].querySelector(".wx-di").innerHTML=wxIcon(di[1],13);
-        days[i].querySelector(".wx-dt").textContent=
-          Math.round(d.daily.temperature_2m_max[i])+"°/"+Math.round(d.daily.temperature_2m_min[i])+"°";
+        days[i].querySelector(".wx-di").innerHTML=wxIcon(di[1],14);
+        days[i].querySelector(".wx-hi").textContent=Math.round(d.daily.temperature_2m_max[i])+"°";
+        days[i].querySelector(".wx-lo").textContent=Math.round(d.daily.temperature_2m_min[i])+"°";
+        days[i].title=di[0];
+      }
+      /* עותק מוקטן למסך השבת */
+      var sw=document.getElementById("sho-wx");
+      if(sw){
+        sw.innerHTML=wxIcon(info[1],16)+
+          '<span>'+Math.round(d.current.temperature_2m)+'°</span>'+
+          '<span class="s">'+info[0]+'</span>';
+        sw.style.display="flex";
       }
     }
     /* כשקופסת זמני שבת מוצגת — מסמנים, כדי שמזג האוויר יתכווץ ולא יכסה כלום */
@@ -996,10 +1061,16 @@ function wxFetch(){
 function applyDisplayConfig(cfg){
   DC=cfg;
   window._zmSrc = (cfg && cfg.zmanim_source==="engine") ? "engine" : "hebcal";
-  window._orientation = (cfg && cfg.orientation) || "auto";
-  window._wxPos       = (cfg && cfg.weather_pos) || "off";
-  try{ applyOrientation(); }catch(e){}
-  try{ wxFetch(); }catch(e){}
+  var _newOr = (cfg && cfg.orientation) || "auto";
+  var _newWx = (cfg && cfg.weather_pos) || "off";
+  /* pollMsg קורא לכאן כל 15 שניות. בלי הבדיקות האלה היינו מסדרים מחדש
+     את הפריסה ומושכים מזג אוויר כל 15 שניות — עומס מיותר והבהוב במסך. */
+  var _orChanged = (_newOr !== window._orientation);
+  var _wxChanged = (_newWx !== window._wxPos);
+  window._orientation = _newOr;
+  window._wxPos       = _newWx;
+  if(_orChanged || window._isPortrait===undefined) { try{ applyOrientation(); }catch(e){} }
+  if(_wxChanged) { try{ wxFetch(); }catch(e){} }
   // בהירות תמונת הרקע (100=ללא שינוי, נמוך יותר=כהה יותר)
   var _bc=document.getElementById("bc");
   if(_bc){ var _bb=(cfg.bgBrightness>0)?cfg.bgBrightness:100; _bc.style.setProperty('--bg-bright',(_bb/100)); }
@@ -2158,6 +2229,20 @@ function zmRenderCheck(){
     }
   }catch(e){}
 
+  /* יומן טעינות — כמה פעמים המסך נטען מחדש וכל כמה זמן */
+  try{
+    var bl=window._bootLog||[];
+    if(bl.length>1){
+      var gaps=[];
+      for(var bi=1;bi<bl.length;bi++) gaps.push(Math.round((bl[bi]-bl[bi-1])/1000));
+      var avg=Math.round(gaps.reduce(function(a,b){return a+b;},0)/gaps.length);
+      h+='<div style="font-size:14px;font-weight:700;margin:16px 0 6px;">יומן טעינות של המסך</div>'+
+         '<div style="color:#8b949e">נרשמו '+bl.length+' טעינות · הפרש ממוצע '+avg+' שניות<br>'+
+         'הפרשים אחרונים (שניות): '+gaps.slice(-12).join(", ")+'<br>'+
+         'טעינה אחרונה: '+new Date(bl[bl.length-1]).toLocaleString("he-IL")+'</div>';
+    }
+  }catch(e){}
+
   h+='<div style="margin-top:16px;color:#8b949e">להסתרה: הסר <b>?zmcheck=1</b> מהכתובת.</div>';
   el.innerHTML=h;
 }
@@ -2402,6 +2487,7 @@ function start(){
         setInterval(function(){var t=tdy();if(t!==lad){fhcal(t,null);fparasha(t,function(){loadNextSat(null);});}},60000);
         setInterval(function(){if(Date.now()-llc>LCI)chkLic(null);},LCI);
         setInterval(pollMsg,15000);
+        setInterval(paintCache,30000); paintCache();
       });
     });
   });
@@ -2410,6 +2496,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 4.9</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 5.0</div>
 </body>
 </html>
