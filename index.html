@@ -1066,7 +1066,12 @@ function wxFetch(){
     /* כשקופסת זמני שבת מוצגת — מסמנים, כדי שמזג האוויר יתכווץ ולא יכסה כלום */
     var sb2=document.querySelector(".sidebar"), shb=document.getElementById("shb");
     if(sb2) sb2.classList.toggle("shabbat-on", !!(shb && shb.style.display!=="none" && shb.offsetHeight>0));
-  }).catch(function(){});
+  }).catch(function(e){
+    window._wxState="שגיאה: "+(e && e.message ? e.message : e);
+    window._wxFail=(window._wxFail||0)+1;
+    /* כשל — מנסים שוב בעוד דקה, עד 5 פעמים, במקום לחכות 15 דקות */
+    if(window._wxFail<=5) setTimeout(wxFetch,60000);
+  });
 }
 
 function applyDisplayConfig(cfg){
@@ -2240,6 +2245,15 @@ function zmRenderCheck(){
     }
   }catch(e){}
 
+  /* מצב מזג האוויר */
+  h+='<div style="font-size:14px;font-weight:700;margin:16px 0 6px;">מזג אוויר — מצב החיבור</div>'+
+     '<div style="color:#8b949e;word-break:break-all;line-height:1.6">'+
+     'מיקום בתצוגה: <b>'+(window._wxPos||"off")+'</b><br>'+
+     'סטטוס: <b style="color:'+((window._wxState||"").indexOf("תקין")===0?"#3fb950":"#ff6b6b")+'">'+
+       (window._wxState||"טרם נשלחה בקשה")+'</b><br>'+
+     (window._wxHttp?('קוד HTTP: '+window._wxHttp+'<br>'):'')+
+     'כתובת: '+(window._wxUrl||"—")+'</div>';
+
   /* יומן טעינות — כמה פעמים המסך נטען מחדש וכל כמה זמן */
   try{
     var bl=window._bootLog||[];
@@ -2507,6 +2521,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 5.0.1</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 5.0.2</div>
 </body>
 </html>
