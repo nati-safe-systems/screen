@@ -567,6 +567,8 @@ window.addEventListener("load", function(){
   try{ applyOrientation(); }catch(e){}
   try{ updateEruv(); }catch(e){}
   setInterval(function(){ try{ updateEruv(); }catch(e){} }, 60*1000);
+  /* בדיקת מוזיקה כל דקה — כך היא נכבית לבד בכניסת שבת */
+  setInterval(function(){ try{ audioApply(); }catch(e){} }, 60*1000);
   try{ wxFetch(); }catch(e){}
   /* מציירים מיד תחזית שמורה, אם יש, כדי שלא יהיה חלון ריק */
   try{
@@ -928,7 +930,10 @@ function parseDisplayConfig(raw){
     zmanim_source: (c.zmanim_source==="engine")?"engine":"hebcal", // מקור הזמנים
     zm: (c.zm && typeof c.zm==="object")?c.zm:{},                // lat/lng/elev/tzeitDeg/mgaDeg/rtMin
     orientation: (c.orientation==="portrait"||c.orientation==="landscape")?c.orientation:"auto",
-    weather_pos: (c.weather_pos==="clock"||c.weather_pos==="zmanim"||c.weather_pos==="header")?c.weather_pos:"off"
+    weather_pos: (c.weather_pos==="clock"||c.weather_pos==="zmanim"||c.weather_pos==="header")?c.weather_pos:"off",
+    audio_enabled: !!c.audio_enabled,
+    audio_url: c.audio_url || "",
+    audio_volume: (c.audio_volume>=0 && c.audio_volume<=100) ? c.audio_volume : 40
   };
 }
 
@@ -1206,6 +1211,92 @@ function wxFetch(){
   });
 }
 
+
+/* ===================== מוזיקת רקע =====================
+   נדלקת רק בימי חול. נכבית לבד בכניסת שבת ובערבי חג,
+   וחוזרת אחרי צאת רבינו תם. אין צורך לגעת בכלום.
+
+   סוגי קישור נתמכים:
+     קובץ שמע ישיר (mp3/aac) או שידור רדיו — הכי אמין
+     YouTube — נתמך, אך הדפדפן עשוי לחסום ניגון אוטומטי
+   ספוטיפיי אינו נתמך לניגון מדף אינטרנט (דורש התחברות ו-SDK).
+   ==================================================== */
+
+/* האם עכשיו שבת, חג, או ערבם — כלומר זמן שבו לא מנגנים */
+function isRestNow(now){
+  try{
+    now = now || new Date();
+    if(!window._zmCache) return false;
+    var Z = window._zmCache;
+    var nowMin = now.getHours()*60 + now.getMinutes();
+    var rd = hc_gregToRD(now.getFullYear(), now.getMonth()+1, now.getDate());
+    var hT = hc_fromRD(rd), hN = hc_fromRD(rd+1);
+    var dow = now.getDay();
+
+    var todayRest = (dow===6) || isYomTovIL(hT.month,hT.day);
+    var tomorrowRest = (dow===5) || isYomTovIL(hN.month,hN.day);
+
+    /* מהדלקת הנרות של ערב שבת או ערב חג — מפסיקים */
+    if(tomorrowRest && nowMin >= (Z.candleLighting-1)) return true;
+    /* ביום עצמו — עד צאת רבינו תם */
+    if(todayRest && nowMin < Z.tzeitRT) return true;
+    return false;
+  }catch(e){ return false; }
+}
+
+var _au=null, _auState="";
+function audioApply(){
+  var on   = !!(DC && DC.audio_enabled);
+  var url  = (DC && DC.audio_url) || "";
+  var vol  = Math.max(0, Math.min(100, (DC && +DC.audio_volume) || 40)) / 100;
+  var rest = isRestNow(new Date());
+
+  if(!on || !url || rest){
+    if(_au){ _au.pause(); _au.remove(); _au=null; }
+    var yf=document.getElementById("yt-audio"); if(yf) yf.remove();
+    _auState = !on ? "כבוי בהגדרות" : (!url ? "לא הוגדר קישור" : "מושתק — שבת או חג");
+    return;
+  }
+
+  var isYT = /youtube\.com|youtu\.be/i.test(url);
+  if(isYT){
+    var id="";
+    var m1=url.match(/[?&]v=([A-Za-z0-9_\-]{6,})/);
+    var m2=url.match(/youtu\.be\/([A-Za-z0-9_\-]{6,})/);
+    var m3=url.match(/[?&]list=([A-Za-z0-9_\-]{6,})/);
+    var src="";
+    if(m3) src="https://www.youtube.com/embed/videoseries?list="+m3[1]+"&autoplay=1&loop=1";
+    else { id=(m1&&m1[1])||(m2&&m2[1])||""; if(!id){_auState="קישור יוטיוב לא מזוהה";return;}
+           src="https://www.youtube.com/embed/"+id+"?autoplay=1&loop=1&playlist="+id; }
+    var f=document.getElementById("yt-audio");
+    if(!f){ f=document.createElement("iframe"); f.id="yt-audio";
+      f.allow="autoplay"; f.style.cssText="position:fixed;width:1px;height:1px;opacity:0.01;bottom:0;left:0;border:0;pointer-events:none;";
+      document.body.appendChild(f); }
+    if(f.getAttribute("data-src")!==src){ f.setAttribute("data-src",src); f.src=src; }
+    _auState="מנגן (יוטיוב)";
+    return;
+  }
+
+  if(!_au){
+    _au=document.createElement("audio");
+    _au.loop=true; _au.preload="auto";
+    _au.style.display="none";
+    document.body.appendChild(_au);
+  }
+  if(_au.getAttribute("data-src")!==url){ _au.setAttribute("data-src",url); _au.src=url; }
+  _au.volume=vol;
+  if(_au.paused){
+    _au.play().then(function(){ _auState="מנגן · עוצמה "+Math.round(vol*100)+"%"; })
+      .catch(function(e){
+        _auState="הניגון נחסם — ממתין לאישור המכשיר";
+        /* דפדפנים חוסמים ניגון ללא מגע. מנסים שוב בכל אינטראקציה. */
+        var go=function(){ if(_au) _au.play().catch(function(){}); };
+        document.addEventListener("click",go,{once:true});
+        document.addEventListener("touchstart",go,{once:true});
+      });
+  } else { _auState="מנגן · עוצמה "+Math.round(vol*100)+"%"; }
+}
+
 function applyDisplayConfig(cfg){
   DC=cfg;
   window._zmSrc = (cfg && cfg.zmanim_source==="engine") ? "engine" : "hebcal";
@@ -1222,6 +1313,7 @@ function applyDisplayConfig(cfg){
     try{ wxFetch(); }catch(e){ window._wxState="שגיאת קוד: "+(e&&e.message?e.message:e); } }
   /* רצועת הפרסומות משנה את רוחב האזור המרכזי — מודדים מחדש */
   setTimeout(function(){ try{ fitWx(); }catch(e){} }, 300);
+  try{ audioApply(); }catch(e){ _auState="שגיאה: "+(e&&e.message?e.message:e); }
   // בהירות תמונת הרקע (100=ללא שינוי, נמוך יותר=כהה יותר)
   var _bc=document.getElementById("bc");
   if(_bc){ var _bb=(cfg.bgBrightness>0)?cfg.bgBrightness:100; _bc.style.setProperty('--bg-bright',(_bb/100)); }
@@ -2391,6 +2483,12 @@ function zmRenderCheck(){
      (window._wxHttp?('קוד HTTP: '+window._wxHttp+'<br>'):'')+
      'כתובת: '+(window._wxUrl||"—")+'</div>';
 
+  h+='<div style="font-size:14px;font-weight:700;margin:16px 0 6px;">מוזיקת רקע</div>'+
+     '<div style="color:#8b949e;word-break:break-all;line-height:1.6">'+
+     'מצב: <b>'+(_auState||"לא הופעל")+'</b><br>'+
+     'שבת/חג עכשיו: <b>'+(isRestNow(new Date())?"כן — מושתק":"לא")+'</b><br>'+
+     'קישור: '+((DC&&DC.audio_url)||"—")+'</div>';
+
   /* יומן טעינות — כמה פעמים המסך נטען מחדש וכל כמה זמן */
   try{
     var bl=window._bootLog||[];
@@ -2438,6 +2536,7 @@ function gzm2(n){
 function upd(){
   if(!ok)return;
   var now=new Date(),tm=gzm2(now),cur=now.getHours()+now.getMinutes()/60;
+  try{ if(window._zmE) window._zmCache=window._zmE; }catch(e){}
 
   var hcd=new Date(now);if(cur>=tm.tz)hcd.setDate(hcd.getDate()+1);
   var hd=ghd(hcd);
@@ -2670,6 +2769,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 5.7</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 5.8</div>
 </body>
 </html>

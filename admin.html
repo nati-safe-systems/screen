@@ -351,6 +351,24 @@ tr:hover td{background:rgba(128,0,0,0.05);}
         </div>
 
         <div class="field" style="margin-top:12px;">
+          <label>מוזיקת רקע</label>
+          <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:14px;color:#e6edf3;">
+            <input type="checkbox" id="edit-sc-audio" onchange="markCustom()"> הפעל מוזיקת רקע
+          </label>
+          <input id="edit-sc-audiourl" placeholder="קישור לקובץ שמע / שידור רדיו / יוטיוב" oninput="markCustom()" style="margin-top:6px;">
+          <div style="display:flex;align-items:center;gap:9px;margin-top:6px;">
+            <span style="font-size:13px;color:#8b949e;">עוצמה</span>
+            <input id="edit-sc-audiovol" type="range" min="0" max="100" oninput="document.getElementById('volShow').textContent=this.value+'%';markCustom()" style="flex:1;">
+            <span id="volShow" style="font-size:13px;color:#ffcc00;min-width:42px;">40%</span>
+          </div>
+          <div style="font-size:12px;color:#8b949e;margin-top:5px;line-height:1.5;">
+            נכבית אוטומטית בכניסת שבת ובערבי חג, וחוזרת אחרי צאת רבינו תם.<br>
+            <b>קישור לקובץ שמע או לשידור רדיו הוא הכי אמין.</b> יוטיוב נתמך אך עלול להיחסם.
+            ספוטיפיי אינו נתמך לניגון ממסך.
+          </div>
+        </div>
+
+        <div class="field" style="margin-top:12px;">
           <label>כיוון המסך</label>
           <select id="edit-sc-orient" onchange="markCustom()" style="margin-top:6px;">
             <option value="auto">אוטומטי — לפי המסך (ברירת מחדל)</option>
@@ -980,6 +998,9 @@ function readDisplayConfig(){
     zmanim_source: (document.getElementById('edit-sc-zmsrc')||{}).value === 'engine' ? 'engine' : 'hebcal',
     orientation: (document.getElementById('edit-sc-orient')||{}).value || 'auto',
     weather_pos: (document.getElementById('edit-sc-wx')||{}).value || 'off',
+    audio_enabled: !!(document.getElementById('edit-sc-audio')||{}).checked,
+    audio_url: ((document.getElementById('edit-sc-audiourl')||{}).value||'').trim(),
+    audio_volume: parseInt((document.getElementById('edit-sc-audiovol')||{}).value,10)||40,
     zm: (function(){
       var la=document.getElementById('edit-sc-lat'), ln=document.getElementById('edit-sc-lng'),
           el=document.getElementById('edit-sc-elev');
@@ -1015,6 +1036,10 @@ function fillDisplayConfig(cfg){
   var _zs=document.getElementById('edit-sc-zmsrc'); if(_zs) _zs.value = (cfg.zmanim_source==='engine')?'engine':'hebcal';
   var _or=document.getElementById('edit-sc-orient'); if(_or) _or.value = cfg.orientation || 'auto';
   var _wx=document.getElementById('edit-sc-wx'); if(_wx) _wx.value = cfg.weather_pos || 'off';
+  var _ae=document.getElementById('edit-sc-audio');    if(_ae) _ae.checked = !!cfg.audio_enabled;
+  var _au2=document.getElementById('edit-sc-audiourl'); if(_au2) _au2.value = cfg.audio_url || '';
+  var _av=document.getElementById('edit-sc-audiovol');  if(_av){ _av.value = (cfg.audio_volume!=null?cfg.audio_volume:40);
+    var _vs=document.getElementById('volShow'); if(_vs) _vs.textContent=_av.value+'%'; }
   var _zm=(cfg.zm&&typeof cfg.zm==='object')?cfg.zm:{};
   var _la=document.getElementById('edit-sc-lat');  if(_la) _la.value=(_zm.lat!=null?_zm.lat:'');
   var _ln=document.getElementById('edit-sc-lng');  if(_ln) _ln.value=(_zm.lng!=null?_zm.lng:'');
