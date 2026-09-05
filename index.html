@@ -551,6 +551,11 @@ window.addEventListener("load", function(){
   try{ updateEruv(); }catch(e){}
   setInterval(function(){ try{ updateEruv(); }catch(e){} }, 60*1000);
   try{ wxFetch(); }catch(e){}
+  /* מציירים מיד תחזית שמורה, אם יש, כדי שלא יהיה חלון ריק */
+  try{
+    var _c=JSON.parse(localStorage.getItem("nsf_wx")||"null");
+    if(_c && (Date.now()-_c.t) < 12*3600*1000) setTimeout(function(){ try{ wxPaint(_c.d); }catch(e){} },400);
+  }catch(e){}
   setInterval(function(){ try{ wxFetch(); }catch(e){} }, 15*60*1000);   /* רענון כל 15 דקות */
 
   /* שומר: אם הווידג'ט נעלם או שלא הגיעו אליו נתונים — מנסים שוב.
@@ -1043,6 +1048,35 @@ function wxEnsureEl(){
   return el;
 }
 
+
+/* ציור התחזית — מופרד, כדי שאפשר יהיה לצייר גם מתוך המטמון */
+function wxPaint(d){
+  var el=document.getElementById("wx"); if(!el||!d||!d.current) return;
+  var code=d.current.weather_code, info=WX_CODES[code]||["","cloud"];
+    var big=(window._isPortrait?20:22);
+    el.querySelector(".wx-ic").innerHTML=wxIcon(info[1],big);
+    el.querySelector(".wx-t").textContent=Math.round(d.current.temperature_2m)+"°";
+    el.querySelector(".wx-d").textContent=info[0];
+    var days=el.querySelectorAll(".wx-day");
+    if(d.daily&&d.daily.temperature_2m_max){
+      for(var i=0;i<2&&i<days.length;i++){
+        var dc=(d.daily.weather_code||[])[i], di=WX_CODES[dc]||["","cloud"];
+        days[i].querySelector(".wx-di").innerHTML=wxIcon(di[1],14);
+        days[i].querySelector(".wx-hi").textContent=Math.round(d.daily.temperature_2m_max[i])+"°";
+        days[i].querySelector(".wx-lo").textContent=Math.round(d.daily.temperature_2m_min[i])+"°";
+        days[i].title=di[0];
+      }
+      /* עותק מוקטן למסך השבת */
+      var sw=document.getElementById("sho-wx");
+      if(sw){
+        sw.innerHTML=wxIcon(info[1],16)+
+          '<span>'+Math.round(d.current.temperature_2m)+'°</span>'+
+          '<span class="s">'+info[0]+'</span>';
+        sw.style.display="flex";
+      }
+    }
+}
+
 function wxFetch(){
   var pos = window._wxPos || "off";
   if(pos==="off") { wxEnsureEl(); return; }
@@ -1071,51 +1105,48 @@ function wxFetch(){
   /* אם הפנייה הישירה נכשלת — מנסים דרך ה-GAS, שהקופסה כבר מדברת איתו
      בהצלחה. קופסאות אנדרואיד ישנות נכשלות מול תעודות אבטחה של שרתים
      מסוימים, בעוד ששרתי גוגל מזוהים אצלן תמיד. */
-  fetchT(url,9000)
-    .catch(function(e1){
-      window._wxState="ישיר נכשל ("+(e1.message||e1)+") · מנסה דרך GAS";
-      var gu=GAS+"?action=weather&lat="+c.lat+"&lon="+c.lng+"&_="+Date.now();
-      window._wxUrl=gu;
-      return fetchT(gu,12000);
-    })
+  /* מנסים כמה מסלולים בזה אחר זה. הראשון שמצליח — מנצח. */
+  var routes=[
+    {n:"ישיר", u:url, t:9000},
+    {n:"GAS",  u:GAS+"?action=weather&lat="+c.lat+"&lon="+c.lng+"&_="+Date.now(), t:12000}
+  ];
+  function tryRoute(i){
+    if(i>=routes.length) return Promise.reject(new Error("כל המסלולים נכשלו"));
+    window._wxUrl=routes[i].u; window._wxState="מנסה מסלול "+routes[i].n+"...";
+    return fetchT(routes[i].u,routes[i].t)
+      .then(function(d){ if(!d||!d.current) throw new Error("תשובה ריקה"); window._wxRoute=routes[i].n; return d; })
+      .catch(function(){ return tryRoute(i+1); });
+  }
+
+  tryRoute(0)
     .then(function(d){
     if(!d||!d.current){ window._wxState="התקבלה תשובה ריקה"; throw new Error("empty"); }
-    window._wxState="תקין · "+new Date().toLocaleTimeString("he-IL");
+    window._wxState="תקין ("+(window._wxRoute||"?")+") · "+new Date().toLocaleTimeString("he-IL");
     window._wxFail=0;
+    el.style.visibility="";
     var dOk=el.querySelector(".wx-d"); if(dOk) dOk.textContent="";
-    var code=d.current.weather_code, info=WX_CODES[code]||["","cloud"];
-    var big=(window._isPortrait?20:22);
-    el.querySelector(".wx-ic").innerHTML=wxIcon(info[1],big);
-    el.querySelector(".wx-t").textContent=Math.round(d.current.temperature_2m)+"°";
-    el.querySelector(".wx-d").textContent=info[0];
-    var days=el.querySelectorAll(".wx-day");
-    if(d.daily&&d.daily.temperature_2m_max){
-      for(var i=0;i<2&&i<days.length;i++){
-        var dc=(d.daily.weather_code||[])[i], di=WX_CODES[dc]||["","cloud"];
-        days[i].querySelector(".wx-di").innerHTML=wxIcon(di[1],14);
-        days[i].querySelector(".wx-hi").textContent=Math.round(d.daily.temperature_2m_max[i])+"°";
-        days[i].querySelector(".wx-lo").textContent=Math.round(d.daily.temperature_2m_min[i])+"°";
-        days[i].title=di[0];
-      }
-      /* עותק מוקטן למסך השבת */
-      var sw=document.getElementById("sho-wx");
-      if(sw){
-        sw.innerHTML=wxIcon(info[1],16)+
-          '<span>'+Math.round(d.current.temperature_2m)+'°</span>'+
-          '<span class="s">'+info[0]+'</span>';
-        sw.style.display="flex";
-      }
-    }
+    try{ localStorage.setItem("nsf_wx",JSON.stringify({t:Date.now(),d:d})); }catch(_e){}
+    wxPaint(d);
     /* כשקופסת זמני שבת מוצגת — מסמנים, כדי שמזג האוויר יתכווץ ולא יכסה כלום */
     var sb2=document.querySelector(".sidebar"), shb=document.getElementById("shb");
     if(sb2) sb2.classList.toggle("shabbat-on", !!(shb && shb.style.display!=="none" && shb.offsetHeight>0));
   }).catch(function(e){
     window._wxState="שגיאה: "+(e && e.message ? e.message : e);
     window._wxFail=(window._wxFail||0)+1;
-    /* מציגים את הסיבה על המסך עצמו, כדי שלא נצטרך לנחש */
-    var eel=document.getElementById("wx");
-    if(eel){ var dd=eel.querySelector(".wx-d");
-      if(dd) dd.textContent="אין חיבור ("+window._wxFail+")"; }
+
+    /* אם יש תחזית שמורה מהיום — מציגים אותה במקום כלום */
+    var used=false;
+    try{
+      var cch=JSON.parse(localStorage.getItem("nsf_wx")||"null");
+      if(cch && (Date.now()-cch.t) < 12*3600*1000){ wxPaint(cch.d); used=true;
+        window._wxState+=" · מוצגת תחזית שמורה"; }
+    }catch(_e){}
+
+    /* אין נתונים כלל — מסתירים במקום להציג הודעת תקלה על מסך של לקוח */
+    if(!used){
+      var eel=document.getElementById("wx");
+      if(eel) eel.style.visibility="hidden";
+    }
     if(window._wxFail<=10) setTimeout(wxFetch,60000);
   });
 }
@@ -2567,6 +2598,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 5.1</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 5.2</div>
 </body>
 </html>
