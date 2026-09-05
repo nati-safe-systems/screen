@@ -349,18 +349,20 @@ body.portrait .wx-hi,body.portrait .wx-lo{font-size:calc(var(--sbs) * 0.66vw);}
 
 /* מזג אוויר ברצועת שם הבניין — פינה שמאלית עליונה */
 #bc > .wx{position:absolute!important;top:12px;left:16px;z-index:7;margin:0;
-  padding:6px 12px;background:rgba(0,0,0,0.42);border:1px solid rgba(160,215,255,0.35);
-  border-radius:11px;display:flex!important;align-items:center;gap:12px;
+  padding:10px 18px;background:rgba(0,0,0,0.5);border:1.5px solid rgba(160,215,255,0.45);
+  border-radius:14px;display:flex!important;align-items:center;gap:18px;
   backdrop-filter:blur(3px);white-space:nowrap;}
-#bc > .wx .wx-now{gap:7px;}
-#bc > .wx .wx-t{font-size:1.5vw;color:#fff;}
-#bc > .wx .wx-d{font-size:0.85vw;opacity:0.9;}
-#bc > .wx .wx-days{flex-direction:column;gap:2px;margin:0;border-top:none;
-  border-right:1px solid rgba(255,255,255,0.22);padding:0 12px 0 0;}
-#bc > .wx .wx-day{gap:6px;}
-#bc > .wx .wx-dl{font-size:0.8vw;min-width:2.4em;}
-#bc > .wx .wx-hi,#bc > .wx .wx-lo{font-size:0.92vw;}
-#bc > .wx .wx-sep{font-size:0.78vw;}
+#bc > .wx .wx-now{gap:9px;flex-direction:column;}
+#bc > .wx .wx-ic svg{width:2.6vw;height:2.6vw;}
+#bc > .wx .wx-t{font-size:2.6vw;color:#fff;font-weight:900;line-height:1;}
+#bc > .wx .wx-d{font-size:1.05vw;opacity:0.95;color:#ffd08a;}
+#bc > .wx .wx-days{flex-direction:column;gap:5px;margin:0;border-top:none;
+  border-right:1.5px solid rgba(255,255,255,0.28);padding:0 18px 0 0;}
+#bc > .wx .wx-day{gap:9px;}
+#bc > .wx .wx-dl{font-size:1.25vw;min-width:2.6em;opacity:1;}
+#bc > .wx .wx-hi,#bc > .wx .wx-lo{font-size:1.45vw;}
+#bc > .wx .wx-sep{font-size:1.1vw;}
+#bc > .wx .wx-di svg{width:1.5vw;height:1.5vw;}
 body.portrait #bc > .wx{top:8px;left:10px;padding:5px 9px;gap:8px;}
 body.portrait #bc > .wx .wx-t{font-size:3.2vw;}
 body.portrait #bc > .wx .wx-d{font-size:1.8vw;}
@@ -1050,8 +1052,37 @@ function wxFetch(){
             "&current=temperature_2m,weather_code"+
             "&daily=weather_code,temperature_2m_max,temperature_2m_min"+
             "&timezone=Asia%2FJerusalem&forecast_days=2";
-  fetch(url).then(function(r){return r.json();}).then(function(d){
-    if(!d||!d.current) return;
+  window._wxUrl=url; window._wxState="שולח בקשה ישירה...";
+
+  /* בקשה עם מגבלת זמן. בלי זה, אם הרשת בולעת את הפנייה בשקט,
+     ה-fetch תלוי לנצח והמסך נשאר על "טוען". */
+  function fetchT(u,ms){
+    return new Promise(function(res,rej){
+      var done=false;
+      var t=setTimeout(function(){ if(!done){done=true;rej(new Error("timeout"));} }, ms||9000);
+      fetch(u,{cache:"no-store"}).then(function(r){
+        if(done)return; done=true; clearTimeout(t);
+        window._wxHttp=r.status;
+        if(!r.ok) rej(new Error("HTTP "+r.status)); else res(r.json());
+      }).catch(function(err){ if(done)return; done=true; clearTimeout(t); rej(err); });
+    });
+  }
+
+  /* אם הפנייה הישירה נכשלת — מנסים דרך ה-GAS, שהקופסה כבר מדברת איתו
+     בהצלחה. קופסאות אנדרואיד ישנות נכשלות מול תעודות אבטחה של שרתים
+     מסוימים, בעוד ששרתי גוגל מזוהים אצלן תמיד. */
+  fetchT(url,9000)
+    .catch(function(e1){
+      window._wxState="ישיר נכשל ("+(e1.message||e1)+") · מנסה דרך GAS";
+      var gu=GAS+"?action=weather&lat="+c.lat+"&lon="+c.lng+"&_="+Date.now();
+      window._wxUrl=gu;
+      return fetchT(gu,12000);
+    })
+    .then(function(d){
+    if(!d||!d.current){ window._wxState="התקבלה תשובה ריקה"; throw new Error("empty"); }
+    window._wxState="תקין · "+new Date().toLocaleTimeString("he-IL");
+    window._wxFail=0;
+    var dOk=el.querySelector(".wx-d"); if(dOk) dOk.textContent="";
     var code=d.current.weather_code, info=WX_CODES[code]||["","cloud"];
     var big=(window._isPortrait?20:22);
     el.querySelector(".wx-ic").innerHTML=wxIcon(info[1],big);
@@ -2536,6 +2567,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 5.0.3</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 5.1</div>
 </body>
 </html>
