@@ -1093,11 +1093,13 @@ function wxFetch(){
 
   /* בקשה עם מגבלת זמן. בלי זה, אם הרשת בולעת את הפנייה בשקט,
      ה-fetch תלוי לנצח והמסך נשאר על "טוען". */
-  function fetchT(u,ms){
+  function fetchT(u,ms,isSb){
     return new Promise(function(res,rej){
       var done=false;
       var t=setTimeout(function(){ if(!done){done=true;rej(new Error("timeout"));} }, ms||9000);
-      fetch(u,{cache:"no-store"}).then(function(r){
+      var opt={cache:"no-store"};
+      if(isSb) opt.headers={apikey:SKEY,Authorization:"Bearer "+SKEY};
+      fetch(u,opt).then(function(r){
         if(done)return; done=true; clearTimeout(t);
         window._wxHttp=r.status;
         if(!r.ok) rej(new Error("HTTP "+r.status)); else res(r.json());
@@ -1109,16 +1111,39 @@ function wxFetch(){
      בהצלחה. קופסאות אנדרואיד ישנות נכשלות מול תעודות אבטחה של שרתים
      מסוימים, בעוד ששרתי גוגל מזוהים אצלן תמיד. */
   /* מנסים כמה מסלולים בזה אחר זה. הראשון שמצליח — מנצח. */
+  /* מסלול ראשון: Supabase. הקופסאות מדברות איתו בהצלחה,
+     והוא זה שמושך את התחזית מבחוץ במקומן. */
+  var wid = (Math.round(c.lat*100)/100)+","+(Math.round(c.lng*100)/100);
+  var sbUrl = SUPA+"/rest/v1/weather_cache?id=eq."+encodeURIComponent(wid)+"&select=data,updated_at";
+
   var routes=[
-    {n:"ישיר", u:url, t:9000},
-    {n:"GAS",  u:GAS+"?action=weather&lat="+c.lat+"&lon="+c.lng+"&_="+Date.now(), t:12000}
+    {n:"Supabase", u:sbUrl, t:10000, sb:true},
+    {n:"ישיר",     u:url,   t:9000},
+    {n:"GAS",      u:GAS+"?action=weather&lat="+c.lat+"&lon="+c.lng+"&_="+Date.now(), t:12000}
   ];
   function tryRoute(i){
     if(i>=routes.length) return Promise.reject(new Error("כל המסלולים נכשלו"));
     window._wxUrl=routes[i].u; window._wxState="מנסה מסלול "+routes[i].n+"...";
-    return fetchT(routes[i].u,routes[i].t)
-      .then(function(d){ if(!d||!d.current) throw new Error("תשובה ריקה"); window._wxRoute=routes[i].n; return d; })
+    return fetchT(routes[i].u,routes[i].t,routes[i].sb)
+      .then(function(d){
+        if(routes[i].sb){
+          if(!d || !d.length || !d[0].data) throw new Error("אין שורה במסד עבור "+wid);
+          d = d[0].data;
+        }
+        if(!d||!d.current) throw new Error("תשובה ריקה");
+        window._wxRoute=routes[i].n; return d;
+      })
       .catch(function(){ return tryRoute(i+1); });
+  }
+
+  /* אין שורה למיקום הזה? יוצרים אותה, והשרת ימלא בריענון הבא */
+  function ensureRow(){
+    try{
+      fetch(SUPA+"/rest/v1/weather_cache",{method:"POST",
+        headers:{apikey:SKEY,Authorization:"Bearer "+SKEY,"Content-Type":"application/json",
+                 Prefer:"resolution=ignore-duplicates,return=minimal"},
+        body:JSON.stringify({id:wid,lat:c.lat,lng:c.lng})}).catch(function(){});
+    }catch(e){}
   }
 
   tryRoute(0)
@@ -1150,6 +1175,7 @@ function wxFetch(){
       var eel=document.getElementById("wx");
       if(eel) eel.style.visibility="hidden";
     }
+    ensureRow();
     if(window._wxFail<=10) setTimeout(wxFetch,60000);
   });
 }
@@ -1166,7 +1192,8 @@ function applyDisplayConfig(cfg){
   window._orientation = _newOr;
   window._wxPos       = _newWx;
   if(_orChanged || window._isPortrait===undefined) { try{ applyOrientation(); }catch(e){} }
-  if(_wxChanged) { window._wxFail=0; try{ wxFetch(); }catch(e){} }
+  if(_wxChanged) { window._wxFail=0;
+    try{ wxFetch(); }catch(e){ window._wxState="שגיאת קוד: "+(e&&e.message?e.message:e); } }
   // בהירות תמונת הרקע (100=ללא שינוי, נמוך יותר=כהה יותר)
   var _bc=document.getElementById("bc");
   if(_bc){ var _bb=(cfg.bgBrightness>0)?cfg.bgBrightness:100; _bc.style.setProperty('--bg-bright',(_bb/100)); }
@@ -2601,6 +2628,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 5.3</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 5.3.1</div>
 </body>
 </html>
