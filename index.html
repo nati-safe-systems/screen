@@ -295,7 +295,7 @@ body.portrait #news-ticker .nt-label{font-size:2.2vw;}
   white-space:nowrap;overflow:hidden;
 }
 .sidebar.wx-on .wx{display:block;}
-#bc > .wx{display:flex;}
+#building-title-bg > .wx{display:flex;}
 .wx-ic{font-size:calc(var(--sbs,1) * 0.95vw);line-height:1;}
 .wx-t{font-size:calc(var(--sbs,1) * 1.0vw);font-weight:800;color:#fff;}
 .wx-d{font-size:calc(var(--sbs,1) * 0.75vw);font-weight:600;opacity:0.85;}
@@ -348,7 +348,7 @@ body.portrait .wx-dl,body.portrait .wx-sep{font-size:calc(var(--sbs) * 0.58vw);}
 body.portrait .wx-hi,body.portrait .wx-lo{font-size:calc(var(--sbs) * 0.66vw);}
 
 /* מזג אוויר ברצועת שם הבניין — פינה שמאלית עליונה */
-#bc > .wx{position:absolute!important;top:50%;left:10px;transform:translateY(-50%);
+#building-title-bg > .wx{position:absolute!important;top:50%;left:10px;transform:translateY(-50%);
   z-index:7;margin:0;padding:.45em .8em;
   background:linear-gradient(180deg,rgba(0,92,186,0.88),rgba(0,48,108,0.92));
   border:1px solid rgba(130,205,255,0.7);border-radius:.7em;
@@ -356,23 +356,23 @@ body.portrait .wx-hi,body.portrait .wx-lo{font-size:calc(var(--sbs) * 0.66vw);}
   white-space:nowrap;color:#eaf6ff;line-height:1.15;
   font-size:13px;   /* נקבע מחדש בקוד לפי רוחב האזור */
   box-shadow:0 2px 9px rgba(0,0,0,0.5), inset 0 0 10px rgba(130,205,255,0.15);}
-#bc > .wx .wx-now{flex-direction:row;align-items:center;gap:.4em;}
-#bc > .wx .wx-ic svg{width:1.7em;height:1.7em;display:block;}
-#bc > .wx .wx-t{font-size:1.45em;color:#fff;font-weight:900;}
-#bc > .wx .wx-d{display:none;}
-#bc > .wx .wx-days{flex-direction:column;gap:.12em;margin:0;border-top:none;
+#building-title-bg > .wx .wx-now{flex-direction:row;align-items:center;gap:.4em;}
+#building-title-bg > .wx .wx-ic svg{width:1.7em;height:1.7em;display:block;}
+#building-title-bg > .wx .wx-t{font-size:1.45em;color:#fff;font-weight:900;}
+#building-title-bg > .wx .wx-d{display:none;}
+#building-title-bg > .wx .wx-days{flex-direction:column;gap:.12em;margin:0;border-top:none;
   border-right:1px solid rgba(255,255,255,0.28);padding:0 .7em 0 0;}
-#bc > .wx .wx-day{gap:.35em;}
-#bc > .wx .wx-dl{font-size:.72em;min-width:2.1em;opacity:1;color:#bfe3ff;}
-#bc > .wx .wx-hi{font-size:.82em;color:#ffd08a;}
-#bc > .wx .wx-lo{font-size:.82em;color:#9fd4ff;}
-#bc > .wx .wx-sep{font-size:.7em;}
-#bc > .wx .wx-di svg{width:.95em;height:.95em;display:block;}
-body.portrait #bc > .wx{top:8px;left:10px;padding:5px 9px;gap:8px;}
-body.portrait #bc > .wx .wx-t{font-size:3.2vw;}
-body.portrait #bc > .wx .wx-d{font-size:1.8vw;}
-body.portrait #bc > .wx .wx-dl,body.portrait #bc > .wx .wx-sep{font-size:1.6vw;}
-body.portrait #bc > .wx .wx-hi,body.portrait #bc > .wx .wx-lo{font-size:1.9vw;}
+#building-title-bg > .wx .wx-day{gap:.35em;}
+#building-title-bg > .wx .wx-dl{font-size:.72em;min-width:2.1em;opacity:1;color:#bfe3ff;}
+#building-title-bg > .wx .wx-hi{font-size:.82em;color:#ffd08a;}
+#building-title-bg > .wx .wx-lo{font-size:.82em;color:#9fd4ff;}
+#building-title-bg > .wx .wx-sep{font-size:.7em;}
+#building-title-bg > .wx .wx-di svg{width:.95em;height:.95em;display:block;}
+body.portrait #building-title-bg > .wx{top:8px;left:10px;padding:5px 9px;gap:8px;}
+body.portrait #building-title-bg > .wx .wx-t{font-size:3.2vw;}
+body.portrait #building-title-bg > .wx .wx-d{font-size:1.8vw;}
+body.portrait #building-title-bg > .wx .wx-dl,body.portrait #building-title-bg > .wx .wx-sep{font-size:1.6vw;}
+body.portrait #building-title-bg > .wx .wx-hi,body.portrait #building-title-bg > .wx .wx-lo{font-size:1.9vw;}
 
 /* מזג אוויר במסך השבת */
 #sho-wx{display:none;position:absolute;top:14px;left:16px;z-index:6;
@@ -1042,9 +1042,10 @@ function wxEnsureEl(){
                  '<span class="wx-hi">--°</span><span class="wx-sep">/</span><span class="wx-lo">--°</span></div>'+
                '</div>';
   if(pos==="header"){
-    /* פינה שמאלית עליונה של רצועת שם הבניין */
-    var bc=document.getElementById("bc");
-    if(bc) bc.appendChild(el); else return null;
+    /* בתוך רצועת שם הבניין עצמה — כך המרכוז האנכי נמדד מולה */
+    var band=document.getElementById("building-title-bg");
+    if(band) band.appendChild(el);
+    else { var bc=document.getElementById("bc"); if(bc) bc.appendChild(el); else return null; }
   }else if(pos==="clock"){
     var anchor=document.getElementById("dh")||document.getElementById("timer");
     if(anchor&&anchor.parentNode) anchor.parentNode.insertBefore(el,anchor.nextSibling);
@@ -1062,20 +1063,17 @@ function wxEnsureEl(){
    בנוסף, הכותרת מקבלת ריפוד שמונע ממנה לרוץ מתחת לווידג'ט. */
 function fitWx(){
   var el=document.getElementById("wx"), bc=document.getElementById("bc");
-  if(!el || !bc || el.parentNode!==bc) return;
+  var band=document.getElementById("building-title-bg");
+  if(!el || !bc || !band || el.parentNode!==band) return;
   var w=bc.clientWidth||0; if(!w) return;
   var fs=Math.round(Math.max(9, Math.min(17, w/72)));
   el.style.fontSize=fs+"px";
-  var t=document.getElementById("building-title");
-  if(t){
-    var need=el.offsetWidth+20;
-    /* אם אין מספיק מקום לשניהם — מכווצים עוד */
-    if(need > w*0.34){ fs=Math.max(8, Math.round(fs*(w*0.34)/need)); el.style.fontSize=fs+"px"; need=el.offsetWidth+20; }
-    t.style.paddingLeft = need+"px";
-    t.style.paddingRight = "20px";
-    t.style.left="auto"; t.style.right="0"; t.style.transform="none";
-    t.style.width="100%"; t.style.textAlign="center";
-    t.style.alignItems="center";
+  /* לא נוגעים בעיצוב הכותרת. במקום זה מגבילים את הווידג'ט
+     לרבע מרוחב האזור, כך שלעולם לא יגיע לטקסט שבמרכז. */
+  var maxW = w*0.25;
+  if(el.offsetWidth > maxW){
+    fs = Math.max(8, Math.floor(fs * maxW / el.offsetWidth));
+    el.style.fontSize = fs+"px";
   }
 }
 
@@ -2657,6 +2655,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 5.5</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 5.5.1</div>
 </body>
 </html>
