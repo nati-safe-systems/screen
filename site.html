@@ -60,7 +60,7 @@ button.dz:hover{color:#ff6b6b}
 <div class="autos">אין כפתור שמירה — כל שדה נשמר לבד ברגע שאתה יוצא ממנו. אישור ירוק יופיע בפינה.</div>
 <div id="msg" class="msg"></div>
 <div id="saved">נשמר ✓</div>
-<datalist id="catlist"><option value="פרנס היום"><option value="פרנס הקפה"><option value="פרנס הכיבוד"><option value="נר למאור"><option value="פרנס המתמידים"><option value="תורם"><option value="הקדשה"></datalist>
+<datalist id="catlist"><option value="פרנס היום"><option value="פרנס הקפה"><option value="פרנס החלב"><option value="פרנס הסוכר"><option value="פרנס ארוחת הבוקר"><option value="פרנס הכיבוד"><option value="פרנס החשמל"><option value="נר למאור"><option value="פרנס הנייר"><option value="ממתקים לילדים"><option value="פרנס המתמידים"><option value="תורם"><option value="הקדשה"></datalist>
 
 <select id="siteSel" onchange="pickSite()" style="display:none"></select>
 <div id="siteCfg" class="hide"><input id="s_name"><input id="s_lat"><input id="s_lng"><input id="s_elev"><input id="s_candle"></div>
@@ -579,7 +579,8 @@ function saveLater(key, fn){
   _dq[key]={t:setTimeout(function(){ delete _dq[key]; fn(); }, 2500)};
 }
 var PRIO={1:"1 — ענק ובולט",2:"2 — גדול",3:"3 — רגיל",4:"4 — קטן",5:"5 — הקטן ביותר"};
-var CATS=["פרנס היום","פרנס הקפה","פרנס הכיבוד","נר למאור","פרנס המתמידים","תורם","הקדשה"];
+var CATS=["פרנס היום","פרנס הקפה","פרנס החלב","פרנס הסוכר","פרנס ארוחת הבוקר","פרנס הכיבוד",
+          "פרנס החשמל","נר למאור","פרנס הנייר","ממתקים לילדים","פרנס המתמידים","תורם","הקדשה"];
 function flash(){var e=document.getElementById("saved");if(!e)return;
   e.className="on";clearTimeout(window._ft);
   window._ft=setTimeout(function(){e.className="";},1400);}
@@ -773,7 +774,7 @@ function pad2(n){return (n<10?"0":"")+n;}
 
 function addSpon(){ if(!SITE)return say("בחר אתר",1);
   sf("sponsors",{method:"POST",body:JSON.stringify({site_id:SITE.id,category:"פרנס היום",
-    name:"",priority:3,date_from:today(),date_to:today()})}).then(function(){pickSite();})
+    name:"",priority:3,scope:"all",date_from:today(),date_to:today()})}).then(function(){pickSite();})
    .catch(function(e){say("שמירה נכשלה: "+(e.message||e),1);});}
 
 function saveSpon(i,f,v){var x=SPONS[i];x[f]=(v===""?null:v);
@@ -798,6 +799,8 @@ function drawSpons(){
       '<div><label>סוג</label><input list="catlist" value="'+esc(x.category||"")+'" onchange="saveSpon('+i+',\'category\',this.value)"></div>'+
       '<div><label>שם</label><input value="'+esc(x.name||"")+'" placeholder="ר\' ישראל ישראלי" onchange="saveSpon('+i+',\'name\',this.value)"></div>'+
       '<div><label>הקדשה</label><input value="'+esc(x.dedication||"")+'" placeholder="לעילוי נשמת / לרפואת" onchange="saveSpon('+i+',\'dedication\',this.value)"></div>'+
+      '<div><label>מופיע במסך</label><select onchange="saveSpon('+i+',\'scope\',this.value)">'+
+        opts({all:"כל המסכים",cafe:"חדר קפה בלבד",main:"מסך הפרנסים (לובי)"},x.scope||"all")+'</select></div>'+
       '<div><label>בולטות</label><select onchange="saveSpon('+i+',\'priority\',+this.value)">'+opts(PRIO,String(x.priority||3))+'</select></div>'+
       '<div><label>מתאריך</label><input type="date" value="'+(x.date_from||"")+'" onchange="saveSpon('+i+',\'date_from\',this.value)"></div>'+
       '<div><label>עד תאריך</label><input type="date" value="'+(x.date_to||"")+'" onchange="saveSpon('+i+',\'date_to\',this.value)"></div>'+

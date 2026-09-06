@@ -70,11 +70,11 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
   display:flex;flex-direction:column;padding:1.2vh 1vw;gap:.8vh;overflow:hidden}
 .col.r{border-left:2px solid rgba(255,204,0,.3)}
 .col.l{border-right:2px solid rgba(255,204,0,.3)}
-#clock{text-align:right;color:#f3e2b6;font-size:6.4vh;font-weight:300;line-height:1;
-  letter-spacing:.05em;font-variant-numeric:tabular-nums;
-  text-shadow:0 0 2.6vh rgba(243,226,182,.28)}
-#clock .sec{font-size:.5em;color:#b99a5c;font-weight:400;vertical-align:.42em;
-  margin-right:.16em;letter-spacing:0}
+#clock{text-align:right;color:#ffd227;font-size:7.4vh;font-weight:800;line-height:1;
+  letter-spacing:.02em;font-variant-numeric:tabular-nums;
+  text-shadow:0 0 3vh rgba(255,204,0,.5),0 .3vh 1vh rgba(0,0,0,.6)}
+#clock .sec{font-size:.45em;color:#c99a2e;font-weight:700;vertical-align:.55em;
+  margin-right:.15em;letter-spacing:0}
 .dt{text-align:center;color:#a3d1ff;font-size:2vh;font-weight:700}
 .dt2{text-align:center;color:#8fb4dd;font-size:1.5vh}
 .par{background:rgba(255,255,255,.05);border:1px solid rgba(255,204,0,.35);border-radius:1vh;
@@ -725,7 +725,7 @@ function load(){
     var t=new Date(), iso=t.getFullYear()+"-"+p2(t.getMonth()+1)+"-"+p2(t.getDate());
     Promise.all([
       sf("sites?id=eq."+sid+"&select=*"),
-      sf("sponsors?site_id=eq."+sid+"&select=*&active=eq.true&date_from=lte."+iso+"&date_to=gte."+iso+"&order=priority")
+      sf("sponsors?site_id=eq."+sid+"&select=*&active=eq.true&date_from=lte."+iso+"&date_to=gte."+iso+"&order=priority&or=(scope.eq.all,scope.eq.main)")
     ]).then(function(r){
       SITE=r[0][0]; SPON=r[1]||[];
       document.getElementById("siteName").textContent=SITE?SITE.name:"";
