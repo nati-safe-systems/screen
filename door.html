@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>נתי SAFE — מסך כניסה</title>
-<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Frank+Ruhl+Libre:wght@700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;800;900&family=Heebo:wght@300;400;500;700;800;900&family=Rubik:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,900&family=Suez+One&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
@@ -102,6 +102,38 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
   .cdwrap .big{font-size:14vh}
   .deadline .big{font-size:11vh}
 }
+
+/* ===== טיפוגרפיה — נתי SAFE ===== */
+:root{
+  --f-body:"Heebo","Assistant",Arial,sans-serif;
+  --f-disp:"Frank Ruhl Libre","David Libre",serif;
+  --f-num:"Rubik","Heebo",Arial,sans-serif;
+  --gold:#ffd227; --gold-soft:#ffe9a8;
+}
+body{font-family:var(--f-body)!important;-webkit-font-smoothing:antialiased}
+.num,#clock,.topbar .clk,.tm,.cd,.big,.at,.zr b,.prow i,.mt,.mt b{
+  font-family:var(--f-num)!important;font-feature-settings:"tnum" 1;font-variant-numeric:tabular-nums}
+/* השעון — מוטה קלות, נותן תחושת תנועה ויוקרה */
+#clock,.topbar .clk{
+  font-family:var(--f-num)!important;font-weight:800!important;
+  transform:skewX(-6deg);display:inline-block;
+  background:linear-gradient(180deg,#fff6d8 0%,#ffd227 45%,#e0a516 100%);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 .25vh .8vh rgba(0,0,0,.55)) drop-shadow(0 0 2.2vh rgba(255,204,0,.35))}
+#clock .sec,.topbar .clk .sec,.topbar .clk .sec2{
+  -webkit-text-fill-color:#c99a2e;background:none;filter:none}
+/* כותרות — סריף כבד עם עומק */
+.head h1,.ttl b,.bigttl,.mcard .rn,.room .rn,.sc .nm,.cdwrap .pray,.hdr{
+  font-family:var(--f-disp)!important}
+.head h1,.ttl b,.bigttl{
+  background:linear-gradient(180deg,#fff3c9 0%,#ffcc00 55%,#c98f10 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 .3vh 1vh rgba(0,0,0,.65))}
+.hdr{font-family:var(--f-body)!important;letter-spacing:.06em}
+/* כרטיסים — עומק עדין */
+.mcard,.room,.sc,.ann{box-shadow:0 .6vh 2.2vh rgba(0,0,0,.45),inset 0 .1vh 0 rgba(255,255,255,.06)}
+
 </style></head><body>
 
 <div class="head">
