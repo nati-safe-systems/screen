@@ -676,6 +676,28 @@ var SITE=null,ROOM=null,MINS=[],Z=null,ZDAY="";
 /* מצגת רקע: רשימת תמונות שמתחלפות במעבר רך.
    מקורות: ?bg=... בכתובת, או display_config.bg_images / bg_url. */
 var _bgList=[], _bgIdx=0, _bgTimer=null;
+
+/* קישורי שיתוף אינם קישורי תמונה. ממירים אותם לכתובת ישירה,
+   כדי שלא תצטרך לדעת את זה בכל פעם. */
+function normImg(u){
+  u=String(u||"").trim(); if(!u) return u;
+  var m;
+  /* Google Drive — כל הצורות */
+  m=u.match(/drive\.google\.com\/file\/d\/([A-Za-z0-9_\-]+)/) ||
+    u.match(/drive\.google\.com\/open\?id=([A-Za-z0-9_\-]+)/) ||
+    u.match(/drive\.google\.com\/uc\?[^"]*id=([A-Za-z0-9_\-]+)/) ||
+    u.match(/[?&]id=([A-Za-z0-9_\-]{20,})/);
+  if(m && /drive\.google\.com/.test(u)) return "https://drive.google.com/thumbnail?id="+m[1]+"&sz=w1920";
+  /* Google Photos / lh3 — כבר ישיר */
+  /* Dropbox */
+  if(/dropbox\.com/.test(u)) return u.replace(/[?&]dl=0/,"").replace(/[?&]raw=1/,"")+
+    (u.indexOf("?")>-1?"&":"?")+"raw=1";
+  /* OneDrive */
+  if(/1drv\.ms|onedrive\.live\.com/.test(u) && u.indexOf("download")===-1)
+    return u+(u.indexOf("?")>-1?"&":"?")+"download=1";
+  return u;
+}
+
 function setBg(list, sec){
   if(typeof list==="string") list=[list];
   list=(list||[]).filter(function(u){return u && String(u).trim();});
@@ -686,7 +708,7 @@ function setBg(list, sec){
   _bgList.forEach(function(u,i){
     var d=document.createElement("div");
     d.className="bgslide"+(i===0?" on":"");
-    d.style.backgroundImage="url("+u+")";
+    d.style.backgroundImage="url("+normImg(u)+")";
     wrap.appendChild(d);
   });
   _bgIdx=0;

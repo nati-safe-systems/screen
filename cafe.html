@@ -685,6 +685,28 @@ function sf(p){return fetch(SB+"/rest/v1/"+p,{headers:{apikey:SK,Authorization:"
 
 var SITE=null, ROOMS=[], MINS=[], SPON=[], Z=null, ZDAY="";
 var _bgList=[], _bgIdx=0, _bgTimer=null;
+
+/* קישורי שיתוף אינם קישורי תמונה. ממירים אותם לכתובת ישירה,
+   כדי שלא תצטרך לדעת את זה בכל פעם. */
+function normImg(u){
+  u=String(u||"").trim(); if(!u) return u;
+  var m;
+  /* Google Drive — כל הצורות */
+  m=u.match(/drive\.google\.com\/file\/d\/([A-Za-z0-9_\-]+)/) ||
+    u.match(/drive\.google\.com\/open\?id=([A-Za-z0-9_\-]+)/) ||
+    u.match(/drive\.google\.com\/uc\?[^"]*id=([A-Za-z0-9_\-]+)/) ||
+    u.match(/[?&]id=([A-Za-z0-9_\-]{20,})/);
+  if(m && /drive\.google\.com/.test(u)) return "https://drive.google.com/thumbnail?id="+m[1]+"&sz=w1920";
+  /* Google Photos / lh3 — כבר ישיר */
+  /* Dropbox */
+  if(/dropbox\.com/.test(u)) return u.replace(/[?&]dl=0/,"").replace(/[?&]raw=1/,"")+
+    (u.indexOf("?")>-1?"&":"?")+"raw=1";
+  /* OneDrive */
+  if(/1drv\.ms|onedrive\.live\.com/.test(u) && u.indexOf("download")===-1)
+    return u+(u.indexOf("?")>-1?"&":"?")+"download=1";
+  return u;
+}
+
 function setBg(list,sec){
   if(typeof list==="string") list=[list];
   list=(list||[]).filter(function(u){return u && String(u).trim();});
@@ -692,7 +714,7 @@ function setBg(list,sec){
   var wrap=document.getElementById("bgimg"); if(!wrap) return;
   wrap.innerHTML="";
   list.forEach(function(u,i){ var d=document.createElement("div");
-    d.className="bgslide"+(i===0?" on":""); d.style.backgroundImage="url("+u+")"; wrap.appendChild(d); });
+    d.className="bgslide"+(i===0?" on":""); d.style.backgroundImage="url("+normImg(u)+")"; wrap.appendChild(d); });
   _bgIdx=0; if(_bgTimer) clearInterval(_bgTimer);
   if(list.length>1){ var ms=Math.max(3,(+sec||10))*1000;
     _bgTimer=setInterval(function(){ var e=wrap.children; if(!e.length)return;
