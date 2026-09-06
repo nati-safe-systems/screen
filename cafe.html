@@ -32,7 +32,7 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 
 /* ---------- מניינים ---------- */
 .main{flex:1 1 auto;min-height:0;display:flex;gap:1vw;padding:1.2vh 1.2vw}
-.sponcol{width:19%;min-width:0;display:flex;flex-direction:column;gap:.9vh;justify-content:center}
+.sponcol{width:19%;min-width:0;display:flex;flex-direction:column;gap:.9vh}
 .mid{flex:1;min-width:0;min-height:0;position:relative;overflow:hidden;display:flex;flex-direction:column}
 .mid>.secttl,.mid>.mgrid{position:relative;z-index:2}
 .secttl{color:#ffcc00;font-size:1.7vh;font-weight:800;letter-spacing:.1vh;margin-bottom:.9vh;
@@ -55,12 +55,16 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 .cd-now{color:#ff5f52;animation:urg 1.4s ease-in-out infinite}
 @keyframes urg{0%,100%{opacity:1}50%{opacity:.6}}
 .bl{animation:blk 1s step-end infinite}
+.cd .sec{font-size:.62em;opacity:.85;font-weight:800}
 @keyframes blk{0%,49%{opacity:1}50%,100%{opacity:.15}}
 .mcard .none{color:#6e7f95;font-size:2.4vh}
 
 /* ---------- פרנסים ---------- */
 .spon{display:none}
-.sponcol .sc{width:100%}
+.sponcol .sc{width:100%;min-height:0;justify-content:center}
+.sponcol .sc.t1 .nm{font-size:4.4vh}
+.sponcol .sc.t1 .cat{font-size:2.1vh}
+.sponcol .sc.t1 .dd{font-size:2vh}
 .sc{background:linear-gradient(160deg,rgba(58,40,0,.85),rgba(28,18,0,.9));
   border:1px solid rgba(255,204,0,.42);border-radius:1.3vh;padding:1vh 1vw;text-align:center;
   display:flex;flex-direction:column;justify-content:center;gap:.25vh;overflow:hidden}
@@ -891,13 +895,16 @@ function drawSponsors(){
   if(!cur.length){ R.style.display="none"; L.style.display="none"; return; }
   R.style.display=""; L.style.display="";
 
+  var GROW={1:6,2:3,3:2,4:1.4,5:1};
   function card(s){
     var p=Math.min(5,Math.max(1,+s.priority||3));
-    return '<div class="sc t'+p+'">'+
+    return '<div class="sc t'+p+'" style="flex:'+GROW[p]+' 1 0;">'+
       '<div class="cat">'+esc(s.category)+'</div>'+
       '<div class="nm">'+esc(s.name)+'</div>'+
       (s.dedication?'<div class="dd">'+esc(s.dedication)+'</div>':'')+'</div>';
   }
+  /* דרגה 1 מקבלת את מרבית השטח בעמודה. השאר מתחלק פרופורציונלית.
+     שני פרנסים בדרגה 1 => אחד בכל צד, כל אחד על מלוא הגובה. */
   var rh="", lh="";
   cur.forEach(function(s,i){ if(i%2===0) rh+=card(s); else lh+=card(s); });
   R.innerHTML=rh; L.innerHTML=lh;
@@ -906,7 +913,13 @@ function drawSponsors(){
 function p2(n){return (n<10?"0":"")+n;}
 
 /* ספירה לאחור חיה עם שניות */
-function blink(t){ return String(t).replace(/:/g,'<span class="bl">:</span>'); }
+/* שניות קטנות יותר משעות ודקות — קל יותר לקרוא במבט חטוף */
+function blink(t){
+  var p=String(t).split(":");
+  var sec=p.pop();
+  return p.join('<span class="bl">:</span>')+
+         '<span class="bl">:</span><span class="sec">'+sec+'</span>';
+}
 
 function cdSec(targetMin, now){
   var nowSec = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
