@@ -407,7 +407,8 @@ button.dz:hover{color:#ff6b6b}
     alot: 'alotHashachar', netz: 'netz', szks: 'sofZmanShmaGRA',
     szt: 'sofZmanTfilaGRA', chatzot: 'chatzot', mincha_gedola: 'minchaGedola',
     mincha_ketana: 'minchaKetana', plag: 'plagHamincha', shkia: 'shkia',
-    tzeit: 'tzeitHakochavim', rt: 'tzeitRT', candle: 'candleLighting'
+    tzeit: 'tzeitHakochavim', rt: 'tzeitRT', candle: 'candleLighting',
+    chatzot_layla: 'chatzotLayla'
   };
 
   function toMin(t) {                     /* "HH:MM[:SS]" -> דקות */
@@ -478,7 +479,11 @@ button.dz:hover{color:#ff6b6b}
         var s = anchor(z, r.interval_start, r.interval_start_zman, r.interval_start_offset);
         var e = anchor(z, r.interval_end,   r.interval_end_zman,   r.interval_end_offset);
         var step = +r.interval_min || 0;
-        if (s == null || e == null || step <= 0 || e <= s) return;
+        if (s == null || e == null || step <= 0) return;
+        /* חלון שחוצה את חצות הלילה — למשל מעריב מצאת הכוכבים עד חצות.
+           בלי זה הסיום קטן מההתחלה והשורה נעלמת בשקט. */
+        if (e <= s) e += 1440;
+        if (e - s > 1440) return;
         /* rolling: המניינים רצופים ולא מוכרזים בשעה מדויקת.
            המסך יחליט אם להציג את הרשימה או רק "רצוף עד ..." */
         for (var t = s; t <= e + 0.01; t += step) {
@@ -619,8 +624,10 @@ var PRAYERS={unassigned:"טרם הוגדר",selichot:"סליחות",shacharit:"�
 var PCOLOR={unassigned:"#ff9f43",selichot:"#4fd1c5",shacharit:"#ffcc00",mussaf:"#7ee787",
   mincha:"#ff8f6b",arvit:"#8ab4f8",maariv:"#c792ea",other:"#8b949e"};
 var PORDER=["unassigned","selichot","shacharit","mussaf","mincha","arvit","maariv","other"];
-var ZM={shkia:"שקיעה",tzeit:"צאת הכוכבים",netz:"הנץ החמה",alot:"עלות השחר",
-        chatzot:"חצות",plag:"פלג המנחה",mincha_gedola:"מנחה גדולה",mincha_ketana:"מנחה קטנה",candle:"הדלקת נרות"};
+var ZM={alot:"עלות השחר",netz:"הנץ החמה",szks:'סוף זמן ק"ש',chatzot:"חצות היום",
+        mincha_gedola:"מנחה גדולה",mincha_ketana:"מנחה קטנה",plag:"פלג המנחה",
+        candle:"הדלקת נרות",shkia:"שקיעה",tzeit:"צאת הכוכבים",rt:"רבינו תם",
+        chatzot_layla:"חצות הלילה"};
 
 function boot(){ sf("sites?select=*&order=name").then(function(r){SITES=Array.isArray(r)?r:[];
   document.getElementById("siteSel").innerHTML=
