@@ -534,6 +534,30 @@ var TOKEN = new URLSearchParams(window.location.search).get("token") || "";
 var PREVIEW = new URLSearchParams(window.location.search).get("preview") === "1";
 var ZMCHECK = new URLSearchParams(window.location.search).get("zmcheck") === "1";
 
+/* ---- ניתוב לפי סוג המסך ----
+   כל המסכים והאפליקציות מצביעים ל-index.html. אם המסך הוגדר באדמין
+   כמסך דלת / חדר קפה / פרנסים — מעבירים אותו לקובץ המתאים,
+   עם אותם פרמטרים בדיוק. מסך ראשי נשאר כאן. */
+(function(){
+  try{
+    var qp=new URLSearchParams(window.location.search);
+    var sid=qp.get("id");
+    if(!sid || qp.get("noroute")==="1" || ZMCHECK) return;
+    var MAP={door:"door.html", cafe:"cafe.html", mikveh:"cafe.html"};   /* sponsors — עוד לא נבנה */
+    fetch(SUPA+"/rest/v1/screens?screen_id=eq."+encodeURIComponent(sid)+"&select=purpose",
+      {headers:{apikey:SKEY,Authorization:"Bearer "+SKEY},cache:"no-store"})
+      .then(function(r){return r.json();})
+      .then(function(rows){
+        var p=(rows&&rows[0]&&rows[0].purpose)||"main";
+        var target=MAP[p];
+        if(target){
+          var here=location.pathname.split("/").pop();
+          if(here!==target) location.replace(target+location.search);
+        }
+      }).catch(function(){});
+  }catch(e){}
+})();
+
 /* --- מעקב אחר טעינות מחדש ---
    הדף עצמו לא מרענן את עצמו. אם הוא בכל זאת נטען מחדש, זה מגיע מבחוץ
    (ה-WebView נהרג ומופעל שוב). כאן סופרים כדי לדעת אם וכמה. */
@@ -2769,6 +2793,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 5.8.1</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 5.9</div>
 </body>
 </html>
