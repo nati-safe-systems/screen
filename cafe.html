@@ -1031,7 +1031,7 @@ function setBg(list,sec){
       e[_bgIdx].classList.remove("on"); _bgIdx=(_bgIdx+1)%e.length; e[_bgIdx].classList.add("on"); }, ms); }
 }
 if(Q.get("bg")) setBg(Q.get("bg").split(","), Q.get("bgsec"));
-var PR={shacharit:"שחרית",mincha:"מנחה",arvit:"ערבית",selichot:"סליחות",other:"תפילה"};
+var PR={selichot:"סליחות",shacharit:"שחרית",mussaf:"מוסף",mincha:"מנחה",arvit:"ערבית",maariv:"מעריב",unassigned:"טרם הוגדר",other:"תפילה"};
 
 function load(){
   var q;

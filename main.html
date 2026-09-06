@@ -970,7 +970,7 @@ function resolveSite(cb){
 }
 
 var SITE=null,ROOMS=[],MINS=[],ANN=[],Z=null,ZDAY="";
-var PR={shacharit:"שחרית",mincha:"מנחה",arvit:"ערבית",maariv:"מעריב",selichot:"סליחות",mussaf:"מוסף",other:"תפילה"};
+var PR={selichot:"סליחות",shacharit:"שחרית",mussaf:"מוסף",mincha:"מנחה",arvit:"ערבית",maariv:"מעריב",unassigned:"טרם הוגדר",other:"תפילה"};
 
 function load(){
   resolveSite(function(sid){
