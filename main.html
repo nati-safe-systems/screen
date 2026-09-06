@@ -750,6 +750,40 @@ function drawMinyanim(now,nowMin){
   });
   document.getElementById("mlist").innerHTML=out||'<div class="none">לא הוגדרו מניינים</div>';
 }
+/* בדיקה: ?mdebug=1 — מציג כל שורת מניין ומה קרה לה */
+function mdebug(now){
+  var box=document.getElementById("mdbg");
+  if(!box){ box=document.createElement("div"); box.id="mdbg";
+    box.style.cssText="position:fixed;inset:0;z-index:99999;background:#0d1117;color:#e6edf3;"+
+      "font:12px/1.5 Assistant,Arial,sans-serif;direction:rtl;overflow:auto;padding:14px;";
+    document.body.appendChild(box); }
+  var h='<b style="color:#ffcc00;font-size:15px">בדיקת מניינים</b><br>'+
+        'שורות שנטענו מהמסד: <b>'+MINS.length+'</b> · חדרים: <b>'+ROOMS.length+'</b><br><br>'+
+        '<table style="border-collapse:collapse;font-size:12px"><tr style="background:#161b22">'+
+        ['תפילה','חדר','מצב','פרטים','פעיל','ימים','נפתר ל'].map(function(t){
+          return '<th style="padding:4px 8px;text-align:right">'+t+'</th>';}).join('')+'</tr>';
+  var roomName={}; ROOMS.forEach(function(r){roomName[r.id]=r.display_name||r.name;});
+  MINS.forEach(function(m){
+    var res=NatiMinyan.resolve([m],Z,now,{});
+    var det = m.mode==="fixed" ? ("שעה "+(m.fixed_time||"—"))
+      : m.mode==="relative" ? ((m.rel_zman||"—")+" "+(m.rel_offset_min||0))
+      : ("כל "+(m.interval_min||"—")+" דק' · "+(m.interval_start_zman||m.interval_start||"—")+
+         " "+(m.interval_start_offset||0)+" → "+(m.interval_end_zman||m.interval_end||"—")+
+         " "+(m.interval_end_offset||0));
+    var ok=res.length;
+    h+='<tr style="border-top:1px solid #21262d">'+
+       '<td style="padding:3px 8px">'+(m.prayer||"—")+'</td>'+
+       '<td style="padding:3px 8px">'+(m.room_id?(roomName[m.room_id]||"חדר לא מוכר!"):"כל החדרים")+'</td>'+
+       '<td style="padding:3px 8px">'+(m.mode||"—")+'</td>'+
+       '<td style="padding:3px 8px;color:#8b949e">'+det+'</td>'+
+       '<td style="padding:3px 8px;color:'+(m.active===false?"#ff6b6b":"#3fb950")+'">'+(m.active===false?"לא":"כן")+'</td>'+
+       '<td style="padding:3px 8px;color:#8b949e">'+(Array.isArray(m.days_of_week)?m.days_of_week.join(","):"—")+'</td>'+
+       '<td style="padding:3px 8px;color:'+(ok?"#3fb950":"#ff6b6b")+'">'+
+         (ok?(res.length+" שעות · "+res[0].time+" עד "+res[res.length-1].time):"לא נפתר")+'</td></tr>';
+  });
+  box.innerHTML=h+'</table><div style="margin-top:14px;color:#8b949e">להסתרה: הסר ?mdebug=1</div>';
+}
+
 function tick(){
   var now=new Date(), h=now.getHours(), m=now.getMinutes(), sc=now.getSeconds();
   document.getElementById("clock").innerHTML=p2(h)+":"+p2(m)+'<span class="sec">'+p2(sc)+'</span>';
@@ -765,6 +799,9 @@ function tick(){
      ["צאת הכוכבים",Z.tzeitHakochavim],["רבינו תם",Z.tzeitRT]]
     .map(function(x){return '<div class="zr"><span>'+x[0]+'</span><b>'+NatiMinyan.fmt(x[1])+'</b></div>';}).join("");
   drawMinyanim(now,nowMin);
+  if(new URLSearchParams(location.search).get("mdebug")==="1"){
+    if(!window._mdt||Date.now()-window._mdt>5000){ window._mdt=Date.now(); try{ mdebug(now); }catch(e){} }
+  }
 }
 setInterval(tick,1000);
 setInterval(function(){ZDAY="";load();},5*60*1000);
