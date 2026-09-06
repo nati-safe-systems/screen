@@ -389,6 +389,28 @@ input:focus,select:focus{border-color:#58a6ff;}
         <div class="hint">שם זה מוצג בראש מסך השילוט ובטבלת הניהול.</div>
       </div>
 
+      <div class="field" id="t-bg-outer" style="border:1px solid #30363d;border-radius:10px;padding:14px;">
+        <div id="t-bg-box">
+          <div style="font-size:14px;color:#ffcc00;font-weight:700;margin-bottom:6px;">תמונות רקע</div>
+          <div id="t-bg-list"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;align-items:center;">
+            <label style="background:#ffcc00;color:#161b22;border-radius:6px;padding:7px 15px;font-size:13px;font-weight:800;cursor:pointer;">
+              העלה תמונה מהמכשיר
+              <input type="file" accept="image/*" style="display:none" onchange="tBgUpload(this)">
+            </label>
+            <button type="button" onclick="tBgAdd()" style="background:#21262d;border:1px solid #30363d;color:#ffcc00;border-radius:6px;padding:7px 12px;font:inherit;font-size:13px;cursor:pointer;">+ קישור</button>
+            <span id="tBgMsg" style="font-size:12px;color:#8b949e;"></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+            <span style="font-size:13px;color:#8b949e;">החלפה כל</span>
+            <input id="t-bg-sec" type="number" min="3" max="120" value="10" style="width:80px;background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:5px;font:inherit;">
+            <span style="font-size:13px;color:#8b949e;">שניות</span>
+          </div>
+          <div style="font-size:12px;color:#8b949e;margin-top:5px;">
+            תמונה אחת = רקע קבוע. כמה תמונות = מצגת עם מעבר רך.
+          </div>
+      </div>
+
       <div class="field" id="tenant-minyan-sec" style="display:none;border:1px solid #30363d;border-radius:10px;padding:14px;">
         <label style="color:#ffcc00;font-weight:800;">תצוגת המניינים</label>
         <select id="t-minyan-view" style="margin-top:8px;">
@@ -413,25 +435,7 @@ input:focus,select:focus{border-color:#58a6ff;}
           <label class="td-chk"><input type="checkbox" id="td-ads"> פרסומות בצדדים</label>
         </div>
 
-        <div id="t-bg-box" style="margin-top:14px;border-top:1px solid #21262d;padding-top:12px;">
-          <div style="font-size:14px;color:#ffcc00;font-weight:700;margin-bottom:6px;">תמונות רקע</div>
-          <div id="t-bg-list"></div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;align-items:center;">
-            <label style="background:#ffcc00;color:#161b22;border-radius:6px;padding:7px 15px;font-size:13px;font-weight:800;cursor:pointer;">
-              העלה תמונה מהמכשיר
-              <input type="file" accept="image/*" style="display:none" onchange="tBgUpload(this)">
-            </label>
-            <button type="button" onclick="tBgAdd()" style="background:#21262d;border:1px solid #30363d;color:#ffcc00;border-radius:6px;padding:7px 12px;font:inherit;font-size:13px;cursor:pointer;">+ קישור</button>
-            <span id="tBgMsg" style="font-size:12px;color:#8b949e;"></span>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
-            <span style="font-size:13px;color:#8b949e;">החלפה כל</span>
-            <input id="t-bg-sec" type="number" min="3" max="120" value="10" style="width:80px;background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:5px;font:inherit;">
-            <span style="font-size:13px;color:#8b949e;">שניות</span>
-          </div>
-          <div style="font-size:12px;color:#8b949e;margin-top:5px;">
-            תמונה אחת = רקע קבוע. כמה תמונות = מצגת עם מעבר רך.
-          </div>
+
         </div>
         <div style="display:flex;justify-content:flex-end;margin-top:12px;">
           <button class="btn-save" style="padding:10px 18px;" onclick="saveDisplayConfig()">שמור תצוגה</button>
@@ -1426,7 +1430,7 @@ function tApplyPurpose(){
   show("tenant-minyan-sec", isDoor);
   var mv=document.getElementById("t-minyan-view"); if(mv) mv.value=_tMinyanView||"list";
   /* תמונות הרקע רלוונטיות לכל סוגי המסכים */
-  show("t-bg-box", true);
+  show("t-bg-outer", true);   /* תמונות רקע — רלוונטיות לכל סוג מסך */
 }
 
 function saveMinyanView(){
