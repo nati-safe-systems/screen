@@ -418,6 +418,7 @@ tr:hover td{background:rgba(128,0,0,0.05);}
               + העלה קובץ
               <input type="file" accept="audio/*" multiple style="display:none" onchange="audUpload(this)">
             </label>
+            <button type="button" onclick="audLibrary()" style="background:#21262d;border:1px solid #58a6ff;color:#58a6ff;border-radius:6px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer;">בחר מהספרייה</button>
             <button type="button" onclick="audAddUrl()" style="background:#21262d;border:1px solid #30363d;color:#ffcc00;border-radius:6px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer;">+ כתובת רדיו</button>
             <span id="audUpMsg" style="font-size:12px;color:#8b949e;"></span>
           </div>
@@ -1191,6 +1192,66 @@ function audDraw(){
 }
 function audAddUrl(){ _audList.push(''); audDraw(); markCustom(); }
 
+/* ---------- ספריית המוזיקה ----------
+   כל הקבצים שהועלו אי פעם, משותפים לכל המסכים.
+   מעלים פעם אחת ומסמנים בכל מסך מה לנגן. */
+function audLibrary(){
+  var box=document.getElementById('audLib');
+  if(!box){
+    box=document.createElement('div'); box.id='audLib';
+    box.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.75);'+
+      'display:flex;align-items:center;justify-content:center;direction:rtl';
+    box.innerHTML='<div id="audLibIn" style="background:#161b22;border:1px solid #30363d;'+
+      'border-radius:12px;padding:16px;width:min(560px,92%);max-height:80%;overflow:auto;'+
+      'font-family:inherit;color:#e6edf3"></div>';
+    box.onclick=function(e){ if(e.target===box) box.remove(); };
+    document.body.appendChild(box);
+  }
+  var inn=document.getElementById('audLibIn');
+  inn.innerHTML='<div style="color:#8b949e">טוען את הספרייה...</div>';
+
+  fetch(SUPA_BASE+'/storage/v1/object/list/screen-media',{
+    method:'POST',
+    headers:{ apikey:SUPA_KEY, Authorization:'Bearer '+SUPA_KEY, 'Content-Type':'application/json' },
+    body:JSON.stringify({ prefix:'audio/library', limit:200, sortBy:{column:'created_at',order:'desc'} })
+  }).then(function(r){ return r.json(); }).then(function(rows){
+    if(!Array.isArray(rows) || !rows.length){
+      inn.innerHTML='<div style="color:#8b949e">הספרייה ריקה. העלה קובץ ראשון בכפתור "+ העלה קובץ".</div>'+
+        '<div style="text-align:left;margin-top:12px"><button onclick="document.getElementById(\'audLib\').remove()" '+
+        'style="background:#21262d;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:6px 14px;cursor:pointer">סגור</button></div>';
+      return;
+    }
+    var base=SUPA_BASE+'/storage/v1/object/public/screen-media/audio/library/';
+    inn.innerHTML='<div style="font-size:15px;font-weight:800;color:#ffcc00;margin-bottom:4px">ספריית המוזיקה</div>'+
+      '<div style="font-size:12px;color:#8b949e;margin-bottom:10px">סמן מה לנגן במסך הזה. אותם קבצים זמינים לכל המסכים.</div>'+
+      rows.map(function(o,i){
+        var url=base+o.name;
+        var on=_audList.indexOf(url)>-1;
+        var mb=o.metadata&&o.metadata.size?(o.metadata.size/1048576).toFixed(1)+'MB':'';
+        return '<label style="display:flex;gap:9px;align-items:center;padding:7px;border-bottom:1px solid #21262d;cursor:pointer">'+
+          '<input type="checkbox" data-url="'+url+'"'+(on?' checked':'')+' style="width:16px;height:16px;accent-color:#ffcc00">'+
+          '<span style="flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+
+            audName(o.name)+'</span>'+
+          '<span style="font-size:11px;color:#8b949e">'+mb+'</span></label>';
+      }).join('')+
+      '<div style="display:flex;gap:8px;justify-content:flex-start;margin-top:14px">'+
+      '<button onclick="audLibApply()" style="background:#ffcc00;color:#161b22;border:none;border-radius:6px;padding:8px 18px;font-weight:800;cursor:pointer">הוסף למסך</button>'+
+      '<button onclick="document.getElementById(\'audLib\').remove()" style="background:#21262d;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:8px 14px;cursor:pointer">ביטול</button></div>';
+  }).catch(function(e){
+    inn.innerHTML='<div style="color:#ff6b6b">טעינת הספרייה נכשלה: '+(e.message||e)+'</div>';
+  });
+}
+
+function audLibApply(){
+  var box=document.getElementById('audLib'); if(!box)return;
+  var boxes=box.querySelectorAll('input[type=checkbox]');
+  var keepRadio=_audList.filter(function(u){ return u.indexOf('/audio/library/')===-1; });
+  var picked=[];
+  for(var i=0;i<boxes.length;i++) if(boxes[i].checked) picked.push(boxes[i].getAttribute('data-url'));
+  _audList = keepRadio.concat(picked);
+  audDraw(); markCustom(); box.remove();
+}
+
 /* העלאת קובץ שמע לאחסון. אפשר לבחור כמה קבצים בבת אחת. */
 function audUpload(inp){
   var files=Array.prototype.slice.call(inp.files||[]); if(!files.length)return;
@@ -1211,7 +1272,8 @@ function audUpload(inp){
     var mb=(f.size/1048576).toFixed(0);
     if(msg){ msg.textContent='מעלה '+(done+1)+'/'+total+' · '+mb+'MB...'; msg.style.color='#8b949e'; }
     var safe=f.name.replace(/[^A-Za-z0-9._-]/g,'_');
-    var path='audio/'+sid+'/'+Date.now()+'_'+safe;
+    /* ספרייה משותפת — הקובץ מועלה פעם אחת ומשמש את כל המסכים */
+    var path='audio/library/'+Date.now()+'_'+safe;
     fetch(SUPA_BASE+'/storage/v1/object/screen-media/'+path,{
       method:'POST',
       headers:{ apikey:SUPA_KEY, Authorization:'Bearer '+SUPA_KEY,
