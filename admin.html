@@ -309,7 +309,8 @@ tr:hover td{background:rgba(128,0,0,0.05);}
       </div>
 
       <!-- ===== נתי SAFE: תצוגת המסך / קהל יעד ===== -->
-      <div id="grp-building" style="border-top:1px solid rgba(255,255,255,0.1);margin:14px 0 4px;padding-top:14px;">
+      <div style="border-top:1px solid rgba(255,255,255,0.1);margin:14px 0 4px;padding-top:14px;">
+        <div id="grp-building">
         <div style="font-weight:800;font-size:14px;color:#ffcc00;margin-bottom:8px;">🖥️ תצוגת המסך — מגזר</div>
 
         <div class="field">
@@ -335,6 +336,7 @@ tr:hover td{background:rgba(128,0,0,0.05);}
           <label class="dc-chk"><input type="checkbox" id="dc-news" onchange="toggleRssField();markCustom()"> מבזקי חדשות (RSS)</label>
           <label class="dc-chk"><input type="checkbox" id="dc-ads" onchange="markCustom();toggleAdsMgmt()"> פרסומות בצדדים</label>
         </div>
+        </div><!-- /grp-building -->
 
         <div class="field" style="margin-top:12px;">
           <label>שיוך לבית כנסת</label>
@@ -1087,11 +1089,9 @@ function purposeChanged(){
   var p=(document.getElementById('edit-sc-purpose')||{}).value||'main';
   var isBuilding = (p==='main');
   var isShul = !isBuilding;
+  /* מסתירים רק את הגדרות המגזר של מסך בניין.
+     כל שאר ההגדרות — מיקום, מזג אוויר, כיוון, רקע, מוזיקה — נשארות תמיד. */
   var g=document.getElementById('grp-building'); if(g) g.style.display = isBuilding ? '' : 'none';
-  var mv=document.getElementById('edit-sc-minyanview');
-  if(mv) mv.parentNode.style.opacity = (p==='door') ? '1' : '.45';
-  var rw=document.getElementById('edit-sc-room');
-  if(rw) rw.style.opacity = (p==='door') ? '1' : '.75';
   markCustom();
 }
 function fillRooms(sel){
