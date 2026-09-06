@@ -14,7 +14,7 @@
 (function (root) {
   'use strict';
 
-  var CFG = { supa:'', key:'', areas:[], testMode:false };
+  var CFG = { supa:'', key:'', areas:[], seconds:60 };
   /* שני מסלולים עצמאיים. החיווי מציג את הטוב מביניהם — קודם הם דרסו זה את זה. */
   var state = { wsOk:false, apiOk:false, sbOk:false, rtOk:false, sbMsg:'', wsWhy:'',
                 last:null, active:null, hideT:null };
@@ -114,9 +114,9 @@
     d.style.display = 'flex';
     siren(true);
     state.active = { areas: areas, at: Date.now() };
-    /* ההתראה נעלמת לבד אחרי דקה */
+    /* משך ההצגה נקבע בהגדרות המסך */
     clearTimeout(state.hideT);
-    state.hideT = setTimeout(hide, 60 * 1000);
+    state.hideT = setTimeout(hide, Math.max(5, +CFG.seconds || 60) * 1000);
   }
   function hide(){
     var d = document.getElementById('nsf-alert');
@@ -267,6 +267,7 @@
     CFG.supa  = opt.supa || '';
     CFG.key   = opt.key  || '';
     CFG.areas = opt.areas || [];
+    CFG.seconds = opt.seconds || 60;
     ensureDom();
     state.sbMsg='מתחבר...'; renderConn();
     connectRealtime();

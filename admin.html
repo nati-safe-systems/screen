@@ -427,17 +427,30 @@ tr:hover td{background:rgba(128,0,0,0.05);}
           </div>
 
           <div style="border-top:1px solid #21262d;margin-top:14px;padding-top:12px;">
-            <label style="color:#ff8f8f;font-weight:800;">בדיקת התראת פיקוד העורף</label>
+            <label style="color:#ff8f8f;font-weight:800;">התראות פיקוד העורף</label>
+            <div style="display:flex;align-items:center;gap:9px;margin:8px 0 10px;">
+              <span style="font-size:13px;color:#8b949e;">משך ההצגה</span>
+              <input id="edit-sc-alertsec" type="number" min="5" max="600" value="60"
+                     oninput="markCustom()" style="width:90px;">
+              <span style="font-size:13px;color:#8b949e;">שניות</span>
+            </div>
             <div style="font-size:12px;color:#8b949e;margin:5px 0 8px;line-height:1.5;">
               שולח התראת בדיקה <b>לכל המסכים המחוברים</b>, בדיוק כמו התראה אמיתית —
               דרך המסד ובזמן אמת. ההתראה נעלמת לבד אחרי דקה.
             </div>
-            <button type="button" onclick="sendTestAlert()"
-              style="background:#4a1414;border:1px solid #ff6b6b;color:#ff9a9a;border-radius:6px;
-                     padding:7px 16px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;">
-              שלח התראת בדיקה
-            </button>
-            <span id="testAlertMsg" style="font-size:12px;margin-right:9px;"></span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <button type="button" onclick="testAlertLocal()"
+                style="background:#21262d;border:1px solid #58a6ff;color:#58a6ff;border-radius:6px;
+                       padding:7px 16px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;">
+                בדיקה במסך הזה בלבד
+              </button>
+              <button type="button" onclick="sendTestAlert()"
+                style="background:#4a1414;border:1px solid #ff6b6b;color:#ff9a9a;border-radius:6px;
+                       padding:7px 16px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;">
+                שלח לכל המסכים
+              </button>
+              <span id="testAlertMsg" style="font-size:12px;"></span>
+            </div>
           </div>
           <div style="display:flex;align-items:center;gap:9px;margin-top:6px;">
             <span style="font-size:13px;color:#8b949e;">עוצמה</span>
@@ -1098,6 +1111,7 @@ function readDisplayConfig(){
     audio_list: _audList.filter(function(u){return u && u.trim();}),
     audio_url: (_audList[0]||'').trim(),
     audio_volume: parseInt((document.getElementById('edit-sc-audiovol')||{}).value,10)||40,
+    alert_seconds: parseInt((document.getElementById('edit-sc-alertsec')||{}).value,10)||60,
     bg_images: _bgImgs.filter(function(u){return u && u.trim();}),
     bg_sec: parseInt((document.getElementById('edit-sc-bgsec')||{}).value,10)||10,
     zm: (function(){
@@ -1205,6 +1219,16 @@ function audDraw(){
   }).join('') || '<div style="font-size:12px;color:#6e7681;">אין קבצים. העלה קובץ או הוסף כתובת רדיו.</div>';
 }
 function audAddUrl(){ _audList.push(''); audDraw(); markCustom(); }
+
+/* בדיקה מקומית — פותח את המסך הזה עם התראת בדיקה, בלי לגעת בשום דבר */
+function testAlertLocal(){
+  var id=(document.getElementById('edit-sc-id')||{}).value||'';
+  if(!id){ alert('שמור את המסך תחילה'); return; }
+  var tv=(document.getElementById('edit-sc-token')||{}).value||'';
+  var tok=tv?('&token='+encodeURIComponent(tv)):'';
+  window.open('https://nati-safe-systems.github.io/screen/index.html?id='+
+    encodeURIComponent(id)+tok+'&alerttest=1&_='+Date.now(),'_blank');
+}
 
 /* בדיקת התראה מקצה לקצה — כותב שורה למסד, בדיוק כמו השירות האמיתי */
 function sendTestAlert(){
@@ -1357,6 +1381,7 @@ function fillDisplayConfig(cfg){
   _bgImgs = Array.isArray(cfg.bg_images) ? cfg.bg_images.slice() : (cfg.bg_url?[cfg.bg_url]:[]);
   bgDraw();
   var _bs=document.getElementById('edit-sc-bgsec'); if(_bs) _bs.value = cfg.bg_sec || 10;
+  var _as=document.getElementById('edit-sc-alertsec'); if(_as) _as.value = cfg.alert_seconds || 60;
   var _ae=document.getElementById('edit-sc-audio');    if(_ae) _ae.checked = !!cfg.audio_enabled;
   _audList = Array.isArray(cfg.audio_list) ? cfg.audio_list.slice() : (cfg.audio_url?[cfg.audio_url]:[]);
   audDraw();

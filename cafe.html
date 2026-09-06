@@ -207,7 +207,7 @@ body{font-family:var(--f-body)!important;-webkit-font-smoothing:antialiased}
 (function (root) {
   'use strict';
 
-  var CFG = { supa:'', key:'', areas:[], testMode:false };
+  var CFG = { supa:'', key:'', areas:[], seconds:60 };
   /* שני מסלולים עצמאיים. החיווי מציג את הטוב מביניהם — קודם הם דרסו זה את זה. */
   var state = { wsOk:false, apiOk:false, sbOk:false, rtOk:false, sbMsg:'', wsWhy:'',
                 last:null, active:null, hideT:null };
@@ -307,9 +307,9 @@ body{font-family:var(--f-body)!important;-webkit-font-smoothing:antialiased}
     d.style.display = 'flex';
     siren(true);
     state.active = { areas: areas, at: Date.now() };
-    /* ההתראה נעלמת לבד אחרי דקה */
+    /* משך ההצגה נקבע בהגדרות המסך */
     clearTimeout(state.hideT);
-    state.hideT = setTimeout(hide, 60 * 1000);
+    state.hideT = setTimeout(hide, Math.max(5, +CFG.seconds || 60) * 1000);
   }
   function hide(){
     var d = document.getElementById('nsf-alert');
@@ -460,6 +460,7 @@ body{font-family:var(--f-body)!important;-webkit-font-smoothing:antialiased}
     CFG.supa  = opt.supa || '';
     CFG.key   = opt.key  || '';
     CFG.areas = opt.areas || [];
+    CFG.seconds = opt.seconds || 60;
     ensureDom();
     state.sbMsg='מתחבר...'; renderConn();
     connectRealtime();
@@ -1182,7 +1183,7 @@ function load(){
     ]).then(function(r){
       SITE=r[0][0]; ROOMS=r[1]||[]; MINS=r[2]||[]; SPON=r[3]||[];
       document.getElementById("siteName").textContent=SITE?SITE.name:"";
-      try{ NatiAlerts.init({supa:SB,key:SK,areas:(SITE&&SITE.alert_areas)||[]}); }catch(e){}
+      try{ NatiAlerts.init({supa:SB,key:SK,areas:(SITE&&SITE.alert_areas)||[],seconds:(SITE&&SITE.alert_seconds)||60}); }catch(e){}
       ZDAY=""; tick(); drawSponsors();
     });
   }).catch(function(e){console.error(e);});
