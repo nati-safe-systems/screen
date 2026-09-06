@@ -430,7 +430,7 @@ tr:hover td{background:rgba(128,0,0,0.05);}
             <label style="color:#ff8f8f;font-weight:800;">בדיקת התראת פיקוד העורף</label>
             <div style="font-size:12px;color:#8b949e;margin:5px 0 8px;line-height:1.5;">
               שולח התראת בדיקה <b>לכל המסכים המחוברים</b>, בדיוק כמו התראה אמיתית —
-              דרך המסד ובזמן אמת. ההתראה נעלמת לבד אחרי 3 דקות.
+              דרך המסד ובזמן אמת. ההתראה נעלמת לבד אחרי דקה.
             </div>
             <button type="button" onclick="sendTestAlert()"
               style="background:#4a1414;border:1px solid #ff6b6b;color:#ff9a9a;border-radius:6px;
@@ -1208,7 +1208,7 @@ function audAddUrl(){ _audList.push(''); audDraw(); markCustom(); }
 
 /* בדיקת התראה מקצה לקצה — כותב שורה למסד, בדיוק כמו השירות האמיתי */
 function sendTestAlert(){
-  if(!confirm('כל המסכים המחוברים יציגו התראה אדומה עם צפירה, למשך 3 דקות.\n\nלהמשיך?')) return;
+  if(!confirm('כל המסכים המחוברים יציגו התראה אדומה עם צפירה, למשך דקה.\n\nלהמשיך?')) return;
   var msg=document.getElementById('testAlertMsg');
   if(msg){ msg.textContent='שולח...'; msg.style.color='#8b949e'; }
   sf('alerts',{method:'POST',body:JSON.stringify({

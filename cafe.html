@@ -307,9 +307,9 @@ body{font-family:var(--f-body)!important;-webkit-font-smoothing:antialiased}
     d.style.display = 'flex';
     siren(true);
     state.active = { areas: areas, at: Date.now() };
-    /* ההתראה נעלמת לבד אחרי 3 דקות */
+    /* ההתראה נעלמת לבד אחרי דקה */
     clearTimeout(state.hideT);
-    state.hideT = setTimeout(hide, 3 * 60 * 1000);
+    state.hideT = setTimeout(hide, 60 * 1000);
   }
   function hide(){
     var d = document.getElementById('nsf-alert');
