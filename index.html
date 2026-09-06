@@ -429,12 +429,33 @@ body.portrait #eruv .er-s{font-size:1.55vw;}
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
   filter:drop-shadow(0 3px 10px rgba(0,0,0,.65))}
 .zv,.zr b{font-family:"Rubik","Heebo",Arial,sans-serif!important;font-variant-numeric:tabular-nums}
+
+/* חיווי מוזיקה — קטן, בפינה, נראה מרחוק */
+#mus{position:fixed;bottom:8px;right:10px;z-index:9000;display:none;
+  align-items:center;gap:6px;padding:4px 9px;border-radius:14px;
+  background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.18);
+  font-size:0.75vw;font-weight:800;color:#8fe3b0;pointer-events:none}
+#mus.on{display:flex}
+#mus.off{display:flex;color:#ff8f8f;border-color:rgba(255,120,120,0.4)}
+#mus .bars{display:flex;align-items:flex-end;gap:2px;height:0.9vw}
+#mus .bars i{display:block;width:0.16vw;background:currentColor;border-radius:1px;
+  animation:musBar .9s ease-in-out infinite}
+#mus .bars i:nth-child(1){height:40%;animation-delay:0s}
+#mus .bars i:nth-child(2){height:100%;animation-delay:.15s}
+#mus .bars i:nth-child(3){height:65%;animation-delay:.3s}
+#mus .bars i:nth-child(4){height:85%;animation-delay:.45s}
+@keyframes musBar{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}
+#mus.off .bars{display:none}
+body.portrait #mus{font-size:1.7vw}
+body.portrait #mus .bars{height:2vw}
+body.portrait #mus .bars i{width:0.35vw}
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;800;900&family=Heebo:wght@300;400;500;700;800;900&family=Rubik:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,900&family=Suez+One&display=swap" rel="stylesheet">
 </head>
 <body>
 
 <div id="top-band"></div>
+<div id="mus"><span class="bars"><i></i><i></i><i></i><i></i></span><span id="musTxt"></span></div>
 
 <div id="preview-badge" style="display:none;position:fixed;top:12px;left:12px;z-index:99999;background:rgba(88,166,255,0.9);color:#fff;font-family:Assistant,sans-serif;font-size:14px;font-weight:800;padding:6px 14px;border-radius:20px;box-shadow:0 4px 14px rgba(0,0,0,0.4);">תצוגה מקדימה</div>
 
@@ -1606,6 +1627,23 @@ function isRestNow(now){
 }
 
 var _au=null, _auState="", _auIdx=0, _auList=[];
+/* מעדכן את החיווי שעל המסך */
+function musIndicator(){
+  var e=document.getElementById("mus"); if(!e) return;
+  var t=document.getElementById("musTxt");
+  var on = !!(DC && DC.audio_enabled);
+  if(!on){ e.className=""; return; }
+  var playing = !!(_au && !_au.paused && !_au.ended) || !!window._ytPlayer;
+  if(playing){
+    e.className="on";
+    if(t) t.textContent = (_auList.length>1) ? ("מוזיקה "+(_auIdx+1)+"/"+_auList.length) : "מוזיקה";
+  }else{
+    e.className="off";
+    if(t) t.textContent = "מוזיקה מושתקת";
+  }
+}
+setInterval(function(){ try{ musIndicator(); }catch(e){} }, 3000);
+
 function audioApply(){
   var on   = !!(DC && DC.audio_enabled);
   /* רשימת השמעה: מנגן קובץ אחרי קובץ, ובסוף חוזר לראשון */
@@ -1620,6 +1658,7 @@ function audioApply(){
     try{ if(window._ytPlayer && window._ytPlayer.stopVideo) window._ytPlayer.stopVideo(); }catch(e){}
     var yf=document.getElementById("yt-audio"); if(yf){ yf.remove(); window._ytPlayer=null; }
     _auState = !on ? "כבוי בהגדרות" : (!url ? "לא הוגדר קישור" : "מושתק — שבת או חג");
+    try{ musIndicator(); }catch(e){}
     return;
   }
 
@@ -1729,6 +1768,7 @@ function audioApply(){
         document.addEventListener("touchstart",go,{once:true});
       });
   } else { _auState="מנגן "+(_auIdx+1)+"/"+_auList.length+" · עוצמה "+Math.round(vol*100)+"%"; }
+  try{ musIndicator(); }catch(e){}
 }
 
 function applyDisplayConfig(cfg){
@@ -3203,6 +3243,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 6.3</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 6.4</div>
 </body>
 </html>
