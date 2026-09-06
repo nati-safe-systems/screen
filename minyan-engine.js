@@ -21,6 +21,51 @@
     chatzot_layla: 'chatzotLayla'
   };
 
+  /* ---------- סוג היום ----------
+     מזהה ערב שבת, שבת, יום טוב, ערב יום טוב וחול המועד לפי לוח ארץ ישראל.
+     נשען על לוח השנה של Intl, כך שאין צורך בטבלת תאריכים. */
+  var YT = { 'תשרי':[1,2,15,22], 'ניסן':[15,21], 'סיוון':[6], 'סיון':[6] };
+  var CH = { 'תשרי':[16,17,18,19,20,21], 'ניסן':[16,17,18,19,20] };
+
+  function hebOf(d) {
+    var f = new Intl.DateTimeFormat('he-u-ca-hebrew', { day:'numeric', month:'long' });
+    var o = {}, a = f.formatToParts(d);
+    for (var i=0;i<a.length;i++) o[a[i].type]=a[i].value;
+    return { day: parseInt(String(o.day).replace(/\D/g,''),10), month: String(o.month).trim() };
+  }
+  function inList(map, h) {
+    for (var k in map) if (h.month.indexOf(k) === 0) return map[k].indexOf(h.day) > -1;
+    return false;
+  }
+
+  /** מחזיר {isShabbat,isYomTov,isErevYomTov,isCholHamoed,isFriday,isRoshChodesh} */
+  function dayCtx(date) {
+    date = date || new Date();
+    var h  = hebOf(date);
+    var hn = hebOf(new Date(date.getTime() + 86400000));
+    var dow = date.getDay();
+    return {
+      isFriday:      dow === 5,
+      isShabbat:     dow === 6,
+      isYomTov:      inList(YT, h),
+      isErevYomTov:  inList(YT, hn) && !inList(YT, h),
+      isCholHamoed:  inList(CH, h),
+      isRoshChodesh: (h.day === 1 || h.day === 30)
+    };
+  }
+
+  /** האם השורה חלה על סוג היום הזה */
+  function matchDayType(dt, c) {
+    if (!dt || dt === 'all') return true;
+    if (dt === 'weekday')     return !c.isShabbat && !c.isYomTov && !c.isFriday;
+    if (dt === 'friday')      return c.isFriday && !c.isYomTov;
+    if (dt === 'shabbat')     return c.isShabbat;
+    if (dt === 'yomtov')      return c.isYomTov;
+    if (dt === 'erev_yomtov') return c.isErevYomTov;
+    if (dt === 'chol_hamoed') return c.isCholHamoed;
+    return true;
+  }
+
   function toMin(t) {                     /* "HH:MM[:SS]" -> דקות */
     if (t == null) return null;
     var p = String(t).split(':');
@@ -46,6 +91,8 @@
   /* האם השורה חלה על היום הזה */
   function appliesToday(row, date, ctx) {
     if (row.active === false) return false;
+    ctx = ctx && ctx.isShabbat !== undefined ? ctx : dayCtx(date);
+    if (!matchDayType(row.day_type, ctx)) return false;
     var dow = date.getDay();
     if (Array.isArray(row.days_of_week) && row.days_of_week.length &&
         row.days_of_week.indexOf(dow) === -1) return false;
@@ -147,7 +194,8 @@
   }
 
   var API = { resolve: resolve, next: next, byPrayer: byPrayer,
-              countdown: countdown, fmt: fmt, toMin: toMin, ZKEY: ZKEY, VERSION: '1.0' };
+              countdown: countdown, fmt: fmt, toMin: toMin, ZKEY: ZKEY,
+              dayCtx: dayCtx, matchDayType: matchDayType, VERSION: '1.1' };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   root.NatiMinyan = API;
 })(typeof window !== 'undefined' ? window : globalThis);

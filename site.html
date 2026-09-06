@@ -393,6 +393,51 @@ button.dz:hover{color:#ff6b6b}
     chatzot_layla: 'chatzotLayla'
   };
 
+  /* ---------- סוג היום ----------
+     מזהה ערב שבת, שבת, יום טוב, ערב יום טוב וחול המועד לפי לוח ארץ ישראל.
+     נשען על לוח השנה של Intl, כך שאין צורך בטבלת תאריכים. */
+  var YT = { 'תשרי':[1,2,15,22], 'ניסן':[15,21], 'סיוון':[6], 'סיון':[6] };
+  var CH = { 'תשרי':[16,17,18,19,20,21], 'ניסן':[16,17,18,19,20] };
+
+  function hebOf(d) {
+    var f = new Intl.DateTimeFormat('he-u-ca-hebrew', { day:'numeric', month:'long' });
+    var o = {}, a = f.formatToParts(d);
+    for (var i=0;i<a.length;i++) o[a[i].type]=a[i].value;
+    return { day: parseInt(String(o.day).replace(/\D/g,''),10), month: String(o.month).trim() };
+  }
+  function inList(map, h) {
+    for (var k in map) if (h.month.indexOf(k) === 0) return map[k].indexOf(h.day) > -1;
+    return false;
+  }
+
+  /** מחזיר {isShabbat,isYomTov,isErevYomTov,isCholHamoed,isFriday,isRoshChodesh} */
+  function dayCtx(date) {
+    date = date || new Date();
+    var h  = hebOf(date);
+    var hn = hebOf(new Date(date.getTime() + 86400000));
+    var dow = date.getDay();
+    return {
+      isFriday:      dow === 5,
+      isShabbat:     dow === 6,
+      isYomTov:      inList(YT, h),
+      isErevYomTov:  inList(YT, hn) && !inList(YT, h),
+      isCholHamoed:  inList(CH, h),
+      isRoshChodesh: (h.day === 1 || h.day === 30)
+    };
+  }
+
+  /** האם השורה חלה על סוג היום הזה */
+  function matchDayType(dt, c) {
+    if (!dt || dt === 'all') return true;
+    if (dt === 'weekday')     return !c.isShabbat && !c.isYomTov && !c.isFriday;
+    if (dt === 'friday')      return c.isFriday && !c.isYomTov;
+    if (dt === 'shabbat')     return c.isShabbat;
+    if (dt === 'yomtov')      return c.isYomTov;
+    if (dt === 'erev_yomtov') return c.isErevYomTov;
+    if (dt === 'chol_hamoed') return c.isCholHamoed;
+    return true;
+  }
+
   function toMin(t) {                     /* "HH:MM[:SS]" -> דקות */
     if (t == null) return null;
     var p = String(t).split(':');
@@ -418,6 +463,8 @@ button.dz:hover{color:#ff6b6b}
   /* האם השורה חלה על היום הזה */
   function appliesToday(row, date, ctx) {
     if (row.active === false) return false;
+    ctx = ctx && ctx.isShabbat !== undefined ? ctx : dayCtx(date);
+    if (!matchDayType(row.day_type, ctx)) return false;
     var dow = date.getDay();
     if (Array.isArray(row.days_of_week) && row.days_of_week.length &&
         row.days_of_week.indexOf(dow) === -1) return false;
@@ -519,7 +566,8 @@ button.dz:hover{color:#ff6b6b}
   }
 
   var API = { resolve: resolve, next: next, byPrayer: byPrayer,
-              countdown: countdown, fmt: fmt, toMin: toMin, ZKEY: ZKEY, VERSION: '1.0' };
+              countdown: countdown, fmt: fmt, toMin: toMin, ZKEY: ZKEY,
+              dayCtx: dayCtx, matchDayType: matchDayType, VERSION: '1.1' };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   root.NatiMinyan = API;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -595,6 +643,8 @@ var PRAYERS={unassigned:"טרם הוגדר",selichot:"סליחות",shacharit:"�
 var PCOLOR={unassigned:"#ff9f43",selichot:"#4fd1c5",shacharit:"#ffcc00",mussaf:"#7ee787",
   mincha:"#ff8f6b",arvit:"#8ab4f8",maariv:"#c792ea",other:"#8b949e"};
 var PORDER=["unassigned","selichot","shacharit","mussaf","mincha","arvit","maariv","other"];
+var DAYT={all:"כל הימים",weekday:"ימי חול (א׳-ה׳)",friday:"ערב שבת",shabbat:"שבת",
+          erev_yomtov:"ערב יום טוב",yomtov:"יום טוב",chol_hamoed:"חול המועד"};
 var ZM={alot:"עלות השחר",netz:"הנץ החמה",szks:'סוף זמן ק"ש',chatzot:"חצות היום",
         mincha_gedola:"מנחה גדולה",mincha_ketana:"מנחה קטנה",plag:"פלג המנחה",
         candle:"הדלקת נרות",shkia:"שקיעה",tzeit:"צאת הכוכבים",rt:"רבינו תם",
@@ -719,7 +769,27 @@ function delMin(i){sf("prayer_times?id=eq."+MINS[i].id,{method:"DELETE"}).then(f
 var OPEN={};
 function toggleGrp(k){OPEN[k]=!OPEN[k];drawMins();}
 
+/* התצוגה הראתה "15" ו"שקיעה" גם כשבמסד היה ריק — ולכן שורות נראו תקינות
+   ולא נפתרו לשום שעה. כאן משלימים למסד בדיוק את מה שמוצג. */
+function healMins(){
+  MINS.forEach(function(m){
+    var fix={};
+    if(m.mode==="interval"){
+      if(!m.interval_min) fix.interval_min=15;
+      if(!m.interval_start_zman && !m.interval_start){ fix.interval_start_zman="shkia"; fix.interval_start_offset=(m.interval_start_offset==null?-90:m.interval_start_offset); }
+      if(!m.interval_end_zman   && !m.interval_end)  { fix.interval_end_zman="shkia";   fix.interval_end_offset=(m.interval_end_offset==null?-20:m.interval_end_offset); }
+    }
+    if(m.mode==="relative" && !m.rel_zman) fix.rel_zman="shkia";
+    if(m.mode==="fixed" && !m.fixed_time)  fix.fixed_time="07:00";
+    if(Object.keys(fix).length){
+      for(var k in fix) m[k]=fix[k];
+      sf("prayer_times?id=eq."+m.id,{method:"PATCH",body:JSON.stringify(fix)}).catch(function(){});
+    }
+  });
+}
+
 function drawMins(){
+  healMins();
   var groups={};
   MINS.forEach(function(m,i){ var k=m.prayer||"other"; (groups[k]=groups[k]||[]).push(i); });
   var order=PORDER.filter(function(k){return groups[k];})
@@ -750,6 +820,8 @@ function drawMinRow(i){ return [i].map(function(i){
       '</select></div>'+
       '<div><label>סוג</label><select onchange="saveMin('+i+',\'mode\',this.value)">'+
         opts({fixed:"שעה קבועה",interval:"כל X דקות",relative:"יחסי לזמן הלכתי"},m.mode)+'</select></div>'+
+      '<div><label>חל בימים</label><select onchange="saveMin('+i+',\'day_type\',this.value)">'+
+        opts(DAYT,m.day_type||"all")+'</select></div>'+
       '<div><label>תווית (רשות)</label><input value="'+esc(m.label||"")+'" placeholder="ותיקין" onchange="saveMin('+i+',\'label\',this.value)"></div>';
 
     if(m.mode==="fixed")
