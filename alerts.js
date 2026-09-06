@@ -16,7 +16,7 @@
 
   var CFG = { supa:'', key:'', areas:[], testMode:false };
   /* שני מסלולים עצמאיים. החיווי מציג את הטוב מביניהם — קודם הם דרסו זה את זה. */
-  var state = { wsOk:false, apiOk:false, sbOk:false, sbMsg:'', wsWhy:'',
+  var state = { wsOk:false, apiOk:false, sbOk:false, rtOk:false, sbMsg:'', wsWhy:'',
                 last:null, active:null, hideT:null };
   var ws = null, poll = null, audioCtx = null, sirenTimer = null;
 
@@ -62,8 +62,9 @@
   function renderConn(){
     var c = document.getElementById('nsf-conn');
     if (!c) return;
-    var ok = state.wsOk || state.apiOk || state.sbOk;
-    var txt = state.wsOk  ? 'מחובר (ישיר · חי)'
+    var ok = state.rtOk || state.wsOk || state.apiOk || state.sbOk;
+    var txt = state.rtOk  ? 'מחובר · זמן אמת'
+            : state.wsOk  ? 'מחובר (ישיר · חי)'
             : state.apiOk ? 'מחובר (ישיר)'
             : state.sbOk  ? 'מחובר (גיבוי)'
             : (state.sbMsg || 'אין קשר');
@@ -152,7 +153,12 @@
       ws.onclose = function(ev){
         state.wsOk = false;
         state.wsWhy = 'סגירה '+(ev&&ev.code||'?');
-        renderConn(); ws=null; setTimeout(connectWs, 30000);
+        renderConn(); ws=null;
+        /* קוד 1006 חוזר = הרשת או השירות חוסמים. מפסיקים לנסות
+           אחרי שלושה כשלונות, במקום להעמיס לנצח. */
+        state.wsFails = (state.wsFails||0)+1;
+        if (state.wsFails <= 3) setTimeout(connectWs, 30000);
+        else state.wsWhy = 'חסום';
       };
       ws.onerror = function(){ try{ ws.close(); }catch(e){} };
     }catch(e){ state.wsOk=false; renderConn(); setTimeout(connectWs, 60000); }
@@ -173,10 +179,63 @@
         if (t && Date.now() - t > 5*60*1000) return;
         handle({ id:a.id || String(t), cities:a.cities || a.areas || [], title:a.title });
       })
-      .catch(function(){ state.apiOk = false; renderConn(); });
+      .catch(function(){
+        state.apiOk = false; renderConn();
+        state.apiFails = (state.apiFails||0)+1;
+        /* חסימת CORS אינה משתנה עם הזמן — אין טעם להמשיך לנסות */
+        if (state.apiFails > 3 && window._apiT){ clearInterval(window._apiT); window._apiT=null; }
+      });
   }
 
-  /* ---------- מסלול 2: דרך Supabase ---------- */
+  /* ---------- מסלול ראשי: חיבור חי ל-Supabase ----------
+     אותו דומיין שכבר עובד, ולכן עובר בכל רשת שבה המסך פועל.
+     ברגע שהשירות כותב התראה — היא מגיעה תוך פחות משנייה. */
+  var rt = null, rtRef = 0, rtHb = null, rtFails = 0;
+  function connectRealtime(){
+    if (!CFG.supa || !CFG.key) return;
+    try{
+      var host = CFG.supa.replace(/^https?:\/\//,'');
+      rt = new WebSocket('wss://'+host+'/realtime/v1/websocket?apikey='+
+                         encodeURIComponent(CFG.key)+'&vsn=1.0.0');
+
+      rt.onopen = function(){
+        rtFails = 0;
+        rt.send(JSON.stringify({
+          topic:'realtime:public:alerts', event:'phx_join',
+          payload:{ config:{ postgres_changes:[
+            { event:'INSERT', schema:'public', table:'alerts' } ] } },
+          ref: String(++rtRef)
+        }));
+        rtHb = setInterval(function(){
+          try{ rt.send(JSON.stringify({topic:'phoenix',event:'heartbeat',payload:{},ref:String(++rtRef)})); }
+          catch(e){}
+        }, 25000);
+      };
+
+      rt.onmessage = function(ev){
+        try{
+          var m = JSON.parse(ev.data);
+          if (m.event === 'phx_reply' && m.payload && m.payload.status === 'ok'){
+            state.rtOk = true; renderConn(); return;
+          }
+          if (m.event === 'postgres_changes'){
+            var rec = m.payload && m.payload.data && m.payload.data.record;
+            if (rec) handle({ id:rec.id, cities:rec.areas || [], title:rec.title });
+          }
+        }catch(e){}
+      };
+
+      rt.onclose = function(){
+        state.rtOk = false; renderConn();
+        if (rtHb){ clearInterval(rtHb); rtHb = null; }
+        rt = null; rtFails++;
+        setTimeout(connectRealtime, Math.min(30000, 3000 * rtFails));
+      };
+      rt.onerror = function(){ try{ rt.close(); }catch(e){} };
+    }catch(e){ state.rtOk=false; renderConn(); setTimeout(connectRealtime, 30000); }
+  }
+
+  /* ---------- מסלול גיבוי: דגימה ---------- */
   function pollSupa(){
     if (!CFG.supa || !CFG.key) return;
     fetch(CFG.supa + '/rest/v1/alerts?select=*&order=created_at.desc&limit=1',
@@ -203,11 +262,13 @@
     CFG.areas = opt.areas || [];
     ensureDom();
     state.sbMsg='מתחבר...'; renderConn();
+    connectRealtime();
     connectWs();
     pollDirect();
     pollSupa();
-    setInterval(pollDirect, 12000);
-    poll = setInterval(pollSupa, 20000);
+    window._apiT = setInterval(pollDirect, 12000);
+    /* Supabase הוא המסלול שעובד — דוגמים אותו בתדירות גבוהה */
+    poll = setInterval(pollSupa, 8000);
 
     /* הדפדפן חוסם צליל ללא מגע — מנסים לשחרר בכל אינטראקציה */
     var unlock = function(){
@@ -239,7 +300,9 @@
               (state.wsOk?'מחובר':'לא מחובר '+(state.wsWhy||''))+'</b><br>'+
             'HTTPS ישיר: <b style="color:'+(state.apiOk?'#7ee787':'#ff9a9a')+'">'+
               (state.apiOk?'עובד':'חסום')+'</b><br>'+
-            'Supabase: <b style="color:'+(state.sbOk?'#7ee787':'#ff9a9a')+'">'+
+            'זמן אמת: <b style="color:'+(state.rtOk?'#7ee787':'#ff9a9a')+'">'+
+              (state.rtOk?'מחובר':'לא מחובר')+'</b><br>'+
+            'Supabase דגימה: <b style="color:'+(state.sbOk?'#7ee787':'#ff9a9a')+'">'+
               (state.sbOk?'עובד':(state.sbMsg||'חסום'))+'</b>';
         }, 1000);
       }
