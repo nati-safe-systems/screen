@@ -425,6 +425,20 @@ tr:hover td{background:rgba(128,0,0,0.05);}
           <div style="font-size:12px;color:#8b949e;margin-top:5px;">
             כמה קבצים ינוגנו אחד אחרי השני, ובסוף הרשימה יחזרו לראשון.
           </div>
+
+          <div style="border-top:1px solid #21262d;margin-top:14px;padding-top:12px;">
+            <label style="color:#ff8f8f;font-weight:800;">בדיקת התראת פיקוד העורף</label>
+            <div style="font-size:12px;color:#8b949e;margin:5px 0 8px;line-height:1.5;">
+              שולח התראת בדיקה <b>לכל המסכים המחוברים</b>, בדיוק כמו התראה אמיתית —
+              דרך המסד ובזמן אמת. ההתראה נעלמת לבד אחרי 3 דקות.
+            </div>
+            <button type="button" onclick="sendTestAlert()"
+              style="background:#4a1414;border:1px solid #ff6b6b;color:#ff9a9a;border-radius:6px;
+                     padding:7px 16px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;">
+              שלח התראת בדיקה
+            </button>
+            <span id="testAlertMsg" style="font-size:12px;margin-right:9px;"></span>
+          </div>
           <div style="display:flex;align-items:center;gap:9px;margin-top:6px;">
             <span style="font-size:13px;color:#8b949e;">עוצמה</span>
             <input id="edit-sc-audiovol" type="range" min="0" max="100" oninput="document.getElementById('volShow').textContent=this.value+'%';markCustom()" style="flex:1;">
@@ -1191,6 +1205,22 @@ function audDraw(){
   }).join('') || '<div style="font-size:12px;color:#6e7681;">אין קבצים. העלה קובץ או הוסף כתובת רדיו.</div>';
 }
 function audAddUrl(){ _audList.push(''); audDraw(); markCustom(); }
+
+/* בדיקת התראה מקצה לקצה — כותב שורה למסד, בדיוק כמו השירות האמיתי */
+function sendTestAlert(){
+  if(!confirm('כל המסכים המחוברים יציגו התראה אדומה עם צפירה, למשך 3 דקות.\n\nלהמשיך?')) return;
+  var msg=document.getElementById('testAlertMsg');
+  if(msg){ msg.textContent='שולח...'; msg.style.color='#8b949e'; }
+  sf('alerts',{method:'POST',body:JSON.stringify({
+    id:'test-'+Date.now(),
+    title:'בדיקת מערכת — אין התראה אמיתית',
+    areas:['בדיקה']
+  })}).then(function(){
+    if(msg){ msg.textContent='נשלח ✓ — בדוק את המסכים'; msg.style.color='#3fb950'; }
+  }).catch(function(e){
+    if(msg){ msg.textContent='נכשל: '+(e.message||e); msg.style.color='#ff6b6b'; }
+  });
+}
 
 /* ---------- ספריית המוזיקה ----------
    כל הקבצים שהועלו אי פעם, משותפים לכל המסכים.

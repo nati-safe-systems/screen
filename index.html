@@ -449,6 +449,9 @@ body.portrait #eruv .er-s{font-size:1.55vw;}
 body.portrait #mus{font-size:1.7vw}
 body.portrait #mus .bars{height:2vw}
 body.portrait #mus .bars i{width:0.35vw}
+
+#timer .sec{font-size:.4em;vertical-align:.62em;margin-right:.14em;font-weight:700;
+  -webkit-text-fill-color:#5fbf90;background:none;filter:none}
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;800;900&family=Heebo:wght@300;400;500;700;800;900&family=Rubik:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,900&family=Suez+One&display=swap" rel="stylesheet">
 </head>
@@ -3017,7 +3020,12 @@ function upd(){
   // תאריך התצוגה מתחלף בחצות יחד עם היום בשבוע (לא בשקיעה)
   var hdDisp=ghd(now);
 
-  document.getElementById("timer").textContent=now.toLocaleTimeString("he-IL",{hour12:false});
+  (function(){
+    var _p2=function(x){return (x<10?"0":"")+x;};
+    document.getElementById("timer").innerHTML =
+      _p2(now.getHours())+":"+_p2(now.getMinutes())+
+      '<span class="sec">'+_p2(now.getSeconds())+'</span>';
+  })();
   document.getElementById("dg").textContent=now.toLocaleDateString("he-IL",{day:"numeric",month:"long",year:"numeric"});
   document.getElementById("dow").textContent="יום "+["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"][now.getDay()];
   document.getElementById("dh").textContent=gdl(hdDisp.day)+" ב"+hdDisp.month+" "+gdy(hdDisp.year);
@@ -3243,6 +3251,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 6.4</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 6.5</div>
 </body>
 </html>
