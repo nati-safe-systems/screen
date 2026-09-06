@@ -399,6 +399,27 @@ input:focus,select:focus{border-color:#58a6ff;}
           <label class="td-chk"><input type="checkbox" id="td-news"> מבזקי חדשות</label>
           <label class="td-chk"><input type="checkbox" id="td-ads"> פרסומות בצדדים</label>
         </div>
+
+        <div id="t-bg-box" style="margin-top:14px;border-top:1px solid #21262d;padding-top:12px;">
+          <div style="font-size:14px;color:#ffcc00;font-weight:700;margin-bottom:6px;">תמונות רקע</div>
+          <div id="t-bg-list"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;align-items:center;">
+            <label style="background:#ffcc00;color:#161b22;border-radius:6px;padding:7px 15px;font-size:13px;font-weight:800;cursor:pointer;">
+              העלה תמונה מהמכשיר
+              <input type="file" accept="image/*" style="display:none" onchange="tBgUpload(this)">
+            </label>
+            <button type="button" onclick="tBgAdd()" style="background:#21262d;border:1px solid #30363d;color:#ffcc00;border-radius:6px;padding:7px 12px;font:inherit;font-size:13px;cursor:pointer;">+ קישור</button>
+            <span id="tBgMsg" style="font-size:12px;color:#8b949e;"></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+            <span style="font-size:13px;color:#8b949e;">החלפה כל</span>
+            <input id="t-bg-sec" type="number" min="3" max="120" value="10" style="width:80px;background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:5px;font:inherit;">
+            <span style="font-size:13px;color:#8b949e;">שניות</span>
+          </div>
+          <div style="font-size:12px;color:#8b949e;margin-top:5px;">
+            תמונה אחת = רקע קבוע. כמה תמונות = מצגת עם מעבר רך.
+          </div>
+        </div>
         <div style="display:flex;justify-content:flex-end;margin-top:12px;">
           <button class="btn-save" style="padding:10px 18px;" onclick="saveDisplayConfig()">שמור תצוגה</button>
         </div>
@@ -1259,6 +1280,9 @@ function applyTenantDisplaySection(raw){
   document.getElementById("td-ads").checked     = cfg.ads     !==undefined ? !!cfg.ads     : false;
   _tenantAds = Array.isArray(cfg.ads_list) ? cfg.ads_list.slice() : [];
   renderTenantAds();
+  _tBg = Array.isArray(cfg.bg_images) ? cfg.bg_images.slice() : (cfg.bg_url?[cfg.bg_url]:[]);
+  tBgDraw();
+  var _tbs=document.getElementById("t-bg-sec"); if(_tbs) _tbs.value = cfg.bg_sec || 10;
   // מהירות גלילה
   var sp=(cfg.scrollSpeed>0)?cfg.scrollSpeed:80;
   var spEl=document.getElementById("tspeed"); if(spEl) spEl.value=sp;
@@ -1329,8 +1353,56 @@ function saveDisplayConfig(){
   out.board   = document.getElementById("td-board").checked;
   out.news    = document.getElementById("td-news").checked;
   out.ads     = document.getElementById("td-ads").checked;
+  out.bg_images = _tBg.filter(function(u){return u && u.trim();});
+  out.bg_sec    = parseInt((document.getElementById("t-bg-sec")||{}).value,10)||10;
   _tenantSaveDC(out).then(function(){ toast("התצוגה עודכנה"); });
 }
+var SUPA_BASE=SB, SUPA_KEY=SK;
+
+/* ---- העלאת תמונה ל-Supabase Storage ----
+   הקובץ נשמר בדלי screen-media תחת תיקייה של המסך,
+   והכתובת הציבורית שלו נכנסת לרשימת התמונות. */
+function nsfUpload(file, screenId, cb){
+  if(!file) return;
+  if(!/^image\//.test(file.type)){ cb(null,"הקובץ אינו תמונה"); return; }
+  if(file.size > 10*1024*1024){ cb(null,"הקובץ גדול מ-10MB"); return; }
+  var safe = file.name.replace(/[^A-Za-z0-9._-]/g,"_");
+  var path = "screens/"+(screenId||"general")+"/"+Date.now()+"_"+safe;
+  fetch(SUPA_BASE+"/storage/v1/object/screen-media/"+path,{
+    method:"POST",
+    headers:{ apikey:SUPA_KEY, Authorization:"Bearer "+SUPA_KEY,
+              "Content-Type":file.type, "x-upsert":"true" },
+    body:file
+  }).then(function(r){
+    if(!r.ok) return r.text().then(function(t){ throw new Error(t||("HTTP "+r.status)); });
+    cb(SUPA_BASE+"/storage/v1/object/public/screen-media/"+path, null);
+  }).catch(function(e){ cb(null, e.message||String(e)); });
+}
+
+var _tBg=[];
+function tBgDraw(){
+  var w=document.getElementById("t-bg-list"); if(!w)return;
+  w.innerHTML=_tBg.map(function(u,i){
+    return '<div style="display:flex;gap:6px;margin-bottom:5px;align-items:center;">'+
+      '<input value="'+String(u).replace(/"/g,"&quot;")+'" placeholder="כתובת תמונה" '+
+      'oninput="_tBg['+i+']=this.value" style="flex:1;background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:6px;font:inherit;">'+
+      '<button type="button" onclick="_tBg.splice('+i+',1);tBgDraw()" '+
+      'style="background:none;border:none;color:#8b949e;font-size:17px;cursor:pointer;">×</button></div>';
+  }).join("") || '<div style="font-size:12px;color:#6e7681;">אין תמונות — יוצג הרקע המובנה.</div>';
+}
+function tBgAdd(){ _tBg.push(""); tBgDraw(); }
+function tBgUpload(inp){
+  var f=inp.files&&inp.files[0]; if(!f)return;
+  var msg=document.getElementById("tBgMsg");
+  if(msg){ msg.textContent="מעלה..."; msg.style.color="#8b949e"; }
+  nsfUpload(f, (typeof sid!=="undefined"?sid:"general"), function(url,err){
+    inp.value="";
+    if(err){ if(msg){ msg.textContent="ההעלאה נכשלה: "+err; msg.style.color="#ff6b6b"; } return; }
+    _tBg.push(url); tBgDraw();
+    if(msg){ msg.textContent="הועלה ✓ — לחץ שמור תצוגה"; msg.style.color="#3fb950"; }
+  });
+}
+
 function renderTenantAds(){
   var wrap=document.getElementById("t-ads-list");
   if(!wrap)return;

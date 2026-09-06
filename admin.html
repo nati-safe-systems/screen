@@ -382,7 +382,14 @@ tr:hover td{background:rgba(128,0,0,0.05);}
         <div class="field" style="margin-top:12px;">
           <label>תמונות רקע</label>
           <div id="bgList" style="margin-top:6px;"></div>
-          <button type="button" onclick="bgAdd()" style="background:#21262d;border:1px solid #30363d;color:#ffcc00;border-radius:6px;padding:5px 12px;font:inherit;font-size:13px;cursor:pointer;margin-top:4px;">+ תמונה</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;align-items:center;">
+            <label style="background:#ffcc00;color:#161b22;border-radius:6px;padding:6px 14px;font-size:13px;font-weight:800;cursor:pointer;">
+              העלה תמונה
+              <input type="file" accept="image/*" style="display:none" onchange="bgUpload(this)">
+            </label>
+            <button type="button" onclick="bgAdd()" style="background:#21262d;border:1px solid #30363d;color:#ffcc00;border-radius:6px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer;">+ קישור</button>
+            <span id="bgUpMsg" style="font-size:12px;color:#8b949e;"></span>
+          </div>
           <div style="display:flex;align-items:center;gap:9px;margin-top:8px;">
             <span style="font-size:13px;color:#8b949e;">החלפה כל</span>
             <input id="edit-sc-bgsec" type="number" min="3" max="120" value="10" oninput="markCustom()" style="width:80px;">
@@ -1067,6 +1074,28 @@ function readDisplayConfig(){
   return out;
 }
 var _rawDC = {};   /* ה-display_config כפי שנטען מהשרת — בסיס למיזוג בשמירה */
+var SUPA_BASE=SB, SUPA_KEY=SK;
+
+/* ---- העלאת תמונה ל-Supabase Storage ----
+   הקובץ נשמר בדלי screen-media תחת תיקייה של המסך,
+   והכתובת הציבורית שלו נכנסת לרשימת התמונות. */
+function nsfUpload(file, screenId, cb){
+  if(!file) return;
+  if(!/^image\//.test(file.type)){ cb(null,"הקובץ אינו תמונה"); return; }
+  if(file.size > 10*1024*1024){ cb(null,"הקובץ גדול מ-10MB"); return; }
+  var safe = file.name.replace(/[^A-Za-z0-9._-]/g,"_");
+  var path = "screens/"+(screenId||"general")+"/"+Date.now()+"_"+safe;
+  fetch(SUPA_BASE+"/storage/v1/object/screen-media/"+path,{
+    method:"POST",
+    headers:{ apikey:SUPA_KEY, Authorization:"Bearer "+SUPA_KEY,
+              "Content-Type":file.type, "x-upsert":"true" },
+    body:file
+  }).then(function(r){
+    if(!r.ok) return r.text().then(function(t){ throw new Error(t||("HTTP "+r.status)); });
+    cb(SUPA_BASE+"/storage/v1/object/public/screen-media/"+path, null);
+  }).catch(function(e){ cb(null, e.message||String(e)); });
+}
+
 var _bgImgs = [];
 var _SITES=[], _ROOMS=[];
 function loadSitesRooms(){
@@ -1113,6 +1142,19 @@ function bgDraw(){
   }).join('') || '<div style="font-size:12px;color:#6e7681;">אין תמונות — יוצג הרקע המובנה.</div>';
 }
 function bgAdd(){ _bgImgs.push(''); bgDraw(); markCustom(); }
+function bgUpload(inp){
+  var f=inp.files&&inp.files[0]; if(!f)return;
+  var msg=document.getElementById('bgUpMsg');
+  var sid=(document.getElementById('edit-sc-id')||{}).value||'general';
+  if(msg){ msg.textContent='מעלה...'; msg.style.color='#8b949e'; }
+  nsfUpload(f, sid, function(url,err){
+    inp.value='';
+    if(err){ if(msg){ msg.textContent='ההעלאה נכשלה: '+err; msg.style.color='#ff6b6b'; } return; }
+    _bgImgs.push(url); bgDraw(); markCustom();
+    if(msg){ msg.textContent='הועלה ✓'; msg.style.color='#3fb950';
+      setTimeout(function(){ msg.textContent=''; },2500); }
+  });
+}
 
 function fillDisplayConfig(cfg){
   cfg = cfg || {};
