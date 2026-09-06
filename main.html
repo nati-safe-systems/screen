@@ -522,7 +522,7 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
         /* rolling: המניינים רצופים ולא מוכרזים בשעה מדויקת.
            המסך יחליט אם להציג את הרשימה או רק "רצוף עד ..." */
         for (var t = s; t <= e + 0.01; t += step) {
-          var row = mk(r, t); row.rolling = true; row.window = [s, e];
+          var row = mk(r, t); row.rolling = true; row.window = [s, e]; row.step = step;
           out.push(row);
         }
       }
@@ -786,7 +786,9 @@ function drawMinyanim(now,nowMin){
       var cells;
       if(arr[0].rolling){
         /* מנחה רצופה — לא מציגים כל שעה, אלא את החלון */
-        cells='<i class="roll">רצוף '+arr[0].time+' — '+arr[arr.length-1].time+'</i>';
+        var stp=arr[0].step||(arr.length>1?Math.round(arr[1].minutes-arr[0].minutes):0);
+        cells='<i class="roll">'+(stp?'כל '+stp+' דק\' · ':'')+
+              arr[0].time+' — '+arr[arr.length-1].time+'</i>';
       }else{
         cells=arr.map(function(x){
           return '<i'+(nx&&x.minutes===nx.minutes?' class="nx"':'')+'>'+x.time+'</i>';

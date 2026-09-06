@@ -144,7 +144,7 @@
         /* rolling: המניינים רצופים ולא מוכרזים בשעה מדויקת.
            המסך יחליט אם להציג את הרשימה או רק "רצוף עד ..." */
         for (var t = s; t <= e + 0.01; t += step) {
-          var row = mk(r, t); row.rolling = true; row.window = [s, e];
+          var row = mk(r, t); row.rolling = true; row.window = [s, e]; row.step = step;
           out.push(row);
         }
       }
