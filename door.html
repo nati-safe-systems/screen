@@ -41,7 +41,8 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 .body{flex:1;min-height:0;position:relative;overflow:hidden}
 .body .inner{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;
   align-items:center;justify-content:center;padding:2vh 3vw;gap:1.6vh}
-.pname{color:#9fc0e4;font-size:3.4vh;font-weight:800;letter-spacing:.2vh}
+.pname{color:#ffcc00;font-family:"Frank Ruhl Libre",serif;font-size:11vh;font-weight:900;
+  line-height:1;letter-spacing:.02em;text-shadow:0 .4vh 1.6vh rgba(0,0,0,.7)}
 
 /* מצב רשימה */
 .list{display:flex;flex-direction:column;align-items:center;gap:.6vh;width:100%}
@@ -51,17 +52,17 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 .li.now{color:#ffd86b;font-size:10vh;font-weight:900;opacity:1;
   text-shadow:0 0 3.5vh rgba(255,204,0,.6);animation:pulse 2.8s ease-in-out infinite}
 @keyframes pulse{0%,100%{text-shadow:0 0 2.4vh rgba(255,204,0,.45)}50%{text-shadow:0 0 5vh rgba(255,204,0,.8)}}
-.cdline{color:#ffcc00;font-size:2.8vh;font-weight:800;margin-top:.4vh}
+.cdline{color:#ffcc00;font-size:4.6vh;font-weight:900;margin-top:.8vh;font-variant-numeric:tabular-nums}
 
 /* מצב ספירה לאחור */
 .cdwrap{text-align:center}
-.cdwrap .pray{color:#ffcc00;font-family:"Frank Ruhl Libre",serif;font-size:8vh;font-weight:900;
+.cdwrap .pray{color:#ffcc00;font-family:"Frank Ruhl Libre",serif;font-size:12vh;font-weight:900;
   line-height:1;letter-spacing:.02em;text-shadow:0 .4vh 1.6vh rgba(0,0,0,.7)}
-.cdwrap .lbl{color:#9fc0e4;font-size:2.9vh;font-weight:600;margin-top:1vh}
+.cdwrap .lbl{color:#9fc0e4;font-size:4vh;font-weight:700;margin-top:1.2vh}
 .cdwrap .big{font-size:19vh;font-weight:900;line-height:1;margin-top:.4vh;
   font-variant-numeric:tabular-nums;transition:color .6s}
-.cdwrap .unit{color:#9fc0e4;font-size:2.6vh;font-weight:600;margin-top:.4vh}
-.cdwrap .at{color:#00ff88;font-size:6.4vh;font-weight:900;margin-top:1.6vh;
+.cdwrap .unit{color:#9fc0e4;font-size:3.6vh;font-weight:700;margin-top:.5vh}
+.cdwrap .at{color:#00ff88;font-size:7.4vh;font-weight:900;margin-top:1.8vh;
   font-variant-numeric:tabular-nums;text-shadow:0 0 2.4vh rgba(0,255,136,.3)}
 
 /* צבע לפי דחיפות: רחוק = זהב, מתקרב = כתום, ממש קרוב = אדום פועם */
@@ -72,12 +73,12 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 
 /* מנחה — יעד השקיעה */
 .deadline{text-align:center}
-.deadline .lbl{color:#9fc0e4;font-size:2.8vh;font-weight:700}
-.deadline .big{color:#ff8f6b;font-size:14vh;font-weight:900;line-height:1;font-variant-numeric:tabular-nums;
-  text-shadow:0 0 4vh rgba(255,120,80,.45)}
-.deadline .sub{color:#ffd86b;font-size:3.4vh;font-weight:800;margin-top:.8vh}
-.deadline .roll{color:#cfe0f2;font-size:2.4vh;margin-top:1.4vh;
-  border-top:1px solid rgba(255,255,255,.15);padding-top:1.2vh}
+.deadline .lbl{color:#9fc0e4;font-size:4.2vh;font-weight:800}
+.deadline .big{color:#ff8f6b;font-size:16vh;font-weight:900;line-height:1;font-variant-numeric:tabular-nums;
+  text-shadow:0 0 4.5vh rgba(255,120,80,.5)}
+.deadline .sub{color:#ffd86b;font-size:5vh;font-weight:900;margin-top:1vh;font-variant-numeric:tabular-nums}
+.deadline .roll{color:#fff;font-size:4.4vh;font-weight:800;margin-top:2vh;
+  border-top:1px solid rgba(255,255,255,.2);padding-top:1.6vh}
 
 .empty{color:#6e7f95;font-size:3.4vh}
 
@@ -1094,13 +1095,29 @@ function render(now,nowMin){
   /* מניינים רצופים (מנחה) — מציגים יעד ולא שעות, כי מניין מתחיל
      כשהקודם נגמר ואי אפשר להתחייב לשעה. */
   if(nx.rolling){
-    var left=Math.round(Z.shkia-nowMin);
-    var endT=NatiMinyan.fmt(nx.window[1]);
-    b.innerHTML='<div class="pname">'+(PR[nx.prayer]||nx.prayer)+'</div>'+
-      '<div class="deadline"><div class="lbl">שקיעת החמה</div>'+
-      '<div class="big">'+NatiMinyan.fmt(Z.shkia)+'</div>'+
-      '<div class="sub">'+(left>0?'נותרו '+left+' דקות':'עברה')+'</div>'+
-      '<div class="roll">מניינים כל '+(nx.step||15)+' דקות · האחרון עד '+endT+'</div></div>';
+    /* לכל תפילה העוגן שמעניין אותה: מנחה — השקיעה, מעריב — צאת הכוכבים. */
+    var isMincha = (nx.prayer==="mincha");
+    var anchorT  = isMincha ? Z.shkia : Z.tzeitHakochavim;
+    var anchorL  = isMincha ? "שקיעת החמה" : "צאת הכוכבים";
+    var left     = Math.round(anchorT-nowMin);
+    var endT     = NatiMinyan.fmt(nx.window[1]);
+    var startT   = NatiMinyan.fmt(nx.window[0]);
+
+    var head;
+    if(left>0){
+      var cs3=cdSec(anchorT,now);
+      head='<div class="lbl">'+anchorL+'</div>'+
+           '<div class="big">'+NatiMinyan.fmt(anchorT)+'</div>'+
+           '<div class="sub">בעוד '+(cs3?blink(cs3.t):left+" דק\'")+'</div>';
+    }else{
+      head='<div class="lbl">'+anchorL+' '+NatiMinyan.fmt(anchorT)+'</div>'+
+           '<div class="big">כל '+(nx.step||15)+' דקות</div>'+
+           '<div class="sub">מ-'+startT+' עד '+endT+'</div>';
+    }
+    b.innerHTML='<div class="cdwrap"><div class="pray">'+(PR[nx.prayer]||nx.prayer)+'</div>'+
+      '<div class="deadline">'+head+
+      (left>0?'<div class="roll">מניינים כל '+(nx.step||15)+' דקות · האחרון עד '+endT+'</div>':'')+
+      '</div></div>';
     return;
   }
 
