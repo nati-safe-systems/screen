@@ -543,7 +543,7 @@ var ZMCHECK = new URLSearchParams(window.location.search).get("zmcheck") === "1"
     var qp=new URLSearchParams(window.location.search);
     var sid=qp.get("id");
     if(!sid || qp.get("noroute")==="1" || ZMCHECK) return;
-    var MAP={door:"door.html", cafe:"cafe.html", mikveh:"mikveh.html"};   /* sponsors — עוד לא נבנה */
+    var MAP={door:"door.html", cafe:"cafe.html", mikveh:"mikveh.html", sponsors:"sponsors.html", lobby:"main.html"};
     fetch(SUPA+"/rest/v1/screens?screen_id=eq."+encodeURIComponent(sid)+"&select=purpose",
       {headers:{apikey:SKEY,Authorization:"Bearer "+SKEY},cache:"no-store"})
       .then(function(r){return r.json();})
