@@ -26,13 +26,21 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
   border-bottom:1px solid rgba(255,255,255,.07)}
 .zr b{color:#00ff88;font-weight:800;font-variant-numeric:tabular-nums}
 .warn{color:#ff5555;font-size:1.3vh;text-align:center;margin-top:.4vh}
-.room{margin-bottom:.9vh}
-.room .rn{color:#ffcc00;font-size:2.1vh;font-weight:900;font-family:"Frank Ruhl Libre",serif;margin-bottom:.2vh}
-.prow{display:flex;justify-content:space-between;gap:.6vw;font-size:1.8vh;padding:.18vh 0}
-.prow span{color:#9fc0e4;font-weight:700}
-.prow b{color:#fff;font-variant-numeric:tabular-nums;font-weight:700}
-.prow b i{font-style:normal;color:#00ff88;margin-right:.3vw}
-.prow b i.nx{color:#ffd86b;text-shadow:0 0 1.4vh rgba(255,204,0,.55)}
+#mlist{display:flex;flex-direction:column;gap:1vh;justify-content:space-evenly}
+.room{background:linear-gradient(160deg,rgba(22,34,60,.95),rgba(11,18,34,.95));
+  border:1px solid rgba(140,180,230,.28);border-radius:1.2vh;padding:.9vh 1vw;
+  display:flex;flex-direction:column;gap:.45vh;min-height:0}
+.room .rn{color:#ffcc00;font-size:2.4vh;font-weight:900;font-family:"Frank Ruhl Libre",serif;
+  text-align:center;border-bottom:1px solid rgba(255,204,0,.3);padding-bottom:.3vh;margin-bottom:.2vh}
+.prow{display:flex;align-items:center;gap:.5vw;justify-content:space-between}
+.prow>span{color:#9fc0e4;font-weight:800;font-size:1.75vh;white-space:nowrap;min-width:4.5em}
+.prow>b{display:flex;flex-wrap:wrap;gap:.35vw;justify-content:flex-end;font-weight:400}
+.prow i{font-style:normal;color:#00ff88;font-size:1.85vh;font-weight:800;
+  font-variant-numeric:tabular-nums;background:rgba(0,255,136,.08);
+  border:1px solid rgba(0,255,136,.22);border-radius:.5vh;padding:.06vh .45vw}
+.prow i.nx{color:#161b22;background:#ffd86b;border-color:#ffd86b;
+  box-shadow:0 0 1.6vh rgba(255,204,0,.5)}
+.prow i.roll{color:#ffb37a;background:rgba(255,140,60,.1);border-color:rgba(255,140,60,.3)}
 .center{flex:1;min-width:0;position:relative;display:flex;flex-direction:column;overflow:hidden}
 .ttl{background:rgba(50,0,0,.93);padding:1.6vh;text-align:center;flex-shrink:0;position:relative;z-index:2}
 .ttl small{display:block;color:rgba(255,204,0,.6);font-size:1.5vh;letter-spacing:.3vh}
@@ -715,11 +723,20 @@ function drawMinyanim(now,nowMin){
     var list=NatiMinyan.resolve(rows,Z,now,{});
     if(!list.length)return;
     var nx=NatiMinyan.next(list,nowMin), g=NatiMinyan.byPrayer(list), rh="";
-    for(var pk in g){
-      rh+='<div class="prow"><span>'+(PR[pk]||pk)+'</span><b>'+
-        g[pk].map(function(x){ return '<i'+(nx&&x.minutes===nx.minutes?' class="nx"':'')+'>'+x.time+'</i>'; }).join("")+
-      '</b></div>';
-    }
+    /* סדר קבוע, כדי שהתפילות תמיד יופיעו באותו סדר */
+    ["selichot","shacharit","mussaf","mincha","arvit","maariv","other"].forEach(function(pk){
+      var arr=g[pk]; if(!arr||!arr.length)return;
+      var cells;
+      if(arr[0].rolling){
+        /* מנחה רצופה — לא מציגים כל שעה, אלא את החלון */
+        cells='<i class="roll">רצוף '+arr[0].time+' — '+arr[arr.length-1].time+'</i>';
+      }else{
+        cells=arr.map(function(x){
+          return '<i'+(nx&&x.minutes===nx.minutes?' class="nx"':'')+'>'+x.time+'</i>';
+        }).join("");
+      }
+      rh+='<div class="prow"><span>'+(PR[pk]||pk)+'</span><b>'+cells+'</b></div>';
+    });
     out+='<div class="room"><div class="rn">'+esc(r.display_name||r.name)+'</div>'+rh+'</div>';
   });
   document.getElementById("mlist").innerHTML=out||'<div class="none">לא הוגדרו מניינים</div>';

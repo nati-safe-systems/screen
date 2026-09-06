@@ -9,11 +9,15 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 .hdr{background:#7a0000;color:#fff;text-align:center;padding:1vh 0;font-size:2.4vh;font-weight:800;
   border-bottom:2px solid #ffcc00;flex-shrink:0}
 .main{flex:1;min-height:0;display:grid;gap:1.2vw;padding:1.4vh 1.4vw;align-content:stretch}
-.topline{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:2vw;
+.topline{flex-shrink:0;display:flex;align-items:center;gap:2vw;
   padding:1.2vh 2vw;background:linear-gradient(180deg,#0d1526,#080d1a);
   border-bottom:1px solid rgba(255,255,255,.12)}
-.topline .dts{text-align:center}
-.bigttl{color:#ffcc00;font-family:"Frank Ruhl Libre",serif;font-size:5vh;font-weight:900}
+.topline .side{flex:1;min-width:0}
+.topline .side:last-child{text-align:left}
+.bigttl{flex:0 0 auto;color:#ffcc00;font-family:"Frank Ruhl Libre",serif;
+  font-size:6vh;font-weight:900;text-align:center;letter-spacing:.05vh;
+  text-shadow:0 .3vh 1.4vh rgba(0,0,0,.7)}
+.topline .dt,.topline .dt2{text-align:left}
 .sc{background:linear-gradient(160deg,rgba(58,40,0,.9),rgba(26,16,0,.94));
   border:1px solid rgba(255,204,0,.45);border-radius:1.6vh;padding:1.6vh 1.4vw;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5vh;
@@ -22,14 +26,46 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 .sc .nm{color:#fff;font-family:"Frank Ruhl Libre",serif;font-weight:900;font-size:4.4vh;
   line-height:1.15;overflow-wrap:anywhere}
 .sc .dd{color:#e8d6a8;font-size:2.2vh;line-height:1.35}
-.sc.t1{border-color:#ffd86b;border-width:.35vh;
-  background:linear-gradient(160deg,rgba(98,68,0,.95),rgba(48,30,0,.97));
-  box-shadow:0 0 3.4vh rgba(255,204,0,.4)}
-.sc.t1 .nm{font-size:7vh}
-.sc.t1 .cat{font-size:2.8vh}
-.sc.t1 .dd{font-size:2.8vh}
-.sc.t2 .nm{font-size:5.4vh}
-.sc.t4 .nm,.sc.t5 .nm{font-size:3.4vh}
+/* לכל דרגה צבע משלה, כדי שההבדל ייקלט מיד גם ממרחק */
+.sc.t1{border-color:#ffd86b;border-width:.4vh;
+  background:linear-gradient(160deg,rgba(112,78,0,.96),rgba(52,33,0,.97));
+  box-shadow:0 0 4vh rgba(255,204,0,.45)}
+.sc.t1 .cat{color:#ffe9a8;font-size:3vh}
+.sc.t1 .nm{font-size:7.4vh}
+.sc.t1 .dd{color:#ffe9a8;font-size:2.9vh}
+
+.sc.t2{border-color:#7fd4ff;border-width:.3vh;
+  background:linear-gradient(160deg,rgba(0,62,104,.95),rgba(0,30,55,.96));
+  box-shadow:0 0 2.6vh rgba(80,190,255,.3)}
+.sc.t2 .cat{color:#9fe0ff;font-size:2.4vh}
+.sc.t2 .nm{font-size:5vh}
+.sc.t2 .dd{color:#bfe6ff;font-size:2.3vh}
+
+.sc.t3{border-color:#7ee7a0;
+  background:linear-gradient(160deg,rgba(0,66,38,.94),rgba(0,32,20,.96))}
+.sc.t3 .cat{color:#a8f0c2}
+.sc.t3 .nm{font-size:4vh}
+.sc.t3 .dd{color:#c6f2d6}
+
+.sc.t4{border-color:#c9a3ff;
+  background:linear-gradient(160deg,rgba(48,28,86,.94),rgba(24,14,44,.96))}
+.sc.t4 .cat{color:#dcc4ff}
+.sc.t4 .nm{font-size:3.4vh}
+.sc.t4 .dd{color:#e0d0ff}
+
+.sc.t5{border-color:rgba(255,255,255,.35);
+  background:linear-gradient(160deg,rgba(38,44,58,.94),rgba(18,22,32,.96))}
+.sc.t5 .cat{color:#c6d2e0}
+.sc.t5 .nm{font-size:3vh}
+.sc.t5 .dd{color:#c6d2e0}
+
+/* דרגה נמוכה יותר לא תופסת את כל הרוחב */
+.srow{display:grid;gap:1.2vw;justify-content:center}
+.srow.w1{grid-template-columns:repeat(var(--c),minmax(0,1fr));width:100%}
+.srow.w2{width:82%;margin:0 auto}
+.srow.w3{width:66%;margin:0 auto}
+.srow.w4{width:54%;margin:0 auto}
+.srow.w5{width:46%;margin:0 auto}
 .col{width:23%;min-width:0;background:linear-gradient(180deg,#0d1526,#070c16);
   display:flex;flex-direction:column;padding:1.2vh 1vw;gap:.8vh;overflow:hidden}
 .col.r{border-left:2px solid rgba(255,204,0,.3)}
@@ -80,9 +116,9 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 
 <div class="hdr">בס"ד &nbsp;·&nbsp; <span id="siteName"></span></div>
 <div class="topline">
-  <div id="clock">--:--</div>
-  <div class="dts"><div class="dt" id="heb"></div><div class="dt2" id="greg"></div></div>
+  <div class="side"><div id="clock">--:--</div></div>
   <div class="bigttl" id="bigTtl">פרנסי היום</div>
+  <div class="side"><div class="dt" id="heb"></div><div class="dt2" id="greg"></div></div>
 </div>
 
 <div class="main" id="sgrid"></div>
@@ -714,7 +750,7 @@ function draw(){
   g.innerHTML=keys.map(function(k){
     var arr=tiers[k], maxc={1:2,2:3,3:4,4:5,5:6}[k];
     var cols=Math.min(arr.length,maxc);
-    return '<div style="display:grid;gap:1.2vw;grid-template-columns:repeat('+cols+',1fr)">'+
+    return '<div class="srow w'+k+'" style="grid-template-columns:repeat('+cols+',minmax(0,1fr))">'+
       arr.map(function(s){
         return '<div class="sc t'+k+'">'+
           '<div class="cat">'+esc(s.category)+'</div>'+
