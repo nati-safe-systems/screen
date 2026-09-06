@@ -389,6 +389,19 @@ input:focus,select:focus{border-color:#58a6ff;}
         <div class="hint">שם זה מוצג בראש מסך השילוט ובטבלת הניהול.</div>
       </div>
 
+      <div class="field" id="tenant-minyan-sec" style="display:none;border:1px solid #30363d;border-radius:10px;padding:14px;">
+        <label style="color:#ffcc00;font-weight:800;">תצוגת המניינים</label>
+        <select id="t-minyan-view" style="margin-top:8px;">
+          <option value="list">רשימת שעות התפילה</option>
+          <option value="countdown">ספירה לאחור למניין הבא</option>
+          <option value="both">רשימה וספירה יחד</option>
+        </select>
+        <div class="hint">כך יוצגו המניינים על המסך שמעל דלת החדר.</div>
+        <div style="display:flex;justify-content:flex-end;margin-top:10px;">
+          <button class="btn-save" style="padding:10px 18px;" onclick="saveMinyanView()">שמור תצוגה</button>
+        </div>
+      </div>
+
       <div class="field" id="tenant-display-sec" style="display:none;border:1px solid #30363d;border-radius:10px;padding:14px;">
         <label style="color:#ffcc00;font-weight:800;">מה יוצג על המסך</label>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-top:8px;">
@@ -1235,6 +1248,8 @@ function openEdit(el){
       var s=d[0];
       document.getElementById("edit-building-name").value=s.building_name||"";
       applyTenantDisplaySection(s.display_config);
+      _tPurpose = s.purpose || "main";
+      _tMinyanView = s.minyan_view || "list";
       document.getElementById("rte-editor").innerHTML=s.message||"";
       document.getElementById("pdf-url").value=s.pdf_url||"";
       document.getElementById("pdf-anim").value=s.anim_pdf||"none";
@@ -1246,6 +1261,7 @@ function openEdit(el){
       renderSchedList();
     }
     applyTenantPerms();
+    try{ tApplyPurpose(); }catch(e){}   /* אחרי ההרשאות — ההתאמה לסוג המסך קובעת */
     document.getElementById("edit-modal").classList.add("open");
   });
 }
@@ -1391,6 +1407,35 @@ function tBgDraw(){
   }).join("") || '<div style="font-size:12px;color:#6e7681;">אין תמונות — יוצג הרקע המובנה.</div>';
 }
 function tBgAdd(){ _tBg.push(""); tBgDraw(); }
+
+/* מציג בפאנל הלקוח רק את מה שרלוונטי לסוג המסך.
+   מסך מעל דלת לא צריך עורך טקסט, מהירות גלילה או מודעות מתוזמנות. */
+var _tPurpose="main", _tMinyanView="list";
+function tApplyPurpose(){
+  var p=_tPurpose||"main";
+  var isBuilding = (p==="main");
+  var isDoor     = (p==="door");
+  function show(id,on){ var e=document.getElementById(id); if(e) e.style.display = on ? "" : "none"; }
+
+  /* שייך רק למסך בניין */
+  ["tenant-display-sec","tenant-ads-sec","type-sec","txt-sec","tspeed-sec",
+   "tbright-sec","pdf-sec","sched-sec"].forEach(function(id){
+     if(!isBuilding) show(id,false);
+  });
+  /* מסך מעל דלת — רק בחירת תצוגת מניינים */
+  show("tenant-minyan-sec", isDoor);
+  var mv=document.getElementById("t-minyan-view"); if(mv) mv.value=_tMinyanView||"list";
+  /* תמונות הרקע רלוונטיות לכל סוגי המסכים */
+  show("t-bg-box", true);
+}
+
+function saveMinyanView(){
+  var v=(document.getElementById("t-minyan-view")||{}).value||"list";
+  sf("screens?screen_id=eq."+encodeURIComponent(sid),
+     {method:"PATCH",body:JSON.stringify({minyan_view:v})})
+   .then(function(){ _tMinyanView=v; toast("התצוגה עודכנה"); })
+   .catch(function(){ toast("השמירה נכשלה"); });
+}
 function tBgUpload(inp){
   var f=inp.files&&inp.files[0]; if(!f)return;
   var msg=document.getElementById("tBgMsg");

@@ -31,7 +31,8 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 .zc .cd{display:block;color:#ffb4b4;font-size:1.3vh;margin-top:.3vh}
 
 /* ---------- מניינים ---------- */
-.mid{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;padding:1.4vh 1.6vw .8vh}
+.mid{flex:1 1 auto;min-height:0;position:relative;overflow:hidden;display:flex;flex-direction:column;padding:1.4vh 1.6vw .8vh}
+.mid>.secttl,.mid>.mgrid{position:relative;z-index:2}
 .secttl{color:#ffcc00;font-size:1.7vh;font-weight:800;letter-spacing:.1vh;margin-bottom:.9vh;
   display:flex;align-items:center;gap:.8vw}
 .secttl:after{content:"";flex:1;height:1px;background:rgba(255,204,0,.28)}
@@ -83,11 +84,11 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 .cdbig{font-size:2.6vh}
 .cdbig .num{font-size:3.6vh;font-weight:900;font-variant-numeric:tabular-nums;
   color:#fff;text-shadow:0 0 2vh rgba(255,204,0,.5)}
-#bgimg{position:fixed;inset:0;z-index:-2}
+#bgimg{position:absolute;inset:0;z-index:0;overflow:hidden}
 .bgslide{position:absolute;inset:0;background-size:cover;background-position:center;
   opacity:0;transition:opacity 1.8s ease-in-out}
 .bgslide.on{opacity:1}
-#bgveil{position:fixed;inset:0;background:rgba(4,8,18,.78);z-index:-1}
+#bgveil{position:absolute;inset:0;background:rgba(4,8,18,.74);z-index:1}
 .hide{display:none!important}
 
 /* מסך מאונך או צר — הפריסה מתארגנת מחדש */
@@ -106,7 +107,6 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
   .sc.p1 .nm{font-size:2.8vh}
 }
 </style></head><body>
-<div id="bgimg"></div><div id="bgveil"></div>
 
 <div class="hdr">בס"ד &nbsp;·&nbsp; <span id="siteName"></span></div>
 
@@ -120,6 +120,7 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 </div>
 
 <div class="mid">
+  <div id="bgimg"></div><div id="bgveil"></div>
   <div class="secttl">המניין הבא</div>
   <div class="mgrid" id="mgrid"></div>
 </div>
