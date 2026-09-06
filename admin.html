@@ -412,7 +412,14 @@ tr:hover td{background:rgba(128,0,0,0.05);}
           <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:14px;color:#e6edf3;">
             <input type="checkbox" id="edit-sc-audio" onchange="markCustom()"> הפעל מוזיקת רקע
           </label>
-          <input id="edit-sc-audiourl" placeholder="קישור לקובץ שמע / שידור רדיו / יוטיוב" oninput="markCustom()" style="margin-top:6px;">
+          <input id="edit-sc-audiourl" placeholder="כתובת שידור רדיו, או העלה קובץ" oninput="markCustom()" style="margin-top:6px;">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;align-items:center;">
+            <label style="background:#ffcc00;color:#161b22;border-radius:6px;padding:6px 14px;font-size:13px;font-weight:800;cursor:pointer;">
+              העלה קובץ מוזיקה
+              <input type="file" accept="audio/*" style="display:none" onchange="audUpload(this)">
+            </label>
+            <span id="audUpMsg" style="font-size:12px;color:#8b949e;"></span>
+          </div>
           <div style="display:flex;align-items:center;gap:9px;margin-top:6px;">
             <span style="font-size:13px;color:#8b949e;">עוצמה</span>
             <input id="edit-sc-audiovol" type="range" min="0" max="100" oninput="document.getElementById('volShow').textContent=this.value+'%';markCustom()" style="flex:1;">
@@ -425,6 +432,8 @@ tr:hover td{background:rgba(128,0,0,0.05);}
             <span dir="ltr" style="font-size:11px;color:#8b949e">https://…/stream.mp3</span><br><br>
             <b style="color:#d29922">יוטיוב</b> — משמיע פרסומות ואי אפשר לחסום אותן. לא מומלץ.<br>
             <b style="color:#d29922">גוגל דרייב</b> — עובד רק לקבצים קטנים. קובץ של שעות ייחסם על ידי גוגל.<br>
+            <b style="color:#58a6ff">קובץ שהעלית כאן</b> — נשמר אצלנו ומתנגן בלולאה אינסופית.
+            עד 300MB. <b>אין צורך בקובץ ארוך</b> — המסך מנגן אותו שוב ושוב לבד.<br>
             <b style="color:#ff6b6b">ספוטיפיי</b> — אינו נתמך לניגון ממסך.
           </div>
         </div>
@@ -1153,6 +1162,36 @@ function bgDraw(){
   }).join('') || '<div style="font-size:12px;color:#6e7681;">אין תמונות — יוצג הרקע המובנה.</div>';
 }
 function bgAdd(){ _bgImgs.push(''); bgDraw(); markCustom(); }
+
+/* העלאת קובץ שמע לאחסון. הקובץ נשמר פעם אחת ומשמש את כל המסכים. */
+function audUpload(inp){
+  var f=inp.files&&inp.files[0]; if(!f)return;
+  var msg=document.getElementById('audUpMsg');
+  var sid=(document.getElementById('edit-sc-id')||{}).value||'general';
+  if(f.size > 300*1024*1024){
+    if(msg){ msg.textContent='הקובץ גדול מ-300MB. דחוס אותו קודם.'; msg.style.color='#ff6b6b'; }
+    inp.value=''; return;
+  }
+  var mb=(f.size/1048576).toFixed(0);
+  if(msg){ msg.textContent='מעלה '+mb+'MB... זה עשוי לקחת כמה דקות'; msg.style.color='#8b949e'; }
+  var safe=f.name.replace(/[^A-Za-z0-9._-]/g,'_');
+  var path='audio/'+sid+'/'+Date.now()+'_'+safe;
+  fetch(SUPA_BASE+'/storage/v1/object/screen-media/'+path,{
+    method:'POST',
+    headers:{ apikey:SUPA_KEY, Authorization:'Bearer '+SUPA_KEY,
+              'Content-Type':f.type||'audio/mpeg', 'x-upsert':'true' },
+    body:f
+  }).then(function(r){
+    if(!r.ok) return r.text().then(function(t){ throw new Error(t||('HTTP '+r.status)); });
+    var url=SUPA_BASE+'/storage/v1/object/public/screen-media/'+path;
+    var el=document.getElementById('edit-sc-audiourl');
+    if(el){ el.value=url; }
+    markCustom();
+    if(msg){ msg.textContent='הועלה ✓ — לחץ שמור'; msg.style.color='#3fb950'; }
+  }).catch(function(e){
+    if(msg){ msg.textContent='ההעלאה נכשלה: '+(e.message||e); msg.style.color='#ff6b6b'; }
+  }).then(function(){ inp.value=''; });
+}
 function bgUpload(inp){
   var f=inp.files&&inp.files[0]; if(!f)return;
   var msg=document.getElementById('bgUpMsg');
