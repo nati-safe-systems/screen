@@ -15,7 +15,8 @@
   'use strict';
 
   var CFG = { supa:'', key:'', areas:[], testMode:false };
-  var state = { mode:'—', connected:false, last:null, active:null, since:0 };
+  /* שני מסלולים עצמאיים. החיווי מציג את הטוב מביניהם — קודם הם דרסו זה את זה. */
+  var state = { wsOk:false, sbOk:false, sbMsg:'', last:null, active:null, hideT:null };
   var ws = null, poll = null, audioCtx = null, sirenTimer = null;
 
   /* ---------- ממשק ---------- */
@@ -57,10 +58,13 @@
     document.body.appendChild(c);
   }
 
-  function setConn(ok, txt){
-    state.connected = ok;
+  function renderConn(){
     var c = document.getElementById('nsf-conn');
     if (!c) return;
+    var ok = state.wsOk || state.sbOk;
+    var txt = state.wsOk ? 'מחובר (ישיר)'
+            : state.sbOk ? 'מחובר (גיבוי)'
+            : (state.sbMsg || 'אין קשר');
     c.className = ok ? 'ok' : 'no';
     c.textContent = 'פיקוד העורף: ' + txt;
   }
@@ -136,16 +140,16 @@
   function connectWs(){
     try{
       ws = new WebSocket('wss://ws.tzevaadom.co.il:8443/socket?platform=WEB');
-      ws.onopen = function(){ state.mode='ישיר'; setConn(true,'מחובר (ישיר)'); };
+      ws.onopen = function(){ state.wsOk = true; renderConn(); };
       ws.onmessage = function(ev){
         try{
           var m = JSON.parse(ev.data);
           if (m && m.type === 'ALERT' && m.data) handle(m.data);
         }catch(e){}
       };
-      ws.onclose = function(){ setConn(false,'מנותק — מנסה שוב'); ws=null; setTimeout(connectWs, 15000); };
+      ws.onclose = function(){ state.wsOk = false; renderConn(); ws=null; setTimeout(connectWs, 30000); };
       ws.onerror = function(){ try{ ws.close(); }catch(e){} };
-    }catch(e){ setConn(false,'לא זמין'); setTimeout(connectWs, 30000); }
+    }catch(e){ state.wsOk=false; renderConn(); setTimeout(connectWs, 60000); }
   }
 
   /* ---------- מסלול 2: דרך Supabase ---------- */
@@ -155,13 +159,17 @@
       { headers:{ apikey:CFG.key, Authorization:'Bearer ' + CFG.key }, cache:'no-store' })
       .then(function(r){ return r.json(); })
       .then(function(rows){
-        if (!ws) setConn(true, 'מחובר (גיבוי)');
-        if (!rows || !rows.length) return;
+        if (!Array.isArray(rows)){
+          /* תשובה שאינה רשימה = הטבלה חסרה או אין הרשאה */
+          state.sbOk=false; state.sbMsg='טבלת ההתראות חסרה'; renderConn(); return;
+        }
+        state.sbOk = true; state.sbMsg=''; renderConn();
+        if (!rows.length) return;
         var a = rows[0];
         if (Date.now() - new Date(a.created_at).getTime() > 5*60*1000) return;  /* ישן */
         handle({ id:a.id, cities:a.areas || [], title:a.title });
       })
-      .catch(function(){ if (!ws) setConn(false,'אין קשר'); });
+      .catch(function(){ state.sbOk=false; state.sbMsg='אין קשר'; renderConn(); });
   }
 
   function init(opt){
@@ -170,7 +178,7 @@
     CFG.key   = opt.key  || '';
     CFG.areas = opt.areas || [];
     ensureDom();
-    setConn(false, 'מתחבר...');
+    state.sbMsg='מתחבר...'; renderConn();
     connectWs();
     pollSupa();
     poll = setInterval(pollSupa, 20000);
