@@ -15,8 +15,9 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 .top{display:flex;align-items:stretch;gap:1.2vw;padding:1.4vh 1.6vw;flex-shrink:0;
   background:linear-gradient(180deg,#0d1526,#080d1a);border-bottom:2px solid rgba(255,204,0,.28)}
 .clockbox{flex:0 0 auto;text-align:center;padding-left:1.6vw;border-left:1px solid rgba(255,255,255,.1)}
-#clock{color:#00ff88;font-size:7.2vh;font-weight:600;line-height:1;font-variant-numeric:tabular-nums;
-  text-shadow:0 0 22px rgba(0,255,136,.25)}
+#clock{color:#f3e2b6;font-size:7vh;font-weight:300;line-height:1;letter-spacing:.05em;
+  font-variant-numeric:tabular-nums;text-shadow:0 0 2.8vh rgba(243,226,182,.3)}
+#clock .sec{font-size:.5em;color:#b99a5c;font-weight:400;vertical-align:.42em;margin-right:.16em;letter-spacing:0}
 #dheb{color:#ffd86b;font-size:2.1vh;font-weight:700;margin-top:.5vh}
 #dgreg{color:#8fb4dd;font-size:1.5vh;margin-top:.2vh}
 
@@ -885,7 +886,9 @@ function esc(t){return String(t==null?"":t).replace(/&/g,"&amp;").replace(/</g,"
 
 function tick(){
   var now=new Date();
-  document.getElementById("clock").textContent=now.toLocaleTimeString("he-IL",{hour12:false});
+  var _h=now.getHours(),_m=now.getMinutes(),_s=now.getSeconds();
+  document.getElementById("clock").innerHTML=
+    p2(_h)+":"+p2(_m)+'<span class="sec">'+p2(_s)+'</span>';
   document.getElementById("dheb").textContent=
     NatiHebDate.format(now,{weekday:true,shkiaMinutes:(Z?Z.shkia:null)});
   document.getElementById("dgreg").textContent=

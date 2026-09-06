@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>נתי SAFE — ניהול אתר</title>
+<title>נתי SAFE — ניהול בית הכנסת</title>
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -55,33 +55,15 @@ button.dz:hover{color:#ff6b6b}
   border-radius:6px;padding:6px 10px;margin-bottom:12px;line-height:1.5}
 </style></head><body>
 
-<h1>ניהול אתר</h1>
-<div class="sub">נתי SAFE · לוח אחד לכל הבניין. מה שנשמר כאן מופיע בכל המסכים.</div>
+<h1>ניהול בית הכנסת</h1>
+<div class="sub">מה שתעדכן כאן מופיע בכל המסכים תוך דקה.</div>
 <div class="autos">אין כפתור שמירה — כל שדה נשמר לבד ברגע שאתה יוצא ממנו. אישור ירוק יופיע בפינה.</div>
 <div id="msg" class="msg"></div>
 <div id="saved">נשמר ✓</div>
 <datalist id="catlist"><option value="פרנס היום"><option value="פרנס הקפה"><option value="פרנס הכיבוד"><option value="נר למאור"><option value="פרנס המתמידים"><option value="תורם"><option value="הקדשה"></datalist>
 
-<div class="card">
-  <h2>אתר</h2>
-  <select id="siteSel" onchange="pickSite()"></select>
-  <div class="row" style="margin-top:9px">
-    <div><label>שם אתר חדש</label><input id="newSite" placeholder="בית מדרש היכל יעקב"></div>
-    <div style="flex:0"><button onclick="addSite()">הוסף</button></div>
-  </div>
-  <div id="siteCfg" class="hide">
-    <label>שם האתר</label>
-    <input id="s_name" onchange="saveSiteName()">
-    <div class="grid" style="margin-top:9px">
-      <div><label>קו רוחב</label><input id="s_lat" type="number" step="0.0001"></div>
-      <div><label>קו אורך</label><input id="s_lng" type="number" step="0.0001"></div>
-      <div><label>גובה (מ')</label><input id="s_elev" type="number"></div>
-      <div><label>הדלקת נרות (דק' לפני שקיעה)</label><input id="s_candle" type="number"></div>
-    </div>
-    <button class="pri" style="margin-top:9px" onclick="saveSite()">שמור אתר</button>
-    <div class="hint">הזמנים בכל מסכי האתר מחושבים לפי הנתונים האלה.</div>
-  </div>
-</div>
+<select id="siteSel" onchange="pickSite()" style="display:none"></select>
+<div id="siteCfg" class="hide"><input id="s_name"><input id="s_lat"><input id="s_lng"><input id="s_elev"><input id="s_candle"></div>
 
 <details class="card drw" id="roomsCard">
   <summary><h2 style="margin:0">חדרים <button onclick="addRoom()">+ חדר</button></h2></summary>
@@ -558,6 +540,7 @@ function say(t,bad){var m=document.getElementById("msg");m.textContent=t;
   if(!bad) window._mt=setTimeout(function(){m.style.display="none";},3500);}
 
 var SITES=[],SITE=null,ROOMS=[],MINS=[],SPONS=[],ANNS=[];
+
 /* ---------- הודעות לציבור ---------- */
 function addAnn(){ if(!SITE)return say("לא נטען אתר",1);
   sf("announcements",{method:"POST",body:JSON.stringify({site_id:SITE.id,title:"",
@@ -586,18 +569,6 @@ function drawAnns(){
       '<div><label>עד תאריך</label><input type="date" value="'+(x.date_to||"")+'" onchange="saveAnn('+i+',\'date_to\',this.value)"></div>'+
       '</div></div>';}).join("")||'<div class="hint">אין הודעות. הוסף אחת — היא תופיע במסך הראשי בטווח התאריכים שתגדיר.</div>';
 }
-/* שמירה מושהית: ממתינים 2.5 שניות מרגע ההקלדה האחרונה,
-   כדי שאפשר יהיה להקליד "11" בלי שהמערכת תשמור אחרי הספרה הראשונה. */
-var _dq={};
-function saveLater(key, fn){
-  if(_dq[key]) clearTimeout(_dq[key].t);
-  var el=document.getElementById("saved");
-  if(el){ el.textContent="ממתין..."; el.className="on wait"; }
-  _dq[key]={t:setTimeout(function(){ delete _dq[key]; fn(); }, 2500)};
-}
-var PRIO={1:"1 — ענק ובולט",2:"2 — גדול",3:"3 — רגיל",4:"4 — קטן",5:"5 — הקטן ביותר"};
-var CATS=["פרנס היום","פרנס הקפה","פרנס הכיבוד","נר למאור","פרנס המתמידים","תורם","הקדשה"];
-
 /* שמירה מושהית: ממתינים 2.5 שניות מרגע ההקלדה האחרונה,
    כדי שאפשר יהיה להקליד "11" בלי שהמערכת תשמור אחרי הספרה הראשונה. */
 var _dq={};
@@ -675,6 +646,14 @@ function delRoom(i){if(!confirm("למחוק את החדר וכל המנייני�
   sf("rooms?id=eq."+ROOMS[i].id,{method:"DELETE"}).then(function(){say("נמחק");pickSite();});}
 
 function drawRooms(){
+  /* בממשק הלקוח החדרים מוצגים בלבד. הקמה ושינוי שמות נעשים על ידי נתי SAFE. */
+  document.getElementById("rooms").innerHTML=ROOMS.map(function(r){
+    return '<div class="item"><div class="hd"><b>'+esc(r.display_name||r.name)+'</b>'+
+      '<span class="tag">'+({shul:"בית כנסת",cafe:"חדר קפה",lobby:"לובי",mikveh:"מקווה",hall:"אולם"}[r.kind]||r.kind)+'</span></div>'+
+      (r.dedication?'<div class="hint">'+esc(r.dedication)+'</div>':'')+'</div>';
+  }).join("")||'<div class="hint">אין חדרים.</div>';
+}
+function drawRoomsAdmin(){
   document.getElementById("rooms").innerHTML=ROOMS.map(function(r,i){
     return '<div class="item"><div class="hd"><b>'+(r.display_name||r.name)+'</b>'+
       '<button class="dz" onclick="delRoom('+i+')">×</button></div>'+
