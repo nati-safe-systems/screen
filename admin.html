@@ -309,7 +309,7 @@ tr:hover td{background:rgba(128,0,0,0.05);}
       </div>
 
       <!-- ===== נתי SAFE: תצוגת המסך / קהל יעד ===== -->
-      <div style="border-top:1px solid rgba(255,255,255,0.1);margin:14px 0 4px;padding-top:14px;">
+      <div id="grp-building" style="border-top:1px solid rgba(255,255,255,0.1);margin:14px 0 4px;padding-top:14px;">
         <div style="font-weight:800;font-size:14px;color:#ffcc00;margin-bottom:8px;">🖥️ תצוגת המסך — מגזר</div>
 
         <div class="field">
@@ -343,7 +343,7 @@ tr:hover td{background:rgba(128,0,0,0.05);}
             <select id="edit-sc-room" onchange="markCustom()"><option value="">— ללא חדר —</option></select>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
-            <select id="edit-sc-purpose" onchange="markCustom()">
+            <select id="edit-sc-purpose" onchange="purposeChanged()">
               <option value="main">מסך ראשי</option>
               <option value="door">מעל דלת חדר</option>
               <option value="cafe">חדר קפה</option>
@@ -907,6 +907,7 @@ function openAddScreen(){
     fillRooms('');
     var pp=document.getElementById('edit-sc-purpose');    if(pp) pp.value='main';
     var mv=document.getElementById('edit-sc-minyanview'); if(mv) mv.value='list';
+    purposeChanged();
   });
   document.getElementById('modal-sc-title').textContent='מסך חדש';
   document.getElementById('edit-sc-profile').value='chareidi';
@@ -1079,6 +1080,20 @@ function loadSitesRooms(){
 }
 function esc2(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
 function siteChanged(){ fillRooms(''); markCustom(); }
+
+/* מציג רק את מה שרלוונטי לסוג המסך שנבחר.
+   מסך בית כנסת לא צריך את הגדרות מגזר ולוח המודעות של בניין. */
+function purposeChanged(){
+  var p=(document.getElementById('edit-sc-purpose')||{}).value||'main';
+  var isBuilding = (p==='main');
+  var isShul = !isBuilding;
+  var g=document.getElementById('grp-building'); if(g) g.style.display = isBuilding ? '' : 'none';
+  var mv=document.getElementById('edit-sc-minyanview');
+  if(mv) mv.parentNode.style.opacity = (p==='door') ? '1' : '.45';
+  var rw=document.getElementById('edit-sc-room');
+  if(rw) rw.style.opacity = (p==='door') ? '1' : '.75';
+  markCustom();
+}
 function fillRooms(sel){
   var sid=(document.getElementById('edit-sc-site')||{}).value||'';
   var rs=document.getElementById('edit-sc-room'); if(!rs)return;
@@ -1173,6 +1188,7 @@ function openEditScreen(sid){
     fillRooms(s.room_id || '');
     var pp=document.getElementById('edit-sc-purpose');     if(pp) pp.value = s.purpose || 'main';
     var mv=document.getElementById('edit-sc-minyanview');  if(mv) mv.value = s.minyan_view || 'list';
+    purposeChanged();
   });
   document.getElementById('edit-sc-mtype').value = s.message_type || 'scroll';
   document.getElementById('edit-sc-msg').innerHTML = s.message || '';

@@ -9,6 +9,11 @@ body{font-family:Assistant,Arial,sans-serif;background:#0d1117;color:#e6edf3;pad
 h1{font-size:19px;color:#ffcc00;margin-bottom:2px}
 .sub{font-size:12px;color:#8b949e;margin-bottom:14px}
 .card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:13px;margin-bottom:12px}
+.drw>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px}
+.drw>summary::-webkit-details-marker{display:none}
+.drw>summary::after{content:"\25BC";color:#8b949e;font-size:11px;margin-right:auto}
+.drw[open]>summary::after{content:"\25B2"}
+.drw>summary h2{flex:1}
 .card h2{font-size:15px;color:#ffcc00;margin-bottom:9px;display:flex;justify-content:space-between;align-items:center}
 label{display:block;font-size:12px;color:#8b949e;margin:8px 0 3px}
 input,select{width:100%;background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:6px;
@@ -77,25 +82,25 @@ button.dz:hover{color:#ff6b6b}
   </div>
 </div>
 
-<div class="card" id="roomsCard">
-  <h2>חדרים <button onclick="addRoom()">+ חדר</button></h2>
+<details class="card drw" id="roomsCard" open>
+  <summary><h2 style="margin:0">חדרים <button onclick="addRoom()">+ חדר</button></h2></summary>
   <div id="rooms"></div>
-</div>
+</details>
 
-<div class="card" id="minCard">
-  <h2>לוח מניינים <button onclick="addMin()">+ מניין</button></h2>
+<details class="card drw" id="minCard">
+  <summary><h2 style="margin:0">לוח מניינים <button onclick="addMin()">+ מניין</button></h2></summary>
   <div id="mins"></div>
-</div>
+</details>
 
-<div class="card" id="sponCard">
-  <h2>פרנסים ותורמים <button onclick="addSpon()">+ פרנס</button></h2>
+<details class="card drw" id="sponCard">
+  <summary><h2 style="margin:0">פרנסים ותורמים <button onclick="addSpon()">+ פרנס</button></h2></summary>
   <div id="spons"></div>
-</div>
+</details>
 
-<div class="card">
-  <h2>תצוגה מקדימה — היום</h2>
+<details class="card drw">
+  <summary><h2 style="margin:0">תצוגה מקדימה — היום</h2></summary>
   <div id="prev" style="font-size:13px;line-height:1.9"></div>
-</div>
+</details>
 
 <script>/* =====================================================================
    נתי SAFE — מנוע זמנים הלכתיים
