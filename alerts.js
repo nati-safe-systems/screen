@@ -16,7 +16,8 @@
 
   var CFG = { supa:'', key:'', areas:[], testMode:false };
   /* שני מסלולים עצמאיים. החיווי מציג את הטוב מביניהם — קודם הם דרסו זה את זה. */
-  var state = { wsOk:false, sbOk:false, sbMsg:'', last:null, active:null, hideT:null };
+  var state = { wsOk:false, apiOk:false, sbOk:false, sbMsg:'', wsWhy:'',
+                last:null, active:null, hideT:null };
   var ws = null, poll = null, audioCtx = null, sirenTimer = null;
 
   /* ---------- ממשק ---------- */
@@ -61,9 +62,10 @@
   function renderConn(){
     var c = document.getElementById('nsf-conn');
     if (!c) return;
-    var ok = state.wsOk || state.sbOk;
-    var txt = state.wsOk ? 'מחובר (ישיר)'
-            : state.sbOk ? 'מחובר (גיבוי)'
+    var ok = state.wsOk || state.apiOk || state.sbOk;
+    var txt = state.wsOk  ? 'מחובר (ישיר · חי)'
+            : state.apiOk ? 'מחובר (ישיר)'
+            : state.sbOk  ? 'מחובר (גיבוי)'
             : (state.sbMsg || 'אין קשר');
     c.className = ok ? 'ok' : 'no';
     c.textContent = 'פיקוד העורף: ' + txt;
@@ -147,9 +149,31 @@
           if (m && m.type === 'ALERT' && m.data) handle(m.data);
         }catch(e){}
       };
-      ws.onclose = function(){ state.wsOk = false; renderConn(); ws=null; setTimeout(connectWs, 30000); };
+      ws.onclose = function(ev){
+        state.wsOk = false;
+        state.wsWhy = 'סגירה '+(ev&&ev.code||'?');
+        renderConn(); ws=null; setTimeout(connectWs, 30000);
+      };
       ws.onerror = function(){ try{ ws.close(); }catch(e){} };
     }catch(e){ state.wsOk=false; renderConn(); setTimeout(connectWs, 60000); }
+  }
+
+  /* ---------- מסלול 1ב: פנייה ישירה ב-HTTPS ----------
+     ה-WebSocket רץ על פורט 8443 שהרבה רשתות חוסמות.
+     כאן פונים על 443 הרגיל, שעובר כמעט תמיד. */
+  function pollDirect(){
+    fetch('https://www.tzevaadom.co.il/api/alerts-history?limit=1',
+      { cache:'no-store' })
+      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(function(rows){
+        state.apiOk = true; renderConn();
+        if (!Array.isArray(rows) || !rows.length) return;
+        var a = rows[0];
+        var t = a.time ? a.time*1000 : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+        if (t && Date.now() - t > 5*60*1000) return;
+        handle({ id:a.id || String(t), cities:a.cities || a.areas || [], title:a.title });
+      })
+      .catch(function(){ state.apiOk = false; renderConn(); });
   }
 
   /* ---------- מסלול 2: דרך Supabase ---------- */
@@ -180,7 +204,9 @@
     ensureDom();
     state.sbMsg='מתחבר...'; renderConn();
     connectWs();
+    pollDirect();
     pollSupa();
+    setInterval(pollDirect, 12000);
     poll = setInterval(pollSupa, 20000);
 
     /* הדפדפן חוסם צליל ללא מגע — מנסים לשחרר בכל אינטראקציה */
@@ -196,8 +222,27 @@
 
     /* בדיקה ידנית: הוסף ?alerttest=1 לכתובת */
     try{
-      if (new URLSearchParams(location.search).get('alerttest') === '1')
+      var qp = new URLSearchParams(location.search);
+      if (qp.get('alerttest') === '1')
         setTimeout(function(){ show(CFG.areas.length?CFG.areas:['בדיקה'],'בדיקת מערכת'); }, 1500);
+
+      /* ?alertdebug=1 — מציג את מצב כל מסלול בנפרד */
+      if (qp.get('alertdebug') === '1'){
+        var d=document.createElement('div');
+        d.style.cssText='position:fixed;bottom:26px;left:6px;z-index:2147482000;'+
+          'background:rgba(0,0,0,.82);color:#e6edf3;font:11px/1.6 Assistant,Arial,sans-serif;'+
+          'direction:rtl;padding:6px 10px;border-radius:8px;border:1px solid #30363d';
+        document.body.appendChild(d);
+        setInterval(function(){
+          d.innerHTML =
+            'WebSocket: <b style="color:'+(state.wsOk?'#7ee787':'#ff9a9a')+'">'+
+              (state.wsOk?'מחובר':'לא מחובר '+(state.wsWhy||''))+'</b><br>'+
+            'HTTPS ישיר: <b style="color:'+(state.apiOk?'#7ee787':'#ff9a9a')+'">'+
+              (state.apiOk?'עובד':'חסום')+'</b><br>'+
+            'Supabase: <b style="color:'+(state.sbOk?'#7ee787':'#ff9a9a')+'">'+
+              (state.sbOk?'עובד':(state.sbMsg||'חסום'))+'</b>';
+        }, 1000);
+      }
     }catch(e){}
   }
 
