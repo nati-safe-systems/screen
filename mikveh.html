@@ -40,7 +40,7 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 .secttl{color:#ffcc00;font-family:"Frank Ruhl Libre",serif;font-size:3.6vh;font-weight:900;
   margin:.3vh 0 .9vh;text-align:center;display:block;text-shadow:0 .3vh 1.2vh rgba(0,0,0,.7)}
 
-.mgrid{flex:1;min-height:0;display:flex;flex-direction:column;gap:1vh;position:relative;z-index:2}
+.mgrid{flex:1;min-height:0;display:grid;gap:1vw;align-content:stretch;position:relative;z-index:2}
 .mcard{background:linear-gradient(160deg,rgba(20,32,58,.95),rgba(10,16,30,.95));
   border:1px solid rgba(140,180,230,.22);border-radius:1.4vh;padding:1.2vh 1.2vw;
   display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.4vh;
@@ -519,17 +519,21 @@ body{font-family:var(--f-body)!important;-webkit-font-smoothing:antialiased}
       "<circle cx='60' cy='60' r='4'/></g></svg>");
   }
 
+  var HOST = '';   /* ריק = כל המסך. אחרת סלקטור של מיכל (לדמו) */
   function css(){
-    var pad = (T.band + 1.6).toFixed(2);
+    var pad = (T.band + 2.6).toFixed(2);
+    var unit = HOST ? '%' : 'vh';
+    var padCss = HOST
+      ? HOST+'{padding:'+(T.band*1.4).toFixed(2)+'vh !important;box-sizing:border-box;position:relative}'
+      : 'body{padding:'+pad+'vh !important;box-sizing:border-box}';
     return [
-      /* התוכן נדחף פנימה כדי שהמסגרת לא תעלה עליו */
-      'body{padding:'+pad+'vh !important;box-sizing:border-box}',
-      '#nsf-frame{position:fixed;inset:0;z-index:8000;pointer-events:none}',
+      padCss,
+      '#nsf-frame{position:'+(HOST?'absolute':'fixed')+';inset:0;z-index:8000;pointer-events:none}',
       '#nsf-frame .band{position:absolute;inset:0;border:'+T.band+'vh solid transparent;',
         'border-image:linear-gradient(140deg,'+T.c1+' 0%,'+T.c2+' 20%,'+T.c3+' 42%,'+T.c2+' 62%,'+T.c1+' 100%) 1;',
         'box-shadow:inset 0 0 0 .14vh rgba(255,255,255,.35),inset 0 0 2.4vh rgba(0,0,0,.7)}',
       '#nsf-frame .band2{position:absolute;inset:'+(T.band+.5)+'vh;',
-        'border:.2vh solid '+T.c2+';opacity:.75;border-radius:.3vh}',
+        'border:.2vh solid '+T.c2+';opacity:.75}',
       '#nsf-frame .band3{position:absolute;inset:'+(T.band+1.1)+'vh;',
         'border:.1vh solid '+T.c2+';opacity:.35}',
       T.shine
@@ -551,24 +555,25 @@ body{font-family:var(--f-body)!important;-webkit-font-smoothing:antialiased}
       '.oc.tl{top:0;left:0}.oc.tr{top:0;right:0;transform:rotate(90deg)}',
       '.oc.br{bottom:0;right:0;transform:rotate(180deg)}.oc.bl{bottom:0;left:0;transform:rotate(270deg)}',
       T.orn===0 ? '.oc{display:none}' : '',
-      '.orn{position:relative;border-radius:1.4vh;',
+      '.orn{position:relative;border-radius:0;',
         'background-image:linear-gradient(160deg,'+T.bg1+','+T.bg2+');',
         'box-shadow:0 0 0 .22vh '+T.c3+',0 0 0 .34vh rgba(255,255,255,.22),',
         'inset 0 .1vh 0 rgba(255,255,255,.12),inset 0 0 3.4vh rgba(0,0,0,.5),',
         '0 1vh 3vh rgba(0,0,0,.55)}',
-      '.orn::before{content:"";position:absolute;inset:-.34vh;border-radius:1.7vh;padding:.34vh;',
+      '.orn::before{content:"";position:absolute;inset:-.34vh;border-radius:0;padding:.34vh;',
         'background:linear-gradient(150deg,'+T.c1+' 0%,'+T.c2+' 26%,'+T.c3+' 50%,'+T.c2+' 74%,'+T.c1+' 100%);',
         '-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);',
         '-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;z-index:2}',
-      '.orn::after{content:"";position:absolute;inset:.85vh;border-radius:.8vh;',
+      '.orn::after{content:"";position:absolute;inset:.85vh;border-radius:0;',
         'border:.11vh solid '+T.c2+';opacity:.35;pointer-events:none;z-index:2}',
       /* התוכן שבתוך פאנל לא נוגע במסגרת */
       '.orn>*:not(.oc){position:relative;z-index:4}',
-      '#nsf-tex{position:fixed;inset:0;z-index:7998;pointer-events:none;opacity:'+T.tex+';',
+      '#nsf-tex{position:'+(HOST?'absolute':'fixed')+';inset:0;z-index:7998;pointer-events:none;opacity:'+T.tex+';',
         'background-repeat:repeat;background-size:15vh 15vh}',
-      '#nsf-vig{position:fixed;inset:0;z-index:7999;pointer-events:none;',
+      '#nsf-vig{position:'+(HOST?'absolute':'fixed')+';inset:0;z-index:7999;pointer-events:none;',
         'background:radial-gradient(ellipse at 50% 45%,transparent 44%,rgba(0,0,0,'+T.vig+') 100%)}',
       '.orn-div{height:2.2vh;background:no-repeat center/contain;margin:.2vh 0 .5vh;opacity:.85}',
+      '#nsf-ver{bottom:'+(T.band+0.5).toFixed(2)+'vh !important;right:'+(T.band+1.2).toFixed(2)+'vh !important;z-index:9500}',
       T.orn===0 ? '.orn-div{display:none}' : ''
     ].join('');
   }
@@ -591,8 +596,25 @@ body{font-family:var(--f-body)!important;-webkit-font-smoothing:antialiased}
   function apply(opt) {
     opt = opt || {};
     var name = opt.theme || 'classic';
-    T = THEMES[name] || THEMES.classic;
+    HOST = opt.container || '';
+    /* החלפת ערכה בזמן ריצה — מנקים את הקודמת */
+    var old = document.getElementById('nsf-frame');
+    if (old && opt.replace) {
+      old.remove();
+      var ov=document.getElementById('nsf-vig'); if(ov) ov.remove();
+      var ot=document.getElementById('nsf-tex'); if(ot) ot.remove();
+      var oc=document.getElementById('nsf-orn-css'); if(oc) oc.remove();
+      var l=document.querySelectorAll('.orn');
+      for (var q=0;q<l.length;q++){
+        l[q].classList.remove('orn');
+        var cs=l[q].querySelectorAll(':scope > .oc');
+        for (var w=0;w<cs.length;w++) cs[w].remove();
+      }
+      var dv=document.querySelectorAll('.orn-div');
+      for (var d2=0;d2<dv.length;d2++) dv[d2].remove();
+    }
     if (name === 'none') return;
+    T = THEMES[name] || THEMES.classic;
 
     var st = document.getElementById('nsf-orn-css') || document.createElement('style');
     st.id = 'nsf-orn-css'; st.textContent = css();
@@ -605,19 +627,21 @@ body{font-family:var(--f-body)!important;-webkit-font-smoothing:antialiased}
         '<span class="band2"></span><span class="band3"></span>' +
         '<span class="em t"></span><span class="em b"></span>' +
         '<span class="em l"></span><span class="em r"></span>';
-      document.body.appendChild(f);
-      var v = document.createElement('div'); v.id='nsf-vig'; document.body.appendChild(v);
-      var x = document.createElement('div'); x.id='nsf-tex'; document.body.appendChild(x);
+      var host = HOST ? document.querySelector(HOST) : document.body;
+      if (!host) host = document.body;
+      host.appendChild(f);
+      var v = document.createElement('div'); v.id='nsf-vig'; host.appendChild(v);
+      var x = document.createElement('div'); x.id='nsf-tex'; host.appendChild(x);
     }
     ['t','b','l','r'].forEach(function (p) {
       var e=f.querySelector('.em.'+p); if(e) e.style.backgroundImage='url("'+edgeSVG()+'")';
     });
     document.getElementById('nsf-tex').style.backgroundImage='url("'+damaskSVG()+'")';
-    addCorners(f, opt.outer || 13);
+    addCorners(f, opt.outer || 7.5);
 
     (opt.panels||[]).forEach(function(sel){
       var l=document.querySelectorAll(sel);
-      for (var i=0;i<l.length;i++) decorate(l[i], opt.panel||5.5);
+      for (var i=0;i<l.length;i++) decorate(l[i], opt.panel||3.4);
     });
     (opt.titles||[]).forEach(function(sel){
       var l=document.querySelectorAll(sel);
@@ -632,7 +656,7 @@ body{font-family:var(--f-body)!important;-webkit-font-smoothing:antialiased}
       setInterval(function(){
         opt.watch.forEach(function(sel){
           var l=document.querySelectorAll(sel);
-          for (var i=0;i<l.length;i++) decorate(l[i], opt.panel||5.5);
+          for (var i=0;i<l.length;i++) decorate(l[i], opt.panel||3.4);
         });
       }, 2000);
     }
@@ -1691,6 +1715,7 @@ function drawZmanim(now,nowMin){
 /* ביום שישי, אחרי שכל תפילות הבוקר נגמרו — עוברים לנתוני השבת */
 function shabbatPanel(now,nowMin){
   var g=document.getElementById("mgrid");
+  g.style.gridTemplateColumns="1fr";
   document.querySelector(".secttl").textContent="לקראת שבת קודש";
   var haf=null;
   try{
@@ -1782,6 +1807,10 @@ function drawMinyanim(now,nowMin){
     document.querySelector(".secttl").textContent="המניין הבא";
   }
   var g=document.getElementById("mgrid");
+  var cnt=shuls.length||1;
+  var pt=(window.innerHeight>window.innerWidth);
+  var cols= pt ? (cnt<=3?1:2) : (cnt<=2?cnt:(cnt<=4?2:3));
+  g.style.gridTemplateColumns="repeat("+cols+",minmax(0,1fr))";
   g.innerHTML=shuls.map(function(r){
     /* מניין ללא חדר = "כל החדרים", ולכן חל גם כאן */
     /* למקווה מגיעים בבוקר לפני התפילה — מציגים שחרית וסליחות בלבד */
@@ -1849,5 +1878,5 @@ window.addEventListener("load",function(){ try{
   NatiOrnate.apply({theme:TH,outer:13,panel:5.5,panels:[".mid"],titles:[".secttl"],watch:[".mcard"]});
 }catch(e){} });
 load(); tick();
-</script><div id="nsf-ver">נתי SAFE · מקווה · גרסה 1.2 · 07.09.26</div>
+</script><div id="nsf-ver">נתי SAFE · מקווה · גרסה 1.3 · 07.09.26</div>
 </body></html>

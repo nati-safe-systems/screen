@@ -406,7 +406,7 @@ body{font-family:Assistant,Arial,sans-serif;background:#0d1117;color:#e6edf3;pad
 
   var HOST = '';   /* ריק = כל המסך. אחרת סלקטור של מיכל (לדמו) */
   function css(){
-    var pad = (T.band + 1.6).toFixed(2);
+    var pad = (T.band + 2.6).toFixed(2);
     var unit = HOST ? '%' : 'vh';
     var padCss = HOST
       ? HOST+'{padding:'+(T.band*1.4).toFixed(2)+'vh !important;box-sizing:border-box;position:relative}'
@@ -418,7 +418,7 @@ body{font-family:Assistant,Arial,sans-serif;background:#0d1117;color:#e6edf3;pad
         'border-image:linear-gradient(140deg,'+T.c1+' 0%,'+T.c2+' 20%,'+T.c3+' 42%,'+T.c2+' 62%,'+T.c1+' 100%) 1;',
         'box-shadow:inset 0 0 0 .14vh rgba(255,255,255,.35),inset 0 0 2.4vh rgba(0,0,0,.7)}',
       '#nsf-frame .band2{position:absolute;inset:'+(T.band+.5)+'vh;',
-        'border:.2vh solid '+T.c2+';opacity:.75;border-radius:.3vh}',
+        'border:.2vh solid '+T.c2+';opacity:.75}',
       '#nsf-frame .band3{position:absolute;inset:'+(T.band+1.1)+'vh;',
         'border:.1vh solid '+T.c2+';opacity:.35}',
       T.shine
@@ -440,16 +440,16 @@ body{font-family:Assistant,Arial,sans-serif;background:#0d1117;color:#e6edf3;pad
       '.oc.tl{top:0;left:0}.oc.tr{top:0;right:0;transform:rotate(90deg)}',
       '.oc.br{bottom:0;right:0;transform:rotate(180deg)}.oc.bl{bottom:0;left:0;transform:rotate(270deg)}',
       T.orn===0 ? '.oc{display:none}' : '',
-      '.orn{position:relative;border-radius:1.4vh;',
+      '.orn{position:relative;border-radius:0;',
         'background-image:linear-gradient(160deg,'+T.bg1+','+T.bg2+');',
         'box-shadow:0 0 0 .22vh '+T.c3+',0 0 0 .34vh rgba(255,255,255,.22),',
         'inset 0 .1vh 0 rgba(255,255,255,.12),inset 0 0 3.4vh rgba(0,0,0,.5),',
         '0 1vh 3vh rgba(0,0,0,.55)}',
-      '.orn::before{content:"";position:absolute;inset:-.34vh;border-radius:1.7vh;padding:.34vh;',
+      '.orn::before{content:"";position:absolute;inset:-.34vh;border-radius:0;padding:.34vh;',
         'background:linear-gradient(150deg,'+T.c1+' 0%,'+T.c2+' 26%,'+T.c3+' 50%,'+T.c2+' 74%,'+T.c1+' 100%);',
         '-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);',
         '-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;z-index:2}',
-      '.orn::after{content:"";position:absolute;inset:.85vh;border-radius:.8vh;',
+      '.orn::after{content:"";position:absolute;inset:.85vh;border-radius:0;',
         'border:.11vh solid '+T.c2+';opacity:.35;pointer-events:none;z-index:2}',
       /* התוכן שבתוך פאנל לא נוגע במסגרת */
       '.orn>*:not(.oc){position:relative;z-index:4}',
@@ -458,6 +458,7 @@ body{font-family:Assistant,Arial,sans-serif;background:#0d1117;color:#e6edf3;pad
       '#nsf-vig{position:'+(HOST?'absolute':'fixed')+';inset:0;z-index:7999;pointer-events:none;',
         'background:radial-gradient(ellipse at 50% 45%,transparent 44%,rgba(0,0,0,'+T.vig+') 100%)}',
       '.orn-div{height:2.2vh;background:no-repeat center/contain;margin:.2vh 0 .5vh;opacity:.85}',
+      '#nsf-ver{bottom:'+(T.band+0.5).toFixed(2)+'vh !important;right:'+(T.band+1.2).toFixed(2)+'vh !important;z-index:9500}',
       T.orn===0 ? '.orn-div{display:none}' : ''
     ].join('');
   }
@@ -521,11 +522,11 @@ body{font-family:Assistant,Arial,sans-serif;background:#0d1117;color:#e6edf3;pad
       var e=f.querySelector('.em.'+p); if(e) e.style.backgroundImage='url("'+edgeSVG()+'")';
     });
     document.getElementById('nsf-tex').style.backgroundImage='url("'+damaskSVG()+'")';
-    addCorners(f, opt.outer || 13);
+    addCorners(f, opt.outer || 7.5);
 
     (opt.panels||[]).forEach(function(sel){
       var l=document.querySelectorAll(sel);
-      for (var i=0;i<l.length;i++) decorate(l[i], opt.panel||5.5);
+      for (var i=0;i<l.length;i++) decorate(l[i], opt.panel||3.4);
     });
     (opt.titles||[]).forEach(function(sel){
       var l=document.querySelectorAll(sel);
@@ -540,7 +541,7 @@ body{font-family:Assistant,Arial,sans-serif;background:#0d1117;color:#e6edf3;pad
       setInterval(function(){
         opt.watch.forEach(function(sel){
           var l=document.querySelectorAll(sel);
-          for (var i=0;i<l.length;i++) decorate(l[i], opt.panel||5.5);
+          for (var i=0;i<l.length;i++) decorate(l[i], opt.panel||3.4);
         });
       }, 2000);
     }
