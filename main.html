@@ -29,17 +29,17 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
   border-bottom:1px solid rgba(255,255,255,.07)}
 .zr b{color:#00ff88;font-weight:800;font-variant-numeric:tabular-nums}
 .warn{color:#ff5555;font-size:1.3vh;text-align:center;margin-top:.4vh}
-#mlist{display:flex;flex-direction:column;gap:1vh;justify-content:space-evenly}
+#mlist{display:flex;flex-direction:column;gap:.7vh;justify-content:space-evenly;min-height:0;overflow:hidden}
 .room{background:linear-gradient(160deg,rgba(22,34,60,.95),rgba(11,18,34,.95));
-  border:1px solid rgba(140,180,230,.28);border-radius:1.2vh;padding:.9vh 1vw;
-  display:flex;flex-direction:column;gap:.45vh;min-height:0}
-.room .rn{color:#ffcc00;font-size:2.4vh;font-weight:900;font-family:"Frank Ruhl Libre",serif;
+  border:1px solid rgba(140,180,230,.28);padding:.8vh .9vw;
+  display:flex;flex-direction:column;gap:.3vh;min-height:0;flex:1 1 0;overflow:hidden}
+.room .rn{color:#ffcc00;font-size:calc(var(--mk,1) * 2.4vh);font-weight:900;font-family:"Frank Ruhl Libre",serif;
   text-align:center;border-bottom:1px solid rgba(255,204,0,.3);padding-bottom:.3vh;margin-bottom:.2vh}
 .prow{display:flex;align-items:center;gap:.5vw;justify-content:space-between}
-.prow>span{color:#9fc0e4;font-weight:800;font-size:1.75vh;white-space:nowrap;min-width:4.5em}
+.prow>span{color:#9fc0e4;font-weight:800;font-size:calc(var(--mk,1) * 1.75vh);white-space:nowrap;min-width:4.5em}
 .prow>b{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.3vw .35vw;
   justify-items:stretch;font-weight:400;flex:1}
-.prow i{font-style:normal;color:#00ff88;font-size:1.85vh;font-weight:800;text-align:center;
+.prow i{font-style:normal;color:#00ff88;font-size:calc(var(--mk,1) * 1.8vh);font-weight:800;text-align:center;
   font-variant-numeric:tabular-nums;background:rgba(0,255,136,.08);
   border:1px solid rgba(0,255,136,.22);border-radius:.5vh;padding:.1vh .3vw}
 .prow i.nx{color:#161b22;background:#ffd86b;border-color:#ffd86b;
@@ -1456,7 +1456,7 @@ var PR={selichot:"סליחות",shacharit:"שחרית",mussaf:"מוסף",mincha:
 
 function load(){
   resolveSite(function(sid){
-    if(!sid){ document.getElementById("siteName").textContent="לא הוגדר אתר למסך זה"; return; }
+    if(!sid){ var e0=document.getElementById("ttlName"); if(e0) e0.textContent="לא הוגדר אתר למסך זה"; return; }
     SITE_ID=sid;
     var t=new Date(), iso=t.getFullYear()+"-"+p2(t.getMonth()+1)+"-"+p2(t.getDate());
     Promise.all([
@@ -1466,9 +1466,9 @@ function load(){
       sf("announcements?site_id=eq."+sid+"&select=*&active=eq.true&date_from=lte."+iso+"&date_to=gte."+iso+"&order=priority")
     ]).then(function(r){
       SITE=r[0][0]; ROOMS=r[1]||[]; MINS=r[2]||[]; ANN=r[3]||[];
-      document.getElementById("siteName").textContent=SITE?SITE.name:"";
+      var _sn=document.getElementById("siteName"); if(_sn) _sn.textContent=SITE?SITE.name:"";
       try{ NatiAlerts.init({supa:SB,key:SK,areas:(SITE&&SITE.alert_areas)||[],seconds:(SITE&&SITE.alert_seconds)||60}); }catch(e){}
-      document.getElementById("ttlName").textContent=SITE?SITE.name:"";
+      var _tn=document.getElementById("ttlName"); if(_tn) _tn.textContent=SITE?SITE.name:"";
       ZDAY=""; tick(); drawAnn();
     });
   });
@@ -1512,7 +1512,12 @@ function drawMinyanim(now,nowMin){
     });
     out+='<div class="room"><div class="rn">'+esc(r.display_name||r.name)+'</div>'+rh+'</div>';
   });
-  document.getElementById("mlist").innerHTML=out||'<div class="none">לא הוגדרו מניינים</div>';
+  var box=document.getElementById("mlist");
+  box.innerHTML=out||'<div class="none">לא הוגדרו מניינים</div>';
+  var rooms=box.querySelectorAll(".room").length||1;
+  var lines=box.querySelectorAll(".prow").length||1;
+  var k=Math.max(.55, Math.min(1, 11/(rooms*1.6+lines)));
+  box.style.setProperty("--mk", k);
 }
 /* בדיקה: ?mdebug=1 — מציג כל שורת מניין ומה קרה לה */
 function mdebug(now){
@@ -1574,5 +1579,5 @@ window.addEventListener("load",function(){ try{
   NatiOrnate.apply({theme:TH,outer:13,panel:5,panels:[".ann",".col.r",".col.l"],watch:[".room"]});
 }catch(e){} });
 load(); tick();
-</script><div id="nsf-ver">נתי SAFE · מסך ראשי · גרסה 1.1 · 07.09.26</div>
+</script><div id="nsf-ver">נתי SAFE · מסך ראשי · גרסה 1.2 · 07.09.26</div>
 </body></html>

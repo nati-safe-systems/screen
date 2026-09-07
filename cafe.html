@@ -8,8 +8,9 @@
 html,body{height:100%;overflow:hidden}
 body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;direction:rtl;
   display:flex;flex-direction:column}
-.hdr{background:#7a0000;color:#fff;text-align:center;padding:1vh 0;font-size:2.4vh;
-  font-weight:800;letter-spacing:.05vh;border-bottom:2px solid #ffcc00;flex-shrink:0}
+.hdr{background:#7a0000;color:#fff;text-align:center;padding:1vh 1vw;font-size:2.4vh;
+  font-weight:800;letter-spacing:.05vh;border-bottom:2px solid #ffcc00;flex-shrink:0;
+  margin:.6vh .6vw 0}
 
 /* ---------- שורה עליונה: שעון + זמנים ---------- */
 .top{display:flex;align-items:center;justify-content:center;gap:1.6vw;padding:1.6vh 1.6vw;flex-shrink:0;
@@ -33,8 +34,9 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 
 /* ---------- מניינים ---------- */
 .main{flex:1 1 auto;min-height:0;display:flex;gap:1vw;padding:1.2vh 1.2vw}
-.mincol{width:21%;min-width:0;display:flex;flex-direction:column;gap:.9vh;justify-content:space-evenly;
-  padding:0 .2vw}
+.mincol{width:21%;min-width:0;display:flex;flex-direction:column;gap:.8vh;
+  padding:0 .2vw;min-height:0}
+.mincol .mcard{flex:1 1 0;min-height:0;overflow:hidden}
 .mid{flex:1;min-width:0;min-height:0;position:relative;overflow:hidden;display:flex;flex-direction:column}
 .mid>.secttl,.mid>.mgrid{position:relative;z-index:2}
 .secttl{color:#ffcc00;font-family:"Frank Ruhl Libre",serif;font-size:4.6vh;font-weight:900;
@@ -42,7 +44,7 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
   text-shadow:0 .3vh 1.2vh rgba(0,0,0,.7)}
 .mgrid{flex:1;min-height:0;display:flex;flex-direction:column;gap:1vh;position:relative;z-index:2}
 .mcard{background:linear-gradient(160deg,rgba(20,32,58,.95),rgba(10,16,30,.95));
-  border:1px solid rgba(140,180,230,.22);border-radius:1.4vh;padding:1.2vh 1.2vw;
+  border:1px solid rgba(140,180,230,.22);padding:1.2vh 1vw;
   display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.4vh;
   min-height:0;overflow:hidden}
 .mcard.soon{border-color:#ffcc00;background:linear-gradient(160deg,rgba(70,45,0,.9),rgba(30,18,0,.95));
@@ -69,11 +71,13 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 .mgrid .sc.t1 .cat{font-size:2.6vh}
 .mgrid .sc.t1 .dd{font-size:2.5vh}
 .sc{background:linear-gradient(160deg,rgba(58,40,0,.85),rgba(28,18,0,.9));
-  border:1px solid rgba(255,204,0,.42);border-radius:1.3vh;padding:1vh 1vw;text-align:center;
-  display:flex;flex-direction:column;justify-content:center;gap:.25vh;overflow:hidden}
+  border:1px solid rgba(255,204,0,.42);padding:1.4vh 1.6vw;text-align:center;
+  display:flex;flex-direction:column;justify-content:center;gap:.4vh;overflow:hidden;
+  min-height:0;box-sizing:border-box}
+.sc>*{max-width:100%;overflow-wrap:anywhere}
 .sc .cat{color:#ffcc00;font-size:2.2vh;font-weight:800;letter-spacing:.05vh}
-.sc .nm{color:#fff;font-size:4.4vh;font-weight:800;font-family:"Frank Ruhl Libre",serif;
-  line-height:1.15;overflow-wrap:anywhere}
+.sc .nm{color:#fff;font-size:clamp(2.2vh,4.4vh,4.4vh);font-weight:800;
+  font-family:"Frank Ruhl Libre",serif;line-height:1.12;overflow-wrap:anywhere}
 .sc .dd{color:#e8d6a8;font-size:2.1vh;line-height:1.3}
 /* צבע לכל דרגה — זהה למסך הפרנסים */
 .sc.t1{border-color:#ffd86b;border-width:.3vh;box-shadow:0 0 2.8vh rgba(255,204,0,.42);
@@ -1654,9 +1658,10 @@ function drawMinyanim(now,nowMin){
       '<div class="cd '+cls+'">בעוד '+blink(cs.t)+'</div></div>';
   });
   if(!cards.length) cards=['<div class="mcard"><div class="none">לא הוגדרו בתי כנסת</div></div>'];
-  var rh="", lh="";
-  cards.forEach(function(c,i){ if(i%2===0) rh+=c; else lh+=c; });
-  R.innerHTML=rh; L.innerHTML=lh;
+  /* חלוקה עוקבת: המחצית הראשונה בימין, השנייה בשמאל */
+  var half=Math.ceil(cards.length/2);
+  R.innerHTML=cards.slice(0,half).join("");
+  L.innerHTML=cards.slice(half).join("");
 }
 
 /* פרנסים — מוצגים בעמודות שמשני צידי המסך, לא בתחתית.
@@ -1735,5 +1740,5 @@ window.addEventListener("load",function(){ try{
   NatiOrnate.apply({theme:TH,outer:13,panel:5.5,panels:[".mid"],titles:[".secttl"],watch:[".mcard",".sc"]});
 }catch(e){} });
 load(); tick();
-</script><div id="nsf-ver">נתי SAFE · חדר קפה · גרסה 1.1 · 07.09.26</div>
+</script><div id="nsf-ver">נתי SAFE · חדר קפה · גרסה 1.2 · 07.09.26</div>
 </body></html>
