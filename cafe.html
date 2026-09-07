@@ -42,7 +42,8 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 .secttl{color:#ffcc00;font-family:"Frank Ruhl Libre",serif;font-size:4.6vh;font-weight:900;
   letter-spacing:.08vh;margin:.4vh 0 1vh;text-align:center;display:block;
   text-shadow:0 .3vh 1.2vh rgba(0,0,0,.7)}
-.mgrid{flex:1;min-height:0;display:flex;flex-direction:column;gap:1vh;position:relative;z-index:2}
+.mgrid{flex:1;min-height:0;display:flex;flex-direction:column;gap:1.1vh;
+  position:relative;z-index:2;justify-content:center}
 .mcard{background:linear-gradient(160deg,rgba(20,32,58,.95),rgba(10,16,30,.95));
   border:1px solid rgba(140,180,230,.22);padding:1.2vh 1vw;
   display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.4vh;
@@ -70,10 +71,11 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 .mgrid .sc.t1 .nm{font-size:6.4vh}
 .mgrid .sc.t1 .cat{font-size:2.6vh}
 .mgrid .sc.t1 .dd{font-size:2.5vh}
-.sc{background:linear-gradient(160deg,rgba(58,40,0,.85),rgba(28,18,0,.9));
-  border:1px solid rgba(255,204,0,.42);padding:1.4vh 1.6vw;text-align:center;
-  display:flex;flex-direction:column;justify-content:center;gap:.4vh;overflow:hidden;
-  min-height:0;box-sizing:border-box}
+.sc{background:linear-gradient(160deg,rgba(58,40,0,.88),rgba(28,18,0,.93));
+  border:.25vh solid rgba(255,204,0,.55);padding:1.6vh 1.8vw;text-align:center;
+  display:flex;flex-direction:column;justify-content:center;gap:.5vh;
+  box-sizing:border-box;min-height:max-content;
+  box-shadow:inset 0 0 0 .08vh rgba(255,244,207,.28),0 .6vh 2vh rgba(0,0,0,.45)}
 .sc>*{max-width:100%;overflow-wrap:anywhere}
 .sc .cat{color:#ffcc00;font-size:2.2vh;font-weight:800;letter-spacing:.05vh}
 .sc .nm{color:#fff;font-size:clamp(2.2vh,4.4vh,4.4vh);font-weight:800;
@@ -1686,7 +1688,7 @@ function drawSponsors(){
   var GROW={1:6,2:3,3:2,4:1.4,5:1};
   function card(s){
     var p=Math.min(5,Math.max(1,+s.priority||3));
-    return '<div class="sc t'+p+'" style="flex:'+GROW[p]+' 1 0;">'+
+    return '<div class="sc t'+p+'" style="flex:'+GROW[p]+' 0 auto;">'+
       (s.image_url?'<img class="simg" src="'+normImg(s.image_url)+'" alt="">':'')+
       '<div class="cat">'+esc(s.category)+'</div>'+
       '<div class="nm">'+esc(s.name)+'</div>'+
@@ -1737,8 +1739,8 @@ setInterval(tick,1000);
 setInterval(function(){ ZDAY=""; load(); }, 5*60*1000);   /* רענון נתונים כל 5 דקות */
 window.addEventListener("load",function(){ try{
   var TH=(Q.get("theme"))||(SITE&&SITE.theme)||"classic";
-  NatiOrnate.apply({theme:TH,outer:13,panel:5.5,panels:[".mid"],titles:[".secttl"],watch:[".mcard",".sc"]});
+  NatiOrnate.apply({theme:TH,outer:13,panel:5.5,panels:[".mid"],titles:[".secttl"],watch:[".mcard"]});
 }catch(e){} });
 load(); tick();
-</script><div id="nsf-ver">נתי SAFE · חדר קפה · גרסה 1.2 · 07.09.26</div>
+</script><div id="nsf-ver">נתי SAFE · חדר קפה · גרסה 1.3 · 07.09.26</div>
 </body></html>
