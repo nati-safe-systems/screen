@@ -176,6 +176,144 @@ body{font-family:var(--f-body)!important;-webkit-font-smoothing:antialiased}
 
 <script>
 /* =====================================================================
+   נתי SAFE — הפטרות  ·  v1.0
+   ---------------------------------------------------------------------
+   ההפטרה אינה מגיעה מנתוני הפרשה שהשרת מחזיר, ולכן היא בנויה כאן
+   כטבלה מקומית — נוסח אשכנז ונוסח ספרד בנפרד.
+
+   כולל את השבתות המיוחדות שדוחות את ההפטרה הרגילה:
+   ראש חודש, מחר חודש, ארבע פרשיות, שבת שובה, שבת הגדול, חנוכה,
+   ותשעה באב (חזון / נחמו).
+
+   שימוש:
+     NatiHaftara.get("פרשת נצבים", { nusach:"ashkenaz", date:new Date(),
+                                     roshChodesh:false, macharChodesh:false });
+   ===================================================================== */
+(function (root) {
+  'use strict';
+
+  /* ---------- הפטרות הפרשיות ---------- */
+  var P = {
+    'בראשית':      ['ישעיהו מב, ה — מג, י',   'ישעיהו מב, ה — כא'],
+    'נח':          ['ישעיהו נד, א — נה, ה',   'ישעיהו נד, א — י'],
+    'לך לך':       ['ישעיהו מ, כז — מא, טז',  'ישעיהו מ, כז — מא, טז'],
+    'וירא':        ['מלכים ב ד, א — לז',      'מלכים ב ד, א — כג'],
+    'חיי שרה':     ['מלכים א א, א — לא',      'מלכים א א, א — לא'],
+    'תולדות':      ['מלאכי א, א — ב, ז',      'מלאכי א, א — ב, ז'],
+    'ויצא':        ['הושע יב, יג — יד, י',    'הושע יא, ז — יב, יב'],
+    'וישלח':       ['הושע יא, ז — יב, יב',    'עובדיה א, א — כא'],
+    'וישב':        ['עמוס ב, ו — ג, ח',       'עמוס ב, ו — ג, ח'],
+    'מקץ':         ['מלכים א ג, טו — ד, א',   'מלכים א ג, טו — ד, א'],
+    'ויגש':        ['יחזקאל לז, טו — כח',     'יחזקאל לז, טו — כח'],
+    'ויחי':        ['מלכים א ב, א — יב',      'מלכים א ב, א — יב'],
+    'שמות':        ['ישעיהו כז, ו — כח, יג',  'ירמיהו א, א — ב, ג'],
+    'וארא':        ['יחזקאל כח, כה — כט, כא', 'יחזקאל כח, כה — כט, כא'],
+    'בא':          ['ירמיהו מו, יג — כח',     'ירמיהו מו, יג — כח'],
+    'בשלח':        ['שופטים ד, ד — ה, לא',    'שופטים ה, א — לא'],
+    'יתרו':        ['ישעיהו ו, א — ז, ו',     'ישעיהו ו, א — יג'],
+    'משפטים':      ['ירמיהו לד, ח — כב; לג, כה — כו', 'ירמיהו לד, ח — כב'],
+    'תרומה':       ['מלכים א ה, כו — ו, יג',  'מלכים א ה, כו — ו, יג'],
+    'תצוה':        ['יחזקאל מג, י — כז',      'יחזקאל מג, י — כז'],
+    'כי תשא':      ['מלכים א יח, א — לט',     'מלכים א יח, כ — לט'],
+    'ויקהל':       ['מלכים א ז, מ — נ',       'מלכים א ז, יג — כו'],
+    'פקודי':       ['מלכים א ז, נא — ח, כא',  'מלכים א ז, מ — נ'],
+    'ויקהל־פקודי': ['מלכים א ז, נא — ח, כא',  'מלכים א ז, מ — נ'],
+    'ויקרא':       ['ישעיהו מג, כא — מד, כג', 'ישעיהו מג, כא — מד, כג'],
+    'צו':          ['ירמיהו ז, כא — ח, ג; ט, כב — כג', 'ירמיהו ז, כא — ח, ג'],
+    'שמיני':       ['שמואל ב ו, א — ז, יז',   'שמואל ב ו, א — יט'],
+    'תזריע':       ['מלכים ב ד, מב — ה, יט',  'מלכים ב ד, מב — ה, יט'],
+    'מצורע':       ['מלכים ב ז, ג — כ',       'מלכים ב ז, ג — כ'],
+    'תזריע־מצורע': ['מלכים ב ז, ג — כ',       'מלכים ב ז, ג — כ'],
+    'אחרי מות':    ['עמוס ט, ז — טו',         'יחזקאל כב, א — טז'],
+    'קדושים':      ['עמוס ט, ז — טו',         'יחזקאל כ, ב — כ'],
+    'אחרי מות־קדושים': ['עמוס ט, ז — טו',     'יחזקאל כ, ב — כ'],
+    'אמור':        ['יחזקאל מד, טו — לא',     'יחזקאל מד, טו — לא'],
+    'בהר':         ['ירמיהו לב, ו — כז',      'ירמיהו לב, ו — כז'],
+    'בחקתי':       ['ירמיהו טז, יט — יז, יד', 'ירמיהו טז, יט — יז, יד'],
+    'בהר־בחקתי':   ['ירמיהו טז, יט — יז, יד', 'ירמיהו טז, יט — יז, יד'],
+    'במדבר':       ['הושע ב, א — כב',         'הושע ב, א — כב'],
+    'נשא':         ['שופטים יג, ב — כה',      'שופטים יג, ב — כה'],
+    'בהעלתך':      ['זכריה ב, יד — ד, ז',     'זכריה ב, יד — ד, ז'],
+    'שלח':         ['יהושע ב, א — כד',        'יהושע ב, א — כד'],
+    'קרח':         ['שמואל א יא, יד — יב, כב','שמואל א יא, יד — יב, כב'],
+    'חקת':         ['שופטים יא, א — לג',      'שופטים יא, א — לג'],
+    'בלק':         ['מיכה ה, ו — ו, ח',       'מיכה ה, ו — ו, ח'],
+    'חקת־בלק':     ['מיכה ה, ו — ו, ח',       'מיכה ה, ו — ו, ח'],
+    'פינחס':       ['מלכים א יח, מו — יט, כא','מלכים א יח, מו — יט, כא'],
+    'מטות':        ['ירמיהו א, א — ב, ג',     'ירמיהו א, א — ב, ג'],
+    'מסעי':        ['ירמיהו ב, ד — כח; ג, ד', 'ירמיהו ב, ד — כח; ד, א — ב'],
+    'מטות־מסעי':   ['ירמיהו ב, ד — כח; ג, ד', 'ירמיהו ב, ד — כח; ד, א — ב'],
+    'דברים':       ['ישעיהו א, א — כז',       'ישעיהו א, א — כז'],
+    'ואתחנן':      ['ישעיהו מ, א — כו',       'ישעיהו מ, א — כו'],
+    'עקב':         ['ישעיהו מט, יד — נא, ג',  'ישעיהו מט, יד — נא, ג'],
+    'ראה':         ['ישעיהו נד, יא — נה, ה',  'ישעיהו נד, יא — נה, ה'],
+    'שופטים':      ['ישעיהו נא, יב — נב, יב', 'ישעיהו נא, יב — נב, יב'],
+    'כי תצא':      ['ישעיהו נד, א — י',       'ישעיהו נד, א — י'],
+    'כי תבוא':     ['ישעיהו ס, א — כב',       'ישעיהו ס, א — כב'],
+    'נצבים':       ['ישעיהו סא, י — סג, ט',   'ישעיהו סא, י — סג, ט'],
+    'וילך':        ['ישעיהו נה, ו — נו, ח',   'הושע יד, ב — י; מיכה ז, יח — כ'],
+    'נצבים־וילך':  ['ישעיהו סא, י — סג, ט',   'ישעיהו סא, י — סג, ט'],
+    'האזינו':      ['שמואל ב כב, א — נא',     'שמואל ב כב, א — נא'],
+    'וזאת הברכה':  ['יהושע א, א — יח',        'יהושע א, א — ט']
+  };
+
+  /* ---------- שבתות מיוחדות שדוחות ---------- */
+  var SPECIAL = {
+    rosh_chodesh:   ['ישעיהו סו, א — כד',        'ישעיהו סו, א — כד'],
+    machar_chodesh: ['שמואל א כ, יח — מב',       'שמואל א כ, יח — מב'],
+    shekalim:       ['מלכים ב יב, א — יז',       'מלכים ב יא, יז — יב, יז'],
+    zachor:         ['שמואל א טו, א — לד',       'שמואל א טו, א — לד'],
+    para:           ['יחזקאל לו, טז — לח',       'יחזקאל לו, טז — לו'],
+    hachodesh:      ['יחזקאל מה, טז — מו, יח',   'יחזקאל מה, יח — מו, טו'],
+    hagadol:        ['מלאכי ג, ד — כד',          'מלאכי ג, ד — כד'],
+    shuva:          ['הושע יד, ב — י; יואל ב, טו — כז', 'הושע יד, ב — י; מיכה ז, יח — כ'],
+    chanuka1:       ['זכריה ב, יד — ד, ז',       'זכריה ב, יד — ד, ז'],
+    chanuka2:       ['מלכים א ז, מ — נ',         'מלכים א ז, מ — נ']
+  };
+
+  var LABEL = {
+    rosh_chodesh:'שבת ראש חודש', machar_chodesh:'מחר חודש',
+    shekalim:'פרשת שקלים', zachor:'פרשת זכור', para:'פרשת פרה',
+    hachodesh:'פרשת החודש', hagadol:'שבת הגדול', shuva:'שבת שובה',
+    chanuka1:'שבת חנוכה', chanuka2:'שבת חנוכה (שנייה)'
+  };
+
+  /** מנקה "פרשת", גרשיים וסימני חיבור, כדי שההתאמה תעבוד תמיד */
+  function normalize(name){
+    return String(name || '')
+      .replace(/^פרשת\s+/, '')
+      .replace(/[\u05F3'`]/g, '')
+      .replace(/\s*[-־–—]\s*/g, '־')
+      .trim();
+  }
+
+  /**
+   * מחזיר { text, source } או null.
+   * opts.nusach   — 'ashkenaz' (ברירת מחדל) או 'sefard'
+   * opts.special  — מפתח מ-SPECIAL, אם ידוע שהשבת מיוחדת
+   */
+  function get(parasha, opts){
+    opts = opts || {};
+    var idx = (opts.nusach === 'sefard') ? 1 : 0;
+
+    if (opts.special && SPECIAL[opts.special]) {
+      return { text: SPECIAL[opts.special][idx], source: LABEL[opts.special] };
+    }
+    var key = normalize(parasha);
+    if (P[key]) return { text: P[key][idx], source: null };
+
+    /* פרשה כפולה שנכתבה בסדר הפוך או עם מפריד אחר */
+    for (var k in P) {
+      if (normalize(k) === key) return { text: P[k][idx], source: null };
+    }
+    return null;
+  }
+
+  root.NatiHaftara = { get: get, normalize: normalize, TABLE: P, SPECIAL: SPECIAL };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+
+/* =====================================================================
    נתי SAFE — מסכים מתחלפים  ·  v1.0
    ---------------------------------------------------------------------
    מדי כמה זמן המסך הרגיל מתחלף למסך הודעה, ואז חוזר.
@@ -1425,6 +1563,8 @@ body{font-family:var(--f-body)!important;-webkit-font-smoothing:antialiased}
   root.NatiMinyan = API;
 })(typeof window !== 'undefined' ? window : globalThis);
 
+var GAS="https://script.google.com/macros/s/AKfycbyMATppr6lZ1MqJlFF_E_Y-9XuKNzNd-mJr4MqqslwdLxVdi7qP1IOPp_aORVVkooBF/exec";
+var PARASHA=null;
 var SB="https://cxtrrejclkhqhkqbicmz.supabase.co", SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dHJyZWpjbGtocWhrcWJpY216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTk3MDksImV4cCI6MjA5NTU3NTcwOX0._7wB4YwrYEnK6hWuR6YqcFxRb05OLnWvOelIC-ahIEQ";
 var Q=new URLSearchParams(location.search);
 var SITE_ID=Q.get("site")||"", SCREEN_ID=Q.get("id")||"";
@@ -1494,6 +1634,21 @@ function load(){
       sf("prayer_times?site_id=eq."+sid+"&select=*&active=eq.true")
     ]).then(function(r){
       SITE=r[0][0]; ROOMS=r[1]||[]; MINS=r[2]||[];
+      (function(){
+        var d=new Date(), ds=d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate());
+        fetch(GAS+"?action=parasha&lat="+(SITE?SITE.lat:31.78)+"&lon="+(SITE?SITE.lng:35.21)+
+              "&date="+ds,{cache:"no-store"})
+          .then(function(r){return r.json();})
+          .then(function(j){
+            if(j&&j.ok&&j.data&&j.data.items){
+              for(var i=0;i<j.data.items.length;i++)
+                if(j.data.items[i].category==="parashat"){
+                  var h=j.data.items[i].hebrew||j.data.items[i].title||"";
+                  PARASHA=(h.indexOf("פרשת")===0)?h:("פרשת "+h); break;
+                }
+            }
+          }).catch(function(){});
+      })();
       document.getElementById("siteName").textContent=SITE?SITE.name:"";
       try{ NatiAlerts.init({supa:SB,key:SK,areas:(SITE&&SITE.alert_areas)||[],seconds:(SITE&&SITE.alert_seconds)||60}); }catch(e){}
       ZDAY=""; tick();
@@ -1533,8 +1688,51 @@ function drawZmanim(now,nowMin){
 }
 
 /* ספירה לאחור לכל שטיבל */
+/* ביום שישי, אחרי שכל תפילות הבוקר נגמרו — עוברים לנתוני השבת */
+function shabbatPanel(now,nowMin){
+  var g=document.getElementById("mgrid");
+  document.querySelector(".secttl").textContent="לקראת שבת קודש";
+  var haf=null;
+  try{
+    var opts={ nusach:(SITE&&SITE.nusach)||"ashkenaz" };
+    var hd=NatiHebDate.parts(new Date(now.getTime()+86400000));
+    if(hd.day===1||hd.day===30) opts.special="rosh_chodesh";
+    else{
+      var h2=NatiHebDate.parts(new Date(now.getTime()+2*86400000));
+      if(h2.day===1||h2.day===30) opts.special="machar_chodesh";
+    }
+    if(PARASHA) haf=NatiHaftara.get(PARASHA,opts);
+  }catch(e){}
+
+  var rows=[["הדלקת נרות",Z.candleLighting],["שקיעה",Z.shkia],
+            ["צאת השבת",Z.tzeitHakochavim],["רבינו תם",Z.tzeitRT]];
+  g.innerHTML='<div class="mcard soon" style="align-items:stretch">'+
+    '<div class="rn" style="font-size:4vh;text-align:center">'+
+      (PARASHA?esc(PARASHA):"שבת שלום ומבורך")+'</div>'+
+    (haf?'<div class="mrow"><span class="mp">הפטרה</span>'+
+         '<span class="mt" style="color:#ffd86b">'+esc(haf.text)+'</span></div>':'')+
+    (haf&&haf.source?'<div class="mrow"><span class="mp">שבת מיוחדת</span>'+
+         '<span class="mt">'+esc(haf.source)+'</span></div>':'')+
+    rows.map(function(x){
+      return '<div class="mrow"><span class="mp">'+x[0]+'</span>'+
+             '<span class="mt"><b>'+NatiMinyan.fmt(x[1])+'</b></span></div>';
+    }).join("")+'</div>';
+}
+
 function drawMinyanim(now,nowMin){
   var shuls=ROOMS.filter(function(r){return r.kind==="shul";});
+
+  if(now.getDay()===5){
+    var anyLeft=false;
+    shuls.forEach(function(r){
+      var rr=MINS.filter(function(m){
+        return (m.room_id===r.id||!m.room_id) &&
+               (m.prayer==="shacharit"||m.prayer==="selichot"||m.prayer==="mussaf"); });
+      if(NatiMinyan.next(NatiMinyan.resolve(rr,Z,now,{}),nowMin)) anyLeft=true;
+    });
+    if(!anyLeft){ shabbatPanel(now,nowMin); return; }
+    document.querySelector(".secttl").textContent="זמני התפילות";
+  }
 
   /* ערב שבת אחרי שהמניינים נגמרו — הקוביות הריקות לא משרתות אף אחד.
      במקומן: לוח כניסת שבת. */
@@ -1586,7 +1784,11 @@ function drawMinyanim(now,nowMin){
   var g=document.getElementById("mgrid");
   g.innerHTML=shuls.map(function(r){
     /* מניין ללא חדר = "כל החדרים", ולכן חל גם כאן */
-    var rows=MINS.filter(function(m){return m.room_id===r.id || !m.room_id;});
+    /* למקווה מגיעים בבוקר לפני התפילה — מציגים שחרית וסליחות בלבד */
+    var rows=MINS.filter(function(m){
+      return (m.room_id===r.id || !m.room_id) &&
+             (m.prayer==="shacharit" || m.prayer==="selichot" || m.prayer==="mussaf");
+    });
     var list=NatiMinyan.resolve(rows,Z,now,{});
     var nx=NatiMinyan.next(list,nowMin);
     var soon=nx && (nx.minutes-nowMin)<=20;
@@ -1647,5 +1849,5 @@ window.addEventListener("load",function(){ try{
   NatiOrnate.apply({theme:TH,outer:13,panel:5.5,panels:[".mid"],titles:[".secttl"],watch:[".mcard"]});
 }catch(e){} });
 load(); tick();
-</script><div id="nsf-ver">נתי SAFE · מקווה · גרסה 1.1 · 07.09.26</div>
+</script><div id="nsf-ver">נתי SAFE · מקווה · גרסה 1.2 · 07.09.26</div>
 </body></html>
