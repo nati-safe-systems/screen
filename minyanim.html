@@ -72,6 +72,21 @@ button.dz:hover{color:#ff6b6b}
   <div id="siteCfg" class="hide">
     <label>שם האתר</label>
     <input id="s_name" onchange="saveSiteName()">
+    <label style="margin-top:9px">ערכת עיצוב למסכים</label>
+    <select id="s_theme" onchange="saveTheme()">
+      <option value="minimal">מודרני נקי — בלי עיטורים</option>
+      <option value="slim">קו זהב עדין</option>
+      <option value="classic">קלאסי זהב</option>
+      <option value="royal">זהב מלכותי</option>
+      <option value="jerusalem">ירושלים — אבן וזהב</option>
+      <option value="sapphire">כחול מלכותי</option>
+      <option value="burgundy">בורדו ויין</option>
+      <option value="emerald">ירוק אזמרגד</option>
+      <option value="platinum">שחור ופלטינה</option>
+      <option value="festive">חגיגי מפואר</option>
+      <option value="none">ללא מסגרת</option>
+    </select>
+    <div class="hint">לתצוגה מהירה בלי לשמור, הוסף <b>?theme=royal</b> לכתובת של כל מסך.</div>
     <div class="grid" style="margin-top:9px">
       <div><label>קו רוחב</label><input id="s_lat" type="number" step="0.0001"></div>
       <div><label>קו אורך</label><input id="s_lng" type="number" step="0.0001"></div>
@@ -534,7 +549,7 @@ button.dz:hover{color:#ff6b6b}
         /* rolling: המניינים רצופים ולא מוכרזים בשעה מדויקת.
            המסך יחליט אם להציג את הרשימה או רק "רצוף עד ..." */
         for (var t = s; t <= e + 0.01; t += step) {
-          var row = mk(r, t); row.rolling = true; row.window = [s, e];
+          var row = mk(r, t); row.rolling = true; row.window = [s, e]; row.step = step;
           out.push(row);
         }
       }
@@ -701,6 +716,7 @@ function pickSite(){var id=document.getElementById("siteSel").value;
   SITE=SITES.filter(function(s){return s.id===id;})[0]; if(!SITE)return;
   document.getElementById("siteCfg").className="";
   s_name.value=SITE.name||"";
+  var _th=document.getElementById("s_theme"); if(_th) _th.value=SITE.theme||"classic";
   s_lat.value=SITE.lat; s_lng.value=SITE.lng; s_elev.value=SITE.elevation; s_candle.value=SITE.candle_offset;
   Promise.all([
     sf("rooms?site_id=eq."+SITE.id+"&select=*&order=sort_order"),
@@ -709,6 +725,11 @@ function pickSite(){var id=document.getElementById("siteSel").value;
     sf("announcements?site_id=eq."+SITE.id+"&select=*&order=priority")
   ]).then(function(r){ROOMS=r[0]||[];MINS=r[1]||[];SPONS=r[2]||[];ANNS=r[3]||[];
     drawRooms();drawMins();drawSpons();drawAnns();preview();});}
+
+function saveTheme(){
+  var v=(document.getElementById("s_theme")||{}).value||"classic";
+  sf("sites?id=eq."+SITE.id,{method:"PATCH",body:JSON.stringify({theme:v})})
+   .then(function(){SITE.theme=v;flash();}).catch(function(e){say("שמירה נכשלה: "+(e.message||e),1);});}
 
 function saveSiteName(){
   var v=document.getElementById("s_name").value.trim(); if(!v)return;
