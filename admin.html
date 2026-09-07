@@ -387,6 +387,23 @@ tr:hover td{background:rgba(128,0,0,0.05);}
         </div>
 
         <div class="field" style="margin-top:12px;">
+          <label>מסכים מתחלפים</label>
+          <div style="font-size:12px;color:#8b949e;margin:4px 0 8px;line-height:1.5;">
+            מדי כמה זמן המסך מתחלף להודעה ואז חוזר. שימושי ל"אין לדבר בשעת התפילה"
+            או "נא לכבות פלאפונים".
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span style="font-size:13px;color:#8b949e;">כל</span>
+            <input id="edit-sc-rotevery" type="number" min="5" max="600" value="20" oninput="markCustom()" style="width:78px;">
+            <span style="font-size:13px;color:#8b949e;">שניות · למשך</span>
+            <input id="edit-sc-rotshow" type="number" min="2" max="120" value="8" oninput="markCustom()" style="width:78px;">
+            <span style="font-size:13px;color:#8b949e;">שניות</span>
+          </div>
+          <div id="rotList" style="margin-top:8px;"></div>
+          <button type="button" onclick="rotAdd()" style="background:#21262d;border:1px solid #30363d;color:#ffcc00;border-radius:6px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer;margin-top:4px;">+ מסך הודעה</button>
+        </div>
+
+        <div class="field" style="margin-top:12px;">
           <label>תמונות רקע</label>
           <div id="bgList" style="margin-top:6px;"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;align-items:center;">
@@ -1112,6 +1129,9 @@ function readDisplayConfig(){
     audio_url: (_audList[0]||'').trim(),
     audio_volume: parseInt((document.getElementById('edit-sc-audiovol')||{}).value,10)||40,
     alert_seconds: parseInt((document.getElementById('edit-sc-alertsec')||{}).value,10)||60,
+    rotate: { every: parseInt((document.getElementById('edit-sc-rotevery')||{}).value,10)||20,
+              show:  parseInt((document.getElementById('edit-sc-rotshow')||{}).value,10)||8,
+              slides: _rotList.filter(function(x){return x && x.title && x.title.trim();}) },
     bg_images: _bgImgs.filter(function(u){return u && u.trim();}),
     bg_sec: parseInt((document.getElementById('edit-sc-bgsec')||{}).value,10)||10,
     zm: (function(){
@@ -1151,6 +1171,23 @@ function nsfUpload(file, screenId, cb){
 }
 
 var _bgImgs = [];
+var _rotList = [];
+function rotDraw(){
+  var w=document.getElementById('rotList'); if(!w)return;
+  w.innerHTML=_rotList.map(function(x,i){
+    return '<div style="background:#0d1117;border:1px solid #30363d;border-radius:7px;padding:8px;margin-bottom:6px;">'+
+      '<div style="display:flex;gap:6px;align-items:center;">'+
+        '<span style="color:#8b949e;font-size:12px">'+(i+1)+'.</span>'+
+        '<input value="'+String(x.title||'').replace(/"/g,'&quot;')+'" placeholder="כותרת גדולה" '+
+        'oninput="_rotList['+i+'].title=this.value;markCustom()" style="flex:1;font-weight:700;">'+
+        '<button type="button" onclick="_rotList.splice('+i+',1);rotDraw();markCustom()" '+
+        'style="background:none;border:none;color:#8b949e;font-size:17px;cursor:pointer;">×</button></div>'+
+      '<input value="'+String(x.text||'').replace(/"/g,'&quot;')+'" placeholder="שורת משנה (רשות)" '+
+      'oninput="_rotList['+i+'].text=this.value;markCustom()" style="margin-top:5px;">'+
+    '</div>';
+  }).join('') || '<div style="font-size:12px;color:#6e7681;">אין מסכי הודעה. המסך יציג רק את התצוגה הרגילה.</div>';
+}
+function rotAdd(){ _rotList.push({title:'',text:''}); rotDraw(); markCustom(); }
 var _SITES=[], _ROOMS=[];
 function loadSitesRooms(){
   return Promise.all([
@@ -1378,6 +1415,11 @@ function fillDisplayConfig(cfg){
   var _zs=document.getElementById('edit-sc-zmsrc'); if(_zs) _zs.value = (cfg.zmanim_source==='engine')?'engine':'hebcal';
   var _or=document.getElementById('edit-sc-orient'); if(_or) _or.value = cfg.orientation || 'auto';
   var _wx=document.getElementById('edit-sc-wx'); if(_wx) _wx.value = cfg.weather_pos || 'off';
+  var _r = cfg.rotate || {};
+  _rotList = Array.isArray(_r.slides) ? _r.slides.map(function(x){return {title:x.title||'',text:x.text||''};}) : [];
+  rotDraw();
+  var _re=document.getElementById('edit-sc-rotevery'); if(_re) _re.value=_r.every||20;
+  var _rs=document.getElementById('edit-sc-rotshow');  if(_rs) _rs.value=_r.show||8;
   _bgImgs = Array.isArray(cfg.bg_images) ? cfg.bg_images.slice() : (cfg.bg_url?[cfg.bg_url]:[]);
   bgDraw();
   var _bs=document.getElementById('edit-sc-bgsec'); if(_bs) _bs.value = cfg.bg_sec || 10;
