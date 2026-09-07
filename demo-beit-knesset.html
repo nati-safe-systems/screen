@@ -175,7 +175,6 @@ body{font-family:Assistant,Arial,sans-serif;background:#0d1117;color:#e6edf3;pad
       <option value="burgundy">בורדו ויין</option>
       <option value="emerald">ירוק אזמרגד</option>
       <option value="platinum">שחור ופלטינה</option>
-      <option value="heichal">היכל — עמודים וזהב (בהיר)</option>
       <option value="festive">חגיגי מפואר</option>
       <option value="none">ללא מסגרת</option>
     </select>
@@ -336,10 +335,6 @@ body{font-family:Assistant,Arial,sans-serif;background:#0d1117;color:#e6edf3;pad
                 bg1:'rgba(4,30,22,.72)',  bg2:'rgba(2,14,10,.9)',  orn:2, shine:13, band:1.4, tex:.06,  vig:.46 },
     platinum: { name:'שחור ופלטינה',    c1:'#ffffff', c2:'#c9d2dc', c3:'#6d7a88',
                 bg1:'rgba(10,10,12,.78)', bg2:'rgba(3,3,4,.92)',   orn:1, shine:18, band:1.1, tex:.04,  vig:.5  },
-    heichal:  { name:'היכל — עמודים וזהב', light:1,
-                c1:'#f3e2b0', c2:'#c9a24a', c3:'#7a5b16',
-                bg1:'rgba(252,248,236,.97)', bg2:'rgba(240,232,210,.97)',
-                orn:2, shine:0, band:1.6, tex:.05, vig:.18 },
     festive:  { name:'חגיגי מפואר',     c1:'#fffbe8', c2:'#ffd76b', c3:'#a06f10',
                 bg1:'rgba(26,8,34,.76)',  bg2:'rgba(10,2,16,.92)', orn:2, shine:8,  band:2.2, tex:.1,   vig:.55 }
   };
@@ -397,39 +392,6 @@ body{font-family:Assistant,Arial,sans-serif;background:#0d1117;color:#e6edf3;pad
       "<path d='M120 13 C130 5 136 9 139 13 C136 17 130 21 120 13Z'/>" +
       "<path d='M180 13 C170 5 164 9 161 13 C164 17 170 21 180 13Z'/>" +
       "</g><circle cx='150' cy='13' r='2.6' fill='url(#j)'/></svg>");
-  }
-
-  function columnSVG(){
-    return svg("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 800' preserveAspectRatio='none'>"+
-      "<defs><linearGradient id='c' x1='0' y1='0' x2='1' y2='0'>"+
-      "<stop offset='0' stop-color='#efe0bb'/><stop offset='.18' stop-color='#fdf6e4'/>"+
-      "<stop offset='.5' stop-color='#d8c391'/><stop offset='.82' stop-color='#fdf6e4'/>"+
-      "<stop offset='1' stop-color='#c3a86e'/></linearGradient>"+
-      "<linearGradient id='k' x1='0' y1='0' x2='1' y2='0'>"+
-      "<stop offset='0' stop-color='#c9a24a'/><stop offset='.5' stop-color='#f3e2b0'/>"+
-      "<stop offset='1' stop-color='#8a6a1f'/></linearGradient></defs>"+
-      "<rect x='18' y='70' width='64' height='660' fill='url(%23c)'/>"+
-      "<g stroke='%23b99a58' stroke-width='1' opacity='.5'>"+
-      "<path d='M32 70 V730'/><path d='M50 70 V730'/><path d='M68 70 V730'/></g>"+
-      "<rect x='6' y='36' width='88' height='16' rx='3' fill='url(%23k)'/>"+
-      "<rect x='12' y='52' width='76' height='18' fill='url(%23k)' opacity='.85'/>"+
-      "<path d='M12 52 C22 40 34 40 42 52' fill='none' stroke='%238a6a1f' stroke-width='3'/>"+
-      "<path d='M88 52 C78 40 66 40 58 52' fill='none' stroke='%238a6a1f' stroke-width='3'/>"+
-      "<circle cx='50' cy='46' r='5' fill='%238a6a1f'/>"+
-      "<rect x='6' y='730' width='88' height='16' rx='3' fill='url(%23k)'/>"+
-      "<rect x='0' y='746' width='100' height='20' rx='3' fill='url(%23k)' opacity='.9'/>"+
-      "</svg>");
-  }
-  function curtainSVG(){
-    return svg("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 160' preserveAspectRatio='none'>"+
-      "<defs><linearGradient id='v' x1='0' y1='0' x2='0' y2='1'>"+
-      "<stop offset='0' stop-color='#8a6a1f'/><stop offset='.45' stop-color='#c9a24a'/>"+
-      "<stop offset='1' stop-color='#6d5215'/></linearGradient></defs>"+
-      "<path d='M0 0 H1200 V40 C1100 120 1000 40 900 110 C800 40 700 120 600 50"+
-      " C500 120 400 40 300 110 C200 40 100 120 0 45 Z' fill='url(%23v)' opacity='.92'/>"+
-      "<g stroke='%23f3e2b0' stroke-width='1.4' opacity='.35'>"+
-      "<path d='M150 0 V95'/><path d='M300 0 V105'/><path d='M450 0 V95'/><path d='M600 0 V50'/>"+
-      "<path d='M750 0 V95'/><path d='M900 0 V105'/><path d='M1050 0 V95'/></g></svg>");
   }
 
   function damaskSVG(){
@@ -498,46 +460,7 @@ body{font-family:Assistant,Arial,sans-serif;background:#0d1117;color:#e6edf3;pad
       '.orn-div{height:2.2vh;background:no-repeat center/contain;margin:.2vh 0 .5vh;opacity:.85}',
       '#nsf-ver{bottom:'+(T.band+0.5).toFixed(2)+'vh !important;right:'+(T.band+1.2).toFixed(2)+'vh !important;z-index:9500}',
       T.orn===0 ? '.orn-div{display:none}' : '',
-      T.light ? [
-        'body{background:linear-gradient(170deg,#f7f1de,#e8dfc6)!important;color:#2a2113!important}',
-        '#nsf-col-l,#nsf-col-r{position:'+(HOST?'absolute':'fixed')+';top:9vh;bottom:2vh;width:5.4vh;',
-          'z-index:8001;pointer-events:none;background:no-repeat center/100% 100%}',
-        '#nsf-col-l{left:'+(T.band+0.4)+'vh}#nsf-col-r{right:'+(T.band+0.4)+'vh}',
-        '#nsf-curtain{position:'+(HOST?'absolute':'fixed')+';top:'+(T.band+0.3)+'vh;left:'+(T.band+0.3)+'vh;',
-          'right:'+(T.band+0.3)+'vh;height:8vh;z-index:8001;pointer-events:none;',
-          'background:no-repeat center/100% 100%}',
-        'body{padding-left:8vh!important;padding-right:8vh!important;padding-top:8.6vh!important}',
-        '#nsf-vig{background:radial-gradient(ellipse at 50% 40%,transparent 55%,rgba(90,70,30,.22) 100%)!important}',
-        '#nsf-tex{opacity:.06!important}',
-        '.orn{background-image:linear-gradient(160deg,#fdfaf0,#f1e9d4)!important;',
-          'box-shadow:0 0 0 .22vh #a5842f,0 0 0 .34vh rgba(255,255,255,.6),',
-          'inset 0 0 2.4vh rgba(160,130,60,.12),0 .8vh 2.4vh rgba(90,70,30,.22)!important}',
-        '.orn::after{border-color:rgba(140,110,40,.45)!important}',
-        '.mcard,.room,.sc,.ann,.zc,.col,.mid,.body{background-image:linear-gradient(160deg,#fdfaf0,#f0e8d2)!important;',
-          'border-color:#b9993f!important;color:#2a2113!important}',
-        '.mcard .rn,.room .rn,.sc .nm,.ann h3,.aitem .at,.cdwrap .pray,.pname{color:#6b1d1d!important;',
-          '-webkit-text-fill-color:#6b1d1d!important;background:none!important;filter:none!important}',
-        '.mcard .pray,.mcard .pr,.prow>span,.mp,.zc small,.sc .cat,.cdwrap .lbl,.aitem .ab,',
-        '.deadline .lbl,.mcard .none,.none{color:#5a4a2a!important}',
-        '.times span,.prow i,.zr b,.zc b,.mt b,.mcard .tm,.cdwrap .at,.deadline .big{',
-          'color:#1d4d2e!important;background:rgba(29,77,46,.07)!important;',
-          'border-color:rgba(29,77,46,.28)!important;text-shadow:none!important}',
-        '.times span.next,.prow i.nx,.mt b.nx{color:#8a1414!important;background:rgba(201,162,74,.22)!important;',
-          'border-color:#a5842f!important}',
-        '#clock,.topbar .clk,#timer{background:none!important;-webkit-text-fill-color:#6b1d1d!important;',
-          'filter:drop-shadow(0 .12vh .3vh rgba(120,90,30,.45))!important}',
-        '#clock .sec,.topbar .clk .sec{-webkit-text-fill-color:#9a7a3a!important}',
-        '.secttl,.bigttl{color:#f3e2b0!important;-webkit-text-fill-color:#f3e2b0!important;',
-          'background:linear-gradient(180deg,#3a2a10,#241806)!important;',
-          'border:.22vh solid #c9a24a;padding:.7vh 2.4vw!important;',
-          'box-shadow:0 .4vh 1.2vh rgba(90,70,30,.35);margin:1vh auto!important;filter:none!important}',
-        '.hdr{background:linear-gradient(180deg,#3a2a10,#241806)!important;color:#f3e2b0!important;',
-          'border-color:#c9a24a!important}',
-        '.ft{color:#5a4a2a!important;border-color:rgba(140,110,40,.4)!important}',
-        '.ft b{color:#6b1d1d!important}',
-        '#nsf-ver{color:rgba(90,70,30,.5)!important}',
-        '.warn{color:#8a1414!important}'
-      ].join('') : ''
+      ''
     ].join('');
   }
 
@@ -601,26 +524,7 @@ body{font-family:Assistant,Arial,sans-serif;background:#0d1117;color:#e6edf3;pad
     });
     document.getElementById('nsf-tex').style.backgroundImage='url("'+damaskSVG()+'")';
 
-    /* עמודים ווילון — רק בערכה הבהירה */
-    ['nsf-col-l','nsf-col-r','nsf-curtain'].forEach(function(id){
-      var e0=document.getElementById(id); if(e0) e0.remove();
-    });
-    if (T.light) {
-      var hostEl = HOST ? document.querySelector(HOST) : document.body;
-      if (hostEl) {
-        ['nsf-col-l','nsf-col-r'].forEach(function(id){
-          var c=document.createElement('div'); c.id=id;
-          c.style.backgroundImage='url("'+columnSVG()+'")';
-          hostEl.appendChild(c);
-        });
-        var cur=document.createElement('div'); cur.id='nsf-curtain';
-        cur.style.backgroundImage='url("'+curtainSVG()+'")';
-        hostEl.appendChild(cur);
-      }
-    }
-    addCorners(f, opt.outer || 7.5);
-
-    (opt.panels||[]).forEach(function(sel){
+        (opt.panels||[]).forEach(function(sel){
       var l=document.querySelectorAll(sel);
       for (var i=0;i<l.length;i++) decorate(l[i], opt.panel||3.4);
     });
