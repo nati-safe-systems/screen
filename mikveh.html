@@ -51,12 +51,15 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
   line-height:1.1;text-shadow:0 .3vh 1.2vh rgba(0,0,0,.7);
   border-bottom:.18vh solid rgba(255,204,0,.35);padding-bottom:.7vh;width:86%}
 .mcard .pray{color:#cfe0f2;font-family:"Frank Ruhl Libre",serif;font-size:3vh;font-weight:800}
+.tm2{color:#8fb4dd;font-size:.6em;font-weight:700;font-family:Heebo,sans-serif}
 .times{display:flex;direction:ltr;flex-wrap:wrap;justify-content:center;align-items:baseline;
   gap:.5vh 1.3vw;width:100%}
 .times span{color:#bcd4ec;font-size:3.2vh;font-weight:700;font-variant-numeric:tabular-nums;opacity:.7}
 .times span.past{opacity:.28}
 .times span.next{color:#ffd86b;font-size:5.8vh;font-weight:900;opacity:1;
-  text-shadow:0 0 2.4vh rgba(255,204,0,.55)}
+  text-shadow:0 0 3vh rgba(255,204,0,.7),0 0 6vh rgba(255,204,0,.35);
+  animation:mkGlow 2.6s ease-in-out infinite}
+@keyframes mkGlow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.25)}}
 .mcard .none{color:#6e7f95;font-size:1.7vh}
 
 /* ---------- פרנסים ---------- */
@@ -1828,9 +1831,13 @@ function drawMinyanim(now,nowMin){
     var g=NatiMinyan.byPrayer(list), blocks="";
     ["selichot","shacharit","mussaf"].forEach(function(pk){
       var arr=g[pk]; if(!arr||!arr.length)return;
-      blocks+='<div class="pray">'+(PR[pk]||pk)+'</div><div class="times">'+
+      /* אם כל השעות של היום עברו — מדגישים את הראשונה של מחר */
+      var hi = nx ? nx.minutes : arr[0].minutes;
+      var tomorrow = !nx;
+      blocks+='<div class="pray">'+(PR[pk]||pk)+
+        (tomorrow?' <span class="tm2">מחר</span>':'')+'</div><div class="times">'+
         arr.map(function(x){
-          var cls=(nx&&x.minutes===nx.minutes)?"next":(x.minutes<nowMin?"past":"");
+          var cls=(x.minutes===hi)?"next":((!tomorrow&&x.minutes<nowMin)?"past":"");
           return '<span class="'+cls+'">'+x.time+'</span>';
         }).join("")+'</div>';
     });
@@ -1875,5 +1882,5 @@ window.addEventListener("load",function(){ try{
   NatiOrnate.apply({theme:TH,outer:13,panel:5.5,panels:[".mid"],titles:[".secttl"],watch:[".mcard"]});
 }catch(e){} });
 load(); tick();
-</script><div id="nsf-ver">נתי SAFE · מקווה · גרסה 1.5 · 07.09.26</div>
+</script><div id="nsf-ver">נתי SAFE · מקווה · גרסה 1.6 · 07.09.26</div>
 </body></html>

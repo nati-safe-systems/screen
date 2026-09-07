@@ -34,7 +34,7 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 
 /* ---------- מניינים ---------- */
 .main{flex:1 1 auto;min-height:0;display:flex;gap:1vw;padding:1.2vh 1.2vw}
-.mincol{width:21%;min-width:0;display:flex;flex-direction:column;gap:.8vh;
+.mincol{width:16.5%;min-width:0;display:flex;flex-direction:column;gap:.8vh;
   padding:0 .2vw;min-height:0}
 .mincol .mcard{flex:1 1 0;min-height:0;overflow:hidden}
 .mid{flex:1;min-width:0;min-height:0;position:relative;overflow:hidden;display:flex;flex-direction:column}
@@ -42,8 +42,8 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 .secttl{color:#ffcc00;font-family:"Frank Ruhl Libre",serif;font-size:4.6vh;font-weight:900;
   letter-spacing:.08vh;margin:.4vh 0 1vh;text-align:center;display:block;
   text-shadow:0 .3vh 1.2vh rgba(0,0,0,.7)}
-.mgrid{flex:1;min-height:0;display:flex;flex-direction:column;gap:1.1vh;
-  position:relative;z-index:2;justify-content:center}
+.mgrid{flex:1;min-height:0;display:flex;flex-direction:column;gap:.8vh;
+  position:relative;z-index:2;justify-content:flex-start;overflow:hidden}
 .mcard{background:linear-gradient(160deg,rgba(20,32,58,.95),rgba(10,16,30,.95));
   border:1px solid rgba(140,180,230,.22);padding:1.2vh 1vw;
   display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.4vh;
@@ -68,19 +68,19 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 .spon{display:none}
 .mgrid .sc{width:100%;min-height:0;justify-content:center}
 .simg{max-height:20vh;max-width:70%;object-fit:contain;margin-bottom:.6vh;border-radius:1vh}
-.mgrid .sc.t1 .nm{font-size:6.4vh}
-.mgrid .sc.t1 .cat{font-size:2.6vh}
-.mgrid .sc.t1 .dd{font-size:2.5vh}
+.mgrid .sc.t1 .nm{font-size:calc(var(--sk,1) * 6.4vh)}
+.mgrid .sc.t1 .cat{font-size:calc(var(--sk,1) * 2.6vh)}
+.mgrid .sc.t1 .dd{font-size:calc(var(--sk,1) * 2.5vh)}
 .sc{background:linear-gradient(160deg,rgba(58,40,0,.88),rgba(28,18,0,.93));
-  border:.25vh solid rgba(255,204,0,.55);padding:1.6vh 1.8vw;text-align:center;
+  border:.25vh solid rgba(255,204,0,.55);padding:calc(var(--sk,1) * 1.5vh) 1.6vw;text-align:center;
   display:flex;flex-direction:column;justify-content:center;gap:.5vh;
   box-sizing:border-box;min-height:max-content;
   box-shadow:inset 0 0 0 .08vh rgba(255,244,207,.28),0 .6vh 2vh rgba(0,0,0,.45)}
 .sc>*{max-width:100%;overflow-wrap:anywhere}
-.sc .cat{color:#ffcc00;font-size:2.2vh;font-weight:800;letter-spacing:.05vh}
-.sc .nm{color:#fff;font-size:clamp(2.2vh,4.4vh,4.4vh);font-weight:800;
+.sc .cat{color:#ffcc00;font-size:calc(var(--sk,1) * 2.2vh);font-weight:800;letter-spacing:.05vh}
+.sc .nm{color:#fff;font-size:calc(var(--sk,1) * 4.4vh);font-weight:800;
   font-family:"Frank Ruhl Libre",serif;line-height:1.12;overflow-wrap:anywhere}
-.sc .dd{color:#e8d6a8;font-size:2.1vh;line-height:1.3}
+.sc .dd{color:#e8d6a8;font-size:calc(var(--sk,1) * 2.1vh);line-height:1.3}
 /* צבע לכל דרגה — זהה למסך הפרנסים */
 .sc.t1{border-color:#ffd86b;border-width:.3vh;box-shadow:0 0 2.8vh rgba(255,204,0,.42);
   background:linear-gradient(160deg,rgba(112,78,0,.96),rgba(52,33,0,.97))}
@@ -94,7 +94,7 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 .sc.t4 .cat{color:#dcc4ff} .sc.t4 .dd{color:#e0d0ff}
 .sc.t5{border-color:rgba(255,255,255,.35);background:linear-gradient(160deg,rgba(38,44,58,.94),rgba(18,22,32,.96))}
 .sc.t5 .cat{color:#c6d2e0} .sc.t5 .dd{color:#c6d2e0}
-.sc.t4 .nm,.sc.t5 .nm{font-size:2.4vh}
+.sc.t4 .nm,.sc.t5 .nm{font-size:calc(var(--sk,1) * 2.4vh)}
 /* דרגה 1 — הגדולה ביותר. כל מי שבדרגה זו מקבל בדיוק אותו גודל. */
 .srow.t1 .sc{border-color:#ffd86b;border-width:2px;box-shadow:0 0 2.8vh rgba(255,204,0,.4);
   background:linear-gradient(160deg,rgba(92,64,0,.92),rgba(45,28,0,.95));padding:1.4vh 1vw}
@@ -1697,7 +1697,24 @@ function drawSponsors(){
   /* דרגה 1 מקבלת את מרבית השטח בעמודה. השאר מתחלק פרופורציונלית.
      שני פרנסים בדרגה 1 => אחד בכל צד, כל אחד על מלוא הגובה. */
   g.innerHTML=cur.map(card).join("");
+  fitSponsors(g);
 }
+
+/* מקטין את כל הכרטיסים יחד עד שהם נכנסים בשלמותם.
+   4 פרנסים או 12 — אף פעם לא נחתך ואף פעם לא גולש. */
+function fitSponsors(g){
+  if(!g) return;
+  var lo=0.34, hi=1, best=lo;
+  for(var i=0;i<14;i++){
+    var mid=(lo+hi)/2;
+    g.style.setProperty("--sk", mid);
+    if(g.scrollHeight <= g.clientHeight + 1){ best=mid; lo=mid; } else { hi=mid; }
+  }
+  g.style.setProperty("--sk", best);
+}
+window.addEventListener("resize",function(){
+  try{ fitSponsors(document.getElementById("mgrid")); }catch(e){}
+});
 
 function p2(n){return (n<10?"0":"")+n;}
 
@@ -1742,5 +1759,5 @@ window.addEventListener("load",function(){ try{
   NatiOrnate.apply({theme:TH,outer:13,panel:5.5,panels:[".mid"],titles:[".secttl"],watch:[".mcard"]});
 }catch(e){} });
 load(); tick();
-</script><div id="nsf-ver">נתי SAFE · חדר קפה · גרסה 1.3 · 07.09.26</div>
+</script><div id="nsf-ver">נתי SAFE · חדר קפה · גרסה 1.4 · 07.09.26</div>
 </body></html>
