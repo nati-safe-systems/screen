@@ -105,12 +105,16 @@
       "<circle cx='60' cy='60' r='4'/></g></svg>");
   }
 
+  var HOST = '';   /* ריק = כל המסך. אחרת סלקטור של מיכל (לדמו) */
   function css(){
     var pad = (T.band + 1.6).toFixed(2);
+    var unit = HOST ? '%' : 'vh';
+    var padCss = HOST
+      ? HOST+'{padding:'+(T.band*1.4).toFixed(2)+'vh !important;box-sizing:border-box;position:relative}'
+      : 'body{padding:'+pad+'vh !important;box-sizing:border-box}';
     return [
-      /* התוכן נדחף פנימה כדי שהמסגרת לא תעלה עליו */
-      'body{padding:'+pad+'vh !important;box-sizing:border-box}',
-      '#nsf-frame{position:fixed;inset:0;z-index:8000;pointer-events:none}',
+      padCss,
+      '#nsf-frame{position:'+(HOST?'absolute':'fixed')+';inset:0;z-index:8000;pointer-events:none}',
       '#nsf-frame .band{position:absolute;inset:0;border:'+T.band+'vh solid transparent;',
         'border-image:linear-gradient(140deg,'+T.c1+' 0%,'+T.c2+' 20%,'+T.c3+' 42%,'+T.c2+' 62%,'+T.c1+' 100%) 1;',
         'box-shadow:inset 0 0 0 .14vh rgba(255,255,255,.35),inset 0 0 2.4vh rgba(0,0,0,.7)}',
@@ -150,9 +154,9 @@
         'border:.11vh solid '+T.c2+';opacity:.35;pointer-events:none;z-index:2}',
       /* התוכן שבתוך פאנל לא נוגע במסגרת */
       '.orn>*:not(.oc){position:relative;z-index:4}',
-      '#nsf-tex{position:fixed;inset:0;z-index:7998;pointer-events:none;opacity:'+T.tex+';',
+      '#nsf-tex{position:'+(HOST?'absolute':'fixed')+';inset:0;z-index:7998;pointer-events:none;opacity:'+T.tex+';',
         'background-repeat:repeat;background-size:15vh 15vh}',
-      '#nsf-vig{position:fixed;inset:0;z-index:7999;pointer-events:none;',
+      '#nsf-vig{position:'+(HOST?'absolute':'fixed')+';inset:0;z-index:7999;pointer-events:none;',
         'background:radial-gradient(ellipse at 50% 45%,transparent 44%,rgba(0,0,0,'+T.vig+') 100%)}',
       '.orn-div{height:2.2vh;background:no-repeat center/contain;margin:.2vh 0 .5vh;opacity:.85}',
       T.orn===0 ? '.orn-div{display:none}' : ''
@@ -177,8 +181,25 @@
   function apply(opt) {
     opt = opt || {};
     var name = opt.theme || 'classic';
-    T = THEMES[name] || THEMES.classic;
+    HOST = opt.container || '';
+    /* החלפת ערכה בזמן ריצה — מנקים את הקודמת */
+    var old = document.getElementById('nsf-frame');
+    if (old && opt.replace) {
+      old.remove();
+      var ov=document.getElementById('nsf-vig'); if(ov) ov.remove();
+      var ot=document.getElementById('nsf-tex'); if(ot) ot.remove();
+      var oc=document.getElementById('nsf-orn-css'); if(oc) oc.remove();
+      var l=document.querySelectorAll('.orn');
+      for (var q=0;q<l.length;q++){
+        l[q].classList.remove('orn');
+        var cs=l[q].querySelectorAll(':scope > .oc');
+        for (var w=0;w<cs.length;w++) cs[w].remove();
+      }
+      var dv=document.querySelectorAll('.orn-div');
+      for (var d2=0;d2<dv.length;d2++) dv[d2].remove();
+    }
     if (name === 'none') return;
+    T = THEMES[name] || THEMES.classic;
 
     var st = document.getElementById('nsf-orn-css') || document.createElement('style');
     st.id = 'nsf-orn-css'; st.textContent = css();
@@ -191,9 +212,11 @@
         '<span class="band2"></span><span class="band3"></span>' +
         '<span class="em t"></span><span class="em b"></span>' +
         '<span class="em l"></span><span class="em r"></span>';
-      document.body.appendChild(f);
-      var v = document.createElement('div'); v.id='nsf-vig'; document.body.appendChild(v);
-      var x = document.createElement('div'); x.id='nsf-tex'; document.body.appendChild(x);
+      var host = HOST ? document.querySelector(HOST) : document.body;
+      if (!host) host = document.body;
+      host.appendChild(f);
+      var v = document.createElement('div'); v.id='nsf-vig'; host.appendChild(v);
+      var x = document.createElement('div'); x.id='nsf-tex'; host.appendChild(x);
     }
     ['t','b','l','r'].forEach(function (p) {
       var e=f.querySelector('.em.'+p); if(e) e.style.backgroundImage='url("'+edgeSVG()+'")';
