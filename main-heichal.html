@@ -1,25 +1,28 @@
 <!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>נתי SAFE — מסך ראשי · היכל</title>
-<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Heebo:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;800;900&family=David+Libre:wght@400;500;700&family=Miriam+Libre:wght@400;700&family=Suez+One&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
-body{font-family:Heebo,Arial,sans-serif;direction:rtl;color:#2b2115;
+body{font-family:'David Libre',Georgia,serif;direction:rtl;color:#2b2115;
   background:
-    radial-gradient(ellipse at 50% 30%, #fdf9ee 0%, #f3ecd8 55%, #e6dcc0 100%);
+    radial-gradient(ellipse at 50% 26%, #fdf7e7 0%, #f0e4c8 42%, #ddcaa4 72%, #bfa478 100%);
   display:flex;flex-direction:column;position:relative}
 
 /* ---------- מרקם דמאסק עדין ---------- */
-#tex{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.055;
+#vig{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 38%,transparent 40%,rgba(96,66,28,.3) 100%)}
+#tex{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.075;
   background-repeat:repeat;background-size:13vh 13vh}
 
 /* ---------- וילון עליון ---------- */
-#curtain{position:fixed;top:0;left:0;right:0;height:7.5vh;z-index:6;
+#curtain{position:fixed;top:0;left:0;right:0;height:9.5vh;z-index:6;
+  filter:drop-shadow(0 .6vh 1.2vh rgba(70,50,20,.45));
   pointer-events:none;background:no-repeat center/100% 100%}
 
 /* ---------- עמודים ---------- */
-.col-l,.col-r{position:fixed;top:6.4vh;bottom:5.4vh;width:6.2vh;z-index:5;
+.col-l,.col-r{position:fixed;top:8.6vh;bottom:5.4vh;width:6.2vh;z-index:5;
   pointer-events:none;background:no-repeat center/100% 100%}
 .col-r{right:.8vh}.col-l{left:.8vh}
 
@@ -32,27 +35,32 @@ body{font-family:Heebo,Arial,sans-serif;direction:rtl;color:#2b2115;
 
 /* ---------- פריסה ---------- */
 .wrap{flex:1;min-height:0;display:flex;gap:1vw;
-  padding:8.2vh 7.6vh 5.2vh;position:relative;z-index:2}
+  padding:10.4vh 7.6vh 5.2vh;position:relative;z-index:2}
 .side{width:29%;min-width:0;display:flex;flex-direction:column;gap:1.1vh;min-height:0}
 .center{flex:1;min-width:0;display:flex;flex-direction:column;gap:1.1vh;align-items:center;min-height:0}
 
 /* ---------- שלט כותרת מגולף ---------- */
-.plaque{position:relative;align-self:center;padding:.5vh 3.2vw;
+.plaque{position:relative;align-self:center;padding:.6vh 3.2vw;
   background:linear-gradient(180deg,#3b2a0e 0%,#241806 55%,#150e03 100%);
   border:.18vh solid #c9a24a;border-radius:.6vh;
   box-shadow:0 .35vh .9vh rgba(80,60,20,.35), inset 0 .1vh 0 rgba(246,231,189,.25);
   color:#f6e7bd;font-family:"Frank Ruhl Libre",serif;font-weight:700;
-  font-size:2.1vh;letter-spacing:.04em;white-space:nowrap;z-index:3}
+  font-size:2.5vh;letter-spacing:.04em;white-space:nowrap;z-index:3}
 .plaque::before,.plaque::after{content:"";position:absolute;top:50%;width:2.6vh;height:2.6vh;
   transform:translateY(-50%);background:no-repeat center/contain}
 .plaque::before{right:-1.3vh}
 .plaque::after{left:-1.3vh;transform:translateY(-50%) scaleX(-1)}
 
 /* ---------- לוח ---------- */
-.panel{background:linear-gradient(165deg,#fefcf5,#f3ecd9);
-  border:.22vh solid #b9993f;border-radius:1.4vh;
-  box-shadow:0 .5vh 1.6vh rgba(90,70,30,.18), inset 0 0 0 .1vh rgba(255,255,255,.75),
-             inset 0 0 3vh rgba(180,150,80,.08);
+.panel{background:
+    radial-gradient(ellipse at 50% 0%, rgba(255,252,244,.95), rgba(246,237,215,.95) 60%),
+    linear-gradient(165deg,#fdf8ea,#ecdfc0);
+  border:.24vh solid #a5842f;border-radius:1.4vh;
+  box-shadow:0 1vh 2.6vh rgba(80,58,24,.3),
+             inset 0 0 0 .12vh rgba(255,255,255,.85),
+             inset 0 .3vh .8vh rgba(255,255,255,.6),
+             inset 0 -.6vh 1.6vh rgba(150,115,55,.18),
+             inset 0 0 4vh rgba(160,125,60,.1);
   padding:2.2vh 1.4vw 1.4vh;position:relative;display:flex;flex-direction:column;
   min-height:0;margin-top:1.3vh}
 .panel>.plaque{position:absolute;top:-1.5vh;left:50%;transform:translateX(-50%)}
@@ -64,31 +72,36 @@ body{font-family:Heebo,Arial,sans-serif;direction:rtl;color:#2b2115;
 .row{display:flex;justify-content:space-between;align-items:baseline;gap:.6vw;
   padding:.24vh .2vw;border-bottom:.1vh dotted rgba(120,95,40,.35)}
 .row:last-child{border-bottom:none}
-.row .lbl{color:#3a2d18;font-weight:700;font-size:calc(var(--k,1) * 1.9vh)}
-.row .val{color:#1d4d2e;font-weight:800;font-size:calc(var(--k,1) * 2vh);
-  font-variant-numeric:tabular-nums;font-family:Heebo}
+.row .lbl{color:#3a2d18;font-weight:700;font-size:calc(var(--k,1) * 2.2vh)}
+.row .val{color:#1d4d2e;font-weight:700;font-size:calc(var(--k,1) * 2.3vh);
+  font-variant-numeric:tabular-nums;font-family:'Miriam Libre',Heebo,sans-serif}
 .row.next .val{color:#8a1414;font-size:calc(var(--k,1) * 2.5vh)}
 .row.next .lbl{color:#8a1414}
 
 /* חדר */
 .room{margin-bottom:.5vh}
 .room .rn{color:#6b1d1d;font-family:"Frank Ruhl Libre",serif;font-weight:900;
-  font-size:calc(var(--k,1) * 2.1vh);text-align:center;
+  text-shadow:0 .08vh 0 rgba(255,255,255,.85);
+  font-size:calc(var(--k,1) * 2.5vh);text-align:center;
   border-bottom:.12vh solid rgba(140,110,40,.5);padding-bottom:.2vh;margin-bottom:.3vh}
 .times{display:flex;direction:ltr;flex-wrap:wrap;gap:.2vh .7vw;justify-content:center}
-.times span{color:#1d4d2e;font-weight:700;font-size:calc(var(--k,1) * 1.85vh);
+.times span{color:#1d4d2e;font-weight:700;font-size:calc(var(--k,1) * 2.1vh);
   font-variant-numeric:tabular-nums;opacity:.85}
 .times span.past{opacity:.35}
-.times span.next{color:#8a1414;font-weight:900;font-size:calc(var(--k,1) * 2.6vh);opacity:1}
+.times span.next{color:#8a1414;font-weight:700;font-size:calc(var(--k,1) * 3vh);opacity:1;
+  font-family:"Miriam Libre",sans-serif}
 
 /* ---------- מרכז ---------- */
-.crest{background:linear-gradient(165deg,#fefcf5,#f0e8d0);
-  border:.22vh solid #b9993f;border-radius:1.2vh;padding:1.2vh 1.6vw;text-align:center;
-  box-shadow:0 .5vh 1.6vh rgba(90,70,30,.18);width:100%}
+.crest{background:
+    radial-gradient(ellipse at 50% 0%, rgba(255,252,244,.96), rgba(243,232,206,.96)),
+    linear-gradient(165deg,#fdf8ea,#e9dbb8);
+  border:.24vh solid #a5842f;border-radius:1.2vh;padding:1.3vh 1.6vw;text-align:center;
+  box-shadow:0 1vh 2.4vh rgba(80,58,24,.3),inset 0 0 0 .12vh rgba(255,255,255,.85),
+             inset 0 -.6vh 1.4vh rgba(150,115,55,.16);width:100%}
 .crest .site{color:#6b1d1d;font-family:"Frank Ruhl Libre",serif;font-weight:900;
-  font-size:3.4vh;line-height:1.15}
+  font-size:3.6vh;line-height:1.15;text-shadow:0 .1vh 0 rgba(255,255,255,.9),0 .3vh .6vh rgba(120,85,30,.28)}
 .crest img{max-height:9vh;max-width:80%;object-fit:contain;margin-top:.6vh}
-#clock{color:#6b1d1d;font-family:Heebo;font-weight:800;font-size:7.4vh;line-height:1;
+#clock{color:#6b1d1d;font-family:'Miriam Libre',Heebo,sans-serif;font-weight:700;font-size:7.6vh;line-height:1;
   font-variant-numeric:tabular-nums;letter-spacing:.02em;
   text-shadow:0 .12vh .3vh rgba(120,90,30,.35)}
 #clock .sec{font-size:.42em;color:#9a7a3a;vertical-align:.6em;margin-right:.14em}
@@ -96,7 +109,8 @@ body{font-family:Heebo,Arial,sans-serif;direction:rtl;color:#2b2115;
 .dates .g{display:block;color:#6d5a34;font-size:1.5vh;font-weight:500;margin-top:.15vh}
 .ann{flex:1;min-height:0;width:100%}
 .ann .item{border-right:.35vh solid #c9a24a;padding:0 .8vw .5vh 0;margin-bottom:.7vh}
-.ann .t{color:#6b1d1d;font-family:"Frank Ruhl Libre",serif;font-weight:700;
+.ann .t{color:#6b1d1d;font-family:"Frank Ruhl Libre",serif;font-weight:800;
+  text-shadow:0 .08vh 0 rgba(255,255,255,.85);
   font-size:calc(var(--ak,1) * 2.3vh)}
 .ann .b{color:#4a3c22;font-size:calc(var(--ak,1) * 1.8vh);line-height:1.35}
 .none{color:#8a7a58;font-size:1.9vh;text-align:center;margin:auto}
@@ -106,15 +120,21 @@ body{font-family:Heebo,Arial,sans-serif;direction:rtl;color:#2b2115;
   justify-content:center;gap:1vw;padding:.5vh 0 1.4vh;color:#5a4a2a;font-size:1.6vh}
 .foot b{color:#6b1d1d}
 .foot img{height:4.2vh;opacity:.9}
+.bsd{position:fixed;top:10.6vh;right:8.6vh;z-index:7;color:#6b1d1d;
+  font-family:"Frank Ruhl Libre",serif;font-weight:700;font-size:2vh;
+  text-shadow:0 .08vh 0 rgba(255,255,255,.9)}
 #ver{position:fixed;bottom:2.4vh;right:3.4vh;z-index:9;font-size:1.1vh;color:rgba(90,70,30,.5)}
 .warn{color:#8a1414;font-size:1.3vh;text-align:center;margin-top:.3vh}
 @media (max-aspect-ratio:1/1){ .wrap{flex-direction:column} .side{width:100%} }
 </style></head><body>
 
 <div id="tex"></div>
+<div id="vig"></div>
 <div id="curtain"></div>
 <div class="col-r"></div><div class="col-l"></div>
 <div id="frame"></div><div id="frame2"></div>
+
+<div class="bsd">בס"ד</div>
 
 <div class="wrap">
 
@@ -157,7 +177,7 @@ body{font-family:Heebo,Arial,sans-serif;direction:rtl;color:#2b2115;
 </div>
 
 <div class="foot"><img id="flogo" alt=""><span>© כל הזכויות שמורות ל-<b>נתי Safe מערכות</b> · <span dir="ltr">052-717-1280</span></span></div>
-<div id="ver">נתי SAFE · היכל · גרסה 1.0 · 08.09.26</div>
+<div id="ver">נתי SAFE · היכל · גרסה 1.1 · 08.09.26</div>
 
 <script>/* =====================================================================
    נתי SAFE — מנוע זמנים הלכתיים
@@ -770,14 +790,13 @@ function svg(s){return "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(s)
 /* ---------- ציורי הרקע ---------- */
 document.getElementById("curtain").style.backgroundImage='url("'+svg(
  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 150' preserveAspectRatio='none'>"+
- "<defs><linearGradient id='v' x1='0' y1='0' x2='0' y2='1'>"+
- "<stop offset='0' stop-color='#7f6119'/><stop offset='.4' stop-color='#c9a24a'/>"+
- "<stop offset='1' stop-color='#6b5214'/></linearGradient></defs>"+
- "<path d='M0 0 H1200 V34 C1090 116 990 34 890 104 C790 34 690 116 600 42"+
- " C510 116 410 34 310 104 C210 34 110 116 0 38 Z' fill='url(#v)'/>"+
- "<g stroke='#f6e7bd' stroke-width='1.3' opacity='.3'>"+
- "<path d='M150 0 V92'/><path d='M300 0 V100'/><path d='M450 0 V92'/>"+
- "<path d='M600 0 V42'/><path d='M750 0 V92'/><path d='M900 0 V100'/><path d='M1050 0 V92'/></g>"+
+ "<defs><linearGradient id='f0' x1='0' y1='0' x2='1' y2='0'><stop offset='0' stop-color='#5d4711'/><stop offset='.35' stop-color='#c9a24a'/><stop offset='.65' stop-color='#e8cf87'/><stop offset='1' stop-color='#6b5214'/></linearGradient><linearGradient id='f1' x1='0' y1='0' x2='1' y2='0'><stop offset='0' stop-color='#725819'/><stop offset='.4' stop-color='#d8b45e'/><stop offset='.75' stop-color='#f2ddA0'/><stop offset='1' stop-color='#5d4711'/></linearGradient><linearGradient id='f2' x1='0' y1='0' x2='1' y2='0'><stop offset='0' stop-color='#4e3c0d'/><stop offset='.45' stop-color='#bf9743'/><stop offset='.8' stop-color='#e3c87e'/><stop offset='1' stop-color='#6b5214'/></linearGradient><linearGradient id='rail' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#f6e7bd'/><stop offset='.45' stop-color='#c9a24a'/><stop offset='1' stop-color='#7f6119'/></linearGradient><linearGradient id='shd' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='rgba(0,0,0,.35)'/><stop offset='1' stop-color='rgba(0,0,0,0)'/></linearGradient></defs>"+
+ "<path d='M0 26 L100 26 C100 92 0 92 0 26 Z' fill='url(%23f0)'/><path d='M100 26 L200 26 C200 128 100 128 100 26 Z' fill='url(%23f1)'/><path d='M200 26 L300 26 C300 92 200 92 200 26 Z' fill='url(%23f2)'/><path d='M300 26 L400 26 C400 128 300 128 300 26 Z' fill='url(%23f0)'/><path d='M400 26 L500 26 C500 92 400 92 400 26 Z' fill='url(%23f1)'/><path d='M500 26 L600 26 C600 128 500 128 500 26 Z' fill='url(%23f2)'/><path d='M600 26 L700 26 C700 92 600 92 600 26 Z' fill='url(%23f0)'/><path d='M700 26 L800 26 C800 128 700 128 700 26 Z' fill='url(%23f1)'/><path d='M800 26 L900 26 C900 92 800 92 800 26 Z' fill='url(%23f2)'/><path d='M900 26 L1000 26 C1000 128 900 128 900 26 Z' fill='url(%23f0)'/><path d='M1000 26 L1100 26 C1100 92 1000 92 1000 26 Z' fill='url(%23f1)'/><path d='M1100 26 L1200 26 C1200 128 1100 128 1100 26 Z' fill='url(%23f2)'/>"+
+ "<g><path d='M100 100 v16' stroke='#8a6a1f' stroke-width='2'/><ellipse cx='100' cy='122' rx='6' ry='8' fill='url(%23rail)'/><path d='M100 130 v10' stroke='#c9a24a' stroke-width='3'/></g><g><path d='M200 100 v16' stroke='#8a6a1f' stroke-width='2'/><ellipse cx='200' cy='122' rx='6' ry='8' fill='url(%23rail)'/><path d='M200 130 v10' stroke='#c9a24a' stroke-width='3'/></g><g><path d='M300 100 v16' stroke='#8a6a1f' stroke-width='2'/><ellipse cx='300' cy='122' rx='6' ry='8' fill='url(%23rail)'/><path d='M300 130 v10' stroke='#c9a24a' stroke-width='3'/></g><g><path d='M400 100 v16' stroke='#8a6a1f' stroke-width='2'/><ellipse cx='400' cy='122' rx='6' ry='8' fill='url(%23rail)'/><path d='M400 130 v10' stroke='#c9a24a' stroke-width='3'/></g><g><path d='M500 100 v16' stroke='#8a6a1f' stroke-width='2'/><ellipse cx='500' cy='122' rx='6' ry='8' fill='url(%23rail)'/><path d='M500 130 v10' stroke='#c9a24a' stroke-width='3'/></g><g><path d='M600 100 v16' stroke='#8a6a1f' stroke-width='2'/><ellipse cx='600' cy='122' rx='6' ry='8' fill='url(%23rail)'/><path d='M600 130 v10' stroke='#c9a24a' stroke-width='3'/></g><g><path d='M700 100 v16' stroke='#8a6a1f' stroke-width='2'/><ellipse cx='700' cy='122' rx='6' ry='8' fill='url(%23rail)'/><path d='M700 130 v10' stroke='#c9a24a' stroke-width='3'/></g><g><path d='M800 100 v16' stroke='#8a6a1f' stroke-width='2'/><ellipse cx='800' cy='122' rx='6' ry='8' fill='url(%23rail)'/><path d='M800 130 v10' stroke='#c9a24a' stroke-width='3'/></g><g><path d='M900 100 v16' stroke='#8a6a1f' stroke-width='2'/><ellipse cx='900' cy='122' rx='6' ry='8' fill='url(%23rail)'/><path d='M900 130 v10' stroke='#c9a24a' stroke-width='3'/></g><g><path d='M1000 100 v16' stroke='#8a6a1f' stroke-width='2'/><ellipse cx='1000' cy='122' rx='6' ry='8' fill='url(%23rail)'/><path d='M1000 130 v10' stroke='#c9a24a' stroke-width='3'/></g><g><path d='M1100 100 v16' stroke='#8a6a1f' stroke-width='2'/><ellipse cx='1100' cy='122' rx='6' ry='8' fill='url(%23rail)'/><path d='M1100 130 v10' stroke='#c9a24a' stroke-width='3'/></g>"+
+ "<rect x='0' y='0' width='1200' height='26' fill='url(%23rail)'/>"+
+ "<rect x='0' y='20' width='1200' height='8' fill='url(%23shd)' opacity='.5'/>"+
+ "<g fill='none' stroke='#7f6119' stroke-width='1.2' opacity='.6'>"+
+ "<path d='M0 6 H1200'/><path d='M0 20 H1200'/></g>"+
  "</svg>")+'")';
 
 var COL='url("'+svg(
@@ -881,7 +900,7 @@ function drawAnn(){
     return '<div class="item"><div class="t">'+esc(a.title)+'</div>'+
       (a.body?'<div class="b">'+esc(a.body)+'</div>':'')+'</div>';
   }).join("");
-  fit(e,"--ak",.5,1);
+  fit(e,"--ak",.7,1.3);
 }
 
 function drawSpon(){
@@ -896,7 +915,7 @@ function drawSpon(){
       (s.dedication?'<div style="text-align:center;color:#6d5a34;font-size:calc(var(--k,1) * 1.6vh)">'+
         esc(s.dedication)+'</div>':'')+'</div>';
   }).join("");
-  fit(e,"--k",.45,1);
+  fit(e,"--k",.6,1.2);
 }
 
 function drawMinyanim(now,nowMin){
@@ -924,7 +943,7 @@ function drawMinyanim(now,nowMin){
   });
   var box=document.getElementById("mlist");
   box.innerHTML=out||'<div class="none">לא הוגדרו מניינים</div>';
-  fit(box,"--k",.42,1);
+  fit(box,"--k",.62,1.2);
 }
 
 function tick(){
@@ -944,14 +963,14 @@ function tick(){
    ["צאת הכוכבים",Z.tzeitHakochavim]]
    .map(function(x){return '<div class="row"><span class="lbl">'+x[0]+'</span>'+
      '<span class="val">'+NatiMinyan.fmt(x[1])+'</span></div>';}).join("");
-  fit(zb,"--k",.5,1);
+  fit(zb,"--k",.8,1.35);
 
   var sb=document.getElementById("shabBox");
   sb.innerHTML=[["הדלקת נרות",Z.candleLighting],["שקיעה",Z.shkia],
    ["צאת השבת",Z.tzeitHakochavim],["רבינו תם",Z.tzeitRT]]
    .map(function(x){return '<div class="row"><span class="lbl">'+x[0]+'</span>'+
      '<span class="val">'+NatiMinyan.fmt(x[1])+'</span></div>';}).join("");
-  fit(sb,"--k",.5,1);
+  fit(sb,"--k",.8,1.35);
 
   drawMinyanim(now,nowMin);
 }
