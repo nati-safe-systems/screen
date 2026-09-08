@@ -924,10 +924,52 @@ var ZMCHECK = new URLSearchParams(window.location.search).get("zmcheck") === "1"
 (function(){
   try{
     var raw=localStorage.getItem("nsf_boot")||"[]", a=JSON.parse(raw);
-    a.push(Date.now()); while(a.length>60) a.shift();
+    a.push(Date.now()); while(a.length>200) a.shift();
     localStorage.setItem("nsf_boot",JSON.stringify(a));
     window._bootLog=a;
   }catch(e){ window._bootLog=[]; }
+})();
+
+/* ---- ?bootlog=1 — יומן טעינות על המסך עצמו ----
+   מציג כמה פעמים המסך נטען מחדש ובאיזה מרווחים.
+   מרווח קבוע = רענון מתוזמן באפליקציה.
+   מרווח משתנה = מערכת ההפעלה הורגת את הדפדפן. */
+(function(){
+  try{
+    if(new URLSearchParams(window.location.search).get("bootlog")!=="1") return;
+    var box=document.createElement("div");
+    box.style.cssText="position:fixed;inset:0;z-index:2147483600;background:#0d1117;"+
+      "color:#e6edf3;font:13px/1.7 Assistant,Arial,sans-serif;direction:rtl;"+
+      "overflow:auto;padding:18px";
+    document.body.appendChild(box);
+    function draw(){
+      var a=window._bootLog||[], g=[];
+      for(var i=1;i<a.length;i++) g.push(Math.round((a[i]-a[i-1])/1000));
+      var avg=g.length?Math.round(g.reduce(function(x,y){return x+y;},0)/g.length):0;
+      var mn=g.length?Math.min.apply(null,g):0, mx=g.length?Math.max.apply(null,g):0;
+      var spread=mx-mn;
+      var verdict = !g.length ? "אין מספיק נתונים — השאר את המסך פועל 20 דקות"
+        : (spread<=20 ? "מרווח קבוע → רענון מתוזמן באפליקציה. בטל אותו בהגדרות הקיוסק."
+                      : "מרווח משתנה → מערכת ההפעלה הורגת את הדפדפן. בעיית זיכרון בקופסה.");
+      box.innerHTML=
+        '<div style="font-size:19px;font-weight:800;color:#ffcc00;margin-bottom:10px">'+
+          'יומן טעינות של המסך</div>'+
+        '<div>נרשמו <b>'+a.length+'</b> טעינות</div>'+
+        (g.length? '<div>מרווח ממוצע: <b>'+avg+'</b> שניות · הקצר <b>'+mn+
+                   '</b> · הארוך <b>'+mx+'</b></div>' : '')+
+        '<div style="margin:12px 0;padding:10px;border-radius:8px;background:#161b22;'+
+          'border:1px solid #ffcc00;color:#ffd86b;font-weight:700">'+verdict+'</div>'+
+        '<div style="color:#8b949e">טעינה אחרונה: '+
+          (a.length?new Date(a[a.length-1]).toLocaleString("he-IL"):"—")+'</div>'+
+        '<div style="color:#8b949e;margin-top:8px">מרווחים אחרונים (שניות):<br>'+
+          g.slice(-30).join(" · ")+'</div>'+
+        '<div style="margin-top:16px"><button onclick="localStorage.removeItem(\'nsf_boot\');location.reload()" '+
+          'style="background:#21262d;border:1px solid #30363d;color:#e6edf3;border-radius:6px;'+
+          'padding:8px 16px;font:inherit;cursor:pointer">אפס את היומן</button></div>'+
+        '<div style="margin-top:14px;color:#6e7681">להסתרה: הסר ?bootlog=1 מהכתובת.</div>';
+    }
+    draw(); setInterval(draw,5000);
+  }catch(e){}
 })();
 
 /* --- ציור מיידי מהערכים האחרונים ---
@@ -3253,6 +3295,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 6.6</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 6.7</div>
 </body>
 </html>
