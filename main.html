@@ -271,6 +271,22 @@ body{font-family:var(--f-body)!important;-webkit-font-smoothing:antialiased}
                 bg1:'rgba(4,30,22,.72)',  bg2:'rgba(2,14,10,.9)',  orn:2, shine:13, band:1.4, tex:.06,  vig:.46 },
     platinum: { name:'שחור ופלטינה',    c1:'#ffffff', c2:'#c9d2dc', c3:'#6d7a88',
                 bg1:'rgba(10,10,12,.78)', bg2:'rgba(3,3,4,.92)',   orn:1, shine:18, band:1.1, tex:.04,  vig:.5  },
+    /* מבנה שונה: מסגרת כפולה דקה, בלי עיטורי פינה, בלי דמאסק */
+    scroll:   { name:'מגילה — קווים כפולים', c1:'#f6ecd2', c2:'#cdb27a', c3:'#7d6535',
+                bg1:'rgba(26,22,16,.72)', bg2:'rgba(12,10,7,.88)',
+                orn:0, shine:0, band:.28, tex:0, vig:.36, dbl:1, pad:2.2 },
+    /* קווי מתאר בלבד — בלי מילוי, אוורירי מאוד */
+    outline:  { name:'קו מתאר — אוורירי', c1:'#ffffff', c2:'#8fa6bd', c3:'#42546b',
+                bg1:'rgba(0,0,0,0)', bg2:'rgba(0,0,0,0)',
+                orn:0, shine:0, band:.22, tex:0, vig:.22, thin:1, pad:2.6 },
+    /* קטיפה — בלי מסגרות חדות, זוהר רך */
+    velvet:   { name:'קטיפה — רך וזוהר', c1:'#ffd9ea', c2:'#b3557f', c3:'#5c1f3a',
+                bg1:'rgba(48,10,30,.8)', bg2:'rgba(20,3,12,.92)',
+                orn:1, shine:22, band:1.1, tex:.05, vig:.5, soft:1, pad:2.4 },
+    /* אבן ירושלים — מסגרת עבה ומאסיבית */
+    stone:    { name:'אבן ירושלים', c1:'#f0e4cc', c2:'#b9a887', c3:'#6f6248',
+                bg1:'rgba(46,40,30,.82)', bg2:'rgba(24,20,14,.92)',
+                orn:2, shine:0, band:2.4, tex:.09, vig:.44, pad:3 },
     festive:  { name:'חגיגי מפואר',     c1:'#fffbe8', c2:'#ffd76b', c3:'#a06f10',
                 bg1:'rgba(26,8,34,.76)',  bg2:'rgba(10,2,16,.92)', orn:2, shine:8,  band:2.2, tex:.1,   vig:.55 }
   };
@@ -342,7 +358,7 @@ body{font-family:var(--f-body)!important;-webkit-font-smoothing:antialiased}
 
   var HOST = '';   /* ריק = כל המסך. אחרת סלקטור של מיכל (לדמו) */
   function css(){
-    var pad = (T.band + 2.6).toFixed(2);
+    var pad = (T.pad != null ? T.pad : (T.band + 2.6)).toFixed(2);
     var unit = HOST ? '%' : 'vh';
     var padCss = HOST
       ? HOST+'{padding:'+(T.band*1.4).toFixed(2)+'vh !important;box-sizing:border-box;position:relative}'
@@ -353,6 +369,7 @@ body{font-family:var(--f-body)!important;-webkit-font-smoothing:antialiased}
       '#nsf-frame .band{position:absolute;inset:0;border:'+T.band+'vh solid transparent;',
         'border-image:linear-gradient(140deg,'+T.c1+' 0%,'+T.c2+' 20%,'+T.c3+' 42%,'+T.c2+' 62%,'+T.c1+' 100%) 1;',
         'box-shadow:inset 0 0 0 .14vh rgba(255,255,255,.35),inset 0 0 2.4vh rgba(0,0,0,.7)}',
+      T.dbl ? '#nsf-frame .band2{inset:'+(T.band+1.1)+'vh!important;opacity:1!important}' : '',
       '#nsf-frame .band2{position:absolute;inset:'+(T.band+.5)+'vh;',
         'border:.2vh solid '+T.c2+';opacity:.75}',
       '#nsf-frame .band3{position:absolute;inset:'+(T.band+1.1)+'vh;',
@@ -376,15 +393,30 @@ body{font-family:var(--f-body)!important;-webkit-font-smoothing:antialiased}
       '.oc.tl{top:0;left:0}.oc.tr{top:0;right:0;transform:rotate(90deg)}',
       '.oc.br{bottom:0;right:0;transform:rotate(180deg)}.oc.bl{bottom:0;left:0;transform:rotate(270deg)}',
       T.orn===0 ? '.oc{display:none}' : '',
-      '.orn{position:relative;border-radius:0;',
-        'background-image:linear-gradient(160deg,'+T.bg1+','+T.bg2+');',
-        'box-shadow:0 0 0 .22vh '+T.c3+',0 0 0 .34vh rgba(255,255,255,.22),',
-        'inset 0 .1vh 0 rgba(255,255,255,.12),inset 0 0 3.4vh rgba(0,0,0,.5),',
-        '0 1vh 3vh rgba(0,0,0,.55)}',
+      T.thin
+        ? '.orn{position:relative;border-radius:0;background:none;'+
+          'box-shadow:0 0 0 .12vh '+T.c2+';}'
+        : T.dbl
+        ? '.orn{position:relative;border-radius:0;'+
+          'background-image:linear-gradient(160deg,'+T.bg1+','+T.bg2+');'+
+          'box-shadow:0 0 0 .1vh '+T.c2+',0 0 0 .5vh rgba(0,0,0,0),'+
+          '0 0 0 .62vh '+T.c2+';}'
+        : T.soft
+        ? '.orn{position:relative;border-radius:2.2vh;'+
+          'background-image:radial-gradient(ellipse at 50% 0%,'+T.bg1+','+T.bg2+');'+
+          'box-shadow:0 0 3vh '+T.c3+' inset,0 0 2.4vh rgba(179,85,127,.28),'+
+          '0 1.2vh 3.4vh rgba(0,0,0,.6);}'
+        : '.orn{position:relative;border-radius:0;'+
+          'background-image:linear-gradient(160deg,'+T.bg1+','+T.bg2+');'+
+          'box-shadow:0 0 0 .22vh '+T.c3+',0 0 0 .34vh rgba(255,255,255,.22),'+
+          'inset 0 .1vh 0 rgba(255,255,255,.12),inset 0 0 3.4vh rgba(0,0,0,.5),'+
+          '0 1vh 3vh rgba(0,0,0,.55);}',
+      (T.thin||T.dbl||T.soft) ? '.orn::before{display:none}' : '',
       '.orn::before{content:"";position:absolute;inset:-.34vh;border-radius:0;padding:.34vh;',
         'background:linear-gradient(150deg,'+T.c1+' 0%,'+T.c2+' 26%,'+T.c3+' 50%,'+T.c2+' 74%,'+T.c1+' 100%);',
         '-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);',
         '-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;z-index:2}',
+      (T.thin||T.dbl||T.soft) ? '.orn::after{display:none}' : '',
       '.orn::after{content:"";position:absolute;inset:.85vh;border-radius:0;',
         'border:.11vh solid '+T.c2+';opacity:.35;pointer-events:none;z-index:2}',
       /* התוכן שבתוך פאנל לא נוגע במסגרת */
