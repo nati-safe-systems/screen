@@ -387,6 +387,15 @@ tr:hover td{background:rgba(128,0,0,0.05);}
         </div>
 
         <div class="field" style="margin-top:12px;">
+          <label>מסמכי PDF — רשימה</label>
+          <div style="font-size:12px;color:#8b949e;margin:4px 0 8px;line-height:1.5;">
+            כמה מסמכים שיוצגו אחד אחרי השני, כל אחד למשך שתגדיר. ריק = משתמש בקישור הבודד.
+          </div>
+          <div id="pdfList"></div>
+          <button type="button" onclick="pdfAdd()" style="background:#21262d;border:1px solid #30363d;color:#ffcc00;border-radius:6px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer;margin-top:4px;">+ מסמך</button>
+        </div>
+
+        <div class="field" style="margin-top:12px;">
           <label>מסכים מתחלפים</label>
           <div style="font-size:12px;color:#8b949e;margin:4px 0 8px;line-height:1.5;">
             מדי כמה זמן המסך מתחלף להודעה ואז חוזר. שימושי ל"אין לדבר בשעת התפילה"
@@ -1132,6 +1141,7 @@ function readDisplayConfig(){
     rotate: { every: parseInt((document.getElementById('edit-sc-rotevery')||{}).value,10)||20,
               show:  parseInt((document.getElementById('edit-sc-rotshow')||{}).value,10)||8,
               slides: _rotList.filter(function(x){return x && x.title && x.title.trim();}) },
+    pdf_list: _pdfDocs.filter(function(x){return x && x.url && x.url.trim();}),
     bg_images: _bgImgs.filter(function(u){return u && u.trim();}),
     bg_sec: parseInt((document.getElementById('edit-sc-bgsec')||{}).value,10)||10,
     zm: (function(){
@@ -1172,6 +1182,22 @@ function nsfUpload(file, screenId, cb){
 
 var _bgImgs = [];
 var _rotList = [];
+var _pdfDocs = [];
+function pdfDraw(){
+  var w=document.getElementById('pdfList'); if(!w)return;
+  w.innerHTML=_pdfDocs.map(function(x,i){
+    return '<div style="display:flex;gap:6px;align-items:center;margin-bottom:5px;">'+
+      '<span style="color:#8b949e;font-size:12px;min-width:16px">'+(i+1)+'.</span>'+
+      '<input value="'+String(x.url||'').replace(/"/g,'&quot;')+'" placeholder="קישור PDF" '+
+      'oninput="_pdfDocs['+i+'].url=this.value;markCustom()" style="flex:1;direction:ltr;font-size:12px;">'+
+      '<input type="number" min="3" max="600" value="'+(x.sec||20)+'" '+
+      'oninput="_pdfDocs['+i+'].sec=+this.value;markCustom()" style="width:74px;">'+
+      '<span style="font-size:12px;color:#8b949e">שנ\'</span>'+
+      '<button type="button" onclick="_pdfDocs.splice('+i+',1);pdfDraw();markCustom()" '+
+      'style="background:none;border:none;color:#8b949e;font-size:17px;cursor:pointer;">×</button></div>';
+  }).join('') || '<div style="font-size:12px;color:#6e7681;">אין מסמכים ברשימה.</div>';
+}
+function pdfAdd(){ _pdfDocs.push({url:'',sec:20}); pdfDraw(); markCustom(); }
 function rotDraw(){
   var w=document.getElementById('rotList'); if(!w)return;
   w.innerHTML=_rotList.map(function(x,i){
@@ -1415,6 +1441,9 @@ function fillDisplayConfig(cfg){
   var _zs=document.getElementById('edit-sc-zmsrc'); if(_zs) _zs.value = (cfg.zmanim_source==='engine')?'engine':'hebcal';
   var _or=document.getElementById('edit-sc-orient'); if(_or) _or.value = cfg.orientation || 'auto';
   var _wx=document.getElementById('edit-sc-wx'); if(_wx) _wx.value = cfg.weather_pos || 'off';
+  _pdfDocs = Array.isArray(cfg.pdf_list) ? cfg.pdf_list.map(function(x){
+      return {url:x.url||'', sec:+x.sec||20}; }) : [];
+  pdfDraw();
   var _r = cfg.rotate || {};
   _rotList = Array.isArray(_r.slides) ? _r.slides.map(function(x){return {title:x.title||'',text:x.text||''};}) : [];
   rotDraw();

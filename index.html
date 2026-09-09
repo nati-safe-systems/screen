@@ -1349,6 +1349,7 @@ function parseDisplayConfig(raw){
     bgBrightness: c.bgBrightness,
     pdf_sec: c.pdf_sec,
     pdf_cols: c.pdf_cols,
+    pdf_list: Array.isArray(c.pdf_list) ? c.pdf_list : [],
     pdf_show_sec: c.pdf_show_sec,
     sho_images: Array.isArray(c.sho_images)&&c.sho_images.length?c.sho_images:SHO_DEFAULT_IMAGES,  // תמונות רקע למסך שבת/חג
     sho_layout: c.sho_layout||"card",                          // card | float | bar
@@ -2109,7 +2110,30 @@ function effectiveAd(s){
 
 /* ===== PDF.js: דפדוף עמודים אמיתי דרך פרוקסי GAS ===== */
 var _pdfState = { timer:null, doc:null, token:0 };
+
+/* ---- רשימת מסמכים ----
+   display_config.pdf_list = [{url:"...", sec:20}, {url:"...", sec:10}]
+   כל מסמך מוצג למשך שהוגדר לו, ואז עובר לבא. בסוף חוזר לראשון. */
+var _docList=[], _docIdx=0, _docTimer=null;
+function stopDocs(){ if(_docTimer){ clearTimeout(_docTimer); _docTimer=null; } }
+function startDocs(list, secPerPage, cols, animPdf){
+  stopDocs();
+  _docList=(list||[]).filter(function(x){return x && x.url && x.url.trim();});
+  if(!_docList.length) return false;
+  _docIdx=0;
+  function step(){
+    var it=_docList[_docIdx % _docList.length];
+    startPdf(it.url, secPerPage, cols, animPdf);
+    if(_docList.length>1){
+      var ms=Math.max(3,(+it.sec||20))*1000;
+      _docTimer=setTimeout(function(){ _docIdx++; step(); }, ms);
+    }
+  }
+  step();
+  return true;
+}
 function stopPdf(){
+  stopDocs();
   if(_pdfState.timer){ clearTimeout(_pdfState.timer); _pdfState.timer=null; }
   _pdfState.doc=null;
   _pdfState.token++;
@@ -2119,6 +2143,13 @@ function b64ToUint8(b64){
   for(var i=0;i<len;i++) bytes[i]=bin.charCodeAt(i);
   return bytes;
 }
+function startPdfOrList(pdfUrl, secPerPage, cols, animPdf){
+  var lst = (DC && Array.isArray(DC.pdf_list)) ? DC.pdf_list : [];
+  if(lst.length) return startDocs(lst, secPerPage, cols, animPdf);
+  stopDocs();
+  return startPdf(pdfUrl, secPerPage, cols, animPdf);
+}
+
 function startPdf(pdfUrl, secPerPage, cols, animPdf){
   stopPdf();
   var myToken=_pdfState.token;
@@ -2146,7 +2177,9 @@ function startPdf(pdfUrl, secPerPage, cols, animPdf){
         data:b64ToUint8(d.b64),
         cMapUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/",
         cMapPacked:true,
-        standardFontDataUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/"
+        standardFontDataUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/",
+        disableFontFace:true,
+        useSystemFonts:false
       }).promise;
     })
     .then(function(doc){
@@ -2247,7 +2280,11 @@ function startCombo(msg, coLogo, pdfUrl, secPerPage, cols, animPdf, showSec){
           data:b64ToUint8(d.b64),
           cMapUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/",
           cMapPacked:true,
-          standardFontDataUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/"
+          standardFontDataUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/",
+          /* מצייר את האותיות מהקובץ עצמו במקום להסתמך על גופני המערכת.
+             זה מה שפותר עברית משובשת בקבצים עם גופן חסר או קידוד לא סטנדרטי. */
+          disableFontFace:true,
+          useSystemFonts:false
         }).promise;
       });
   }
@@ -2418,7 +2455,7 @@ if(mtype==="scrollpdf") {
       return;
     } else if(cpUrl){
       stWrap.style.display="flex";
-      startPdf(cpUrl, eff.pdf_sec, eff.pdf_cols, animPdf);
+      startPdfOrList(cpUrl, eff.pdf_sec, eff.pdf_cols, animPdf);
       return;
     }
     mtype="scroll"; // אין PDF — נופל לגלילה רגילה
@@ -2427,7 +2464,7 @@ if(mtype==="scrollpdf") {
     var pdfUrl=eff.pdf_url||"";
     if(!pdfUrl){ stopPdf(); return; }
     stWrap.style.display="flex";
-    startPdf(pdfUrl, eff.pdf_sec, eff.pdf_cols, animPdf);
+    startPdfOrList(pdfUrl, eff.pdf_sec, eff.pdf_cols, animPdf);
   } else if(mtype==="static") {
     stText.className="";
     stText.innerHTML=coLogo+msg;
@@ -3295,6 +3332,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 6.7</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 6.8</div>
 </body>
 </html>
