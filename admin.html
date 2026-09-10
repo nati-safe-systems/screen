@@ -341,6 +341,14 @@ tr:hover td{background:rgba(128,0,0,0.05);}
         <div class="field" style="margin-top:12px;">
           <label>שיוך לבית כנסת</label>
           <div style="margin:6px 0 8px;">
+            <button type="button" onclick="previewTenant()"
+              style="background:#21262d;border:1px solid #58a6ff;color:#58a6ff;border-radius:6px;
+                     padding:6px 14px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;
+                     margin-bottom:8px;">
+              צפה בממשק הלקוח של מסך זה
+            </button>
+          </div>
+          <div style="margin:6px 0 8px;">
             <a href="minyanim.html" target="_blank"
                style="display:inline-block;background:#21262d;border:1px solid #ffcc00;color:#ffcc00;
                       border-radius:6px;padding:6px 14px;font-size:13px;font-weight:700;text-decoration:none;">
@@ -1259,6 +1267,13 @@ function bgDraw(){
   }).join('') || '<div style="font-size:12px;color:#6e7681;">אין תמונות — יוצג הרקע המובנה.</div>';
 }
 function bgAdd(){ _bgImgs.push(''); bgDraw(); markCustom(); }
+
+/* פותח את ממשק הלקוח בלי סיסמה, במצב קריאה בלבד */
+function previewTenant(){
+  var co=(document.getElementById('edit-sc-co')||{}).value||'';
+  if(!co){ alert('למסך זה לא משויך לקוח'); return; }
+  window.open('tenant_panel.html?asco='+encodeURIComponent(co)+'&preview=1&_='+Date.now(),'_blank');
+}
 
 /* ---------- רשימת השמעה ---------- */
 var _audList = [];

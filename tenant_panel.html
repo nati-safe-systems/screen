@@ -840,6 +840,59 @@ function companyPerms(c){
 function intersectPerms(a,b){ var o={}; PERM_IDS_T.forEach(function(id){o[id]=!!(a&&a[id])&&!!(b&&b[id]);}); return o; }
 var FULL_PERMS=allPermsT();
 var CURRENT_PERMS=null, CURRENT_USER='', CURRENT_PASS='', IS_ADMIN=false;
+var PREVIEW_MODE=false;
+
+/* ---- תצוגה מקדימה לאדמין ----
+   ?asco=<company_id>&preview=1  — נכנס לממשק של הלקוח בלי סיסמה,
+   במצב קריאה בלבד, כדי לראות בדיוק מה הוא רואה. */
+function tryAdminPreview(){
+  var q=new URLSearchParams(location.search);
+  if(q.get("preview")!=="1") return false;
+  var cid=q.get("asco")||"";
+  var sub=(q.get("assub")||"").toLowerCase();
+  if(!cid) return false;
+
+  PREVIEW_MODE=true;
+  sf("companies?company_id=eq."+encodeURIComponent(cid)).then(function(d){
+    if(!d||!d.length){ alert("לא נמצא לקוח"); return; }
+    co=d[0];
+    CURRENT_USER=co.username||cid; CURRENT_PASS=""; IS_ADMIN=false;
+    CURRENT_PERMS=companyPerms(co);
+    if(sub){
+      (Array.isArray(co.sub_users)?co.sub_users:[]).forEach(function(su){
+        if(su&&(su.username||"").toLowerCase()===sub){
+          CURRENT_USER=su.username;
+          CURRENT_PERMS=intersectPerms(companyPerms(co), migratePermsT(su.perms||{})||{});
+        }
+      });
+    }
+    enterApp();
+    setTimeout(lockPreview,300);
+  }).catch(function(){ alert("טעינת התצוגה המקדימה נכשלה"); });
+  return true;
+}
+
+/* חוסם כל שמירה — זו תצוגה בלבד, לא נגיעה בהגדרות של הלקוח */
+function lockPreview(){
+  var bar=document.createElement("div");
+  bar.style.cssText="position:fixed;top:0;left:0;right:0;z-index:99999;background:#4a3a00;"+
+    "color:#ffd86b;border-bottom:2px solid #ffcc00;padding:7px 12px;text-align:center;"+
+    "font:700 13px Assistant,Arial,sans-serif;direction:rtl";
+  bar.textContent="תצוגה מקדימה של ממשק הלקוח — "+CURRENT_USER+" · קריאה בלבד, שמירה חסומה";
+  document.body.appendChild(bar);
+  document.body.style.paddingTop="34px";
+
+  /* מנטרל שמירות */
+  ["saveDisplayConfig","saveBuildingName","saveMessage","saveSchedules",
+   "saveMinyanView","saveTenantAds"].forEach(function(fn){
+    if(typeof window[fn]==="function"){
+      window[fn]=function(){ toast("תצוגה מקדימה — שמירה חסומה"); };
+    }
+  });
+  var f=document.createElement("style");
+  f.textContent=".btn-save{opacity:.45;filter:grayscale(.6)}";
+  document.head.appendChild(f);
+}
 var ADMIN_FOCUS_SCREEN=null;
 function escTP(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 /* תזמון */
@@ -1068,7 +1121,7 @@ function enterApp(){
     topLogo.src="data:image/png;base64,"+co.logo_b64;
     topLogo.alt=co.company_name||"לוגו";
   }
-  sessionStorage.setItem('nati_co_logged',co.company_id);
+  if(!PREVIEW_MODE) sessionStorage.setItem('nati_co_logged',co.company_id);
   sessionStorage.setItem('nati_co_pass',CURRENT_PASS||'');
   sessionStorage.setItem('nati_user',CURRENT_USER||'');
   sessionStorage.setItem('nati_is_admin',IS_ADMIN?'1':'0');
@@ -2017,6 +2070,7 @@ function togglePass(id,btn){
 document.getElementById("rte-editor").addEventListener("input",updatePreview);
 // נקה תיבות בטעינה
 window.addEventListener("load",function(){
+  try{ if(tryAdminPreview()) return; }catch(e){}
   initPickers();
   document.getElementById("uname").value="";
   document.getElementById("upass").value="";
