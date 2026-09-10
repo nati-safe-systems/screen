@@ -1653,41 +1653,45 @@ function wxFetch(){
    ==================================================== */
 
 /* האם עכשיו שבת, חג, או ערבם — כלומר זמן שבו לא מנגנים */
+/* מחשב זמנים לכל תאריך, עם מטמון קטן לפי יום */
+var _zmByDay={};
+function zmForDate(d){
+  var k=d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
+  if(_zmByDay[k]) return _zmByDay[k];
+  try{ _zmByDay[k]=zmEngineTimes(d); }catch(e){ _zmByDay[k]=null; }
+  return _zmByDay[k];
+}
+
+/* האם עכשיו שבת, חג, או ערבם — כלומר זמן שבו לא מנגנים.
+   מחושב לפי התאריך שנבדק, לא לפי היום הנוכחי. */
 function isRestNow(now){
   try{
     now = now || new Date();
-    /* אם המטמון ריק — מחשבים כאן ועכשיו. אסור שהמוזיקה תנגן בשבת
-       רק בגלל שנתון לא נטען. */
-    var Z = window._zmCache;
-    if(!Z){
-      try{ Z = zmEngineTimes(now, zmCfg()); window._zmCache = Z; }catch(e){}
-    }
-    if(!Z || Z.candleLighting==null || Z.tzeitRT==null){
-      /* בלי זמנים ודאיים — משתיקים בשישי אחרי הצהריים, בשבת,
-         ובכל יום טוב. עדיף שקט מיותר מאשר מוזיקה בשבת. */
-      var d0=now.getDay(), hh=now.getHours();
-      if(d0===6) return true;
-      if(d0===5 && hh>=15) return true;
-      try{
-        var rd0=hc_gregToRD(now.getFullYear(),now.getMonth()+1,now.getDate());
-        var h0=hc_fromRD(rd0), h1=hc_fromRD(rd0+1);
-        if(isYomTovIL(h0.month,h0.day)) return true;
-        if(isYomTovIL(h1.month,h1.day) && hh>=15) return true;
-      }catch(e){}
-      return false;
-    }
     var nowMin = now.getHours()*60 + now.getMinutes();
-    var rd = hc_gregToRD(now.getFullYear(), now.getMonth()+1, now.getDate());
-    var hT = hc_fromRD(rd), hN = hc_fromRD(rd+1);
     var dow = now.getDay();
 
-    var todayRest = (dow===6) || isYomTovIL(hT.month,hT.day);
+    var rd = hc_gregToRD(now.getFullYear(), now.getMonth()+1, now.getDate());
+    var hT = hc_fromRD(rd), hN = hc_fromRD(rd+1);
+    var todayRest    = (dow===6) || isYomTovIL(hT.month,hT.day);
     var tomorrowRest = (dow===5) || isYomTovIL(hN.month,hN.day);
 
-    /* מהדלקת הנרות של ערב שבת או ערב חג — מפסיקים */
-    if(tomorrowRest && nowMin >= (Z.candleLighting-1)) return true;
+    var Z = zmForDate(now);
+    /* המנוע מחזיר _candle ו-rt. אין כאן candleLighting/tzeitRT. */
+    var candle = Z ? (Z._candle!=null ? Z._candle : (Z.sunset!=null ? Z.sunset-40 : null)) : null;
+    var rt     = Z ? Z.rt : null;
+
+    if(candle==null || rt==null){
+      /* בלי זמנים ודאיים — משתיקים בשבת, ביום טוב, ובערביהם מ-15:00.
+         עדיף שקט מיותר מאשר מוזיקה בשבת. */
+      if(todayRest) return true;
+      if(tomorrowRest && now.getHours()>=15) return true;
+      return false;
+    }
+
+    /* מהדלקת הנרות של ערב שבת או ערב חג ואילך */
+    if(tomorrowRest && nowMin >= candle) return true;
     /* ביום עצמו — עד צאת רבינו תם */
-    if(todayRest && nowMin < Z.tzeitRT) return true;
+    if(todayRest && nowMin < rt) return true;
     return false;
   }catch(e){ return false; }
 }
@@ -3136,7 +3140,6 @@ function gzm2(n){
 function upd(){
   if(!ok)return;
   var now=new Date(),tm=gzm2(now),cur=now.getHours()+now.getMinutes()/60;
-  try{ if(window._zmE) window._zmCache=window._zmE; }catch(e){}
 
   var hcd=new Date(now);if(cur>=tm.tz)hcd.setDate(hcd.getDate()+1);
   var hd=ghd(hcd);
@@ -3169,7 +3172,7 @@ function upd(){
     var parts2=[];
     var nowD=new Date(), nowMin2=nowD.getHours()*60+nowD.getMinutes();
     var isShab=(nowD.getDay()===6) ||
-               (nowD.getDay()===5 && window._zmCache && nowMin2>=window._zmCache.candleLighting);
+               (nowD.getDay()===5 && isRestNow(nowD));
     if(isShab) parts2.push("שבת שלום");
     if(gTxt) parts2.push(gTxt);
     if(parts2.length){ gEl.textContent=parts2.join(" · "); gEl.style.display="block"; }
@@ -3386,6 +3389,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 6.9</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 7.0</div>
 </body>
 </html>
