@@ -389,6 +389,18 @@ input:focus,select:focus{border-color:#58a6ff;}
         <div class="hint">שם זה מוצג בראש מסך השילוט ובטבלת הניהול.</div>
       </div>
 
+      <div class="field" id="t-pdf-outer" style="border:1px solid #30363d;border-radius:10px;padding:14px;">
+        <div style="font-size:14px;color:#ffcc00;font-weight:700;margin-bottom:4px;">מסמכי PDF להצגה</div>
+        <div class="hint" style="margin-bottom:8px;">
+          כמה מסמכים שיוצגו אחד אחרי השני, כל אחד למשך שתגדיר.
+        </div>
+        <div id="t-pdf-list"></div>
+        <button type="button" onclick="tPdfAdd()" style="background:#21262d;border:1px solid #30363d;color:#ffcc00;border-radius:6px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer;margin-top:4px;">+ מסמך</button>
+        <div style="display:flex;justify-content:flex-end;margin-top:10px;">
+          <button class="btn-save" style="padding:10px 18px;" onclick="saveDisplayConfig()">שמור</button>
+        </div>
+      </div>
+
       <div class="field" id="t-bg-outer" style="border:1px solid #30363d;border-radius:10px;padding:14px;">
         <div id="t-bg-box">
           <div style="font-size:14px;color:#ffcc00;font-weight:700;margin-bottom:6px;">תמונות רקע</div>
@@ -1300,6 +1312,9 @@ function applyTenantDisplaySection(raw){
   document.getElementById("td-ads").checked     = cfg.ads     !==undefined ? !!cfg.ads     : false;
   _tenantAds = Array.isArray(cfg.ads_list) ? cfg.ads_list.slice() : [];
   renderTenantAds();
+  _tPdf = Array.isArray(cfg.pdf_list) ? cfg.pdf_list.map(function(x){
+      return {url:x.url||"", sec:+x.sec||20}; }) : [];
+  tPdfDraw();
   _tBg = Array.isArray(cfg.bg_images) ? cfg.bg_images.slice() : (cfg.bg_url?[cfg.bg_url]:[]);
   tBgDraw();
   var _tbs=document.getElementById("t-bg-sec"); if(_tbs) _tbs.value = cfg.bg_sec || 10;
@@ -1373,6 +1388,7 @@ function saveDisplayConfig(){
   out.board   = document.getElementById("td-board").checked;
   out.news    = document.getElementById("td-news").checked;
   out.ads     = document.getElementById("td-ads").checked;
+  out.pdf_list  = _tPdf.filter(function(x){return x && x.url && x.url.trim();});
   out.bg_images = _tBg.filter(function(u){return u && u.trim();});
   out.bg_sec    = parseInt((document.getElementById("t-bg-sec")||{}).value,10)||10;
   _tenantSaveDC(out).then(function(){ toast("התצוגה עודכנה"); });
@@ -1399,7 +1415,23 @@ function nsfUpload(file, screenId, cb){
   }).catch(function(e){ cb(null, e.message||String(e)); });
 }
 
-var _tBg=[];
+var _tBg=[], _tPdf=[];
+function tPdfDraw(){
+  var w=document.getElementById("t-pdf-list"); if(!w)return;
+  w.innerHTML=_tPdf.map(function(x,i){
+    return '<div style="display:flex;gap:6px;align-items:center;margin-bottom:5px;">'+
+      '<span style="color:#8b949e;font-size:12px;min-width:16px">'+(i+1)+'.</span>'+
+      '<input value="'+String(x.url||"").replace(/"/g,"&quot;")+'" placeholder="קישור PDF מגוגל דרייב" '+
+      'oninput="_tPdf['+i+'].url=this.value" style="flex:1;direction:ltr;font-size:12px;'+
+      'background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:6px;font-family:inherit;">'+
+      '<input type="number" min="3" max="600" value="'+(x.sec||20)+'" oninput="_tPdf['+i+'].sec=+this.value" '+
+      'style="width:72px;background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:6px;font-family:inherit;">'+
+      '<span style="font-size:12px;color:#8b949e">שנ\'</span>'+
+      '<button type="button" onclick="_tPdf.splice('+i+',1);tPdfDraw()" '+
+      'style="background:none;border:none;color:#8b949e;font-size:17px;cursor:pointer;">×</button></div>';
+  }).join("") || '<div class="hint">אין מסמכים. לחץ "+ מסמך".</div>';
+}
+function tPdfAdd(){ _tPdf.push({url:"",sec:20}); tPdfDraw(); }
 function tBgDraw(){
   var w=document.getElementById("t-bg-list"); if(!w)return;
   w.innerHTML=_tBg.map(function(u,i){
@@ -1431,6 +1463,7 @@ function tApplyPurpose(){
   var mv=document.getElementById("t-minyan-view"); if(mv) mv.value=_tMinyanView||"list";
   /* תמונות הרקע רלוונטיות לכל סוגי המסכים */
   show("t-bg-outer", true);   /* תמונות רקע — רלוונטיות לכל סוג מסך */
+  show("t-pdf-outer", isBuilding);
 }
 
 function saveMinyanView(){
