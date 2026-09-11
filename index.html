@@ -1667,7 +1667,9 @@ function zmForDate(d){
 function isRestNow(now){
   try{
     now = now || new Date();
-    var nowMin = now.getHours()*60 + now.getMinutes();
+    /* המנוע הזה מחזיר שעות עשרוניות (18.25 = 18:15), לא דקות.
+       חייבים להשוות באותה יחידה. */
+    var nowH = now.getHours() + now.getMinutes()/60;
     var dow = now.getDay();
 
     var rd = hc_gregToRD(now.getFullYear(), now.getMonth()+1, now.getDate());
@@ -1677,10 +1679,10 @@ function isRestNow(now){
 
     var Z = zmForDate(now);
     /* המנוע מחזיר _candle ו-rt. אין כאן candleLighting/tzeitRT. */
-    var candle = Z ? (Z._candle!=null ? Z._candle : (Z.sunset!=null ? Z.sunset-40 : null)) : null;
+    var candle = Z ? (Z._candle!=null ? Z._candle : (Z.sunset!=null ? Z.sunset-(40/60) : null)) : null;
     var rt     = Z ? Z.rt : null;
 
-    if(candle==null || rt==null){
+    if(candle==null || rt==null || isNaN(candle) || isNaN(rt)){
       /* בלי זמנים ודאיים — משתיקים בשבת, ביום טוב, ובערביהם מ-15:00.
          עדיף שקט מיותר מאשר מוזיקה בשבת. */
       if(todayRest) return true;
@@ -1689,9 +1691,9 @@ function isRestNow(now){
     }
 
     /* מהדלקת הנרות של ערב שבת או ערב חג ואילך */
-    if(tomorrowRest && nowMin >= candle) return true;
+    if(tomorrowRest && nowH >= candle) return true;
     /* ביום עצמו — עד צאת רבינו תם */
-    if(todayRest && nowMin < rt) return true;
+    if(todayRest && nowH < rt) return true;
     return false;
   }catch(e){ return false; }
 }
@@ -3389,6 +3391,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 7.0</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 7.1</div>
 </body>
 </html>
