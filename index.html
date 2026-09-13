@@ -2111,7 +2111,8 @@ function effectiveAd(s){
   }
   if(best){
     return {message:best.message||"", message_type:best.message_type||"scroll",
-      pdf_url:best.pdf_url||"", anim_pdf:best.anim_pdf||"none",
+      pdf_url:best.pdf_url||"", pdf_list:(Array.isArray(best.pdf_list)?best.pdf_list:[]),
+      anim_pdf:best.anim_pdf||"none",
       pdf_sec:(+best.pdf_sec||0), pdf_cols:(+best.pdf_cols||1), pdf_show_sec:(+best.pdf_show_sec||0),
       _key:"sch|"+(best.start||"")+"|"+(best.message||best.pdf_url||"")+"|"+(best.message_type||"")+"|"+(best.anim_pdf||"")+"|"+(best.pdf_sec||"")+"|"+(best.pdf_cols||"")+"|"+(best.pdf_show_sec||"")};
   }
@@ -2167,8 +2168,9 @@ function b64ToUint8(b64){
   for(var i=0;i<len;i++) bytes[i]=bin.charCodeAt(i);
   return bytes;
 }
-function startPdfOrList(pdfUrl, secPerPage, cols, animPdf){
-  var lst = (DC && Array.isArray(DC.pdf_list)) ? DC.pdf_list : [];
+function startPdfOrList(pdfUrl, secPerPage, cols, animPdf, listOverride){
+  var lst = (Array.isArray(listOverride) && listOverride.length) ? listOverride
+          : ((DC && Array.isArray(DC.pdf_list)) ? DC.pdf_list : []);
   if(lst.length) return startDocs(lst, secPerPage, cols, animPdf);
   stopDocs();
   return startPdf(pdfUrl, secPerPage, cols, animPdf);
@@ -2479,7 +2481,7 @@ if(mtype==="scrollpdf") {
       return;
     } else if(cpUrl){
       stWrap.style.display="flex";
-      startPdfOrList(cpUrl, eff.pdf_sec, eff.pdf_cols, animPdf);
+      startPdfOrList(cpUrl, eff.pdf_sec, eff.pdf_cols, animPdf, eff.pdf_list);
       return;
     }
     mtype="scroll"; // אין PDF — נופל לגלילה רגילה
@@ -2488,7 +2490,7 @@ if(mtype==="scrollpdf") {
     var pdfUrl=eff.pdf_url||"";
     if(!pdfUrl){ stopPdf(); return; }
     stWrap.style.display="flex";
-    startPdfOrList(pdfUrl, eff.pdf_sec, eff.pdf_cols, animPdf);
+    startPdfOrList(pdfUrl, eff.pdf_sec, eff.pdf_cols, animPdf, eff.pdf_list);
   } else if(mtype==="static") {
     stText.className="";
     stText.innerHTML=coLogo+msg;
@@ -3184,7 +3186,19 @@ function upd(){
   var fn=gfi(hd.month,hd.day);
   var mev=gsmi();
   var spb=document.getElementById("spb");
-  if(fn){spb.style.display="block";document.getElementById("spt").textContent="צום: "+fn;document.getElementById("spc").textContent="כניסה: "+fmt(tm.sunset-(18/60))+" יציאה: "+fmt(tm.tz);}
+  if(fn){
+    /* ארבעת הצומות הקלים מתחילים בעלות השחר של אותו יום.
+       תשעה באב מתחיל בערב שלפניו, ולכן מוצג אחרת. */
+    spb.style.display="block";
+    document.getElementById("spt").textContent="צום: "+fn;
+    var _spc;
+    if(fn.indexOf("תשעה באב")>-1){
+      _spc = "החל מהערב שעבר · צאת הצום: "+fmt(tm.tz);
+    }else{
+      _spc = "כניסה: "+fmt(tm.alot)+"  ·  יציאה: "+fmt(tm.tz);
+    }
+    document.getElementById("spc").textContent=_spc;
+  }
   else{spb.style.display="none";}
 
   var zh="";
@@ -3391,6 +3405,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 7.1</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 7.3</div>
 </body>
 </html>
