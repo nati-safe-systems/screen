@@ -2610,9 +2610,36 @@ function gsmi(){
   return hc_mevarchim(n.getFullYear(), n.getMonth()+1, n.getDate());
 }
 
-function gfi(m,d){
-  var fs=[["צום גדליה","תשרי",[3,4]],["צום עשרה בטבת","טבת",[10]],["תענית אסתר","אדר",[13]],["שבעה עשר בתמוז","תמוז",[17]],["תשעה באב","אב",[9]]];
-  for(var i=0;i<fs.length;i++)if(fs[i][1]===m&&fs[i][2].indexOf(d)>=0)return fs[i][0];
+/* צום שחל בשבת נדחה ליום ראשון, ותענית אסתר מוקדמת ליום חמישי.
+   בלי זה הצום היה מוצג גם ביום שאחריו. dow: 0=ראשון, 6=שבת. */
+function gfi(m,d,dow){
+  if(dow===undefined) dow=new Date().getDay();
+  var isAdar = (String(m).indexOf("אדר")===0);
+
+  if(m==="תשרי"){
+    if(d===3 && dow!==6) return "צום גדליה";
+    if(d===4 && dow===0) return "צום גדליה";   /* ג׳ חל בשבת — נדחה */
+    return null;
+  }
+  if(m==="טבת"){
+    if(d===10) return "צום עשרה בטבת";          /* לעולם אינו חל בשבת */
+    return null;
+  }
+  if(isAdar){
+    if(d===13 && dow!==6) return "תענית אסתר";
+    if(d===11 && dow===4) return "תענית אסתר";  /* י״ג חל בשבת — מוקדם לחמישי */
+    return null;
+  }
+  if(m==="תמוז"){
+    if(d===17 && dow!==6) return "שבעה עשר בתמוז";
+    if(d===18 && dow===0) return "שבעה עשר בתמוז";
+    return null;
+  }
+  if(m==="אב"){
+    if(d===9 && dow!==6) return "תשעה באב";
+    if(d===10 && dow===0) return "תשעה באב";
+    return null;
+  }
   return null;
 }
 
@@ -3183,7 +3210,7 @@ function upd(){
     else gEl.style.display="none";
   }
 
-  var fn=gfi(hd.month,hd.day);
+  var fn=gfi(hd.month,hd.day,new Date().getDay());
   var mev=gsmi();
   var spb=document.getElementById("spb");
   if(fn){
@@ -3405,6 +3432,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 7.3</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 7.4</div>
 </body>
 </html>
