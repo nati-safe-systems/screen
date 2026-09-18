@@ -1072,7 +1072,12 @@ body{font-family:var(--f-body)!important;-webkit-font-smoothing:antialiased}
       sofZmanTfilaMGA:    alotMGA + 4 * shaaMGA,
       sofZmanTfilaGRA:    rS + 4 * shaaKS,
       chatzot:            chatzot,                      // מעבר שמש אסטרונומי
-      minchaGedola:       rS + 6.5 * shaa,
+      /* מנחה גדולה — המאוחר מבין חצות+30 דק' שוות לבין חצי שעה זמנית.
+         בחורף השעה הזמנית קצרה מ-60 והשיטה הראשונה מאוחרת, בקיץ להפך.
+         לקיחת המאוחר לעולם אינה מקדימה את הזמן.
+         אומת מול לוח בית שמש תשרי-מרחשון תשפ"ז: 49/49.
+         זהה לנוסחה ב-index.html כדי שמסכי הבניין ובית הכנסת יתאימו. */
+      minchaGedola:       Math.max(chatzot + 30, rS + 6.5 * shaa),
       minchaKetana:       rS + 9.5 * shaa,
       plagHamincha:       rS + 10.75 * shaa,
       candleLighting:     shkiaElev - c.candleMinutes,
@@ -1165,7 +1170,9 @@ body{font-family:var(--f-body)!important;-webkit-font-smoothing:antialiased}
   function dayCtx(date) {
     date = date || new Date();
     var h  = hebOf(date);
-    var hn = hebOf(new Date(date.getTime() + 86400000));
+    /* "מחר" מחושב בלוח שנה ומעוגן ב-12:00. חישוב של date+86400000
+       קפץ יומיים בליל המעבר לשעון קיץ, ואז ערב יו"ט לא זוהה. */
+    var hn = hebOf(new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1, 12, 0, 0));
     var dow = date.getDay();
     return {
       isFriday:      dow === 5,
@@ -1398,10 +1405,18 @@ body{font-family:var(--f-body)!important;-webkit-font-smoothing:antialiased}
        אחרי חצות נשאר התאריך החדש בלבד. */
     var evening = false, tomorrow = null;
     if (opts.shkiaMinutes != null && opts.dual !== false) {
-      var nowMin = date.getHours() * 60 + date.getMinutes();
-      if (nowMin >= opts.shkiaMinutes) {
-        evening = true;
-        tomorrow = new Date(date.getTime() + 86400000);
+      var shk = +opts.shkiaMinutes;
+      /* שקיעה בדקות מחצות היא תמיד הרבה מעל 24. ערך קטן מ-24 הוא
+         שעות עשרוניות שהגיעו ממנוע אחר — ממירים במקום להשוות שגוי. */
+      if (isFinite(shk) && shk >= 0 && shk < 24) shk = shk * 60;
+      if (isFinite(shk) && shk >= 0 && shk < 1440) {
+        var nowMin = date.getHours() * 60 + date.getMinutes();
+        if (nowMin >= shk) {
+          evening = true;
+          /* מעוגן ב-12:00 בלוח שנה — לא date+86400000, שקפץ יומיים
+             בליל המעבר לשעון קיץ. */
+          tomorrow = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1, 12, 0, 0);
+        }
       }
     }
 
@@ -1585,6 +1600,157 @@ function mdebug(now){
   box.innerHTML=h+'</table><div style="margin-top:14px;color:#8b949e">להסתרה: הסר ?mdebug=1</div>';
 }
 
+/* ---------- תווית השבוע + קריאת התורה בחול המועד ----------
+   התווית נקבעת לפי היום עצמו קודם: בימי חול המועד מוצג המועד, ולא
+   החג שבשבת הקרובה. רק כשהיום עצמו אינו מועד מסתכלים על השבת הקרובה,
+   כדי לכסות שבוע שכולו חול ושבתו חג.
+   הכל מחושב מקומית מלוח השנה של Intl — בלי רשת. */
+
+function hebOfDate(d){
+  var p = NatiHebDate.parts(d);
+  return { d: p.day, m: String(p.month).trim() };
+}
+function isTishrei(m){ return m.indexOf('תשרי') === 0; }
+function isNisan(m){   return m.indexOf('ניסן') === 0; }
+
+/* קריאת התורה בחול המועד סוכות, ארץ ישראל.
+   אין ספיקא דיומא, ולכן כל ארבעת הקרואים קוראים את קרבן אותו יום
+   (שולחן ערוך או"ח תרס"ג). ט"ז תשרי הוא היום השני של החג. */
+var CHM_SUKKOT = {
+  16: 'וּבַיּוֹם הַשֵּׁנִי (במדבר כט, יז-יט)',
+  17: 'וּבַיּוֹם הַשְּׁלִישִׁי (במדבר כט, כ-כב)',
+  18: 'וּבַיּוֹם הָרְבִיעִי (במדבר כט, כג-כה)',
+  19: 'וּבַיּוֹם הַחֲמִישִׁי (במדבר כט, כו-כח)',
+  20: 'וּבַיּוֹם הַשִּׁשִּׁי (במדבר כט, כט-לא)',
+  21: 'וּבַיּוֹם הַשְּׁבִיעִי (במדבר כט, לב-לד)'
+};
+
+/* קריאת התורה בחול המועד פסח, ארץ ישראל — סימן "משך תורא קדש בכספא
+   פסל במדברא שלח". שבת חול המועד נוטלת את "פסל לך", והימים שנותרו
+   מקבלים את השאר לפי הסדר. בשנה שאין בה שבת חול המועד (ט"ו ניסן בשבת
+   או ביום ראשון) נקראות כל חמש הפרשיות בימי החול. */
+var PES_SHABBAT = 'רְאֵה אַתָּה אֹמֵר אֵלַי — פְּסָל לְךָ (שמות לג, יב – לד, כו)';
+function cholHamoedPesach(day, dow, y, mIdx){
+  if (day < 16 || day > 20) return null;
+  if (dow === 6) return PES_SHABBAT;                 /* שבת חול המועד */
+
+  var weekdayList = ['שׁוֹר אוֹ כֶשֶׂב (ויקרא כב, כו – כג, מד)',
+                     'קַדֶּשׁ לִי כָל בְּכוֹר (שמות יג, א-טז)',
+                     'אִם כֶּסֶף תַּלְוֶה (שמות כב, כד – כג, יט)',
+                     'פְּסָל לְךָ (שמות לד, א-כו)',
+                     'וַיְדַבֵּר — פֶּסַח בַּמִּדְבָּר (במדבר ט, א-יד)'];
+
+  /* אילו מימי ט"ז-כ' הם ימי חול, לפי הסדר */
+  var weekdays = [], i, dt;
+  for (i = 16; i <= 20; i++){
+    dt = new Date(y, mIdx, new Date(y, mIdx, 1).getDate());
+    dt = new Date(dateOfHeb(i, y, mIdx));
+    if (dt && dt.getDay() !== 6) weekdays.push(i);
+  }
+  /* אם שבת נפלה בתוך חול המועד, "פסל לך" נקראת בה ויורדת מרשימת החול */
+  if (weekdays.length === 4) weekdayList.splice(3, 1);
+
+  var pos = weekdays.indexOf(day);
+  return (pos >= 0 && pos < weekdayList.length) ? weekdayList[pos] : null;
+}
+/* מאתר את התאריך הלועזי של יום עברי נתון בניסן, בתוך חלון החג */
+function dateOfHeb(hebDay, y, mIdx){
+  var base = new Date(y, mIdx, 1, 12, 0, 0);
+  for (var k = -40; k <= 40; k++){
+    var d = new Date(y, mIdx, 1 + k, 12, 0, 0);
+    var h = hebOfDate(d);
+    if (isNisan(h.m) && h.d === hebDay) return d;
+  }
+  return null;
+}
+
+/** קריאת התורה של היום, או null אם אינו חול המועד */
+function todayTorahReading(ref){
+  var d = ref ? new Date(ref) : new Date();
+  var h = hebOfDate(d);
+  if (isTishrei(h.m) && CHM_SUKKOT[h.d]) {
+    if (d.getDay() === 6)
+      return 'רְאֵה אַתָּה אֹמֵר אֵלַי (שמות לג, יב – לד, כו) · מפטיר: ' + CHM_SUKKOT[h.d];
+    return CHM_SUKKOT[h.d];
+  }
+  if (isNisan(h.m))
+    return cholHamoedPesach(h.d, d.getDay(), d.getFullYear(), d.getMonth());
+  return null;
+}
+
+/** תווית השבוע לשדה הפרשה, או null בשבוע רגיל */
+function weekLabel(ref){
+  var d = ref ? new Date(ref) : new Date();
+  var h = hebOfDate(d);
+
+  /* קודם כל — היום עצמו */
+  if (isTishrei(h.m)) {
+    if (h.d >= 16 && h.d <= 21) return 'השבוע — חול המועד סוכות';
+    if (h.d === 15)             return 'השבוע — חג הסוכות';
+    if (h.d === 22)             return 'השבוע — שמחת תורה';
+    if (h.d === 1 || h.d === 2) return 'השבוע — ראש השנה';
+    if (h.d === 10)             return 'השבוע — יום הכיפורים';
+  }
+  if (isNisan(h.m)) {
+    if (h.d >= 16 && h.d <= 20) return 'השבוע — חול המועד פסח';
+    if (h.d === 15)             return 'השבוע — חג הפסח';
+    if (h.d === 21)             return 'השבוע — שביעי של פסח';
+  }
+  if (h.m.indexOf('סיו') === 0 && h.d === 6) return 'השבוע — חג השבועות';
+
+  /* אחרת — לפי השבת הקרובה, לשבוע שכולו חול ושבתו חג */
+  var toSat = (6 - d.getDay() + 7) % 7;
+  if (toSat === 0) return null;
+  var s = new Date(d.getFullYear(), d.getMonth(), d.getDate() + toSat, 12, 0, 0);
+  var hs = hebOfDate(s);
+  if (isTishrei(hs.m)) {
+    if (hs.d === 1 || hs.d === 2) return 'השבוע — ראש השנה';
+    if (hs.d === 10)              return 'השבוע — יום הכיפורים';
+    if (hs.d === 15)              return 'השבוע — חג הסוכות';
+    if (hs.d >= 16 && hs.d <= 21) return 'השבוע — חול המועד סוכות';
+    if (hs.d === 22)              return 'השבוע — שמחת תורה';
+  }
+  if (isNisan(hs.m)) {
+    if (hs.d === 15)              return 'השבוע — חג הפסח';
+    if (hs.d >= 16 && hs.d <= 20) return 'השבוע — חול המועד פסח';
+    if (hs.d === 21)              return 'השבוע — שביעי של פסח';
+  }
+  if (hs.m.indexOf('סיו') === 0 && hs.d === 6) return 'השבוע — חג השבועות';
+  return null;
+}
+
+/* ---------- פרשת השבוע ----------
+   נמשכת מאותו פרוקסי שבו משתמש index.html, כדי שלא יהיה מקור שני.
+   נכשלת בשקט: אם אין קשר, השדה פשוט לא משתנה. */
+var GAS_PAR = "https://script.google.com/macros/s/AKfycbyMATppr6lZ1MqJlFF_E_Y-9XuKNzNd-mJr4MqqslwdLxVdi7qP1IOPp_aORVVkooBF/exec";
+var PARASHA = null, PAR_DAY = "";
+
+function fetchParasha(){
+  if(!SITE) return;
+  var n = new Date();
+  var toSat = (6 - n.getDay() + 7) % 7;      /* השבת הקרובה, או היום אם שבת */
+  var s = new Date(n.getFullYear(), n.getMonth(), n.getDate() + toSat, 12, 0, 0);
+  var ds = s.getFullYear() + "-" + p2(s.getMonth()+1) + "-" + p2(s.getDate());
+  if (ds === PAR_DAY && PARASHA) return;      /* כבר נמשך להיום */
+  fetch(GAS_PAR + "?action=parasha&lat=" + SITE.lat + "&lon=" + SITE.lng + "&date=" + ds,
+        {cache:"no-store"})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(!d || !d.ok || !d.data || !d.data.items) return;
+      for(var i=0;i<d.data.items.length;i++){
+        var it = d.data.items[i];
+        if(it.category === "parashat"){
+          var heb = it.hebrew || it.title || "";
+          if(!heb) return;
+          PARASHA = (heb.indexOf("פרשת") === 0) ? heb : ("פרשת " + heb);
+          PAR_DAY = ds;
+          return;
+        }
+      }
+    })
+    .catch(function(){});
+}
+
 function tick(){
   var now=new Date(), h=now.getHours(), m=now.getMinutes(), sc=now.getSeconds();
   document.getElementById("clock").innerHTML=p2(h)+":"+p2(m)+'<span class="sec">'+p2(sc)+'</span>';
@@ -1592,6 +1758,15 @@ function tick(){
   if(!SITE)return;
   zmans(now);
   document.getElementById("heb").textContent=NatiHebDate.format(now,{shkiaMinutes:Z?Z.shkia:null});
+  /* שדה הפרשה לא עודכן כלל עד עכשיו — הוא הציג את הטקסט הקבוע
+     "פרשת השבוע" מה-HTML. סדר העדיפות: תווית מועד, אחרת שם הפרשה. */
+  var _wl = weekLabel(now), _par = document.getElementById("par");
+  if (_wl) {
+    var _kr = todayTorahReading(now);
+    _par.innerHTML = _wl + (_kr ? '<div style="font-size:.62em;opacity:.85;margin-top:.35em;line-height:1.3">קריאת התורה: ' + _kr + '</div>' : '');
+  } else if (PARASHA) {
+    _par.textContent = PARASHA;
+  }
   var nowMin=h*60+m+sc/60;
   document.getElementById("zlist").innerHTML=
     [["עלות השחר",Z.alotHashachar],["נץ החמה",Z.netz],['סו"ז ק"ש מג"א',Z.sofZmanShmaMGA],
@@ -1606,10 +1781,13 @@ function tick(){
 }
 setInterval(tick,1000);
 setInterval(function(){ZDAY="";load();},5*60*1000);
+/* פרשת השבוע — נמשכת פעם בשעה, ומיד עם עליית המסך */
+setInterval(fetchParasha, 60*60*1000);
+setTimeout(fetchParasha, 3000);
 window.addEventListener("load",function(){ try{
   var TH=(Q.get("theme"))||(SITE&&SITE.theme)||"classic";
   NatiOrnate.apply({theme:TH,outer:13,panel:5,panels:[".ann",".col.r",".col.l"],watch:[".room"]});
 }catch(e){} });
 load(); tick();
-</script><div id="nsf-ver">נתי SAFE · מסך ראשי · גרסה 1.2 · 07.09.26</div>
+</script><div id="nsf-ver">נתי SAFE · מסך ראשי · גרסה 1.3 · 18.09.26</div>
 </body></html>

@@ -2572,6 +2572,52 @@ function tdy(){return tds(new Date());}
 function gzm(k){if(!aD||!aD.times)return NaN;var v=aD.times[k];if(!v)return NaN;var d=new Date(v);return d.getHours()+d.getMinutes()/60+d.getSeconds()/3600;}
 function ghtl(){return aD&&aD.date&&aD.date.hebrew?aD.date.hebrew:null;}
 
+/* שבתות שאין בהן פרשה — חג או חול המועד.
+   ------------------------------------------------------------------
+   בשבוע כזה Hebcal לא מחזיר parashat, ועד עכשיו השדה הציג את
+   מציין המקום "פרשת השבוע". כאן מחושבת מקומית השבת הקרובה
+   (או היום, אם היום שבת) ומוחזרת תווית מתאימה.
+   מחושב מ-ghd בלבד — בלי רשת, ולכן עובד גם כשאין קשר. */
+function gwpChag(ref){
+  var d=ref?new Date(ref):new Date();
+  var h=ghd(d), m=h.month, y=h.day;
+
+  /* קודם כל — היום עצמו. בימי חול המועד מוצג המועד ולא החג שבשבת. */
+  if(m==="תשרי"){
+    if(y>=16&&y<=21)   return "השבוע — חול המועד סוכות";
+    if(y===15)         return "השבוע — חג הסוכות";
+    if(y===22)         return "השבוע — שמחת תורה";
+    if(y===1||y===2)   return "השבוע — ראש השנה";
+    if(y===10)         return "השבוע — יום הכיפורים";
+  }
+  if(m==="ניסן"){
+    if(y>=16&&y<=20)   return "השבוע — חול המועד פסח";
+    if(y===15)         return "השבוע — חג הפסח";
+    if(y===21)         return "השבוע — שביעי של פסח";
+  }
+  if(m==="סיוון"&&y===6) return "השבוע — חג השבועות";
+
+  /* אחרת — לפי השבת הקרובה, לשבוע שכולו חול ושבתו חג */
+  var toSat=(6-d.getDay()+7)%7;
+  if(toSat===0) return null;
+  var s=new Date(d.getFullYear(),d.getMonth(),d.getDate()+toSat,12,0,0);
+  var hs=ghd(s), ms=hs.month, ys=hs.day;
+  if(ms==="תשרי"){
+    if(ys===1||ys===2)   return "השבוע — ראש השנה";
+    if(ys===10)          return "השבוע — יום הכיפורים";
+    if(ys===15)          return "השבוע — חג הסוכות";
+    if(ys>=16&&ys<=21)   return "השבוע — חול המועד סוכות";
+    if(ys===22)          return "השבוע — שמחת תורה";
+  }
+  if(ms==="ניסן"){
+    if(ys===15)          return "השבוע — חג הפסח";
+    if(ys>=16&&ys<=20)   return "השבוע — חול המועד פסח";
+    if(ys===21)          return "השבוע — שביעי של פסח";
+  }
+  if(ms==="סיוון"&&ys===6) return "השבוע — חג השבועות";
+  return null;
+}
+
 /* פרשה — מנתוני הפרשה הנפרדים */
 function gwp(){
   function parseParasha(item){
@@ -3201,7 +3247,7 @@ function upd(){
   var rchEl=document.getElementById("rch");
   var rchTxt=hc_roshChodesh(now.getFullYear(),now.getMonth()+1,now.getDate());
   if(rchTxt){rchEl.textContent=rchTxt;rchEl.style.display="block";}else{rchEl.style.display="none";}
-  document.getElementById("par").textContent=gwp()||"פרשת השבוע";
+  document.getElementById("par").textContent=gwp()||gwpChag()||"פרשת השבוע";
 
   var ch=ghol()||gjh(hd.month,hd.day);
   var ec=gec(hd.month,hd.day);
@@ -3426,6 +3472,69 @@ function loadNextSat(cb){
   }, true);
 }
 
+/* ===================================================================
+   רענון גרסה שקט
+   -------------------------------------------------------------------
+   עד עכשיו המסך טען את הקובץ פעם אחת ולא בדק שוב, ולכן העלאה
+   לשרת לא הגיעה למסך עד הפעלה מחדש ידנית.
+
+   איך זה עובד עכשיו:
+   כל 5 דקות נשלחת בקשה שקטה לקובץ עצמו ומחושבת עליו חתימה.
+   אם החתימה לא השתנתה — לא קורה כלום, אין שום הבהוב, אין רענון.
+   רק כשהקובץ באמת השתנה המסך נטען מחדש, ולפני כן הגרסה החדשה
+   נמשכת למטמון הדפדפן כדי שהטעינה תהיה כמעט מיידית. הרקע שחור
+   גם ב-html וגם ב-body, ולכן אין הבזק לבן.
+
+   הרענון נדחה כל עוד:
+     - מוצגת התראת פיקוד העורף
+     - מסך הנעילה פתוח
+     - הלשונית אינה גלויה (המסך יתעורר עם הבדיקה הבאה)
+   =================================================================== */
+var VER_MS = 5*60*1000;      /* תדירות הבדיקה */
+var _verSig = null;
+
+function _verHash(s){
+  var h=5381, i=s.length;
+  while(i) h=((h*33) ^ s.charCodeAt(--i)) >>> 0;
+  return h.toString(36)+"-"+s.length;
+}
+
+function _verBusy(){
+  try{
+    var a=document.getElementById("nsf-alert");
+    if(a && a.style.display==="flex") return true;          /* התראה פעילה */
+    var l=document.getElementById("lock");
+    if(l && l.style.display==="flex") return true;          /* מסך נעילה */
+    if(document.hidden) return true;                        /* לשונית מוסתרת */
+  }catch(e){}
+  return false;
+}
+
+function verCheck(){
+  if(_verBusy()) return;
+  var url = location.pathname + "?_v=" + Date.now();
+  fetch(url, {cache:"no-store"})
+    .then(function(r){ return r.ok ? r.text() : null; })
+    .then(function(t){
+      if(!t || t.length < 1000) return;      /* תשובת שגיאה או דף ריק — התעלמות */
+      var sig=_verHash(t);
+      if(_verSig===null){ _verSig=sig; return; }   /* הבדיקה הראשונה רק רושמת */
+      if(sig===_verSig) return;                    /* לא השתנה — שקט מוחלט */
+      _verSig=sig;
+      /* משיכה למטמון כדי שהטעינה מחדש תהיה מיידית */
+      fetch(location.pathname, {cache:"reload"})
+        .then(_verReload).catch(_verReload);
+    })
+    .catch(function(){});
+}
+
+function _verReload(){
+  /* בדיקה אחרונה — אם בינתיים נכנסה התראה, דוחים למחזור הבא */
+  if(_verBusy()) return;
+  try{ document.documentElement.style.background="#000"; }catch(e){}
+  location.reload();
+}
+
 function start(){
   fhcal(tdy(),function(){
     fparasha(tdy(),function(){
@@ -3436,6 +3545,9 @@ function start(){
         setInterval(function(){if(Date.now()-llc>LCI)chkLic(null);},LCI);
         setInterval(pollMsg,15000);
         setInterval(paintCache,30000); paintCache();
+        /* חתימת בסיס מיד עם העלייה, ואז בדיקה כל 5 דקות */
+        verCheck();
+        setInterval(verCheck, VER_MS);
       });
     });
   });
@@ -3444,6 +3556,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 7.4</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 7.7</div>
 </body>
 </html>
