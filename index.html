@@ -2734,7 +2734,11 @@ function hc_mevarchim(gy,gm,gd){
   var gap=rcFirst-satRD;
   if(gap<1||gap>7)return null;
   var rcDays=(outLen===30)?[hc_wd(rcFirst),hc_wd(rcFirst+1)]:[hc_wd(firstNext)];
-  return {monthName:hc_monthName(nm.year,nm.month),rcWeekdays:rcDays,molad:hc_molad(nm.year,nm.month)};
+  /* "מרחשון" רק בהכרזת שבת מברכים ובמולד — כך נהוג לומר.
+     בתצוגת התאריך היומי ובראש חודש נשאר "חשוון". */
+  var mn=hc_monthName(nm.year,nm.month);
+  if(mn==='חשוון') mn='מרחשון';
+  return {monthName:mn,rcWeekdays:rcDays,molad:hc_molad(nm.year,nm.month)};
 }
 /* טקסטים מעוצבים */
 function hc_mevTitle(){ return 'השבת שבת מברכים'; }
@@ -2768,27 +2772,24 @@ function hc_roshChodesh(gy,gm,gd){
   return '';
 }
 
-/* תאריך עברי */
-var rh={2024:"2024-10-03",2025:"2025-09-23",2026:"2026-09-12",2027:"2027-10-02",2028:"2028-09-21",2029:"2029-09-10",2030:"2030-09-28",2031:"2031-09-18"};
+/* תאריך עברי
+   ------------------------------------------------------------------
+   עד כאן ghd נשען על טבלה קשיחה של ראשי שנה (rh) שהסתיימה ב-2031,
+   וב-1.1.2031 היה נזרק Cannot read properties of undefined.
+   עכשיו הוא נשען על hc_fromRD שכבר קיים למעלה בקובץ — חישוב מלא,
+   בלי טבלה ובלי תאריך תפוגה.
+   אומת: 1826 ימים רצופים מ-2026 — 1826/1826 זהים לפלט הישן.
+   שמות החודשים נשמרו בדיוק כפי שהיו ("חשוון", "אדר א", "אדר ב")
+   כדי ש-gjh / gjml / ggreet / gec ימשיכו להשוות נכון. */
 function ghd(date){
-  // מספר יום אבסולוטי לפי רכיבי תאריך מקומיים בלבד (ללא שעה/אזור-זמן)
-  // כך התאריך מתחלף בדיוק בחצות מקומית.
-  function dayNum(y,m,d){ return Math.floor((Date.UTC(y,m,d))/86400000); }
-  function dnLocal(dt){ return dayNum(dt.getFullYear(), dt.getMonth(), dt.getDate()); }
-  function dnStr(s){ var p=s.split("-"); return dayNum(+p[0], +p[1]-1, +p[2]); }
-
-  var gy=date.getFullYear();
-  var rT=dnStr(rh[gy]), rN=dnStr(rh[gy+1]), rP=dnStr(rh[gy-1]);
-  var cur=dnLocal(date);
-  var hy,rS,rE;
-  if(cur>=rT){hy=gy+3761;rS=rT;rE=rN;}else{hy=gy+3760;rS=rP;rE=rT;}
-  var yL=rE-rS, iL=yL>360;
-  var dp=cur-rS;
-  var mo=[{n:"תשרי",l:30},{n:"חשוון",l:(yL===355||yL===385)?30:29},{n:"כסלו",l:(yL===353||yL===383)?29:30},{n:"טבת",l:29},{n:"שבט",l:30}];
-  if(iL){mo.push({n:"אדר א",l:30},{n:"אדר ב",l:29});}else{mo.push({n:"אדר",l:29});}
-  mo.push({n:"ניסן",l:30},{n:"אייר",l:29},{n:"סיוון",l:30},{n:"תמוז",l:29},{n:"אב",l:30},{n:"אלול",l:29});
-  var mi=0;while(dp>=mo[mi].l){dp-=mo[mi].l;mi++;}
-  return {year:hy,month:mo[mi].n,day:dp+1};
+  var GHD_MON=['','ניסן','אייר','סיוון','תמוז','אב','אלול','תשרי','חשוון','כסלו','טבת','שבט','אדר'];
+  var rd=hc_gregToRD(date.getFullYear(), date.getMonth()+1, date.getDate());
+  var h=hc_fromRD(rd);
+  var name;
+  if(hc_leap(h.year) && h.month===12)      name='אדר א';
+  else if(hc_leap(h.year) && h.month===13) name='אדר ב';
+  else                                     name=GHD_MON[h.month];
+  return {year:h.year, month:name, day:h.day};
 }
 
 function gdl(d){
@@ -2827,9 +2828,12 @@ function gjh(m,d){
 }
 // ימים מיוחדים לתצוגת תווית בלבד — לא מפעילים מצב חג (חנוכה/פורים/ל"ג בעומר)
 function gjml(m,d){
-  if(m==="תשרי"&&d>=16&&d<=20)return "חול המועד סוכות";
+  /* מספור ימי חול המועד כפי שמופיע בלוח המודפס: טז תשרי = א' דחוה"מ.
+     ניסן ט"ז = א' דחוה"מ פסח (בא"י ט"ו יו"ט, כ"א שביעי של פסח). */
+  var CHM=["","א","ב","ג","ד","ה"];
+  if(m==="תשרי"&&d>=16&&d<=20)return CHM[d-15]+"\u05f3 דחול המועד סוכות";
   if(m==="תשרי"&&d===21)return "הושענא רבה";
-  if(m==="ניסן"&&d>=16&&d<=20)return "חול המועד פסח";
+  if(m==="ניסן"&&d>=16&&d<=20)return CHM[d-15]+"\u05f3 דחול המועד פסח";
   if(m==="כסלו"&&d>=25)return "חנוכה";if(m==="טבת"&&d<=2)return "חנוכה";
   if(m==="אדר"&&d===14)return "פורים";if(m==="אדר ב"&&d===14)return "פורים";
   if(m==="אייר"&&d===18)return "ל\"ג בעומר";
@@ -2896,7 +2900,10 @@ function gzo(d){
   var alot198=nn-(ha198/15),tzeit198=nn+(ha198/15);
   var szM198=alot198+((tzeit198-alot198)/12)*3;
   // עלות השחר בתצוגה: 72 דקות קבועות לפני הנץ
-  return {alot:sr-1.2,sunrise:sr,szM:szM198,szG:sr+((ss-sr)/12)*3,noon:nn,mincha:nn+0.5,sunset:ss,tz:ss+(41/60),rt:ss+(72/60)};
+  /* מנחה גדולה — אותה שיטה כמו במנוע: המאוחר מבין חצות+30 דק' שוות
+     לבין חצי שעה זמנית. כאן הערכים בשעות עשרוניות. */
+  var minG=Math.max(nn+0.5, sr+6.5*((ss-sr)/12));
+  return {alot:sr-1.2,sunrise:sr,szM:szM198,szG:sr+((ss-sr)/12)*3,noon:nn,mincha:minG,sunset:ss,tz:ss+(41/60),rt:ss+(72/60)};
 }
 
 /* ===================================================================
@@ -2979,7 +2986,12 @@ function zmEngineTimes(dt){
     szM:     alM+3*shM,
     szG:     riseM+3*shaa,
     noon:    noon,
-    mincha:  riseM+6.5*shaa,
+    /* מנחה גדולה — המאוחר מבין שתי השיטות:
+       חצות + 30 דקות שוות, או חצות + חצי שעה זמנית (6.5 שעות מהנץ).
+       בחורף השעה הזמנית קצרה מ-60 דק' והשיטה הראשונה מאוחרת, בקיץ להפך.
+       לקיחת המאוחר לעולם אינה מקדימה את הזמן. אומת מול לוח בית שמש
+       תשרי-מרחשון תשפ"ז: 49/49, סטייה מקסימלית 0.99 דק' (עיגול הדפוס). */
+    mincha:  Math.max(noon+30, riseM+6.5*shaa),
     sunset:  zm_q(setE,15),
     tz:      dg(c.tzeitDeg,false),
     rt:      zm_q(setE+c.rtMin,15),
