@@ -1,0 +1,334 @@
+<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>נתי SAFE — שיש וזהב</title>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;800;900&family=Heebo:wght@300;400;500;700;800;900&family=Suez+One&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   נתי SAFE — שיש וזהב
+   ---------------------------------------------------------------------
+   בנוי מול הצילומים של השילוט שהמעצב הכין למרכז הרוחני.
+
+   מה שהיה חסר בגרסאות הקודמות ותוקן כאן:
+   1. בשילוט התוכן יושב על לוחות שנהב בתוך מסגרות זהב — לא על רקע
+      כהה. זה ההבדל הגדול ביותר, וכאן הוא מיושם.
+   2. הלוגו יושב בקרטוש מוזהב עם גמלון, במרכז למעלה, כשני סלסולים
+      משני צדיו. יש מקום לטעינת קובץ (ראו #logo).
+   3. פילסטר מחורץ לאורך שני צדי כל לוח, לא רק פינות.
+   ===================================================================== */
+
+:root{
+  --gold-w:#fff4c9; --gold-h:#f2d783; --gold:#d4ab4a; --gold-m:#a8802a; --gold-d:#6b4d16;
+  --ivory:#f8f4e8; --ivory-2:#efe8d4; --ink:#1d1710; --ink-2:#6b5a38;
+  --marble:#0a0806;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{direction:rtl;font-family:Heebo,sans-serif;background:var(--marble);color:var(--ivory)}
+
+/* ---------- לוח השיש ---------- */
+.stage{position:fixed;inset:0;overflow:hidden;
+  background:
+    radial-gradient(120% 80% at 8% 3%,rgba(201,146,46,.17),transparent 46%),
+    radial-gradient(100% 70% at 95% 20%,rgba(201,146,46,.12),transparent 52%),
+    radial-gradient(90% 70% at 4% 95%,rgba(224,168,60,.18),transparent 48%),
+    linear-gradient(152deg,#151109,#0a0806 44%,#0c0906 72%,#161109);}
+.stage::before{content:"";position:absolute;inset:-8%;opacity:.45;mix-blend-mode:screen;
+  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900'><filter id='v'><feTurbulence type='fractalNoise' baseFrequency='0.007 0.021' numOctaves='4' seed='9'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncA type='discrete' tableValues='0 0 0 .05 .15 .3 .1 0 0'/></feComponentTransfer></filter><rect width='900' height='900' filter='url(%23v)' fill='%23c8ab77'/></svg>") center/cover;}
+.stage::after{content:"";position:absolute;inset:0;opacity:.6;
+  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 900' preserveAspectRatio='none'><g fill='none' stroke-linecap='round'><path d='M0 58 L78 40 L130 76 L216 36 L272 62' stroke='%23e8c766' stroke-width='2.6' opacity='.9'/><path d='M78 40 L92 8 M130 76 L142 108 M216 36 L230 6' stroke='%23c09433' stroke-width='1.6' opacity='.65'/><path d='M1600 120 L1516 96 L1458 134 L1386 100' stroke='%23e8c766' stroke-width='2.3' opacity='.75'/><path d='M1516 96 L1504 62 M1458 134 L1470 172' stroke='%23c09433' stroke-width='1.5' opacity='.55'/><path d='M0 820 L86 844 L152 806 L232 846' stroke='%23e8c766' stroke-width='2.1' opacity='.6'/><path d='M1600 790 L1530 812 L1470 780' stroke='%23c09433' stroke-width='1.8' opacity='.45'/></g></svg>") 0 0/100% 100%;}
+
+.screen{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;
+  padding:1.2vh 1.1vw;gap:1.1vh}
+.bsd{position:absolute;top:.5vh;right:1vw;z-index:9;font-family:"Frank Ruhl Libre",serif;
+  font-size:1.5vh;color:rgba(242,215,131,.6)}
+
+/* =====================================================================
+   הכתר: קרטוש הלוגו עם גמלון, וסלסולים משני הצדדים
+   ===================================================================== */
+.crown{flex-shrink:0;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:1vw}
+.swirl{width:100%;height:3.4vh}
+.cartouche{position:relative;padding:.5vh 2.2vw 1vh;text-align:center;min-width:26vw}
+.cart-frame{position:absolute;inset:0;pointer-events:none}
+#logo{max-height:6.4vh;max-width:18vw;display:none;margin:0 auto .3vh}
+#logo.on{display:block}
+.house{font-family:"Suez One",serif;font-size:3.4vh;line-height:1.05;
+  background:linear-gradient(177deg,var(--gold-w) 3%,var(--gold-h) 27%,var(--gold) 55%,var(--gold-m) 80%,var(--gold-d));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 .25vh .35vh rgba(0,0,0,.9))}
+.house-sub{font-size:1.2vh;color:rgba(242,215,131,.62);letter-spacing:.32vh;margin-top:.25vh}
+
+/* =====================================================================
+   לוח שנהב במסגרת זהב — היחידה הבסיסית, בדיוק כמו בשילוט
+   ===================================================================== */
+.body{flex:1;min-height:0;display:grid;grid-template-columns:22% 1fr 33%;gap:.9vw}
+.col{display:flex;flex-direction:column;min-height:0;gap:1vh}
+
+.plq{position:relative;min-height:0;display:flex;flex-direction:column;
+  background:linear-gradient(172deg,var(--ivory),var(--ivory-2));
+  color:var(--ink);
+  padding:1.5vh 1.5vw;
+  box-shadow:0 0 0 .18vh var(--gold-m),0 0 0 .5vh var(--marble),0 0 0 .66vh var(--gold),
+             0 1vh 3vh rgba(0,0,0,.6);}
+/* פילסטר מחורץ לאורך שני הצדדים */
+.plq::before,.plq::after{content:"";position:absolute;
+  top:calc(var(--mk,1) * 4.6vh);bottom:calc(var(--mk,1) * 4.6vh);
+  width:calc(var(--mk,1) * .85vw);
+  pointer-events:none;opacity:.45;
+  background:repeating-linear-gradient(90deg,var(--gold-m) 0 .1vw,transparent .1vw .34vw)}
+.plq::before{right:.2vw}
+.plq::after{left:.2vw}
+.plq>.cn{position:absolute;width:4.6vh;height:4.6vh;pointer-events:none}
+
+/* לוח כהה — לאזורים שצריכים ניגוד (מודעות) */
+.plq.dark{background:linear-gradient(168deg,rgba(28,21,12,.94),rgba(10,8,6,.96));color:var(--ivory)}
+.plq.dark .cap{color:var(--gold-h);border-bottom-color:rgba(212,171,74,.45)}
+
+.cap{font-family:"Frank Ruhl Libre",serif;font-weight:800;font-size:1.7vh;text-align:center;
+  color:var(--ink-2);padding-bottom:.45vh;margin-bottom:.8vh;flex-shrink:0;
+  border-bottom:.2vh dotted rgba(168,128,42,.55)}
+
+/* ---------- טור ימין ---------- */
+.clock{font-weight:900;font-size:8.2vh;line-height:.95;text-align:center;
+  font-variant-numeric:tabular-nums;letter-spacing:-.015em;color:var(--ink);
+  text-shadow:0 .15vh 0 rgba(255,255,255,.7)}
+.clock .sc{font-size:.34em;color:var(--gold-m);vertical-align:.62em;margin-right:.1em;font-weight:800}
+.hdate{text-align:center;font-family:"Suez One",serif;font-size:1.95vh;color:var(--ink);margin-top:.4vh}
+.gdate{text-align:center;font-size:1.3vh;color:var(--ink-2);margin-top:.15vh}
+.par{margin:.9vh 0 .3vh;padding:.9vh .5vw;text-align:center;
+  background:linear-gradient(170deg,#241a0c,#120d06);color:var(--gold-h);
+  box-shadow:0 0 0 .14vh var(--gold-m)}
+.par .nm{font-family:"Suez One",serif;font-size:2.15vh;line-height:1.15}
+.par .sb{font-size:1.2vh;color:rgba(242,215,131,.75);margin-top:.35vh}
+.zlist{flex:1;display:flex;flex-direction:column;justify-content:space-evenly;min-height:0}
+.zr{display:flex;justify-content:space-between;align-items:baseline;font-size:1.78vh;
+  padding:.36vh .1vw;border-bottom:.1vh solid rgba(168,128,42,.25)}
+.zr:last-child{border-bottom:0}
+.zr span{color:var(--ink-2)}
+.zr b{font-variant-numeric:tabular-nums;font-weight:800;color:var(--ink)}
+.warn{text-align:center;font-size:1.12vh;color:#9a3a22;margin-top:.5vh}
+
+/* ---------- מרכז ---------- */
+.notices{flex:1;min-height:0;display:flex;flex-direction:column;gap:1.1vh;overflow:hidden}
+.nt{border-right:.4vh solid var(--gold);padding:.1vh 1vw .4vh 0}
+.nt .t{font-family:"Frank Ruhl Libre",serif;font-weight:800;font-size:2.4vh;color:var(--ivory)}
+.nt .b{font-size:1.8vh;color:rgba(242,235,215,.72);line-height:1.45;margin-top:.2vh}
+.nt.hon .t{color:var(--gold-h)}
+.nt.hon{border-right-color:var(--gold-h)}
+
+/* ---------- טור שמאל ---------- */
+.rooms{display:flex;flex-direction:column;min-height:0;--n:4;
+  gap:clamp(.3vh,calc(3.2vh / var(--n)),.8vh)}
+.room{flex:1 1 0;min-height:0;display:flex;flex-direction:column;overflow:hidden;--mk:1;
+  padding:calc(var(--mk) * .9vh) calc(var(--mk) * 1.5vw)}
+/* הפינות בחדר קטנות יותר מאשר בלוח גדול — אחרת הן בולעות את התוכן */
+.room>.cn{width:calc(var(--mk) * 3.2vh);height:calc(var(--mk) * 3.2vh)}
+.rn{font-family:"Suez One",serif;font-size:calc(var(--mk) * 2.35vh);text-align:center;color:var(--ink);
+  padding-bottom:calc(var(--mk) * .4vh);margin-bottom:calc(var(--mk) * .6vh);flex-shrink:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  border-bottom:.2vh dotted rgba(168,128,42,.55)}
+.pr{display:flex;align-items:flex-start;gap:.5vw;margin-bottom:calc(var(--mk) * .5vh)}
+.pr:last-child{margin-bottom:0}
+.pr>span{min-width:3.7em;font-weight:800;font-size:calc(var(--mk) * 1.78vh);color:var(--ink-2);
+  padding-top:calc(var(--mk) * .2vh)}
+.tms{display:flex;gap:.3vw;flex-wrap:wrap;flex:1}
+.tms .t{font-variant-numeric:tabular-nums;font-weight:800;font-size:calc(var(--mk) * 1.92vh);
+  padding:calc(var(--mk) * .22vh) .5vw;color:var(--ink);
+  background:rgba(168,128,42,.14);box-shadow:0 0 0 .1vh rgba(168,128,42,.4)}
+.tms .t.nx{color:var(--ivory);background:linear-gradient(175deg,#2c1f0b,#191106);
+  box-shadow:0 0 0 .12vh var(--gold-h),0 0 1.4vh rgba(242,215,131,.45)}
+.tms .t.rl{color:#7a3d12;background:rgba(200,140,70,.16);box-shadow:0 0 0 .1vh rgba(200,140,70,.45)}
+
+.probe{position:fixed;bottom:.8vh;left:50%;transform:translateX(-50%);z-index:50;
+  display:flex;gap:.4vw;align-items:center;padding:.4vh .8vw;background:rgba(8,6,4,.9);
+  box-shadow:0 0 0 .1vh rgba(212,171,74,.5);font:600 1.3vh Heebo;color:var(--gold-h)}
+.probe button{font:inherit;cursor:pointer;padding:.25vh .7vw;color:var(--gold-h);
+  background:transparent;border:.1vh solid rgba(212,171,74,.45)}
+.probe button.on{color:#1a1206;background:var(--gold-h);border-color:var(--gold-h)}
+.probe label{cursor:pointer;color:var(--gold-h);text-decoration:underline}
+.probe input{display:none}
+</style></head><body>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+  <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" style="stop-color:#fff4c9"/><stop offset="28%" style="stop-color:#f2d783"/>
+    <stop offset="58%" style="stop-color:#d4ab4a"/><stop offset="100%" style="stop-color:#6b4d16"/>
+  </linearGradient>
+
+  <!-- פינת מסגרת: כותרת מדורגת, חריצים, וולוטה ספירלית.
+       מצוירת כפינה ימנית-עליונה וסימטרית סביב האלכסון. -->
+  <symbol id="cn" viewBox="0 0 200 200">
+    <g fill="none" stroke="url(#g)" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M186 14 H52" stroke-width="7"/>
+      <path d="M186 14 V150" stroke-width="7"/>
+      <path d="M168 34 H78" stroke-width="2.6" opacity=".9"/>
+      <path d="M168 34 V124" stroke-width="2.6" opacity=".9"/>
+      <path d="M150 14 V34 M134 14 V34 M118 14 V34" stroke-width="2.2" opacity=".65"/>
+      <path d="M186 50 H168 M186 66 H168 M186 82 H168" stroke-width="2.2" opacity=".65"/>
+      <path d="M52 14 C30 14 17 28 17 48 C17 66 30 78 48 78 C62 78 72 67 72 54
+               C72 44 64 36 54 36 C47 36 42 42 42 48" stroke-width="5.4"/>
+      <path d="M186 150 C186 172 172 185 152 185 C134 185 122 172 122 154
+               C122 140 133 130 146 130 C156 130 164 138 164 148 C164 155 158 160 152 160"
+            stroke-width="5.4"/>
+      <circle cx="96" cy="96" r="5" fill="url(#g)" stroke="none"/>
+    </g>
+  </symbol>
+
+  <!-- סלסול יחיד, משוקף לצד השני -->
+  <symbol id="sw" viewBox="0 0 300 40">
+    <g fill="none" stroke="url(#g)" stroke-width="3.2" stroke-linecap="round">
+      <path d="M300 20 C250 20 214 6 168 6 C130 6 108 20 108 30 C108 37 114 40 121 40
+               C128 40 133 35 133 28 C133 23 129 19 124 19"/>
+      <path d="M296 27 C252 27 226 14 186 14" stroke-width="1.8" opacity=".6"/>
+    </g>
+  </symbol>
+
+  <!-- גמלון הקרטוש: מסגרת עם גג משופע, כמו סמל המרכז בשילוט -->
+  <symbol id="cart" viewBox="0 0 600 150" preserveAspectRatio="none">
+    <g fill="none" stroke="url(#g)" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M12 148 V46 L300 6 L588 46 V148" stroke-width="4"/>
+      <path d="M26 148 V56 L300 20 L574 56 V148" stroke-width="1.6" opacity=".7"/>
+      <path d="M12 46 H588" stroke-width="2" opacity=".5"/>
+    </g>
+  </symbol>
+</defs></svg>
+
+<div class="stage"></div>
+<div class="bsd">בס"ד</div>
+
+<div class="screen">
+
+  <div class="crown">
+    <svg class="swirl" viewBox="0 0 300 40" preserveAspectRatio="xMaxYMid meet"><use href="#sw" xlink:href="#sw"/></svg>
+    <div class="cartouche">
+      <svg class="cart-frame" viewBox="0 0 600 150" preserveAspectRatio="none"><use href="#cart" xlink:href="#cart"/></svg>
+      <img id="logo" alt="">
+      <div class="house" id="house">בית המדרש הגדול</div>
+      <div class="house-sub">המרכז הרוחני · חפציבה, בית שמש</div>
+    </div>
+    <svg class="swirl" viewBox="0 0 300 40" preserveAspectRatio="xMinYMid meet"
+         style="transform:scaleX(-1)"><use href="#sw" xlink:href="#sw"/></svg>
+  </div>
+
+  <div class="body">
+
+    <!-- ימין: שעון, פרשה, זמנים -->
+    <div class="col">
+      <div class="plq" id="pRight" style="flex:1">
+        <div class="clock" id="clock">19:42<span class="sc">08</span></div>
+        <div class="hdate">כ״ח בתשרי תשפ״ז · אור לכ״ט</div>
+        <div class="gdate">יום שישי, 9 באוקטובר 2026</div>
+        <div class="par">
+          <div class="nm">פרשת בראשית</div>
+          <div class="sb">שבת מברכים · הפטרה: מחר חודש</div>
+        </div>
+        <div class="cap">זמני היום</div>
+        <div class="zlist" id="zl"></div>
+        <div class="warn">אין לסמוך על הזמנים בצמצום</div>
+      </div>
+    </div>
+
+    <!-- מרכז: מודעות -->
+    <div class="col">
+      <div class="plq dark" id="pAnn" style="flex:1">
+        <div class="cap">מודעות הקהילה</div>
+        <div class="notices" id="nl"></div>
+      </div>
+    </div>
+
+    <!-- שמאל: מניינים -->
+    <div class="col"><div class="rooms" id="rooms"></div></div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  var CN=['top:-.2vh;right:-.2vh','top:-.2vh;left:-.2vh;transform:scaleX(-1)',
+          'bottom:-.2vh;right:-.2vh;transform:scaleY(-1)','bottom:-.2vh;left:-.2vh;transform:scale(-1,-1)']
+    .map(function(p){return '<svg class="cn" style="'+p+'" xmlns:xlink="http://www.w3.org/1999/xlink">'+
+      '<use href="#cn" xlink:href="#cn"/></svg>';}).join("");
+
+  ['pRight','pAnn'].forEach(function(id){
+    document.getElementById(id).insertAdjacentHTML("afterbegin",CN);
+  });
+
+  var ZMAN=[["עלות השחר","4:52"],["נץ החמה","6:12"],["סו״ז ק״ש מג״א","8:48"],["סו״ז ק״ש גר״א","9:33"],
+    ["חצות","12:27"],["מנחה גדולה","12:57"],["פלג המנחה","16:41"],["הדלקת נרות","17:37"],
+    ["שקיעה","18:17"],["צאת הכוכבים","18:50"]];
+  document.getElementById("zl").innerHTML=ZMAN.map(function(z){
+    return '<div class="zr"><span>'+z[0]+'</span><b>'+z[1]+'</b></div>';}).join("");
+
+  var NOT=[
+    ["פרנס השתיה — יום חמישי ו׳ תשרי","הרב אהרן איידלמן הי״ו, לרגל פתיחת המרכז הרוחני.",1],
+    ["שיעור הדף היומי עובר לבית המדרש הגדול","החל ממוצאי שבת בשעה 20:45, בקומה א׳ עד סוף החורף.",0],
+    ["עירוב","נבדק ביום חמישי ונמצא כשר.",0],
+    ["נא לשמור על ניקיון בית המדרש","כוסות ריקות לפח.",0]];
+  document.getElementById("nl").innerHTML=NOT.map(function(x){
+    return '<div class="nt'+(x[2]?' hon':'')+'"><div class="t">'+x[0]+'</div><div class="b">'+x[1]+'</div></div>';
+  }).join("");
+
+  var POOL=[
+    {n:"שטיבל א׳",s:["6:15","7:00","8:00","9:15"],m:["13:10","*17:22"],a:["18:50","20:00","21:30"]},
+    {n:"שטיבל ב׳",s:["6:40","7:30"],m:["~רצוף מ־16:50 עד השקיעה"],a:["19:15","22:00"]},
+    {n:"שטיבל ג׳",s:["8:15"],m:["17:25"],a:["19:00","20:30"]},
+    {n:"שטיבל ד׳",s:["5:50","6:30","7:45"],m:["13:00","17:20"],a:["18:45","21:00"]},
+    {n:"שטיבל ה׳",s:["7:10"],m:["17:15"],a:["19:30"]},
+    {n:"עזרת נשים",s:["8:00"],m:["17:25"],a:["19:00"]},
+    {n:"היכל שמואל",s:["6:20","7:15"],m:["17:24"],a:["18:55","21:45"]},
+    {n:"שטיבל ו׳",s:["6:05","8:30"],m:["13:20","17:28"],a:["19:05","20:15","22:15"]}];
+
+  function tms(a){return a.map(function(t){
+    if(t.charAt(0)==="~")return '<div class="t rl">'+t.slice(1)+'</div>';
+    if(t.charAt(0)==="*")return '<div class="t nx">'+t.slice(1)+'</div>';
+    return '<div class="t">'+t+'</div>';}).join("");}
+
+  var count=4;
+  function render(){
+    var h="";
+    for(var i=0;i<count;i++){var r=POOL[i%POOL.length];
+      h+='<div class="plq room">'+CN+'<div class="rn">'+r.n+'</div>'+
+         '<div class="pr"><span>שחרית</span><div class="tms">'+tms(r.s)+'</div></div>'+
+         '<div class="pr"><span>מנחה</span><div class="tms">'+tms(r.m)+'</div></div>'+
+         '<div class="pr"><span>ערבית</span><div class="tms">'+tms(r.a)+'</div></div></div>';}
+    var host=document.getElementById("rooms");
+    host.innerHTML=h; host.style.setProperty("--n",count); fit();
+  }
+  /* כל חדר מודד את עצמו ומקטין עד שהתוכן נכנס */
+  function fit(){
+    var rs=document.querySelectorAll("#rooms .room");
+    for(var i=0;i<rs.length;i++){
+      var el=rs[i],mk=1,g=0; el.style.setProperty("--mk",mk);
+      /* רצפה של 0.72 — מתחת לזה הטקסט קטן מכדי להיקרא מהדלת */
+      while(el.scrollHeight>el.clientHeight+1 && mk>0.72 && g++<40){
+        mk=Math.round((mk-0.035)*1000)/1000; el.style.setProperty("--mk",mk);}
+    }
+  }
+  window.addEventListener("resize",function(){clearTimeout(window._f);window._f=setTimeout(fit,120);});
+
+  function p2(n){return n<10?"0"+n:""+n;}
+  setInterval(function(){var d=new Date();
+    document.getElementById("clock").innerHTML=
+      p2(d.getHours())+":"+p2(d.getMinutes())+'<span class="sc">'+p2(d.getSeconds())+'</span>';},1000);
+
+  /* ---- סרגל בדיקה, רק בקובץ התצוגה ---- */
+  var bar=document.createElement("div"); bar.className="probe";
+  bar.innerHTML='<span>חדרים:</span>'+[2,3,4,5,6,8].map(function(n){
+      return '<button data-n="'+n+'"'+(n===4?' class="on"':'')+'>'+n+'</button>';}).join("")+
+    '<label>טען לוגו<input type="file" id="lf" accept="image/*"></label>';
+  document.body.appendChild(bar);
+  bar.addEventListener("click",function(e){
+    var b=e.target.closest("button"); if(!b)return;
+    bar.querySelectorAll("button").forEach(function(x){x.classList.remove("on");});
+    b.classList.add("on"); count=+b.dataset.n; render();});
+  document.getElementById("lf").addEventListener("change",function(e){
+    var f=e.target.files[0]; if(!f)return;
+    var r=new FileReader();
+    r.onload=function(){var g=document.getElementById("logo");
+      g.src=r.result; g.classList.add("on");
+      document.getElementById("house").style.fontSize="2.4vh";};
+    r.readAsDataURL(f);});
+
+  render();
+})();
+</script>
+</body></html>

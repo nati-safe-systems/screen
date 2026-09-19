@@ -1,5 +1,5 @@
 /* =====================================================================
-   נתי SAFE — ערכות עיצוב  ·  v3.2
+   נתי SAFE — ערכות עיצוב  ·  v3.3
    ---------------------------------------------------------------------
    חמש עשרה ערכות, מהעדינה ביותר ועד המפוארת ביותר.
    נבחרות מממשק הניהול:  display_config.theme
@@ -29,6 +29,21 @@
 
    חדש ב-3.2
    ---------
+   חדש ב-3.3
+   ---------
+   4. hidden:true — ערכה שממשיכה לעבוד אך אינה מוצגת ברשימת הבחירה.
+      עשר ערכות שנבדלו זו מזו בגוון בלבד סומנו כך. הן לא נמחקו: מסך
+      שכבר מוגדר עליהן ימשיך לעבוד בדיוק כמקודם, והן זמינות דרך
+      ?theme=. באדמין מוצגות חמש ערכות שנבדלות באמת באופי:
+
+        marble   שיש וזהב      פילסטר ארט-דקו · ברק נע
+        classic  קלאסי זהב     מסגרת זהב מלאה · ברק נע
+        stone    אבן ירושלים   מסגרת מאסיבית · בלי ברק
+        velvet   קטיפה         פינות מעוגלות · זוהר רך
+        minimal  מודרני נקי    בלי עיטורים
+
+      הברק הנע (shine) נשמר בכולן שהוגדר בהן, ולא הוסר משום ערכה.
+
    3. shape:'pilaster' — צורת עיטור שנייה, משוחזרת מהשילוט עצמו:
       פילסטר עם כותרת מדורגת, חריצים אנכיים וולוטות ספירליות בפינות,
       זוג סלסולים בקצוות ומפריד מנוקד. ערכות ללא shape ממשיכות
@@ -52,38 +67,38 @@
                 hi:'#dfe9f5', chip:'#9fd9ff', ink:'#e6edf3', dim:'#9fb3cc' },
     slim:     { name:'קו זהב עדין',     c1:'#fff4cf', c2:'#d9b451', c3:'#8a6a1f',
                 bg1:'rgba(12,18,30,.6)',  bg2:'rgba(5,9,17,.82)',  orn:1, shine:0,  band:.7,  tex:.03,  vig:.34,
-                hi:'#ffd227', chip:'#00ff88', ink:'#e6edf3', dim:'#9fc0e4' },
+                hi:'#ffd227', chip:'#00ff88', ink:'#e6edf3', dim:'#9fc0e4', hidden:true },
     classic:  { name:'קלאסי זהב',       c1:'#fff4cf', c2:'#e8c86a', c3:'#a37f2a',
                 bg1:'rgba(10,16,32,.7)',  bg2:'rgba(4,8,18,.86)',  orn:2, shine:14, band:1.2, tex:.05,  vig:.42,
                 hi:'#ffd227', chip:'#00ff88', ink:'#e6edf3', dim:'#a3d1ff' },
     royal:    { name:'זהב מלכותי',      c1:'#fff8e2', c2:'#f0cf72', c3:'#8f6f22',
                 bg1:'rgba(12,10,30,.74)', bg2:'rgba(5,4,16,.9)',   orn:2, shine:11, band:1.9, tex:.08,  vig:.5,
-                hi:'#f0cf72', chip:'#ffe3a0', ink:'#f4ecd8', dim:'#c9b58c'  },
+                hi:'#f0cf72', chip:'#ffe3a0', ink:'#f4ecd8', dim:'#c9b58c', hidden:true  },
     jerusalem:{ name:'ירושלים',         c1:'#f6e7c8', c2:'#cbb083', c3:'#8b7448',
                 bg1:'rgba(38,30,20,.66)', bg2:'rgba(20,15,9,.86)', orn:2, shine:16, band:1.3, tex:.07,  vig:.4,
-                hi:'#f0dcb0', chip:'#e8c98a', ink:'#f4ead6', dim:'#c2ac86'  },
+                hi:'#f0dcb0', chip:'#e8c98a', ink:'#f4ead6', dim:'#c2ac86', hidden:true  },
     sapphire: { name:'כחול מלכותי',     c1:'#dbe9ff', c2:'#7fa8e0', c3:'#2c4d86',
                 bg1:'rgba(8,18,44,.74)',  bg2:'rgba(3,8,24,.9)',   orn:2, shine:13, band:1.4, tex:.06,  vig:.46,
-                hi:'#bcd8ff', chip:'#7fe6ff', ink:'#e8f1ff', dim:'#8fb0d8' },
+                hi:'#bcd8ff', chip:'#7fe6ff', ink:'#e8f1ff', dim:'#8fb0d8', hidden:true },
     burgundy: { name:'בורדו ויין',      c1:'#ffd9c9', c2:'#c9756a', c3:'#7a2a28',
                 bg1:'rgba(38,8,12,.72)',  bg2:'rgba(18,3,6,.9)',   orn:2, shine:13, band:1.5, tex:.07,  vig:.48,
-                hi:'#ffcdb8', chip:'#ffb08e', ink:'#f8e9e4', dim:'#c9968c' },
+                hi:'#ffcdb8', chip:'#ffb08e', ink:'#f8e9e4', dim:'#c9968c', hidden:true },
     emerald:  { name:'ירוק אזמרגד',     c1:'#d8ffe9', c2:'#6fc79a', c3:'#1f6b4a',
                 bg1:'rgba(4,30,22,.72)',  bg2:'rgba(2,14,10,.9)',  orn:2, shine:13, band:1.4, tex:.06,  vig:.46,
-                hi:'#b6ffd9', chip:'#6fffb0', ink:'#e6fff2', dim:'#8cc4a8' },
+                hi:'#b6ffd9', chip:'#6fffb0', ink:'#e6fff2', dim:'#8cc4a8', hidden:true },
     platinum: { name:'שחור ופלטינה',    c1:'#ffffff', c2:'#c9d2dc', c3:'#6d7a88',
                 bg1:'rgba(10,10,12,.78)', bg2:'rgba(3,3,4,.92)',   orn:1, shine:18, band:1.1, tex:.04,  vig:.5,
-                hi:'#ffffff', chip:'#d8e4f0', ink:'#f0f4f8', dim:'#98a4b0'  },
+                hi:'#ffffff', chip:'#d8e4f0', ink:'#f0f4f8', dim:'#98a4b0', hidden:true  },
     /* מבנה שונה: מסגרת כפולה דקה, בלי עיטורי פינה, בלי דמאסק */
     scroll:   { name:'מגילה — קווים כפולים', c1:'#f6ecd2', c2:'#cdb27a', c3:'#7d6535',
                 bg1:'rgba(26,22,16,.72)', bg2:'rgba(12,10,7,.88)',
                 orn:0, shine:0, band:.28, tex:0, vig:.36, dbl:1, pad:2.2,
-                hi:'#f0dcae', chip:'#dcc188', ink:'#f2e9d6', dim:'#b8a480' },
+                hi:'#f0dcae', chip:'#dcc188', ink:'#f2e9d6', dim:'#b8a480', hidden:true },
     /* קווי מתאר בלבד — בלי מילוי, אוורירי מאוד */
     outline:  { name:'קו מתאר — אוורירי', c1:'#ffffff', c2:'#8fa6bd', c3:'#42546b',
                 bg1:'rgba(0,0,0,0)', bg2:'rgba(0,0,0,0)',
                 orn:0, shine:0, band:.22, tex:0, vig:.22, thin:1, pad:2.6,
-                hi:'#ffffff', chip:'#b4cbe2', ink:'#eef3f8', dim:'#8fa6bd' },
+                hi:'#ffffff', chip:'#b4cbe2', ink:'#eef3f8', dim:'#8fa6bd', hidden:true },
     /* קטיפה — בלי מסגרות חדות, זוהר רך */
     velvet:   { name:'קטיפה — רך וזוהר', c1:'#ffd9ea', c2:'#b3557f', c3:'#5c1f3a',
                 bg1:'rgba(48,10,30,.8)', bg2:'rgba(20,3,12,.92)',
@@ -102,7 +117,7 @@
                 bg:'#0a0806', shape:'pilaster' },
     festive:  { name:'חגיגי מפואר',     c1:'#fffbe8', c2:'#ffd76b', c3:'#a06f10',
                 bg1:'rgba(26,8,34,.76)',  bg2:'rgba(10,2,16,.92)', orn:2, shine:8,  band:2.2, tex:.1,   vig:.55,
-                hi:'#ffd76b', chip:'#ffe9a8', ink:'#fff6e0', dim:'#cbb078' }
+                hi:'#ffd76b', chip:'#ffe9a8', ink:'#fff6e0', dim:'#cbb078', hidden:true }
   };
 
   var T = THEMES.classic;

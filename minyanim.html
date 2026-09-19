@@ -708,12 +708,8 @@ function addSite(){var n=document.getElementById("newSite").value.trim(); if(!n)
    המקור הוא NatiOrnate.THEMES, ולכן כל ערכה שתתווסף למודול תופיע כאן
    אוטומטית. רשימת הגיבוי משמשת רק אם ornate.js לא נטען. */
 var THEME_FALLBACK=[
-  ["minimal","מודרני נקי — בלי עיטורים"],["slim","קו זהב עדין"],["classic","קלאסי זהב"],
-  ["royal","זהב מלכותי"],["jerusalem","ירושלים — אבן וזהב"],["sapphire","כחול מלכותי"],
-  ["burgundy","בורדו ויין"],["emerald","ירוק אזמרגד"],["platinum","שחור ופלטינה"],
-  ["scroll","מגילה — קווים כפולים"],["outline","קו מתאר — אוורירי"],
-  ["velvet","קטיפה — רך וזוהר"],["stone","אבן ירושלים"],["marble","שיש וזהב"],
-  ["festive","חגיגי מפואר"]
+  ["marble","שיש וזהב"],["classic","קלאסי זהב"],["stone","אבן ירושלים"],
+  ["velvet","קטיפה — רך וזוהר"],["minimal","מודרני נקי — בלי עיטורים"]
 ];
 var _themesFilled=false;
 function fillThemes(){
@@ -722,7 +718,9 @@ function fillThemes(){
   var list=[];
   try{
     var T=window.NatiOrnate && window.NatiOrnate.THEMES;
-    if(T) for(var k in T) if(T.hasOwnProperty(k)) list.push([k, T[k].name||k]);
+    /* ערכה עם hidden:true ממשיכה לעבוד במסכים אך אינה מוצגת כאן.
+       כך אפשר לצמצם את הרשימה בלי לשבור מסך שכבר מוגדר עליה. */
+    if(T) for(var k in T) if(T.hasOwnProperty(k) && !T[k].hidden) list.push([k, T[k].name||k]);
   }catch(e){}
   if(!list.length) list=THEME_FALLBACK.slice();
   list.push(["none","ללא מסגרת"]);
