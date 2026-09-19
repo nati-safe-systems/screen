@@ -80,9 +80,8 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
 #dow{font-size:calc(var(--sbs,1) * 1.3vw);color:#a3d1ff;text-align:center;font-weight:900;margin:2px 0;letter-spacing:1px;}
 .ic{background:rgba(255,255,255,0.05);border:1px solid rgba(255,204,0,0.3);border-radius:12px;padding:5px;text-align:center;margin-bottom:4px;}
 #par{font-size:calc(var(--sbs,1) * 1.55vw);color:var(--nsf-gold,#ffcc00);font-family:"Frank Ruhl Libre",serif;font-weight:900;display:block;text-align:center;}
-/* השורה השנייה בקוביית הפרשה — ערב חג, חול המועד, ראש חודש וכו'.
-   מוגדלת ומובלטת, אך מוקטנת יחד עם שאר הסרגל דרך --sbs כדי שלא
-   תדרוס טקסט אחר כשהתוכן מתארך. */
+/* השורה השנייה בקוביית הפרשה — ערב חג, חול המועד וכו'.
+   מוגדלת ומובלטת, אך מוקטנת יחד עם שאר הסרגל דרך --sbs. */
 .ist{font-size:calc(var(--sbs,1) * 1.22vw);color:#fff;font-weight:900;display:block;
   margin-top:calc(var(--sbs,1) * 5px);padding-top:calc(var(--sbs,1) * 4px);text-align:center;
   letter-spacing:.3px;line-height:1.25;
@@ -902,6 +901,40 @@ var SID   = new URLSearchParams(window.location.search).get("id") || "DEFAULT";
 var TOKEN = new URLSearchParams(window.location.search).get("token") || "";
 var PREVIEW = new URLSearchParams(window.location.search).get("preview") === "1";
 var ZMCHECK = new URLSearchParams(window.location.search).get("zmcheck") === "1";
+
+/* ---- עדכון גרסה מרחוק ----
+   בודק כל שתי דקות אם פרסמת עדכון. אם כן — שומר את מיקום
+   המוזיקה, ומרענן פעם אחת עם ביטול מטמון. */
+(function(){
+  var seen=null, KEY="nsf_refresh_token";
+  function saveAudioPos(){
+    try{
+      if(window._au && !window._au.paused)
+        sessionStorage.setItem("nsf_audio_pos",
+          JSON.stringify({i:window._auIdx||0, t:window._au.currentTime||0}));
+    }catch(e){}
+  }
+  function check(){
+    fetch(SUPA+"/rest/v1/app_refresh?id=eq.1&select=token",
+      {headers:{apikey:SKEY,Authorization:"Bearer "+SKEY},cache:"no-store"})
+      .then(function(r){return r.json();})
+      .then(function(rows){
+        if(!Array.isArray(rows)||!rows.length)return;
+        var t=String(rows[0].token||"");
+        if(seen===null){ seen=t; try{ localStorage.setItem(KEY,t); }catch(e){} return; }
+        if(t!==seen){
+          seen=t;
+          try{ localStorage.setItem(KEY,t); }catch(e){}
+          saveAudioPos();
+          var u=location.href.replace(/([?&])_v=\d+/,"").replace(/[?&]$/,"");
+          u += (u.indexOf("?")>-1?"&":"?")+"_v="+Date.now();
+          location.replace(u);
+        }
+      }).catch(function(){});
+  }
+  setTimeout(check, 8000);
+  setInterval(check, 120000);
+})();
 
 /* ---- ניתוב לפי סוג המסך ----
    כל המסכים והאפליקציות מצביעים ל-index.html. אם המסך הוגדר באדמין
@@ -1839,6 +1872,19 @@ function audioApply(){
     };
   }
   _au.volume=vol;
+  /* אחרי רענון — ממשיכים מאותו מקום, כדי שהמעבר לא יישמע */
+  if(!_au._resumed){
+    _au._resumed=true;
+    try{
+      var pos=JSON.parse(sessionStorage.getItem("nsf_audio_pos")||"null");
+      if(pos && pos.i===_auIdx && pos.t>1){
+        _au.addEventListener("loadedmetadata",function(){
+          try{ if(pos.t < _au.duration-1) _au.currentTime=pos.t; }catch(e){}
+        },{once:true});
+      }
+      sessionStorage.removeItem("nsf_audio_pos");
+    }catch(e){}
+  }
   if(_au.paused){
     _au.play().then(function(){ _auState="מנגן "+(_auIdx+1)+"/"+_auList.length+" · עוצמה "+Math.round(vol*100)+"%"; })
       .catch(function(e){
@@ -2581,12 +2627,6 @@ function tdy(){return tds(new Date());}
 function gzm(k){if(!aD||!aD.times)return NaN;var v=aD.times[k];if(!v)return NaN;var d=new Date(v);return d.getHours()+d.getMinutes()/60+d.getSeconds()/3600;}
 function ghtl(){return aD&&aD.date&&aD.date.hebrew?aD.date.hebrew:null;}
 
-/* שבתות שאין בהן פרשה — חג או חול המועד.
-   ------------------------------------------------------------------
-   בשבוע כזה Hebcal לא מחזיר parashat, ועד עכשיו השדה הציג את
-   מציין המקום "פרשת השבוע". כאן מחושבת מקומית השבת הקרובה
-   (או היום, אם היום שבת) ומוחזרת תווית מתאימה.
-   מחושב מ-ghd בלבד — בלי רשת, ולכן עובד גם כשאין קשר. */
 function gwpChag(ref){
   var d=ref?new Date(ref):new Date();
   var h=ghd(d), m=h.month, y=h.day;
@@ -2609,8 +2649,8 @@ function gwpChag(ref){
   /* אחרת — לפי השבת הקרובה, לשבוע שכולו חול ושבתו חג */
   var toSat=(6-d.getDay()+7)%7;
   if(toSat===0) return null;
-  var s=new Date(d.getFullYear(),d.getMonth(),d.getDate()+toSat,12,0,0);
-  var hs=ghd(s), ms=hs.month, ys=hs.day;
+  var sa=new Date(d.getFullYear(),d.getMonth(),d.getDate()+toSat,12,0,0);
+  var hs=ghd(sa), ms=hs.month, ys=hs.day;
   if(ms==="תשרי"){
     if(ys===1||ys===2)   return "השבוע — ראש השנה";
     if(ys===10)          return "השבוע — יום הכיפורים";
@@ -2833,9 +2873,7 @@ function hc_roshChodesh(gy,gm,gd){
    וב-1.1.2031 היה נזרק Cannot read properties of undefined.
    עכשיו הוא נשען על hc_fromRD שכבר קיים למעלה בקובץ — חישוב מלא,
    בלי טבלה ובלי תאריך תפוגה.
-   אומת: 1826 ימים רצופים מ-2026 — 1826/1826 זהים לפלט הישן.
-   שמות החודשים נשמרו בדיוק כפי שהיו ("חשוון", "אדר א", "אדר ב")
-   כדי ש-gjh / gjml / ggreet / gec ימשיכו להשוות נכון. */
+   אומת: 1826 ימים רצופים מ-2026 — 1826/1826 זהים לפלט הישן. */
 function ghd(date){
   var GHD_MON=['','ניסן','אייר','סיוון','תמוז','אב','אלול','תשרי','חשוון','כסלו','טבת','שבט','אדר'];
   var rd=hc_gregToRD(date.getFullYear(), date.getMonth()+1, date.getDate());
@@ -2883,8 +2921,7 @@ function gjh(m,d){
 }
 // ימים מיוחדים לתצוגת תווית בלבד — לא מפעילים מצב חג (חנוכה/פורים/ל"ג בעומר)
 function gjml(m,d){
-  /* מספור ימי חול המועד כפי שמופיע בלוח המודפס: טז תשרי = א' דחוה"מ.
-     ניסן ט"ז = א' דחוה"מ פסח (בא"י ט"ו יו"ט, כ"א שביעי של פסח). */
+  /* מספור ימי חול המועד כפי שמופיע בלוח המודפס: טז תשרי = א' דחוה"מ */
   var CHM=["","א","ב","ג","ד","ה"];
   if(m==="תשרי"&&d>=16&&d<=20)return CHM[d-15]+"\u05f3 דחול המועד סוכות";
   if(m==="תשרי"&&d===21)return "הושענא רבה";
@@ -2955,10 +2992,7 @@ function gzo(d){
   var alot198=nn-(ha198/15),tzeit198=nn+(ha198/15);
   var szM198=alot198+((tzeit198-alot198)/12)*3;
   // עלות השחר בתצוגה: 72 דקות קבועות לפני הנץ
-  /* מנחה גדולה — אותה שיטה כמו במנוע: המאוחר מבין חצות+30 דק' שוות
-     לבין חצי שעה זמנית. כאן הערכים בשעות עשרוניות. */
-  var minG=Math.max(nn+0.5, sr+6.5*((ss-sr)/12));
-  return {alot:sr-1.2,sunrise:sr,szM:szM198,szG:sr+((ss-sr)/12)*3,noon:nn,mincha:minG,sunset:ss,tz:ss+(41/60),rt:ss+(72/60)};
+  return {alot:sr-1.2,sunrise:sr,szM:szM198,szG:sr+((ss-sr)/12)*3,noon:nn,mincha:Math.max(nn+0.5, sr+6.5*((ss-sr)/12)),sunset:ss,tz:ss+(41/60),rt:ss+(72/60)};
 }
 
 /* ===================================================================
@@ -3041,11 +3075,10 @@ function zmEngineTimes(dt){
     szM:     alM+3*shM,
     szG:     riseM+3*shaa,
     noon:    noon,
-    /* מנחה גדולה — המאוחר מבין שתי השיטות:
-       חצות + 30 דקות שוות, או חצות + חצי שעה זמנית (6.5 שעות מהנץ).
-       בחורף השעה הזמנית קצרה מ-60 דק' והשיטה הראשונה מאוחרת, בקיץ להפך.
-       לקיחת המאוחר לעולם אינה מקדימה את הזמן. אומת מול לוח בית שמש
-       תשרי-מרחשון תשפ"ז: 49/49, סטייה מקסימלית 0.99 דק' (עיגול הדפוס). */
+    /* מנחה גדולה — המאוחר מבין חצות+30 דק' שוות לבין חצי שעה זמנית.
+       בחורף השעה הזמנית קצרה מ-60 והשיטה הראשונה מאוחרת, בקיץ להפך.
+       לקיחת המאוחר לעולם אינה מקדימה את הזמן.
+       אומת מול לוח בית שמש תשרי-מרחשון תשפ"ז: 49/49. */
     mincha:  Math.max(noon+30, riseM+6.5*shaa),
     sunset:  zm_q(setE,15),
     tz:      dg(c.tzeitDeg,false),
@@ -3496,69 +3529,6 @@ function loadNextSat(cb){
   }, true);
 }
 
-/* ===================================================================
-   רענון גרסה שקט
-   -------------------------------------------------------------------
-   עד עכשיו המסך טען את הקובץ פעם אחת ולא בדק שוב, ולכן העלאה
-   לשרת לא הגיעה למסך עד הפעלה מחדש ידנית.
-
-   איך זה עובד עכשיו:
-   כל 5 דקות נשלחת בקשה שקטה לקובץ עצמו ומחושבת עליו חתימה.
-   אם החתימה לא השתנתה — לא קורה כלום, אין שום הבהוב, אין רענון.
-   רק כשהקובץ באמת השתנה המסך נטען מחדש, ולפני כן הגרסה החדשה
-   נמשכת למטמון הדפדפן כדי שהטעינה תהיה כמעט מיידית. הרקע שחור
-   גם ב-html וגם ב-body, ולכן אין הבזק לבן.
-
-   הרענון נדחה כל עוד:
-     - מוצגת התראת פיקוד העורף
-     - מסך הנעילה פתוח
-     - הלשונית אינה גלויה (המסך יתעורר עם הבדיקה הבאה)
-   =================================================================== */
-var VER_MS = 5*60*1000;      /* תדירות הבדיקה */
-var _verSig = null;
-
-function _verHash(s){
-  var h=5381, i=s.length;
-  while(i) h=((h*33) ^ s.charCodeAt(--i)) >>> 0;
-  return h.toString(36)+"-"+s.length;
-}
-
-function _verBusy(){
-  try{
-    var a=document.getElementById("nsf-alert");
-    if(a && a.style.display==="flex") return true;          /* התראה פעילה */
-    var l=document.getElementById("lock");
-    if(l && l.style.display==="flex") return true;          /* מסך נעילה */
-    if(document.hidden) return true;                        /* לשונית מוסתרת */
-  }catch(e){}
-  return false;
-}
-
-function verCheck(){
-  if(_verBusy()) return;
-  var url = location.pathname + "?_v=" + Date.now();
-  fetch(url, {cache:"no-store"})
-    .then(function(r){ return r.ok ? r.text() : null; })
-    .then(function(t){
-      if(!t || t.length < 1000) return;      /* תשובת שגיאה או דף ריק — התעלמות */
-      var sig=_verHash(t);
-      if(_verSig===null){ _verSig=sig; return; }   /* הבדיקה הראשונה רק רושמת */
-      if(sig===_verSig) return;                    /* לא השתנה — שקט מוחלט */
-      _verSig=sig;
-      /* משיכה למטמון כדי שהטעינה מחדש תהיה מיידית */
-      fetch(location.pathname, {cache:"reload"})
-        .then(_verReload).catch(_verReload);
-    })
-    .catch(function(){});
-}
-
-function _verReload(){
-  /* בדיקה אחרונה — אם בינתיים נכנסה התראה, דוחים למחזור הבא */
-  if(_verBusy()) return;
-  try{ document.documentElement.style.background="#000"; }catch(e){}
-  location.reload();
-}
-
 function start(){
   fhcal(tdy(),function(){
     fparasha(tdy(),function(){
@@ -3569,9 +3539,6 @@ function start(){
         setInterval(function(){if(Date.now()-llc>LCI)chkLic(null);},LCI);
         setInterval(pollMsg,15000);
         setInterval(paintCache,30000); paintCache();
-        /* חתימת בסיס מיד עם העלייה, ואז בדיקה כל 5 דקות */
-        verCheck();
-        setInterval(verCheck, VER_MS);
       });
     });
   });
@@ -3580,6 +3547,9 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 7.8</div>
+<!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
+     ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
+     יושבים באותה פינה והסתירו אותה. -->
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 7.6</div>
 </body>
 </html>
