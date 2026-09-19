@@ -1,0 +1,455 @@
+<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>נתי SAFE — תצוגת עיצוב · המרכז הרוחני</title>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;800;900&family=Heebo:wght@300;400;500;700;800;900&family=Suez+One&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   נתי SAFE — ערכת עיצוב "המרכז הרוחני"
+   ---------------------------------------------------------------------
+   נבנתה מהצילומים של השילוט שהמעצב הכין: שיש שחור חם עם סדקי זהב,
+   מסגרות ארט-דקו עם וולוטות ספירליות, לוחות שנהב וכתב מוזהב.
+
+   הכל וקטורי ונוצר בקוד — אין תלות בקובץ תמונה, ולכן זה נשאר חד
+   בכל רזולוציה ולא נשבר במסכים ברוחב שונה. אם בהמשך תרצה להניח
+   רקע מקורי של המעצב, יש לכך וו מוכן: ראו --bg-image בסוף הקובץ.
+   ===================================================================== */
+
+:root{
+  /* --- שיש --- */
+  --marble-0:#0a0806;      /* שחור חם, הבסיס */
+  --marble-1:#141009;      /* עליית טון */
+  --marble-2:#1d160c;      /* הבהרה מקומית */
+
+  /* --- זהב, מדורג כמו בשלט --- */
+  --gold-deep:#6b4d16;
+  --gold-mid:#a8802a;
+  --gold:#d4ab4a;
+  --gold-hi:#f2d783;
+  --gold-white:#fff4c9;
+
+  /* --- לוח שנהב --- */
+  --ivory:#faf7ef;
+  --ivory-edge:#e8dfc6;
+  --ink:#171310;
+
+  /* --- מצב --- */
+  --live:#1f7a3d;          /* המניין הבא */
+  --quiet:#6e6151;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:Heebo,Assistant,Arial,sans-serif;
+  background:var(--marble-0);
+  color:var(--ivory);
+  direction:rtl;
+}
+
+/* ===================== השיש =====================
+   שלוש שכבות: גוון בסיס, עורקים אקראיים מפילטר SVG,
+   והילות ענבר חמות בפינות — בדיוק כמו ההשתקפויות בצילום. */
+.stage{
+  position:fixed; inset:0; overflow:hidden;
+  background:
+    radial-gradient(120% 80% at 8% 4%,  rgba(201,146,46,.16), transparent 45%),
+    radial-gradient(100% 70% at 96% 22%, rgba(201,146,46,.12), transparent 50%),
+    radial-gradient(90%  70% at 4% 92%,  rgba(224,168,60,.18), transparent 48%),
+    radial-gradient(90%  70% at 92% 96%, rgba(201,146,46,.10), transparent 50%),
+    linear-gradient(155deg, var(--marble-1) 0%, var(--marble-0) 42%, #0d0a07 70%, var(--marble-1) 100%);
+}
+.stage::before{            /* עורקי השיש */
+  content:""; position:absolute; inset:-10%;
+  background:url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900'>\
+<filter id='v'><feTurbulence type='fractalNoise' baseFrequency='0.008 0.022' numOctaves='4' seed='7'/>\
+<feColorMatrix type='saturate' values='0'/>\
+<feComponentTransfer><feFuncA type='discrete' tableValues='0 0 0 .05 .14 .28 .1 0 0'/></feComponentTransfer>\
+</filter><rect width='900' height='900' filter='url(%23v)' fill='%23c8ab77'/></svg>");
+  background-size:cover; opacity:.5; mix-blend-mode:screen;
+  pointer-events:none;
+}
+.stage::after{             /* סדקי הזהב מפינות הלוח */
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 900' preserveAspectRatio='none'>\
+<g fill='none' stroke-linecap='round'>\
+<path d='M0 62 L74 44 L126 78 L212 40 L268 66' stroke='%23e8c766' stroke-width='2.4' opacity='.85'/>\
+<path d='M74 44 L88 12 M126 78 L138 110 M212 40 L226 10' stroke='%23c09433' stroke-width='1.5' opacity='.6'/>\
+<path d='M1600 128 L1520 104 L1462 140 L1392 108' stroke='%23e8c766' stroke-width='2.2' opacity='.7'/>\
+<path d='M1520 104 L1508 70 M1462 140 L1474 176' stroke='%23c09433' stroke-width='1.4' opacity='.5'/>\
+<path d='M0 812 L82 836 L148 800 L228 838' stroke='%23e8c766' stroke-width='2' opacity='.6'/>\
+</g></svg>");
+  background-size:100% 100%; opacity:.55;
+}
+
+/* ===================== פריסה ===================== */
+.screen{position:relative; z-index:2; height:100%; display:flex; flex-direction:column; padding:1.6vh 1.4vw; gap:1.4vh}
+
+/* ---------- כותרת עליונה ---------- */
+.crown{flex-shrink:0; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:1.4vw}
+.crown-line{height:0; border-top:.28vh dotted rgba(212,171,74,.55)}
+.crest{display:flex; flex-direction:column; align-items:center; gap:.3vh}
+.crest .mark{
+  font-family:"Suez One",serif; font-size:3.1vh; line-height:1;
+  background:linear-gradient(178deg,var(--gold-white) 2%,var(--gold-hi) 26%,var(--gold) 52%,var(--gold-mid) 78%,var(--gold-deep) 100%);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  filter:drop-shadow(0 .22vh .3vh rgba(0,0,0,.85));
+}
+.crest .sub{font-size:1.15vh; color:rgba(212,171,74,.7); letter-spacing:.34vh}
+.bsd{position:absolute; top:.5vh; right:1.1vw; z-index:9; font-family:"Frank Ruhl Libre",serif;
+  font-size:1.6vh; color:rgba(242,215,131,.62); letter-spacing:.05em}
+
+/* ---------- גוף ---------- */
+.body{flex:1; min-height:0; display:grid; grid-template-columns:23.5% 1fr 30%; gap:1.2vw}
+
+/* ===================== לוח מוזהב =====================
+   כל אזור במסך יושב בתוך לוח כזה. המסגרת וקטורית ומורכבת
+   מארבע פינות זהות שמשוכפלות בסיבוב, בדיוק כמו בשלט. */
+.plaque{position:relative; display:flex; flex-direction:column; min-height:0;
+  padding:1.5vh 1.1vw; background:linear-gradient(168deg,rgba(24,18,10,.82),rgba(10,8,6,.9));
+  border:.18vh solid rgba(168,128,42,.45);
+}
+.plaque>.corner{position:absolute; width:4.4vh; height:4.4vh; pointer-events:none; opacity:.95}
+.plaque>.c-tr{top:-.18vh; right:-.18vh}
+.plaque>.c-tl{top:-.18vh; left:-.18vh;  transform:scaleX(-1)}
+.plaque>.c-br{bottom:-.18vh; right:-.18vh; transform:scaleY(-1)}
+.plaque>.c-bl{bottom:-.18vh; left:-.18vh;  transform:scale(-1,-1)}
+
+/* לוח שנהב — לתוכן שצריך לקרוא מרחוק */
+.plaque.ivory{background:linear-gradient(170deg,var(--ivory) 0%,#f3eddc 100%); color:var(--ink);
+  border-color:rgba(168,128,42,.75)}
+
+.plaque .cap{           /* כותרת האזור, על קו מנוקד */
+  font-family:"Frank Ruhl Libre",serif; font-weight:800; font-size:1.75vh;
+  color:var(--gold-hi); text-align:center; padding-bottom:.55vh; margin-bottom:.9vh;
+  border-bottom:.2vh dotted rgba(212,171,74,.5); flex-shrink:0;
+}
+.plaque.ivory .cap{color:#7a5a15; border-bottom-color:rgba(122,90,21,.4)}
+
+/* ===================== טור ימין: שעון וזמנים ===================== */
+.clock{font-family:Heebo; font-weight:900; font-size:8.6vh; line-height:.95; text-align:center;
+  font-variant-numeric:tabular-nums; letter-spacing:-.01em;
+  background:linear-gradient(176deg,var(--gold-white) 4%,var(--gold-hi) 30%,var(--gold) 58%,var(--gold-mid) 86%);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  filter:drop-shadow(0 0 2.2vh rgba(212,171,74,.32)) drop-shadow(0 .3vh .4vh rgba(0,0,0,.9));
+}
+.clock .sec{font-size:.36em; color:var(--gold-mid); -webkit-text-fill-color:var(--gold-mid);
+  vertical-align:.62em; margin-right:.12em; font-weight:700}
+.hebdate{text-align:center; font-family:"Frank Ruhl Libre",serif; font-weight:700;
+  font-size:2.05vh; color:var(--gold-hi); margin-top:.5vh}
+.gregdate{text-align:center; font-size:1.35vh; color:rgba(232,223,198,.5); margin-top:.15vh}
+
+/* שדה הפרשה — הוא הדבר הבולט בטור */
+.parasha{margin:1.2vh 0 .2vh; padding:1vh .6vw; text-align:center;
+  background:linear-gradient(170deg,var(--ivory),#f0e9d6);
+  border:.16vh solid rgba(168,128,42,.8); position:relative}
+.parasha .name{font-family:"Suez One",serif; font-size:2.4vh; color:#2a1f0d; line-height:1.15}
+.parasha .read{font-size:1.28vh; color:#6d5a33; margin-top:.5vh; line-height:1.35}
+
+.zman{display:flex; justify-content:space-between; align-items:baseline; gap:.5vw;
+  font-size:1.82vh; padding:.42vh .1vw; border-bottom:.1vh solid rgba(212,171,74,.14)}
+.zman:last-child{border-bottom:0}
+.zman span{color:rgba(232,223,198,.78)}
+.zman b{font-variant-numeric:tabular-nums; font-weight:800; color:var(--gold-hi); letter-spacing:.02em}
+.zlist{flex:1; display:flex; flex-direction:column; justify-content:space-evenly; min-height:0}
+.disclaim{text-align:center; font-size:1.12vh; color:rgba(198,120,90,.7); margin-top:.6vh}
+
+/* ===================== מרכז: מודעות ===================== */
+.center{display:flex; flex-direction:column; min-height:0; gap:1.2vh}
+.houseplate{flex-shrink:0; text-align:center; padding:1.4vh .8vw}
+.houseplate .eyebrow{font-size:1.28vh; color:rgba(212,171,74,.62); letter-spacing:.3vh}
+.houseplate .name{font-family:"Suez One",serif; font-size:4.6vh; line-height:1.05; margin-top:.3vh;
+  background:linear-gradient(177deg,var(--gold-white) 2%,var(--gold-hi) 28%,var(--gold) 56%,var(--gold-mid) 82%,var(--gold-deep) 100%);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  filter:drop-shadow(0 .28vh .38vh rgba(0,0,0,.9));
+}
+.scrollwork{display:block; width:100%; height:2.4vh; margin-top:.4vh; opacity:.8}
+
+.notices{flex:1; min-height:0; display:flex; flex-direction:column; gap:1.1vh; overflow:hidden}
+.notice{padding:.2vh 1vw .5vh 0; border-right:.42vh solid var(--gold); position:relative}
+.notice .t{font-family:"Frank Ruhl Libre",serif; font-weight:800; font-size:2.5vh; color:var(--ivory)}
+.notice .b{font-size:1.85vh; color:rgba(232,223,198,.72); line-height:1.45; margin-top:.25vh}
+.notice.honour{border-right-color:var(--gold-hi)}
+.notice.honour .t{color:var(--gold-hi)}
+
+/* ===================== טור שמאל: מניינים =====================
+   הטור לא מניח מספר חדרים. הרווח בין הלוחות מתהדק ככל שיש יותר,
+   וכל חדר מקטין את הטיפוגרפיה שלו דרך --mk עד שהתוכן נכנס. */
+.rooms{display:flex; flex-direction:column; min-height:0;
+  --n:4; gap:clamp(.35vh, calc(4vh / var(--n)), 1.1vh)}
+.room{flex:1 1 0; min-height:0; display:flex; flex-direction:column; overflow:hidden;
+  --mk:1; padding:calc(var(--mk) * 1.3vh) calc(var(--mk) * .95vw)}
+.room .rn{font-family:"Suez One",serif; font-size:calc(var(--mk) * 2.3vh); text-align:center; color:var(--gold-hi);
+  padding-bottom:calc(var(--mk) * .45vh); margin-bottom:calc(var(--mk) * .7vh);
+  border-bottom:.2vh dotted rgba(212,171,74,.5); flex-shrink:0;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.prow{display:flex; align-items:flex-start; gap:.5vw; margin-bottom:calc(var(--mk) * .55vh)}
+.prow:last-child{margin-bottom:0}
+.prow>span{min-width:4.2em; font-weight:800; font-size:calc(var(--mk) * 1.65vh);
+  color:rgba(232,223,198,.62); padding-top:calc(var(--mk) * .2vh)}
+.times{display:flex; gap:.35vw; flex-wrap:wrap; flex:1}
+/* מוקף תחת .times בכוונה: .t משמש גם לכותרת מודעה במרכז המסך,
+   ובלי ההיקוף הכותרות היו מקבלות מסגרת ורקע של שבב שעה. */
+.times .t{font-variant-numeric:tabular-nums; font-weight:800; font-size:calc(var(--mk) * 1.72vh);
+  padding:calc(var(--mk) * .24vh) .5vw; color:var(--gold-hi);
+  border:.12vh solid rgba(168,128,42,.38); background:rgba(168,128,42,.07)}
+.times .t.next{color:#1a1206; background:linear-gradient(175deg,var(--gold-hi),var(--gold));
+  border-color:var(--gold-hi); box-shadow:0 0 1.5vh rgba(242,215,131,.4)}
+.times .t.roll{color:#e0b98a; border-color:rgba(200,140,70,.4); background:rgba(200,140,70,.08)}
+
+/* הוולוטות מתכווצות יחד עם החדר, אחרת הן בולעות לוח קטן */
+.room>.corner{width:calc(var(--mk) * 4.4vh); height:calc(var(--mk) * 4.4vh)}
+
+/* ===================== סרגל בדיקה — רק בקובץ התצוגה ===================== */
+.probe{position:fixed; bottom:1.1vh; left:50%; transform:translateX(-50%); z-index:50;
+  display:flex; align-items:center; gap:.5vw; padding:.5vh .9vw;
+  background:rgba(10,8,6,.88); border:.12vh solid rgba(168,128,42,.5);
+  font-size:1.4vh; color:rgba(232,223,198,.8)}
+.probe button{font:inherit; font-weight:800; cursor:pointer; padding:.25vh .7vw;
+  color:var(--gold-hi); background:transparent; border:.12vh solid rgba(168,128,42,.45)}
+.probe button.on{color:#1a1206; background:var(--gold-hi); border-color:var(--gold-hi)}
+
+/* ===================== וו לרקע של המעצב =====================
+   אם יתקבל קובץ רקע מקורי, מוסיפים לגוף class="designer-bg"
+   ומגדירים את --bg-image. השכבות הווקטוריות נכבות מאליהן. */
+body.designer-bg .stage{background-image:var(--bg-image); background-size:cover; background-position:center}
+body.designer-bg .stage::before,
+body.designer-bg .stage::after{display:none}
+
+@media (prefers-reduced-motion:no-preference){
+  .times .t.next{animation:pulse 2.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 1.5vh rgba(242,215,131,.35)}50%{box-shadow:0 0 2.6vh rgba(242,215,131,.6)}}
+}
+</style></head><body>
+
+<!-- ============ פינת מסגרת: וולוטה ספירלית + כותרת מדורגת + חריצים ============
+     פינה אחת מוגדרת, וארבע ההופעות שלה נוצרות בסיבוב ובשיקוף ב-CSS. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="gld" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#fff4c9"/>
+      <stop offset="22%"  stop-color="#f2d783"/>
+      <stop offset="55%"  stop-color="#d4ab4a"/>
+      <stop offset="82%"  stop-color="#a8802a"/>
+      <stop offset="100%" stop-color="#6b4d16"/>
+    </linearGradient>
+    <symbol id="deco-corner" viewBox="0 0 100 100">
+      <g fill="none" stroke="url(#gld)" stroke-linecap="round" stroke-linejoin="round">
+        <!-- כותרת מדורגת לאורך הקצה העליון -->
+        <path d="M100 6 H30" stroke-width="5"/>
+        <path d="M100 14 H38" stroke-width="2.2" opacity=".8"/>
+        <!-- מניפת הפלמטה -->
+        <path d="M74 6 V20 M80 6 V18 M68 6 V18" stroke-width="2" opacity=".75"/>
+        <!-- וולוטה: ספירלה שמתהדקת פנימה -->
+        <path d="M30 6 C16 6 8 14 8 27 C8 37 15 44 24 44 C31 44 36 39 36 32
+                 C36 27 32 23 27 23 C23 23 20 26 20 30 C20 33 22 35 25 35"
+              stroke-width="4.6"/>
+        <!-- פילסטר מחורץ יורד מהפינה -->
+        <path d="M6 44 V100 M13 48 V100 M20 52 V100" stroke-width="2.4" opacity=".7"/>
+        <path d="M2 44 H24" stroke-width="3"/>
+      </g>
+    </symbol>
+    <symbol id="scroll-pair" viewBox="0 0 400 40">
+      <g fill="none" stroke="url(#gld)" stroke-width="3.4" stroke-linecap="round">
+        <path d="M200 20 C168 20 150 8 120 8 C96 8 84 20 84 28 C84 34 89 38 95 38
+                 C100 38 104 34 104 29 C104 25 101 22 97 22"/>
+        <path d="M200 20 C232 20 250 8 280 8 C304 8 316 20 316 28 C316 34 311 38 305 38
+                 C300 38 296 34 296 29 C296 25 299 22 303 22"/>
+        <circle cx="200" cy="20" r="4.5" fill="url(#gld)" stroke="none"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="stage"></div>
+<div class="bsd">בס"ד</div>
+
+<div class="screen">
+
+  <!-- ============ כתר עליון ============ -->
+  <div class="crown">
+    <div class="crown-line"></div>
+    <div class="crest">
+      <div class="mark">המרכז הרוחני</div>
+      <div class="sub">חפציבה · בית שמש</div>
+    </div>
+    <div class="crown-line"></div>
+  </div>
+
+  <div class="body">
+
+    <!-- ============ טור ימין ============ -->
+    <div class="plaque">
+      <svg class="corner c-tr" xmlns:xlink="http://www.w3.org/1999/xlink"><use href="#deco-corner" xlink:href="#deco-corner"/></svg>
+      <svg class="corner c-tl" xmlns:xlink="http://www.w3.org/1999/xlink"><use href="#deco-corner" xlink:href="#deco-corner"/></svg>
+      <svg class="corner c-br" xmlns:xlink="http://www.w3.org/1999/xlink"><use href="#deco-corner" xlink:href="#deco-corner"/></svg>
+      <svg class="corner c-bl" xmlns:xlink="http://www.w3.org/1999/xlink"><use href="#deco-corner" xlink:href="#deco-corner"/></svg>
+
+      <div class="clock">19:42<span class="sec">08</span></div>
+      <div class="hebdate">כ״ח בתשרי תשפ״ז · אור לכ״ט</div>
+      <div class="gregdate">יום שישי, 9 באוקטובר 2026</div>
+
+      <div class="parasha">
+        <div class="name">פרשת בראשית</div>
+        <div class="read">שבת מברכים · הפטרה: מחר חודש</div>
+      </div>
+
+      <div class="cap" style="margin-top:1vh">זמני היום</div>
+      <div class="zlist">
+        <div class="zman"><span>עלות השחר</span><b>4:52</b></div>
+        <div class="zman"><span>נץ החמה</span><b>6:12</b></div>
+        <div class="zman"><span>סו״ז ק״ש מג״א</span><b>8:48</b></div>
+        <div class="zman"><span>סו״ז ק״ש גר״א</span><b>9:33</b></div>
+        <div class="zman"><span>חצות</span><b>12:27</b></div>
+        <div class="zman"><span>מנחה גדולה</span><b>12:57</b></div>
+        <div class="zman"><span>פלג המנחה</span><b>16:41</b></div>
+        <div class="zman"><span>הדלקת נרות</span><b>17:37</b></div>
+        <div class="zman"><span>שקיעה</span><b>18:17</b></div>
+        <div class="zman"><span>צאת הכוכבים</span><b>18:50</b></div>
+      </div>
+      <div class="disclaim">אין לסמוך על הזמנים בצמצום</div>
+    </div>
+
+    <!-- ============ מרכז ============ -->
+    <div class="center">
+      <div class="plaque houseplate">
+        <svg class="corner c-tr" xmlns:xlink="http://www.w3.org/1999/xlink"><use href="#deco-corner" xlink:href="#deco-corner"/></svg>
+        <svg class="corner c-tl" xmlns:xlink="http://www.w3.org/1999/xlink"><use href="#deco-corner" xlink:href="#deco-corner"/></svg>
+        <svg class="corner c-br" xmlns:xlink="http://www.w3.org/1999/xlink"><use href="#deco-corner" xlink:href="#deco-corner"/></svg>
+        <svg class="corner c-bl" xmlns:xlink="http://www.w3.org/1999/xlink"><use href="#deco-corner" xlink:href="#deco-corner"/></svg>
+        <div class="eyebrow">לוח המודעות של</div>
+        <div class="name">בית המדרש הגדול</div>
+        <svg class="scrollwork" viewBox="0 0 400 40" preserveAspectRatio="xMidYMid meet"><use href="#scroll-pair" xlink:href="#scroll-pair"/></svg>
+      </div>
+
+      <div class="plaque" style="flex:1">
+        <svg class="corner c-tr" xmlns:xlink="http://www.w3.org/1999/xlink"><use href="#deco-corner" xlink:href="#deco-corner"/></svg>
+        <svg class="corner c-tl" xmlns:xlink="http://www.w3.org/1999/xlink"><use href="#deco-corner" xlink:href="#deco-corner"/></svg>
+        <svg class="corner c-br" xmlns:xlink="http://www.w3.org/1999/xlink"><use href="#deco-corner" xlink:href="#deco-corner"/></svg>
+        <svg class="corner c-bl" xmlns:xlink="http://www.w3.org/1999/xlink"><use href="#deco-corner" xlink:href="#deco-corner"/></svg>
+        <div class="cap">מודעות הקהילה</div>
+        <div class="notices">
+          <div class="notice honour">
+            <div class="t">פרנס השתיה — יום חמישי ו׳ תשרי</div>
+            <div class="b">הרב אהרן איידלמן הי״ו, לרגל פתיחת המרכז הרוחני.</div>
+          </div>
+          <div class="notice">
+            <div class="t">שיעור הדף היומי עובר לבית המדרש הגדול</div>
+            <div class="b">החל ממוצאי שבת, בשעה 20:45. השיעור בקומה א׳ עד סוף החורף.</div>
+          </div>
+          <div class="notice">
+            <div class="t">עירוב</div>
+            <div class="b">העירוב נבדק ביום חמישי ונמצא כשר.</div>
+          </div>
+          <div class="notice">
+            <div class="t">נא לשמור על ניקיון בית המדרש</div>
+            <div class="b">כוסות ריקות לפח.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ טור שמאל ============ -->
+    <div class="rooms" id="rooms"></div>
+
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   הדגמה חיה
+   ---------------------------------------------------------------------
+   החדרים נבנים מנתונים ולא מ-HTML קבוע, כדי להראות שהפריסה עומדת
+   בכל מספר חדרים. כפתורי הבדיקה למטה קיימים רק בקובץ התצוגה הזה.
+   ===================================================================== */
+(function(){
+  function p2(n){return n<10?"0"+n:""+n;}
+
+  /* ---------- שעון ---------- */
+  function tick(){
+    var d=new Date();
+    document.querySelector(".clock").innerHTML =
+      p2(d.getHours())+":"+p2(d.getMinutes())+'<span class="sec">'+p2(d.getSeconds())+'</span>';
+  }
+  tick(); setInterval(tick,1000);
+
+  /* ---------- מאגר חדרי השטיבלך ---------- */
+  var POOL=[
+    {n:"שטיבל א׳",  s:["6:15","7:00","8:00","9:15"], m:["13:10","17:22*"],       a:["18:50","20:00","21:30"]},
+    {n:"שטיבל ב׳",  s:["6:40","7:30"],               m:["~רצוף מ־16:50 עד השקיעה"], a:["19:15","22:00"]},
+    {n:"שטיבל ג׳",  s:["8:15"],                      m:["17:25"],                a:["19:00","20:30"]},
+    {n:"שטיבל ד׳",  s:["5:50","6:30","7:45"],        m:["13:00","17:20"],        a:["18:45","21:00"]},
+    {n:"שטיבל ה׳",  s:["7:10"],                      m:["17:15"],                a:["19:30"]},
+    {n:"שטיבל ו׳",  s:["6:05","8:30"],               m:["13:20","17:28"],        a:["19:05","20:15","22:15"]},
+    {n:"עזרת נשים", s:["8:00"],                      m:["17:25"],                a:["19:00"]},
+    {n:"היכל שמואל",s:["6:20","7:15"],               m:["17:24"],                a:["18:55","21:45"]}
+  ];
+
+  var CORNERS=['c-tr','c-tl','c-br','c-bl'].map(function(c){
+    return '<svg class="corner '+c+'" xmlns:xlink="http://www.w3.org/1999/xlink">'+
+           '<use href="#deco-corner" xlink:href="#deco-corner"/></svg>';
+  }).join("");
+
+  function times(arr){
+    return arr.map(function(t){
+      if(t.charAt(0)==="~") return '<div class="t roll">'+t.slice(1)+'</div>';
+      if(t.slice(-1)==="*")  return '<div class="t next">'+t.slice(0,-1)+'</div>';
+      return '<div class="t">'+t+'</div>';
+    }).join("");
+  }
+
+  function render(count){
+    var host=document.getElementById("rooms"), html="";
+    for(var i=0;i<count;i++){
+      var r=POOL[i%POOL.length];
+      html+='<div class="plaque room">'+CORNERS+
+            '<div class="rn">'+r.n+'</div>'+
+            '<div class="prow"><span>שחרית</span><div class="times">'+times(r.s)+'</div></div>'+
+            '<div class="prow"><span>מנחה</span><div class="times">'+times(r.m)+'</div></div>'+
+            '<div class="prow"><span>ערבית</span><div class="times">'+times(r.a)+'</div></div>'+
+            '</div>';
+    }
+    host.innerHTML=html;
+    host.style.setProperty("--n",count);
+    fit();
+  }
+
+  /* ---------- התכווצות עצמית ----------
+     כל חדר מודד את עצמו ומקטין את הטיפוגרפיה עד שהתוכן נכנס.
+     אין גדלים קבועים: ארבעה חדרים נראים אחרת משמונה, והמסך
+     לא נחתך באף אחד מהם. --mk הוא אותו מנגנון שכבר קיים במסך. */
+  function fitOne(el){
+    var mk=1;
+    el.style.setProperty("--mk",mk);
+    var guard=0;
+    while(el.scrollHeight>el.clientHeight+1 && mk>0.5 && guard++<40){
+      mk=Math.round((mk-0.035)*1000)/1000;
+      el.style.setProperty("--mk",mk);
+    }
+  }
+  function fit(){
+    var rooms=document.querySelectorAll("#rooms .room");
+    for(var i=0;i<rooms.length;i++) fitOne(rooms[i]);
+  }
+
+  window.addEventListener("resize",function(){ clearTimeout(window._ft);
+    window._ft=setTimeout(fit,120); });
+
+  /* ---------- כפתורי בדיקה (רק בתצוגה) ---------- */
+  var bar=document.createElement("div");
+  bar.className="probe";
+  bar.innerHTML='<span>חדרים:</span>'+[2,3,4,5,6,8].map(function(n){
+    return '<button data-n="'+n+'"'+(n===4?' class="on"':'')+'>'+n+'</button>';}).join("");
+  document.body.appendChild(bar);
+  bar.addEventListener("click",function(e){
+    var b=e.target.closest("button"); if(!b)return;
+    bar.querySelectorAll("button").forEach(function(x){x.classList.remove("on");});
+    b.classList.add("on");
+    render(+b.dataset.n);
+  });
+
+  render(4);
+})();
+</script>
+</body></html>
