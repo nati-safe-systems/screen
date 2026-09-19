@@ -103,9 +103,135 @@ body{font-family:var(--f-body)!important;-webkit-font-smoothing:antialiased}
 .mcard,.room,.sc,.ann{box-shadow:0 .6vh 2.2vh rgba(0,0,0,.45),inset 0 .1vh 0 rgba(255,255,255,.06)}
 
 #nsf-ver{position:fixed;bottom:3px;right:6px;z-index:9500;pointer-events:none;font:600 10px Heebo,Assistant,Arial,sans-serif;color:rgba(255,255,255,.35);direction:rtl}
+
+/* =====================================================================
+   ערכת "שיש וזהב" — שכבת עיצוב מלאה
+   ---------------------------------------------------------------------
+   נדלקת רק כש-body מקבל class="marble", כלומר כשנבחרה הערכה marble.
+   בכל ערכה אחרת הכללים כאן אינם חלים והמסך נראה כמקודם.
+
+   בשילוט של המעצב התוכן יושב על לוחות שנהב בתוך מסגרות זהב, ולא על
+   רקע כהה. זה ההבדל המרכזי מול שאר הערכות, ולכן כאן משתנים הצבעים,
+   המסגרות והטיפוגרפיה — לא רק הגוון.
+   ===================================================================== */
+body.marble{
+  --gw:#fff4c9; --gh:#f2d783; --gd:#d4ab4a; --gm:#a8802a; --gk:#6b4d16;
+  --iv:#f8f4e8; --iv2:#efe8d4; --ink:#1d1710; --ink2:#6b5a38;
+  background:#0a0806;
+}
+body.marble::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(120% 80% at 8% 3%,rgba(201,146,46,.17),transparent 46%),
+    radial-gradient(90% 70% at 4% 95%,rgba(224,168,60,.18),transparent 48%),
+    linear-gradient(152deg,#151109,#0a0806 44%,#0c0906 72%,#161109);}
+body.marble::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.55;
+  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 900' preserveAspectRatio='none'><g fill='none' stroke-linecap='round'><path d='M0 58 L78 40 L130 76 L216 36 L272 62' stroke='%23e8c766' stroke-width='2.6' opacity='.9'/><path d='M78 40 L92 8 M130 76 L142 108' stroke='%23c09433' stroke-width='1.6' opacity='.6'/><path d='M1600 120 L1516 96 L1458 134 L1386 100' stroke='%23e8c766' stroke-width='2.3' opacity='.75'/><path d='M0 820 L86 844 L152 806 L232 846' stroke='%23e8c766' stroke-width='2.1' opacity='.6'/></g></svg>") 0 0/100% 100%;}
+body.marble .main,body.marble .hdr,body.marble .ft{position:relative;z-index:2}
+
+/* ---- הלוח המוזהב, היחידה הבסיסית ---- */
+body.marble .col,
+body.marble .center,
+body.marble .room{
+  position:relative;
+  background:linear-gradient(172deg,var(--iv),var(--iv2))!important;
+  color:var(--ink)!important;border:0!important;
+  box-shadow:0 0 0 .18vh var(--gm),0 0 0 .5vh #0a0806,0 0 0 .66vh var(--gd),
+             0 1vh 3vh rgba(0,0,0,.6);}
+body.marble .main{gap:1vw;padding:1.2vh 1.1vw;background:transparent}
+body.marble .col{margin:0}
+body.marble .center{margin:0}
+/* לוח המודעות נשאר כהה, לניגוד מול השנהב */
+body.marble .center{background:linear-gradient(168deg,rgba(28,21,12,.95),rgba(10,8,6,.96))!important;
+  color:var(--iv)!important}
+body.marble #bgimg,body.marble #bgveil{opacity:.12}
+
+/* פילסטר מחורץ לאורך צדי הלוח */
+body.marble .col::before,body.marble .col::after,
+body.marble .room::before,body.marble .room::after{
+  content:"";position:absolute;top:4.4vh;bottom:4.4vh;width:.8vw;pointer-events:none;
+  opacity:.45;z-index:1;
+  background:repeating-linear-gradient(90deg,var(--gm) 0 .1vw,transparent .1vw .34vw)}
+body.marble .col::before,body.marble .room::before{right:.2vw}
+body.marble .col::after,body.marble .room::after{left:.2vw}
+body.marble .ocn{position:absolute;width:4.4vh;height:4.4vh;pointer-events:none;z-index:3}
+body.marble .room>.ocn{width:3.2vh;height:3.2vh}
+body.marble .col>*:not(.ocn),body.marble .center>*:not(.ocn),
+body.marble .room>*:not(.ocn){position:relative;z-index:4}
+
+/* ---- טור ימין ---- */
+body.marble #clock{color:var(--ink);text-shadow:0 .15vh 0 rgba(255,255,255,.7)}
+body.marble #clock .sec{color:var(--gm)}
+body.marble .dt{color:var(--ink);font-family:"Suez One",serif}
+body.marble .dt2{color:var(--ink2)}
+body.marble .par{background:linear-gradient(170deg,#241a0c,#120d06);color:var(--gh);
+  border:0;box-shadow:0 0 0 .14vh var(--gm);border-radius:0;font-family:"Suez One",serif}
+body.marble .bt{color:var(--ink2);border-bottom:.2vh dotted rgba(168,128,42,.55);
+  font-family:"Frank Ruhl Libre",serif}
+body.marble .zr{color:var(--ink2);border-bottom:.1vh solid rgba(168,128,42,.25)}
+body.marble .zr b{color:var(--ink)}
+body.marble .warn{color:#9a3a22}
+
+/* ---- מרכז ---- */
+body.marble .ttl{background:transparent;border:0}
+body.marble .ttl small{color:rgba(242,215,131,.62)}
+body.marble .ttl b{font-family:"Suez One",serif;
+  background:linear-gradient(177deg,var(--gw) 3%,var(--gh) 27%,var(--gd) 55%,var(--gm) 80%,var(--gk));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+body.marble #siteLogo{max-height:6vh;display:none;margin:0 auto .3vh}
+body.marble #siteLogo.on{display:block}
+body.marble .ann{background:transparent;border:0;border-radius:0}
+body.marble .ann h3{color:var(--gh);border-bottom:.2vh dotted rgba(212,171,74,.45)}
+body.marble .aitem{border-right:.4vh solid var(--gd)}
+body.marble .aitem .at{color:var(--iv)}
+body.marble .aitem .ab{color:rgba(242,235,215,.72)}
+
+/* ---- טור שמאל ---- */
+body.marble .col.l{background:transparent!important;box-shadow:none!important;padding:0}
+body.marble .col.l::before,body.marble .col.l::after{display:none}
+body.marble .col.l>.bt{display:none}
+body.marble #mlist{gap:.7vh}
+body.marble .room{padding:calc(var(--mk,1) * .9vh) calc(var(--mk,1) * 1.4vw)}
+body.marble .room .rn{color:var(--ink);font-family:"Suez One",serif;
+  border-bottom:.2vh dotted rgba(168,128,42,.55)}
+body.marble .prow>span{color:var(--ink2)}
+body.marble .prow>b{justify-items:center}
+body.marble .prow i{color:var(--ink);background:rgba(168,128,42,.14);
+  border:.1vh solid rgba(168,128,42,.4);border-radius:0}
+body.marble .prow i.nx{color:var(--iv);background:linear-gradient(175deg,#2c1f0b,#191106);
+  border-color:var(--gh);box-shadow:0 0 1.4vh rgba(242,215,131,.45)}
+body.marble .prow i.roll{color:#7a3d12;background:rgba(200,140,70,.16);
+  border-color:rgba(200,140,70,.45)}
+body.marble .hdr{background:transparent;border-bottom:.2vh dotted rgba(212,171,74,.5);
+  color:var(--gh)}
+body.marble .ft{background:transparent}
+
 </style></head><body>
 
 
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="mbg" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" style="stop-color:#fff4c9"/><stop offset="28%" style="stop-color:#f2d783"/>
+    <stop offset="58%" style="stop-color:#d4ab4a"/><stop offset="100%" style="stop-color:#6b4d16"/>
+  </linearGradient>
+  <!-- פינת מסגרת: כותרת מדורגת, חריצים, וולוטה ספירלית.
+       מצוירת כפינה ימנית-עליונה וסימטרית סביב האלכסון. -->
+  <symbol id="mbcn" viewBox="0 0 200 200">
+    <g fill="none" stroke="url(#mbg)" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M186 14 H52" stroke-width="7"/><path d="M186 14 V150" stroke-width="7"/>
+      <path d="M168 34 H78" stroke-width="2.6" opacity=".9"/>
+      <path d="M168 34 V124" stroke-width="2.6" opacity=".9"/>
+      <path d="M150 14 V34 M134 14 V34 M118 14 V34" stroke-width="2.2" opacity=".65"/>
+      <path d="M186 50 H168 M186 66 H168 M186 82 H168" stroke-width="2.2" opacity=".65"/>
+      <path d="M52 14 C30 14 17 28 17 48 C17 66 30 78 48 78 C62 78 72 67 72 54
+               C72 44 64 36 54 36 C47 36 42 42 42 48" stroke-width="5.4"/>
+      <path d="M186 150 C186 172 172 185 152 185 C134 185 122 172 122 154
+               C122 140 133 130 146 130 C156 130 164 138 164 148 C164 155 158 160 152 160"
+            stroke-width="5.4"/>
+      <circle cx="96" cy="96" r="5" fill="url(#mbg)" stroke="none"/>
+    </g>
+  </symbol>
+</defs></svg>
 
 <div class="main">
   <div class="col r">
@@ -120,7 +246,7 @@ body{font-family:var(--f-body)!important;-webkit-font-smoothing:antialiased}
 
   <div class="center">
     <div id="bgimg"></div><div id="bgveil"></div>
-    <div class="ttl"><small>לוח המודעות של</small><b id="ttlName">—</b></div>
+    <div class="ttl"><img id="siteLogo" alt=""><small>לוח המודעות של</small><b id="ttlName">—</b></div>
     <div class="bsd">בס"ד</div>
     <div class="ann" id="ann"></div>
   </div>
@@ -1950,23 +2076,64 @@ setInterval(function(){ZDAY="";load();},5*60*1000);
 setInterval(fetchParasha, 60*60*1000);
 setTimeout(fetchParasha, 3000);
 /* ---- החלת ערכת העיצוב ----
-   SITE מגיע אסינכרונית מ-Supabase, ואירוע load עלול להקדים אותו,
-   ואז הערכה נקבעת לפני שהנתונים הגיעו. לכן היא נבדקת שוב עד
-   שהנתונים מגיעים, ומוחלת מחדש בכל שינוי — כך ששינוי ערכה באדמין
-   נכנס לתוקף בלי לגעת בקובץ.
-   סדר עדיפות: ?theme= בכתובת, אחריו הערכה של האתר, ואם אין — marble. */
+   SITE מגיע אסינכרונית מ-Supabase, ואירוע load עלול להקדים אותו.
+   לכן הערכה נבדקת שוב עד שהנתונים מגיעים, ומוחלת מחדש בכל שינוי.
+   סדר עדיפות: ?theme= בכתובת, אחריו הערכה של האתר, ואם אין — marble.
+
+   marble אינה ערכת מסגרות של NatiOrnate אלא עיצוב מלא: לוחות שנהב,
+   מסגרות זהב ופילסטרים. לכן בזמן שהיא פעילה NatiOrnate מכובה,
+   והפינות מוזרקות ישירות ללוחות. */
 (function(){
   var last=null;
+
+  var CORNERS=['top:-.2vh;right:-.2vh','top:-.2vh;left:-.2vh;transform:scaleX(-1)',
+    'bottom:-.2vh;right:-.2vh;transform:scaleY(-1)','bottom:-.2vh;left:-.2vh;transform:scale(-1,-1)']
+    .map(function(p){return '<svg class="ocn" style="'+p+'" xmlns:xlink="http://www.w3.org/1999/xlink">'+
+      '<use href="#mbcn" xlink:href="#mbcn"/></svg>';}).join("");
+
+  function addCorners(el){
+    if(!el || el.querySelector(":scope > .ocn")) return;
+    el.insertAdjacentHTML("afterbegin", CORNERS);
+  }
+  function dropCorners(){
+    var l=document.querySelectorAll(".ocn");
+    for(var i=0;i<l.length;i++) l[i].remove();
+  }
+  function marbleDecorate(){
+    addCorners(document.querySelector(".col.r"));
+    addCorners(document.querySelector(".center"));
+    var rooms=document.querySelectorAll("#mlist .room");
+    for(var i=0;i<rooms.length;i++) addCorners(rooms[i]);
+  }
+
+  /* לוגו בית הכנסת — מהשדה logo_url של האתר */
+  function setLogo(){
+    var img=document.getElementById("siteLogo"); if(!img) return;
+    var u=(SITE && (SITE.logo_url||SITE.logo)) || "";
+    if(u){ img.src=u; img.className="on"; } else { img.removeAttribute("src"); img.className=""; }
+  }
+
   function applyTheme(){
     var TH=(Q.get("theme"))||(SITE&&SITE.theme)||"marble";
-    if(TH===last) return;
+    setLogo();
+    if(TH===last){ if(TH==="marble") marbleDecorate(); return; }
     last=TH;
-    try{ NatiOrnate.apply({theme:TH,replace:true,outer:13,panel:5,panels:[".ann",".col.r",".col.l"],watch:[".room"]}); }catch(e){}
+    if(TH==="marble"){
+      document.body.classList.add("marble");
+      try{ NatiOrnate.apply({theme:"none",replace:true}); }catch(e){}
+      marbleDecorate();
+      setInterval(marbleDecorate, 2000);
+    }else{
+      document.body.classList.remove("marble");
+      dropCorners();
+      try{ NatiOrnate.apply({theme:TH,replace:true,outer:13,panel:5,
+            panels:[".ann",".col.r",".col.l"],watch:[".room"]}); }catch(e){}
+    }
   }
   window.addEventListener("load", applyTheme);
   setTimeout(applyTheme, 1200);
   setInterval(applyTheme, 5000);
 })();
 load(); tick();
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 1.6 · 19.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 1.7 · 20.09.26</div>
 </body></html>
