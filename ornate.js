@@ -1,9 +1,38 @@
 /* =====================================================================
-   נתי SAFE — ערכות עיצוב  ·  v3.0
+   נתי SAFE — ערכות עיצוב  ·  v3.2
    ---------------------------------------------------------------------
-   עשר ערכות, מהעדינה ביותר ועד המפוארת ביותר.
+   חמש עשרה ערכות, מהעדינה ביותר ועד המפוארת ביותר.
    נבחרות מממשק הניהול:  display_config.theme
    הכל וקטורי — חד בכל רזולוציה, בלי תמונות חיצוניות.
+
+   חדש ב-3.1
+   ---------
+   1. הערכה קובעת גם את צבעי התוכן, לא רק את המסגרות.
+      עד 3.0 הערכה עיצבה מסגרות ופאנלים בלבד, וצבעי השעון, התאריך
+      ושעות המניינים היו קבועים בקובץ המסך. התוצאה: בכל ארבע עשרה
+      הערכות השעון נשאר צהוב והשעות ירוקות.
+      עכשיו הערכה מפרסמת משתני CSS על :root, והמסך נשען עליהם:
+
+        --nsf-hi     כותרות ומספרי השעון
+        --nsf-gold   מתכת משנית, קווים מפרידים
+        --nsf-deep   הצללה של המתכת
+        --nsf-ink    טקסט ראשי
+        --nsf-dim    טקסט משני
+        --nsf-chip   שעות המניינים
+        --nsf-line   קווי הפרדה
+        --nsf-bg     רקע המסך
+
+      לכל ערכה קיימת נקבעו ערכים שמשחזרים בדיוק את המראה של 3.0,
+      ולכן מסך שכבר מותקן לא משנה את מראהו.
+
+   2. ערכה חדשה: marble — שיש וזהב, לפי השילוט של המרכז הרוחני.
+
+   חדש ב-3.2
+   ---------
+   3. shape:'pilaster' — צורת עיטור שנייה, משוחזרת מהשילוט עצמו:
+      פילסטר עם כותרת מדורגת, חריצים אנכיים וולוטות ספירליות בפינות,
+      זוג סלסולים בקצוות ומפריד מנוקד. ערכות ללא shape ממשיכות
+      להשתמש בעיטור הגנרי בדיוק כמקודם.
    ===================================================================== */
 (function (root) {
   'use strict';
@@ -19,44 +48,78 @@
      tex      = עוצמת הדמאסק ברקע                                   */
   var THEMES = {
     minimal:  { name:'מודרני נקי',      c1:'#e8eef6', c2:'#9fb3cc', c3:'#5b708c',
-                bg1:'rgba(14,20,32,.62)', bg2:'rgba(6,10,18,.8)',  orn:0, shine:0,  band:.5,  tex:0,    vig:.28 },
+                bg1:'rgba(14,20,32,.62)', bg2:'rgba(6,10,18,.8)',  orn:0, shine:0,  band:.5,  tex:0,    vig:.28,
+                hi:'#dfe9f5', chip:'#9fd9ff', ink:'#e6edf3', dim:'#9fb3cc' },
     slim:     { name:'קו זהב עדין',     c1:'#fff4cf', c2:'#d9b451', c3:'#8a6a1f',
-                bg1:'rgba(12,18,30,.6)',  bg2:'rgba(5,9,17,.82)',  orn:1, shine:0,  band:.7,  tex:.03,  vig:.34 },
+                bg1:'rgba(12,18,30,.6)',  bg2:'rgba(5,9,17,.82)',  orn:1, shine:0,  band:.7,  tex:.03,  vig:.34,
+                hi:'#ffd227', chip:'#00ff88', ink:'#e6edf3', dim:'#9fc0e4' },
     classic:  { name:'קלאסי זהב',       c1:'#fff4cf', c2:'#e8c86a', c3:'#a37f2a',
-                bg1:'rgba(10,16,32,.7)',  bg2:'rgba(4,8,18,.86)',  orn:2, shine:14, band:1.2, tex:.05,  vig:.42 },
+                bg1:'rgba(10,16,32,.7)',  bg2:'rgba(4,8,18,.86)',  orn:2, shine:14, band:1.2, tex:.05,  vig:.42,
+                hi:'#ffd227', chip:'#00ff88', ink:'#e6edf3', dim:'#a3d1ff' },
     royal:    { name:'זהב מלכותי',      c1:'#fff8e2', c2:'#f0cf72', c3:'#8f6f22',
-                bg1:'rgba(12,10,30,.74)', bg2:'rgba(5,4,16,.9)',   orn:2, shine:11, band:1.9, tex:.08,  vig:.5  },
+                bg1:'rgba(12,10,30,.74)', bg2:'rgba(5,4,16,.9)',   orn:2, shine:11, band:1.9, tex:.08,  vig:.5,
+                hi:'#f0cf72', chip:'#ffe3a0', ink:'#f4ecd8', dim:'#c9b58c'  },
     jerusalem:{ name:'ירושלים',         c1:'#f6e7c8', c2:'#cbb083', c3:'#8b7448',
-                bg1:'rgba(38,30,20,.66)', bg2:'rgba(20,15,9,.86)', orn:2, shine:16, band:1.3, tex:.07,  vig:.4  },
+                bg1:'rgba(38,30,20,.66)', bg2:'rgba(20,15,9,.86)', orn:2, shine:16, band:1.3, tex:.07,  vig:.4,
+                hi:'#f0dcb0', chip:'#e8c98a', ink:'#f4ead6', dim:'#c2ac86'  },
     sapphire: { name:'כחול מלכותי',     c1:'#dbe9ff', c2:'#7fa8e0', c3:'#2c4d86',
-                bg1:'rgba(8,18,44,.74)',  bg2:'rgba(3,8,24,.9)',   orn:2, shine:13, band:1.4, tex:.06,  vig:.46 },
+                bg1:'rgba(8,18,44,.74)',  bg2:'rgba(3,8,24,.9)',   orn:2, shine:13, band:1.4, tex:.06,  vig:.46,
+                hi:'#bcd8ff', chip:'#7fe6ff', ink:'#e8f1ff', dim:'#8fb0d8' },
     burgundy: { name:'בורדו ויין',      c1:'#ffd9c9', c2:'#c9756a', c3:'#7a2a28',
-                bg1:'rgba(38,8,12,.72)',  bg2:'rgba(18,3,6,.9)',   orn:2, shine:13, band:1.5, tex:.07,  vig:.48 },
+                bg1:'rgba(38,8,12,.72)',  bg2:'rgba(18,3,6,.9)',   orn:2, shine:13, band:1.5, tex:.07,  vig:.48,
+                hi:'#ffcdb8', chip:'#ffb08e', ink:'#f8e9e4', dim:'#c9968c' },
     emerald:  { name:'ירוק אזמרגד',     c1:'#d8ffe9', c2:'#6fc79a', c3:'#1f6b4a',
-                bg1:'rgba(4,30,22,.72)',  bg2:'rgba(2,14,10,.9)',  orn:2, shine:13, band:1.4, tex:.06,  vig:.46 },
+                bg1:'rgba(4,30,22,.72)',  bg2:'rgba(2,14,10,.9)',  orn:2, shine:13, band:1.4, tex:.06,  vig:.46,
+                hi:'#b6ffd9', chip:'#6fffb0', ink:'#e6fff2', dim:'#8cc4a8' },
     platinum: { name:'שחור ופלטינה',    c1:'#ffffff', c2:'#c9d2dc', c3:'#6d7a88',
-                bg1:'rgba(10,10,12,.78)', bg2:'rgba(3,3,4,.92)',   orn:1, shine:18, band:1.1, tex:.04,  vig:.5  },
+                bg1:'rgba(10,10,12,.78)', bg2:'rgba(3,3,4,.92)',   orn:1, shine:18, band:1.1, tex:.04,  vig:.5,
+                hi:'#ffffff', chip:'#d8e4f0', ink:'#f0f4f8', dim:'#98a4b0'  },
     /* מבנה שונה: מסגרת כפולה דקה, בלי עיטורי פינה, בלי דמאסק */
     scroll:   { name:'מגילה — קווים כפולים', c1:'#f6ecd2', c2:'#cdb27a', c3:'#7d6535',
                 bg1:'rgba(26,22,16,.72)', bg2:'rgba(12,10,7,.88)',
-                orn:0, shine:0, band:.28, tex:0, vig:.36, dbl:1, pad:2.2 },
+                orn:0, shine:0, band:.28, tex:0, vig:.36, dbl:1, pad:2.2,
+                hi:'#f0dcae', chip:'#dcc188', ink:'#f2e9d6', dim:'#b8a480' },
     /* קווי מתאר בלבד — בלי מילוי, אוורירי מאוד */
     outline:  { name:'קו מתאר — אוורירי', c1:'#ffffff', c2:'#8fa6bd', c3:'#42546b',
                 bg1:'rgba(0,0,0,0)', bg2:'rgba(0,0,0,0)',
-                orn:0, shine:0, band:.22, tex:0, vig:.22, thin:1, pad:2.6 },
+                orn:0, shine:0, band:.22, tex:0, vig:.22, thin:1, pad:2.6,
+                hi:'#ffffff', chip:'#b4cbe2', ink:'#eef3f8', dim:'#8fa6bd' },
     /* קטיפה — בלי מסגרות חדות, זוהר רך */
     velvet:   { name:'קטיפה — רך וזוהר', c1:'#ffd9ea', c2:'#b3557f', c3:'#5c1f3a',
                 bg1:'rgba(48,10,30,.8)', bg2:'rgba(20,3,12,.92)',
-                orn:1, shine:22, band:1.1, tex:.05, vig:.5, soft:1, pad:2.4 },
+                orn:1, shine:22, band:1.1, tex:.05, vig:.5, soft:1, pad:2.4,
+                hi:'#ffd0e4', chip:'#ff9ec4', ink:'#fde8f2', dim:'#c08ba4' },
     /* אבן ירושלים — מסגרת עבה ומאסיבית */
     stone:    { name:'אבן ירושלים', c1:'#f0e4cc', c2:'#b9a887', c3:'#6f6248',
                 bg1:'rgba(46,40,30,.82)', bg2:'rgba(24,20,14,.92)',
-                orn:2, shine:0, band:2.4, tex:.09, vig:.44, pad:3 },
+                orn:2, shine:0, band:2.4, tex:.09, vig:.44, pad:3,
+                hi:'#f0e4cc', chip:'#dccba4', ink:'#f4ecdc', dim:'#b0a186' },
+    /* שיש שחור חם וזהב — לפי השילוט של המרכז הרוחני, חפציבה */
+    marble:   { name:'שיש וזהב', c1:'#fff4c9', c2:'#d4ab4a', c3:'#6b4d16',
+                bg1:'rgba(24,18,10,.82)', bg2:'rgba(10,8,6,.92)',
+                orn:2, shine:15, band:1.4, tex:.06, vig:.46, pad:2.8,
+                hi:'#f2d783', chip:'#f2d783', ink:'#faf7ef', dim:'#bdae90',
+                bg:'#0a0806', shape:'pilaster' },
     festive:  { name:'חגיגי מפואר',     c1:'#fffbe8', c2:'#ffd76b', c3:'#a06f10',
-                bg1:'rgba(26,8,34,.76)',  bg2:'rgba(10,2,16,.92)', orn:2, shine:8,  band:2.2, tex:.1,   vig:.55 }
+                bg1:'rgba(26,8,34,.76)',  bg2:'rgba(10,2,16,.92)', orn:2, shine:8,  band:2.2, tex:.1,   vig:.55,
+                hi:'#ffd76b', chip:'#ffe9a8', ink:'#fff6e0', dim:'#cbb078' }
   };
 
   var T = THEMES.classic;
+
+  /* צבע עם שקיפות. מקבל #rgb / #rrggbb ומחזיר rgba.
+     אם הערך אינו hex הוא מוחזר כמות שהוא. */
+  function hexA(c,a){
+    if(typeof c!=='string') return c;
+    var h=c.trim();
+    if(h.charAt(0)!=='#') return h;
+    h=h.slice(1);
+    if(h.length===3) h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    if(h.length!==6) return c;
+    var n=parseInt(h,16);
+    if(isNaN(n)) return c;
+    return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')';
+  }
 
   function grad(id){
     return "<defs><linearGradient id='"+id+"' x1='0' y1='0' x2='1' y2='1'>" +
@@ -67,7 +130,32 @@
       "<stop offset='1' stop-color='"+T.c2+"'/></radialGradient></defs>";
   }
 
+  /* ---- עיטור פינה בסגנון פילסטר ----
+     משוחזר מהשילוט של המרכז הרוחני: כותרת מדורגת לאורך שני הקצוות,
+     חריצים אנכיים, ווולוטה ספירלית שמתהדקת פנימה בכל פינה.
+     מצויר כפינה שמאלית-עליונה וסימטרי סביב האלכסון, כך שאותו קובץ
+     משרת את ארבע הפינות בסיבוב — בדיוק כמו שאר העיטורים במודול. */
+  function pilasterSVG(){
+    var g=grad('g');
+    return svg("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'>"+g+
+      "<g fill='none' stroke='url(#g)' stroke-linecap='round' stroke-linejoin='round'>" +
+      /* כותרת מדורגת */
+      "<path d='M14 14 H150' stroke-width='6'/><path d='M14 14 V150' stroke-width='6'/>" +
+      "<path d='M32 32 H122' stroke-width='2.4' opacity='.85'/>" +
+      "<path d='M32 32 V122' stroke-width='2.4' opacity='.85'/>" +
+      /* חריצים */
+      "<path d='M50 14 V32 M66 14 V32 M82 14 V32' stroke-width='2' opacity='.6'/>" +
+      "<path d='M14 50 H32 M14 66 H32 M14 82 H32' stroke-width='2' opacity='.6'/>" +
+      /* וולוטות */
+      "<path d='M150 14 C171 14 183 27 183 47 C183 64 171 76 154 76 C141 76 132 66 132 54" +
+      " C132 45 139 38 148 38 C154 38 159 43 159 49' stroke-width='5'/>" +
+      "<path d='M14 150 C14 171 27 183 47 183 C64 183 76 171 76 154 C76 141 66 132 54 132" +
+      " C45 132 38 139 38 148 C38 154 43 159 49 159' stroke-width='5'/>" +
+      "</g><circle cx='104' cy='104' r='4.6' fill='url(#j)'/></svg>");
+  }
+
   function cornerSVG(level){
+    if (T.shape === 'pilaster') return pilasterSVG();
     var g=grad('g'), core =
       "<path d='M8 8 H120' stroke-width='5'/><path d='M8 8 V120' stroke-width='5'/>" +
       "<path d='M20 20 H92' stroke-width='2'/><path d='M20 20 V92' stroke-width='2'/>";
@@ -90,7 +178,31 @@
       core + (level>1?rich:"") + "</g>" + dots + "</svg>");
   }
 
+  /* קישוט אמצע-קצה: זוג סלסולים, כמו משני צדי הסמל בשילוט */
+  function scrollPairSVG(){
+    return svg("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 70'>"+grad('g')+
+      "<g fill='none' stroke='url(#g)' stroke-width='3.4' stroke-linecap='round'>" +
+      "<path d='M120 35 C96 35 82 18 60 18 C42 18 32 30 32 40 C32 47 37 52 44 52" +
+      " C50 52 54 47 54 41 C54 36 50 32 45 32'/>" +
+      "<path d='M120 35 C144 35 158 18 180 18 C198 18 208 30 208 40 C208 47 203 52 196 52" +
+      " C190 52 186 47 186 41 C186 36 190 32 195 32'/>" +
+      "</g><circle cx='120' cy='35' r='4.4' fill='url(#j)'/></svg>");
+  }
+
+  /* מפריד מנוקד, כמו הקו שמתחת לכותרת בשילוט */
+  function dottedDivSVG(){
+    return svg("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 26'>"+grad('g')+
+      "<g stroke='url(#g)' stroke-width='2.4' stroke-linecap='round' " +
+      "stroke-dasharray='0.1 9' fill='none'>" +
+      "<path d='M12 13 H126'/><path d='M174 13 H288'/></g>" +
+      "<circle cx='150' cy='13' r='3.4' fill='url(#j)'/>" +
+      "<g fill='none' stroke='url(#g)' stroke-width='2'>" +
+      "<path d='M126 13 C135 6 142 9 146 13 C142 17 135 20 126 13Z'/>" +
+      "<path d='M174 13 C165 6 158 9 154 13 C158 17 165 20 174 13Z'/></g></svg>");
+  }
+
   function edgeSVG(){
+    if (T.shape === 'pilaster') return scrollPairSVG();
     return svg("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 70'>"+grad('g')+
       "<g fill='none' stroke='url(#g)' stroke-linecap='round' stroke-linejoin='round'>" +
       "<path d='M6 35 H74' stroke-width='3'/><path d='M166 35 H234' stroke-width='3'/>" +
@@ -102,6 +214,7 @@
   }
 
   function divSVG(){
+    if (T.shape === 'pilaster') return dottedDivSVG();
     return svg("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 26'>"+grad('g')+
       "<g fill='none' stroke='url(#g)' stroke-width='2' stroke-linecap='round'>" +
       "<path d='M10 13 H120'/><path d='M180 13 H290'/>" +
@@ -128,7 +241,24 @@
     var padCss = HOST
       ? HOST+'{padding:'+(T.band*1.4).toFixed(2)+'vh !important;box-sizing:border-box;position:relative}'
       : 'body{padding:'+pad+'vh !important;box-sizing:border-box}';
+    /* ---- פרסום טוקני הערכה כמשתני CSS ----
+       המסך נשען עליהם לצבעי התוכן. ערכי הגיבוי בקובץ המסך זהים
+       לערכי classic, ולכן גם אם ornate.js לא נטען כלל המסך תקין. */
+    var vars = ':root{' +
+      '--nsf-hi:'   + (T.hi   || T.c2)        + ';' +
+      '--nsf-gold:' + T.c2                    + ';' +
+      '--nsf-deep:' + T.c3                    + ';' +
+      '--nsf-ink:'  + (T.ink  || '#e6edf3')   + ';' +
+      '--nsf-dim:'  + (T.dim  || '#9fc0e4')   + ';' +
+      '--nsf-chip:' + (T.chip || '#00ff88')   + ';' +
+      '--nsf-line:' + hexA(T.c2,.34)          + ';' +
+      '--nsf-chip-bd:' + hexA(T.chip||'#00ff88',.24) + ';' +
+      '--nsf-chip-bg:' + hexA(T.chip||'#00ff88',.09) + ';' +
+      (T.bg ? '--nsf-bg:' + T.bg + ';' : '') +
+      '}';
+
     return [
+      vars,
       padCss,
       '#nsf-frame{position:'+(HOST?'absolute':'fixed')+';inset:0;z-index:8000;pointer-events:none}',
       '#nsf-frame .band{position:absolute;inset:0;border:'+T.band+'vh solid transparent;',
