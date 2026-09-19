@@ -79,25 +79,34 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
 .wm #rch{font-size:calc(var(--sbs,1) * 1.05vw);}
 #dow{font-size:calc(var(--sbs,1) * 1.3vw);color:#a3d1ff;text-align:center;font-weight:900;margin:2px 0;letter-spacing:1px;}
 .ic{background:rgba(255,255,255,0.05);border:1px solid rgba(255,204,0,0.3);border-radius:12px;padding:5px;text-align:center;margin-bottom:4px;}
-#par{font-size:1.55vw;color:#ffcc00;font-family:"Frank Ruhl Libre",serif;font-weight:900;display:block;text-align:center;}
-.ist{font-size:0.95vw;color:#fff;font-weight:700;display:block;margin-top:2px;text-align:center;}
+#par{font-size:calc(var(--sbs,1) * 1.55vw);color:var(--nsf-gold,#ffcc00);font-family:"Frank Ruhl Libre",serif;font-weight:900;display:block;text-align:center;}
+/* השורה השנייה בקוביית הפרשה — ערב חג, חול המועד, ראש חודש וכו'.
+   מוגדלת ומובלטת, אך מוקטנת יחד עם שאר הסרגל דרך --sbs כדי שלא
+   תדרוס טקסט אחר כשהתוכן מתארך. */
+.ist{font-size:calc(var(--sbs,1) * 1.22vw);color:#fff;font-weight:900;display:block;
+  margin-top:calc(var(--sbs,1) * 5px);padding-top:calc(var(--sbs,1) * 4px);text-align:center;
+  letter-spacing:.3px;line-height:1.25;
+  border-top:1px solid var(--nsf-line,rgba(255,204,0,0.3));
+  text-shadow:0 0 calc(var(--sbs,1) * 10px) rgba(255,204,0,0.35);}
+.ist:empty{display:none;}
+.wm .ist{font-size:calc(var(--sbs,1) * 1.05vw);}
 #spb{display:none;background:linear-gradient(180deg,rgba(0,95,190,0.55),rgba(0,55,125,0.45));border:1px solid rgba(130,205,255,0.65);border-radius:10px;padding:5px 8px;margin-bottom:4px;font-size:calc(var(--sbs,1) * 0.95vw);color:#eaf6ff;line-height:1.35;text-align:center;box-shadow:0 0 12px rgba(80,170,255,0.3), inset 0 0 10px rgba(130,205,255,0.1);}
 #spb .st{font-weight:900;color:#a8dcff;font-size:calc(var(--sbs,1) * 1.2vw);display:block;margin-bottom:2px;letter-spacing:0.5px;text-align:center;text-shadow:0 0 10px rgba(130,205,255,0.6);}
 #spb #spc{display:block;text-align:center;font-weight:700;font-size:calc(var(--sbs,1) * 0.95vw);color:#e6f4ff;}
 .zc{display:flex;flex-direction:column;gap:2px;padding:1px 0;margin-top:6px;}
 .zr{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.08);font-size:calc(var(--sbs,1) * 1.25vw);font-weight:600;}
-.zv{color:#00ff88;font-weight:800;font-size:1.35vw;}
+.zv{color:var(--nsf-chip,#00ff88);font-weight:800;font-size:calc(var(--sbs,1) * 1.35vw);}
 .wt{font-size:calc(var(--sbs,1) * 0.9vw);color:#ff5555;text-align:center;margin-top:3px;font-weight:700;}
 #shb{display:none;background:rgba(128,0,0,0.4);border:2px solid #ffcc00;border-radius:12px;padding:calc(var(--sbs,1) * 6px) calc(var(--sbs,1) * 12px);margin-bottom:4px;}
 .sc-spacer{flex:1 1 auto;min-height:0;}
 .sht{color:#ffcc00;font-weight:800;font-size:calc(var(--sbs,1) * 1.1vw);text-align:center;margin-bottom:3px;display:block;border-bottom:1px solid #ffcc00;padding-bottom:2px;}
 .wm .zr{padding:1.5px 0;font-size:calc(var(--sbs,1) * 1.05vw);}
-.wm .zv{font-size:1.1vw;}
+.wm .zv{font-size:calc(var(--sbs,1) * 1.1vw);}
 .wm #timer{font-size:calc(var(--sbs,1) * 3.2vw);}
 .wm #dh{font-size:calc(var(--sbs,1) * 1.1vw);}
 .wm #dow{font-size:calc(var(--sbs,1) * 1.2vw);}
 .wm .ic{padding:4px;margin-bottom:3px;}
-.wm #par{font-size:1.35vw;}
+.wm #par{font-size:calc(var(--sbs,1) * 1.35vw);}
 .wm #shb{padding:4px 10px;border-width:1px;}
 .ft{padding:3px 10px 4px;text-align:center;border-top:1px solid rgba(255,255,255,0.1);background:rgba(10,15,30,0.98);display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;}
 .fl{width:36px;height:36px;border-radius:50%;object-fit:cover;}
@@ -3311,6 +3320,21 @@ function upd(){
   var mevEl=document.getElementById("shb-mev");
   if(isWE||ec||ch){
     document.getElementById("shb").style.display="block";scc.className="sc wm";
+    /* ---- תוויות הקובייה: שבת, חג, או שניהם ----
+       בערב יו"ט שחל בשישי, וביו"ט שחל בשבת, שתי הקדושות נכנסות יחד
+       ולכן מוצגות שתיהן. ביום חול שהוא ערב חג או חג — רק החג. */
+    var _d=now.getDay(), _both=( _d===5 && ec ) || ( _d===6 && ch );
+    var _lblT, _lblIn, _lblOut;
+    if(_both){
+      _lblT="זמני כניסת שבת ויו\"ט"; _lblIn="כניסת שבת ויו\"ט"; _lblOut="צאת שבת ויו\"ט";
+    }else if(_d===5||_d===6||(_d===4&&!ec&&!ch)){
+      _lblT="זמני שבת קודש";        _lblIn="כניסת שבת";        _lblOut="יציאת שבת";
+    }else{
+      _lblT="זמני כניסת החג";       _lblIn="כניסת החג";        _lblOut="צאת החג";
+    }
+    document.getElementById("sht").textContent=_lblT;
+    document.getElementById("li").textContent=_lblIn;
+    document.getElementById("lo").textContent=_lblOut;
     document.getElementById("si").textContent=fmt(shIn);document.getElementById("so2").textContent=fmt(tm.tz);document.getElementById("rt").textContent=fmt(tm.rt);
     document.getElementById("sho-in").textContent=fmt(shIn);document.getElementById("sho-out").textContent=fmt(tm.tz);document.getElementById("sho-rt").textContent=fmt(tm.rt);
     if(mev && DC && DC.zmanim){
@@ -3556,6 +3580,6 @@ function start(){
 (function(){chkLic(function(){if(ok)start();});})();
 
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 7.7</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 7.8</div>
 </body>
 </html>
