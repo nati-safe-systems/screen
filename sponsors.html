@@ -1615,6 +1615,41 @@ body{font-family:var(--f-body)!important;-webkit-font-smoothing:antialiased}
 
 
 var SB="https://cxtrrejclkhqhkqbicmz.supabase.co", SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dHJyZWpjbGtocWhrcWJpY216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTk3MDksImV4cCI6MjA5NTU3NTcwOX0._7wB4YwrYEnK6hWuR6YqcFxRb05OLnWvOelIC-ahIEQ";
+/* ---- עדכון גרסה מרחוק ----
+   זהה למנגנון שב-index.html: בודק כל שתי דקות אם פורסם עדכון באדמין,
+   ואם כן מרענן פעם אחת עם ביטול מטמון. בלי זה המסך נשאר על הקובץ
+   הישן עד הפעלה מחדש ידנית — וזו הסיבה שהעלאה לשרת לא נראתה במסך. */
+(function(){
+  var seen=null, KEY="nsf_refresh_token";
+  function saveAudioPos(){
+    try{
+      if(window._au && !window._au.paused)
+        sessionStorage.setItem("nsf_audio_pos",
+          JSON.stringify({i:window._auIdx||0, t:window._au.currentTime||0}));
+    }catch(e){}
+  }
+  function check(){
+    fetch(SB+"/rest/v1/app_refresh?id=eq.1&select=token",
+      {headers:{apikey:SK,Authorization:"Bearer "+SK},cache:"no-store"})
+      .then(function(r){return r.json();})
+      .then(function(rows){
+        if(!Array.isArray(rows)||!rows.length)return;
+        var t=String(rows[0].token||"");
+        if(seen===null){ seen=t; try{ localStorage.setItem(KEY,t); }catch(e){} return; }
+        if(t!==seen){
+          seen=t;
+          try{ localStorage.setItem(KEY,t); }catch(e){}
+          saveAudioPos();
+          var u=location.href.replace(/([?&])_v=\d+/,"").replace(/[?&]$/,"");
+          u += (u.indexOf("?")>-1?"&":"?")+"_v="+Date.now();
+          location.replace(u);
+        }
+      }).catch(function(){});
+  }
+  setTimeout(check, 8000);
+  setInterval(check, 120000);
+})();
+
 var Q=new URLSearchParams(location.search);
 var SITE_ID=Q.get("site")||"", SCREEN_ID=Q.get("id")||"";
 function sf(p){return fetch(SB+"/rest/v1/"+p,{headers:{apikey:SK,Authorization:"Bearer "+SK},cache:"no-store"})
@@ -1715,10 +1750,24 @@ function tick(){
 }
 setInterval(tick,1000);
 setInterval(function(){ZDAY="";load();},5*60*1000);
-window.addEventListener("load",function(){ try{
-  var TH=(Q.get("theme"))||(SITE&&SITE.theme)||"marble";
-  NatiOrnate.apply({theme:TH,outer:13,panel:5.5,panels:[],watch:[]});
-}catch(e){} });
+/* ---- החלת ערכת העיצוב ----
+   SITE מגיע אסינכרונית מ-Supabase, ואירוע load עלול להקדים אותו,
+   ואז הערכה נקבעת לפני שהנתונים הגיעו. לכן היא נבדקת שוב עד
+   שהנתונים מגיעים, ומוחלת מחדש בכל שינוי — כך ששינוי ערכה באדמין
+   נכנס לתוקף בלי לגעת בקובץ.
+   סדר עדיפות: ?theme= בכתובת, אחריו הערכה של האתר, ואם אין — marble. */
+(function(){
+  var last=null;
+  function applyTheme(){
+    var TH=(Q.get("theme"))||(SITE&&SITE.theme)||"marble";
+    if(TH===last) return;
+    last=TH;
+    try{ NatiOrnate.apply({theme:TH,replace:true,outer:13,panel:5.5,panels:[],watch:[]}); }catch(e){}
+  }
+  window.addEventListener("load", applyTheme);
+  setTimeout(applyTheme, 1200);
+  setInterval(applyTheme, 5000);
+})();
 load(); tick();
-</script><div id="nsf-ver">נתי SAFE · פרנסים · גרסה 1.2 · 19.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · פרנסים · גרסה 1.3 · 19.09.26</div>
 </body></html>
