@@ -1437,9 +1437,16 @@ function layoutChrome(isPortrait){
    מחושב מקומית מהמנוע העברי, בלי תלות ב-API.
    לוח ארץ ישראל (יום טוב אחד, למעט ראש השנה שהוא יומיים). */
 function isYomTovIL(m,d){
-  if(m===7) return (d===1||d===2||d===15||d===22);   /* ר"ה, סוכות, שמיני עצרת */
-  if(m===1) return (d===15||d===21);                  /* פסח א׳ ושביעי */
-  if(m===3) return (d===6);                           /* שבועות */
+  /* ------------------------------------------------------------------
+     הרשימה הזו מפעילה את השתקת המוזיקה, ולכן חייבת לכלול כל יום שבו
+     אסור להשמיע. עד כאן חסר היה כאן יום כיפור (תשרי י'), ולכן המוזיקה
+     ניגנה ביום כיפור תשפ"ז — בעוד שהתצוגה הציגה "יום כיפור" כראוי,
+     משום ש-gjh מחזיקה רשימה נפרדת שכן כללה אותו.
+     שתי הרשימות חייבות להישאר תואמות. כל שינוי כאן — לבדוק גם ב-gjh.
+     ------------------------------------------------------------------ */
+  if(m===7) return (d===1||d===2||d===10||d===15||d===22); /* ר"ה, יוה"כ, סוכות, שמיני עצרת */
+  if(m===1) return (d===15||d===21);                       /* פסח א׳ ושביעי */
+  if(m===3) return (d===6);                                /* שבועות */
   return false;
 }
 function needsEruvTavshilin(dt){
@@ -1706,6 +1713,71 @@ function zmForDate(d){
 
 /* האם עכשיו שבת, חג, או ערבם — כלומר זמן שבו לא מנגנים.
    מחושב לפי התאריך שנבדק, לא לפי היום הנוכחי. */
+/* =====================================================================
+   תקופות אבלות שבהן המוזיקה מושתקת
+   ---------------------------------------------------------------------
+   שכבה נפרדת מ-isRestNow. משפיעה על המוזיקה בלבד ואינה נוגעת לתצוגה,
+   לזמני הכניסה או למצב שבת — בתקופות האלה הכל מתנהל כרגיל ורק
+   ההשמעה נפסקת.
+
+   מספור החודשים במנוע: ניסן=1, אייר=2, סיוון=3, תמוז=4, אב=5.
+
+   המנהגים חלוקים, ולכן שתי התקופות ניתנות לשינוי מהאדמין:
+
+     display_config.omer_custom
+       "pesach-lag"   ברירת מחדל — מט״ז בניסן ועד ל״ג בעומר
+       "rc-iyar"      מר״ח אייר ועד ערב שבועות
+       "none"         בלי השתקה בספירה
+
+     display_config.metzarim_custom
+       "tammuz17"     ברירת מחדל — מי״ז בתמוז ועד ט׳ באב
+       "rosh-av"      מר״ח אב בלבד
+       "none"         בלי השתקה
+
+   ל״ג בעומר עצמו אינו מושתק בברירת המחדל.
+   ===================================================================== */
+function isMourningNow(now){
+  try{
+    now = now || new Date();
+    var rd = hc_gregToRD(now.getFullYear(), now.getMonth()+1, now.getDate());
+    var h  = hc_fromRD(rd);
+    var m  = h.month, d = h.day;
+
+    /* ---- בין המצרים ותשעה באב ---- */
+    var mz = (DC && DC.metzarim_custom) || "tammuz17";
+    if(mz !== "none"){
+      var inMetz = false;
+      if(mz === "rosh-av"){
+        inMetz = (m===5 && d<=9);
+      }else{
+        inMetz = (m===4 && d>=17) || (m===5 && d<=9);
+      }
+      /* ט׳ באב שחל בשבת נדחה לעשירי, והאבלות נמשכת גם בו */
+      if(!inMetz && m===5 && d===10 && hc_wd(rd-1)===6) inMetz = true;
+      if(inMetz) return true;
+    }
+
+    /* ---- ספירת העומר ---- */
+    var oc = (DC && DC.omer_custom) || "pesach-lag";
+    if(oc !== "none"){
+      if(oc === "rc-iyar"){
+        if(m===2) return true;
+        if(m===3 && d<=5) return true;
+      }else{
+        if(m===1 && d>=16) return true;
+        if(m===2 && d<=17) return true;   /* ל״ג בעומר, י״ח באייר, מותר */
+      }
+    }
+    return false;
+  }catch(e){ return false; }
+}
+
+/* מה שקובע בפועל אם המוזיקה מתנגנת */
+function isMusicMuted(now){
+  now = now || new Date();
+  return isRestNow(now) || isMourningNow(now);
+}
+
 function isRestNow(now){
   try{
     now = now || new Date();
@@ -1765,13 +1837,14 @@ function audioApply(){
   if(!list.length && DC && DC.audio_url) list=[DC.audio_url];
   var url  = list[0] || "";
   var vol  = Math.max(0, Math.min(100, (DC && +DC.audio_volume) || 40)) / 100;
-  var rest = isRestNow(new Date());
+  var rest = isMusicMuted(new Date());
 
   if(!on || !url || rest){
     if(_au){ _au.pause(); _au.remove(); _au=null; }
     try{ if(window._ytPlayer && window._ytPlayer.stopVideo) window._ytPlayer.stopVideo(); }catch(e){}
     var yf=document.getElementById("yt-audio"); if(yf){ yf.remove(); window._ytPlayer=null; }
-    _auState = !on ? "כבוי בהגדרות" : (!url ? "לא הוגדר קישור" : "מושתק — שבת או חג");
+    _auState = !on ? "כבוי בהגדרות" : (!url ? "לא הוגדר קישור"
+               : (isRestNow(new Date()) ? "מושתק — שבת או חג" : "מושתק — תקופת אבלות"));
     try{ musIndicator(); }catch(e){}
     return;
   }
@@ -3219,6 +3292,7 @@ function zmRenderCheck(){
      '<div style="color:#8b949e;word-break:break-all;line-height:1.6">'+
      'מצב: <b>'+(_auState||"לא הופעל")+'</b><br>'+
      'שבת/חג עכשיו: <b>'+(isRestNow(new Date())?"כן — מושתק":"לא")+'</b><br>'+
+     'תקופת אבלות: <b>'+(isMourningNow(new Date())?"כן — מושתק":"לא")+'</b><br>'+
      'קישור: '+((DC&&DC.audio_url)||"—")+'</div>'+
      '<div style="font-size:13px;font-weight:700;margin:10px 0 4px;color:#e6edf3">'+
        'תחזית השתקה לארבעה ימים</div>'+
@@ -3550,6 +3624,6 @@ function start(){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 7.6</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 7.7</div>
 </body>
 </html>
