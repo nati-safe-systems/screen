@@ -1229,6 +1229,22 @@ function getOrCreateToken() {
   return t;
 }
 
+/* חיווי גלוי כשנעילת המכשיר לא נרשמה — כדי שתקלת הרשאות לא תישאר
+   בלתי נראית ותשאיר את המסכים פתוחים לכל מכשיר. */
+function deviceLockWarn(msg){
+  try{
+    var id="nsf-lockwarn", e=document.getElementById(id);
+    if(!e){
+      e=document.createElement("div"); e.id=id;
+      e.style.cssText="position:fixed;left:8px;bottom:56px;z-index:2147482002;"+
+        "background:rgba(120,0,0,.92);color:#ffd9d9;font:700 11px Heebo,Assistant,Arial,sans-serif;"+
+        "padding:4px 10px;border-radius:6px;border:1px solid #ff6b6b;direction:rtl;pointer-events:none;";
+      document.body.appendChild(e);
+    }
+    e.textContent="⚠ "+msg;
+  }catch(e){}
+}
+
 function showDeviceLock() {
   ok = false;
   document.getElementById("lock").style.display = "flex";
@@ -1296,15 +1312,49 @@ function chkLic(cb) {
       // בדיקת device token
       var savedToken = s.device_token || "";
       if(savedToken === "") {
-        // מסך חדש — רשום את הטוקן
+        /* ------------------------------------------------------------
+           רישום המסך למכשיר הזה.
+           עד כאן הקוד כתב ולא בדק כלום: fetch אינו זורק שגיאה כשהשרת
+           מחזיר 401/403, אלא מחזיר תשובה עם ok:false. לכן אם מדיניות
+           RLS חסמה את העדכון, device_token נשאר ריק לנצח וכל מכשיר
+           חדש ראה "ריק", "נרשם" ונכנס — בלי שום הגבלה.
+           עכשיו הכתיבה נבדקת, ואז הערך נקרא מחדש מהשרת כדי לוודא
+           שהוא באמת נשמר. הקריאה החוזרת סוגרת גם תנאי מרוץ: שני
+           מכשירים שנפתחו יחד שניהם ראו ריק ושניהם כתבו, והשני דרס
+           את הראשון. מי שאינו רשום בשרת — ננעל.
+           ------------------------------------------------------------ */
         fetch(SUPA+"/rest/v1/screens?screen_id=eq."+encodeURIComponent(SID),{
           method:"PATCH",
           headers:{"apikey":SKEY,"Authorization":"Bearer "+SKEY,
             "Content-Type":"application/json","Prefer":"return=minimal"},
           body:JSON.stringify({device_token:myToken})
-        }).then(function(){
+        })
+        .then(function(r){
+          if(!r.ok){
+            return r.text().catch(function(){return "";}).then(function(t){
+              throw new Error("PATCH "+r.status+" "+(t||"").slice(0,180));
+            });
+          }
+          /* קריאה חוזרת — מקור האמת הוא השרת, לא ההנחה שהכתיבה עברה */
+          return sbFetch("screens?screen_id=eq."+encodeURIComponent(SID)+"&select=device_token");
+        })
+        .then(function(rows){
+          var stored = (rows && rows[0] && rows[0].device_token) || "";
+          if(stored === myToken){ proceedWithScreen(s,myToken,cb); return; }
+          if(stored === ""){
+            /* הכתיבה לא נחתה. לא נועלים את כל המסכים בשטח בגלל
+               תקלת הרשאות, אבל גם לא שותקים — מציגים אזהרה גלויה. */
+            deviceLockWarn("נעילת המכשיר לא נרשמה בשרת");
+            proceedWithScreen(s,myToken,cb); return;
+          }
+          /* מכשיר אחר הספיק להירשם */
+          showDeviceLock(); if(cb)cb();
+        })
+        .catch(function(err){
+          try{ console.warn("[NatiSAFE] רישום מכשיר נכשל:", err && err.message); }catch(e){}
+          deviceLockWarn("נעילת המכשיר לא נרשמה בשרת");
           proceedWithScreen(s,myToken,cb);
-        }).catch(function(){proceedWithScreen(s,myToken,cb);});
+        });
       } else if(savedToken === myToken) {
         // אותו מכשיר — המשך
         proceedWithScreen(s,myToken,cb);
@@ -3624,6 +3674,6 @@ function start(){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 7.7</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 7.8</div>
 </body>
 </html>
