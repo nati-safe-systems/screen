@@ -155,8 +155,10 @@ body.marble .col::before,body.marble .room::before{right:.2vw}
 body.marble .col::after,body.marble .room::after{left:.2vw}
 body.marble .ocn{position:absolute;width:4.4vh;height:4.4vh;pointer-events:none;z-index:3}
 body.marble .room>.ocn{width:3.2vh;height:3.2vh}
-body.marble .col>*:not(.ocn),body.marble .center>*:not(.ocn),
-body.marble .room>*:not(.ocn){position:relative;z-index:4}
+/* אין לדרוס position של ילדי הלוחות. #bgimg ו-#bgveil הם
+   position:absolute, ודריסתם ל-relative החזירה אותם לזרימה ודחפה
+   את כל התוכן מטה. הפילסטרים יושבים בשוליים ואינם מכסים טקסט,
+   ולכן אין צורך להרים את התוכן מעליהם. */
 
 /* ---- טור ימין ---- */
 body.marble #clock{color:var(--ink);text-shadow:0 .15vh 0 rgba(255,255,255,.7)}
@@ -2135,5 +2137,5 @@ setTimeout(fetchParasha, 3000);
   setInterval(applyTheme, 5000);
 })();
 load(); tick();
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 1.7 · 20.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 1.8 · 20.09.26</div>
 </body></html>
