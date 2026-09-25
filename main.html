@@ -1714,6 +1714,137 @@ body.marble .ft{background:transparent}
 
 
 var SB="https://cxtrrejclkhqhkqbicmz.supabase.co", SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dHJyZWpjbGtocWhrcWJpY216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTk3MDksImV4cCI6MjA5NTU3NTcwOX0._7wB4YwrYEnK6hWuR6YqcFxRb05OLnWvOelIC-ahIEQ";
+
+/* =====================================================================
+   נתי SAFE — שמירת מסך  ·  NatiGuard
+   ---------------------------------------------------------------------
+   עד כה הבדיקה הזו הייתה קיימת ב-index.html בלבד. מסך עם purpose של
+   door / cafe / mikveh / sponsors מופנה מ-index.html לקובץ הייעודי,
+   ושם לא הייתה שום בדיקה — לא רישיון, לא טוקן מסך ולא נעילת מכשיר.
+   התוצאה: כל מי שהחזיק את הכתובת פתח אותה בכל מספר מכשירים.
+
+   המודול הזה זהה בכל קבצי המסכים. שלוש שכבות:
+     1. תוקף רישיון
+     2. טוקן המסך שבכתובת מול השמור בשרת
+     3. נעילת מכשיר — המסך נרשם למכשיר הראשון בלבד
+
+   הרישום נבדק בקריאה חוזרת מהשרת ולא מונח שהצליח, כי fetch אינו
+   זורק שגיאה על 401/403. הקריאה החוזרת סוגרת גם תנאי מרוץ של שני
+   מכשירים שנפתחו יחד.
+
+   אם הרישום נכשל לגמרי המסך ממשיך לעבוד ומציג אזהרה גלויה, כדי
+   שתקלת הרשאות לא תשתיק את ההגנה בלי שאיש ישים לב.
+   ===================================================================== */
+(function(root){
+  'use strict';
+  function el(id){ return document.getElementById(id); }
+
+  function overlay(){
+    if(el("nsf-lock")) return el("nsf-lock");
+    var d=document.createElement("div"); d.id="nsf-lock";
+    d.style.cssText="position:fixed;inset:0;z-index:2147483000;display:none;"+
+      "flex-direction:column;align-items:center;justify-content:center;gap:2.2vh;"+
+      "background:#0a0f1e;color:#fff;direction:rtl;text-align:center;"+
+      "font-family:Heebo,Assistant,Arial,sans-serif;padding:4vh 6vw";
+    d.innerHTML='<div style="font-size:5.5vh;font-weight:900">נתי <span style="color:#ffcc00">SAFE</span></div>'+
+      '<div id="nsf-lock-t" style="font-size:3.2vh;font-weight:800;color:#ffcc00"></div>'+
+      '<div id="nsf-lock-b" style="font-size:2vh;opacity:.8;line-height:1.6;max-width:70vw"></div>'+
+      '<div style="font-size:1.7vh;opacity:.55;margin-top:1.5vh">לתמיכה: 052-717-1280</div>';
+    document.body.appendChild(d);
+    return d;
+  }
+  function lock(title,body){
+    var d=overlay();
+    el("nsf-lock-t").textContent=title;
+    el("nsf-lock-b").textContent=body||"";
+    d.style.display="flex";
+    root.NATI_GUARD_OK=false;
+  }
+  function warn(msg){
+    var id="nsf-gwarn", e=el(id);
+    if(!e){
+      e=document.createElement("div"); e.id=id;
+      e.style.cssText="position:fixed;left:8px;bottom:56px;z-index:2147482002;"+
+        "background:rgba(120,0,0,.92);color:#ffd9d9;font:700 11px Heebo,Assistant,Arial,sans-serif;"+
+        "padding:4px 10px;border-radius:6px;border:1px solid #ff6b6b;direction:rtl;pointer-events:none";
+      document.body.appendChild(e);
+    }
+    e.textContent="\u26A0 "+msg;
+  }
+
+  function q(name){ try{ return new URLSearchParams(location.search).get(name)||""; }catch(e){ return ""; } }
+
+  function check(onPass){
+    var SID=q("id"), TOKEN=q("token");
+    var PREVIEW=q("preview")==="1";
+    if(!SID){ lock("חסר מזהה מסך","הכתובת חייבת לכלול ?id="); return; }
+
+    var KEY="nati_device_token_"+SID, mine;
+    try{
+      mine=localStorage.getItem(KEY);
+      if(!mine){
+        mine="DV-"+Math.random().toString(36).substr(2,8).toUpperCase()+
+             "-"+Date.now().toString(36).toUpperCase();
+        localStorage.setItem(KEY,mine);
+      }
+    }catch(e){ mine="DV-NOSTORE"; }
+
+    var sel="screens?screen_id=eq."+encodeURIComponent(SID)+
+            "&select=screen_token,device_token,license_expiry";
+    function get(){
+      return fetch(SB+"/rest/v1/"+sel,{headers:{apikey:SK,Authorization:"Bearer "+SK},cache:"no-store"})
+        .then(function(r){ return r.json(); });
+    }
+
+    get().then(function(rows){
+      if(!rows || !rows.length){ lock("מסך לא מוכר","המזהה "+SID+" אינו קיים במערכת."); return; }
+      var s=rows[0];
+
+      if(!PREVIEW && s.license_expiry && new Date(s.license_expiry)<=new Date()){
+        lock("הרישיון פג","יש לחדש את הרישיון כדי להמשיך."); return;
+      }
+      if(s.screen_token && TOKEN!==s.screen_token){
+        lock("טוקן שגוי","הכתובת אינה תואמת למסך זה."); return;
+      }
+      if(PREVIEW){ root.NATI_GUARD_OK=true; onPass(); return; }
+
+      var saved=s.device_token||"";
+      if(saved===mine){ root.NATI_GUARD_OK=true; onPass(); return; }
+      if(saved!==""){
+        lock("המסך כבר בשימוש",
+             "המסך הזה רשום למכשיר אחר. לשחרור, יש לאפס את רישום המכשיר בממשק הניהול.");
+        return;
+      }
+
+      /* רישום ראשון — נכתב ואז נקרא מחדש לאימות */
+      fetch(SB+"/rest/v1/screens?screen_id=eq."+encodeURIComponent(SID),{
+        method:"PATCH",
+        headers:{apikey:SK,Authorization:"Bearer "+SK,
+                 "Content-Type":"application/json","Prefer":"return=minimal"},
+        body:JSON.stringify({device_token:mine})
+      })
+      .then(function(r){ if(!r.ok) throw new Error("PATCH "+r.status); return get(); })
+      .then(function(rows2){
+        var now=(rows2&&rows2[0]&&rows2[0].device_token)||"";
+        if(now===mine){ root.NATI_GUARD_OK=true; onPass(); return; }
+        if(now===""){ warn("נעילת המכשיר לא נרשמה בשרת"); root.NATI_GUARD_OK=true; onPass(); return; }
+        lock("המסך כבר בשימוש","מכשיר אחר נרשם למסך זה.");
+      })
+      .catch(function(err){
+        try{ console.warn("[NatiGuard] רישום נכשל:", err && err.message); }catch(e){}
+        warn("נעילת המכשיר לא נרשמה בשרת");
+        root.NATI_GUARD_OK=true; onPass();
+      });
+    }).catch(function(){
+      /* אין רשת — לא נועלים מסך שכבר עבד, רק מסמנים */
+      warn("בדיקת הרישיון נכשלה");
+      root.NATI_GUARD_OK=true; onPass();
+    });
+  }
+
+  root.NatiGuard={ check:check, lock:lock, VERSION:"1.0" };
+})(typeof window!=="undefined"?window:globalThis);
+
 /* ---- עדכון גרסה מרחוק ----
    זהה למנגנון שב-index.html: בודק כל שתי דקות אם פורסם עדכון באדמין,
    ואם כן מרענן פעם אחת עם ביטול מטמון. בלי זה המסך נשאר על הקובץ
@@ -2136,6 +2267,7 @@ setTimeout(fetchParasha, 3000);
   setTimeout(applyTheme, 1200);
   setInterval(applyTheme, 5000);
 })();
-load(); tick();
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 1.8 · 20.09.26</div>
+/* האתחול רץ רק אחרי שהמסך עבר רישיון, טוקן ונעילת מכשיר */
+NatiGuard.check(function(){ load(); tick(); });
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 1.9 · 20.09.26</div>
 </body></html>
