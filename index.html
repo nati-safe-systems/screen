@@ -1301,6 +1301,14 @@ function chkLic(cb) {
         document.getElementById("lock").style.display="flex";
         if(cb)cb(); return;
       }
+      /* נעילה כבויה מהאדמין — מדלגים על טוקן ועל רישום מכשיר.
+         הרישיון נבדק ממש למעלה ואינו ניתן לעקיפה מכאן: נעילה היא
+         נוחות, רישיון הוא עניין מסחרי.
+         עמודה חסרה או null נחשבת נעולה — ברירת מחדל בטוחה. */
+      if(s.lock_enabled===false){
+        deviceLockWarn("מסך פתוח — הנעילה כבויה");
+        proceedWithScreen(s,myToken,cb); return;
+      }
       // בדיקת screen_token
       var screenToken = s.screen_token || "";
       if(screenToken && TOKEN !== screenToken){
@@ -3674,6 +3682,6 @@ function start(){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 7.8</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 7.9</div>
 </body>
 </html>

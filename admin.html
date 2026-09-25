@@ -318,6 +318,18 @@ tr:hover td{background:rgba(128,0,0,0.05);}
         <div style="font-size:11px;color:#8b949e;margin-top:4px;">הטוקן חלק מה-URL — שינויו יצריך עדכון ב-FOCSIGN</div>
       </div>
 
+      <!-- נעילת המסך. ברירת המחדל במסך חדש היא נעול. -->
+      <div class="field">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" id="edit-sc-lock" checked style="width:16px;height:16px;cursor:pointer;">
+          <span>נעילת מסך — טוקן ורישום מכשיר</span>
+        </label>
+        <div style="font-size:11px;color:#8b949e;margin-top:4px;">
+          כשמסומן, המסך נפתח רק עם הטוקן הנכון ורק במכשיר אחד.
+          כיבוי מיועד לשיתוף או לבדיקות — תפוגת הרישיון נבדקת בכל מקרה.
+        </div>
+      </div>
+
       <!-- ===== נתי SAFE: תצוגת המסך / קהל יעד ===== -->
       <div style="border-top:1px solid rgba(255,255,255,0.1);margin:14px 0 4px;padding-top:14px;">
         <div id="grp-building">
@@ -863,7 +875,14 @@ function switchTab(t){
 function makeScRow(s,cm,now){
   var days=Math.ceil((new Date(s.license_expiry)-now)/86400000),ok=days>0,w=ok&&days<=30;
   var tr=document.createElement('tr');
-  tr.innerHTML='<td><span class="key">'+escH(s.screen_id)+'</span></td>'+
+  /* מסך שנעילתו כבויה מסומן ברשימה. מתג כיבוי על אמצעי אבטחה
+     חייב להיות גלוי, אחרת מסך שהושבת לבדיקה יישאר פתוח לנצח. */
+  var openBadge = (s.lock_enabled===false)
+    ? ' <span style="background:rgba(210,60,60,.18);color:#ff8a8a;border:1px solid rgba(255,120,120,.45);'+
+      'border-radius:4px;padding:1px 6px;font-size:10px;font-weight:800;margin-right:4px" '+
+      'title="נעילת הטוקן ורישום המכשיר כבויים">פתוח</span>'
+    : '';
+  tr.innerHTML='<td><span class="key">'+escH(s.screen_id)+'</span>'+openBadge+'</td>'+
     '<td>'+escH(s.building_name||'-')+'</td>'+
     '<td>'+escH(cm[s.company_id]||s.company_id)+'</td>'+
     '<td>'+new Date(s.license_expiry).toLocaleDateString('he-IL')+'</td>'+
@@ -1015,6 +1034,8 @@ function openAddScreen(){
     purposeChanged();
   });
   document.getElementById('modal-sc-title').textContent='מסך חדש';
+  /* מסך חדש נולד נעול */
+  var _lkN=document.getElementById('edit-sc-lock'); if(_lkN) _lkN.checked=true;
   document.getElementById('edit-sc-profile').value='chareidi';
   applyProfile('chareidi');
   document.getElementById('edit-sc-rss').value='';
@@ -1533,6 +1554,9 @@ function openEditScreen(sid){
   document.getElementById('edit-sc-name').value=s.building_name||'';
   document.getElementById('edit-sc-expiry').value=s.license_expiry?s.license_expiry.substring(0,10):'';
   document.getElementById('edit-sc-token').value=s.screen_token||'';
+  /* עמודה חסרה או null נחשבת נעולה — ברירת מחדל בטוחה */
+  var _lk=document.getElementById('edit-sc-lock');
+  if(_lk) _lk.checked = (s.lock_enabled!==false);
   var off=parseInt(s.shabbat_offset)||20;
   var sel=document.getElementById('edit-sc-offset');
   if(sel){for(var i=0;i<sel.options.length;i++){if(parseInt(sel.options[i].value)===off)sel.selectedIndex=i;}}
@@ -1574,6 +1598,8 @@ function saveScreen(){
   body.purpose     = (document.getElementById('edit-sc-purpose')||{}).value || 'main';
   body.minyan_view = (document.getElementById('edit-sc-minyanview')||{}).value || 'list';
   body.display_config=JSON.stringify(readDisplayConfig());
+  var _lk=document.getElementById('edit-sc-lock');
+  body.lock_enabled = _lk ? !!_lk.checked : true;
   if(!orig){
     body.message='';body.message_type='scroll';
     // צור טוקן אוטומטי

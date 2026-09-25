@@ -1686,7 +1686,7 @@ var SB="https://cxtrrejclkhqhkqbicmz.supabase.co", SK="eyJhbGciOiJIUzI1NiIsInR5c
     }catch(e){ mine="DV-NOSTORE"; }
 
     var sel="screens?screen_id=eq."+encodeURIComponent(SID)+
-            "&select=screen_token,device_token,license_expiry";
+            "&select=screen_token,device_token,license_expiry,lock_enabled";
     function get(){
       return fetch(SB+"/rest/v1/"+sel,{headers:{apikey:SK,Authorization:"Bearer "+SK},cache:"no-store"})
         .then(function(r){ return r.json(); });
@@ -1698,6 +1698,14 @@ var SB="https://cxtrrejclkhqhkqbicmz.supabase.co", SK="eyJhbGciOiJIUzI1NiIsInR5c
 
       if(!PREVIEW && s.license_expiry && new Date(s.license_expiry)<=new Date()){
         lock("הרישיון פג","יש לחדש את הרישיון כדי להמשיך."); return;
+      }
+      /* נעילה כבויה מהאדמין — מדלגים על טוקן ועל רישום מכשיר.
+         תפוגת הרישיון נבדקה למעלה ואינה ניתנת לעקיפה מכאן:
+         נעילה היא נוחות, רישיון הוא עניין מסחרי.
+         עמודה חסרה או null נחשבת נעולה — ברירת מחדל בטוחה. */
+      if(s.lock_enabled===false){
+        warn("מסך פתוח — הנעילה כבויה");
+        root.NATI_GUARD_OK=true; onPass(); return;
       }
       if(s.screen_token && TOKEN!==s.screen_token){
         lock("טוקן שגוי","הכתובת אינה תואמת למסך זה."); return;
