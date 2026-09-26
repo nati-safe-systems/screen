@@ -2798,6 +2798,52 @@ function gwpChag(ref){
   return null;
 }
 
+/* =====================================================================
+   יום המנוחה הקרוב, וקריאת התורה שלו
+   ---------------------------------------------------------------------
+   התוויות נגזרות מיום המנוחה שאליו הקובייה מתייחסת, ולא מהיום הנוכחי.
+   ביום חמישי בערב, כשהשבת הקרובה היא גם יום טוב, צריך להופיע
+   "זמני כניסת שבת ויו״ט" — והסתכלות על היום הנוכחי בלבד החמיצה את זה.
+   ===================================================================== */
+function nextRestDay(now){
+  now = now || new Date();
+  for(var i=0;i<8;i++){
+    var d=new Date(now.getFullYear(),now.getMonth(),now.getDate()+i,12,0,0);
+    var h=ghd(d);
+    var mi=GHD_MONTH_INDEX(h.month);
+    var yt=(mi>0)&&isYomTovIL(mi,h.day);
+    if(d.getDay()===6 || yt) return {date:d, heb:h, mi:mi, isSat:d.getDay()===6, isYT:yt};
+  }
+  return null;
+}
+/* שם חודש -> המספר שבו משתמשת isYomTovIL (ניסן=1 ... תשרי=7) */
+function GHD_MONTH_INDEX(name){
+  var M={'ניסן':1,'אייר':2,'סיוון':3,'תמוז':4,'אב':5,'אלול':6,
+         'תשרי':7,'חשוון':8,'כסלו':9,'טבת':10,'שבט':11,'אדר':12,'אדר א':12,'אדר ב':13};
+  return M[name]||0;
+}
+
+/* קריאת התורה של שבת שחלה ביום טוב. מה שאינו כאן — נופל לשם החג בלבד. */
+function chagTorahReading(mi,d){
+  if(mi===7){
+    if(d===22) return "וְזֹאת הַבְּרָכָה (דברים לג, א – לד, יב)";
+    if(d===1||d===2) return "";      /* ראש השנה — לא נקבע כאן */
+    if(d===10) return "";            /* יום כיפור */
+  }
+  return "";
+}
+
+/* תווית הפרשה כשהשבת הקרובה היא חג — אז אין פרשת שבוע */
+function chagParashaLabel(){
+  var r=nextRestDay(new Date());
+  if(!r || !r.isYT) return null;                 /* שבת רגילה — הפרשה מ-Hebcal */
+  var name = gjh(r.heb.month, r.heb.day) || "";
+  if(!name) return null;
+  if(r.mi===7 && r.heb.day===22) name = "שמיני עצרת ושמחת תורה";
+  var read = chagTorahReading(r.mi, r.heb.day);
+  return read ? (name + " · " + read) : name;
+}
+
 /* פרשה — מנתוני הפרשה הנפרדים */
 function gwp(){
   function parseParasha(item){
@@ -3421,7 +3467,11 @@ function upd(){
   var rchEl=document.getElementById("rch");
   var rchTxt=hc_roshChodesh(now.getFullYear(),now.getMonth()+1,now.getDate());
   if(rchTxt){rchEl.textContent=rchTxt;rchEl.style.display="block";}else{rchEl.style.display="none";}
-  document.getElementById("par").textContent=gwp()||gwpChag()||"פרשת השבוע";
+  /* חג קודם: כשהשבת הקרובה היא יום טוב אין פרשת שבוע, ו-Hebcal
+   מחזיר בכל זאת את הפרשה הבאה במחזור — מה שהציג "בראשית"
+   בשבוע של שמחת תורה. */
+  document.getElementById("par").textContent=
+    chagParashaLabel()||gwp()||gwpChag()||"פרשת השבוע";
 
   var ch=ghol()||gjh(hd.month,hd.day);
   var ec=gec(hd.month,hd.day);
@@ -3488,14 +3538,14 @@ function upd(){
     /* ---- תוויות הקובייה: שבת, חג, או שניהם ----
        בערב יו"ט שחל בשישי, וביו"ט שחל בשבת, שתי הקדושות נכנסות יחד
        ולכן מוצגות שתיהן. ביום חול שהוא ערב חג או חג — רק החג. */
-    var _d=now.getDay(), _both=( _d===5 && ec ) || ( _d===6 && ch );
-    var _lblT, _lblIn, _lblOut;
-    if(_both){
+    /* נגזר מיום המנוחה שאליו הזמנים מתייחסים, לא מהיום הנוכחי */
+    var _r=nextRestDay(now), _lblT, _lblIn, _lblOut;
+    if(_r && _r.isSat && _r.isYT){
       _lblT="זמני כניסת שבת ויו\"ט"; _lblIn="כניסת שבת ויו\"ט"; _lblOut="צאת שבת ויו\"ט";
-    }else if(_d===5||_d===6||(_d===4&&!ec&&!ch)){
-      _lblT="זמני שבת קודש";        _lblIn="כניסת שבת";        _lblOut="יציאת שבת";
+    }else if(_r && _r.isYT){
+      _lblT="זמני כניסת החג";        _lblIn="כניסת החג";        _lblOut="צאת החג";
     }else{
-      _lblT="זמני כניסת החג";       _lblIn="כניסת החג";        _lblOut="צאת החג";
+      _lblT="זמני שבת קודש";         _lblIn="כניסת שבת";        _lblOut="יציאת שבת";
     }
     document.getElementById("sht").textContent=_lblT;
     document.getElementById("li").textContent=_lblIn;
@@ -3682,6 +3732,6 @@ function start(){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 7.9</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 8.0</div>
 </body>
 </html>
