@@ -295,8 +295,8 @@ tr:hover td{background:rgba(128,0,0,0.05);}
       <p style="font-size:13px;color:#8b949e;line-height:1.7;">
         הסיסמה נשמרת ב-Supabase ומסונכרנת בין כל המכשירים.<br>
         אם שכחת — היכנס ל-Supabase → SQL Editor והרץ:<br>
-        <code style="color:#58a6ff;font-size:12px;">UPDATE settings SET value='NatiSafe2025' WHERE key='admin_pass';</code><br>
-        ואז היכנס עם הסיסמה <code style="color:#58a6ff;">NatiSafe2025</code> ושנה אותה.
+        <code style="color:#58a6ff;font-size:12px;">UPDATE settings SET value=extensions.crypt('הסיסמה-החדשה', extensions.gen_salt('bf',10)) WHERE key='admin_pass_hash';</code><br>
+        הסיסמה נשמרת מגובבת ואינה ניתנת לשחזור — רק לאיפוס.
       </p>
     </div>
   </div>
@@ -817,17 +817,32 @@ tr:hover td{background:rgba(128,0,0,0.05);}
 <script>
 var SB="https://cxtrrejclkhqhkqbicmz.supabase.co";
 var SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dHJyZWpjbGtocWhrcWJpY216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTk3MDksImV4cCI6MjA5NTU3NTcwOX0._7wB4YwrYEnK6hWuR6YqcFxRb05OLnWvOelIC-ahIEQ";
-var storedPass="NatiSafe2025"; // ברירת מחדל עד שנטען מ-Supabase
+/* =====================================================================
+   אימות המנהל
+   ---------------------------------------------------------------------
+   עד כאן הייתה כאן סיסמה קבועה בקוד, והסיסמה האמיתית נטענה מ-settings
+   בקריאה אנונימית. כשהקריאה נכשלה ה-catch לא עצר כלום והסיסמה נשארה
+   על ברירת המחדל — כלומר כל מי שקרא את הקובץ נכנס.
 
-// טען סיסמה מ-Supabase
-function loadAdminPass(cb){
-  fetch(SB+"/rest/v1/settings?key=eq.admin_pass&select=value",{
-    headers:{"apikey":SK,"Authorization":"Bearer "+SK}
-  }).then(function(r){return r.json();})
-  .then(function(d){
-    if(d&&d.length>0&&d[0].value) storedPass=d[0].value;
-    if(cb)cb();
-  }).catch(function(){if(cb)cb();});
+   עכשיו ההשוואה נעשית בשרת דרך nsf_login. הסיסמה אינה נמצאת בקובץ,
+   אינה נשמרת בדפדפן, וכישלון תמיד נועל.
+   ===================================================================== */
+var NSF_TOKEN = sessionStorage.getItem('nati_admin_token') || '';
+
+function rpc(fn, args){
+  return fetch(SB+"/rest/v1/rpc/"+fn, {
+    method:"POST",
+    headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json"},
+    body:JSON.stringify(args||{})
+  }).then(function(r){
+    if(!r.ok) throw new Error("rpc "+fn+" "+r.status);
+    return r.json();
+  });
+}
+function setAdminToken(t){
+  NSF_TOKEN = t || '';
+  if(t) sessionStorage.setItem('nati_admin_token', t);
+  else  sessionStorage.removeItem('nati_admin_token');
 }
 var allScreens=[],allCompanies=[];
 var idleTimer=null, IDLE_TIMEOUT=5*60*1000;
@@ -873,20 +888,27 @@ function sf(p,o){
 
 function doLogin(){
   var p=document.getElementById('apass').value;
-  loadAdminPass(function(){
-    if(p===storedPass){
-      document.getElementById('login-wrap').style.display='none';
-      document.getElementById('app').style.display='block';
-      saveSession();resetIdle();
-      loadAll();
-    }else{
-      var e=document.getElementById('login-err');
-      e.textContent='סיסמה שגויה';e.style.display='block';
+  var e=document.getElementById('login-err');
+  e.style.display='none';
+  if(!p) return;
+  rpc("nsf_login",{p_user:"admin",p_pass:p}).then(function(res){
+    if(!res || !res.ok || !res.is_admin){
+      e.textContent='סיסמה שגויה'; e.style.display='block'; return;
     }
+    setAdminToken(res.token);
+    document.getElementById('login-wrap').style.display='none';
+    document.getElementById('app').style.display='block';
+    saveSession(); resetIdle();
+    loadAll();
+  }).catch(function(){
+    /* כישלון נועל, ולא פותח */
+    e.textContent='שגיאת התחברות'; e.style.display='block';
   });
 }
 
 function doLogout(){
+  try{ if(NSF_TOKEN) rpc("nsf_logout",{p_token:NSF_TOKEN}); }catch(e){}
+  setAdminToken('');
   sessionStorage.removeItem('nati_admin_logged');
   document.getElementById('app').style.display='none';
   document.getElementById('login-wrap').style.display='flex';
@@ -2096,23 +2118,16 @@ function saveAdminPass(){
   var cur=document.getElementById('pass-cur').value;
   var p1=document.getElementById('pass-new1').value;
   var p2=document.getElementById('pass-new2').value;
-  if(cur!==storedPass){toast('הסיסמה הנוכחית שגויה');return;}
-  if(p1.length<6){toast('הסיסמה החדשה קצרה מדי');return;}
+  if(p1.length<8){toast('הסיסמה החדשה קצרה מדי — לפחות 8 תווים');return;}
   if(p1!==p2){toast('הסיסמאות לא תואמות');return;}
-  // שמור ב-Supabase
-  fetch(SB+"/rest/v1/settings?key=eq.admin_pass",{
-    method:'PATCH',
-    headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Prefer":"return=minimal"},
-    body:JSON.stringify({value:p1})
-  }).then(function(r){
-    if(r.status===404||r.status===200||r.status===204){
-      storedPass=p1;
-      document.getElementById('pass-cur').value='';
-      document.getElementById('pass-new1').value='';
-      document.getElementById('pass-new2').value='';
-      toast('הסיסמה עודכנה בהצלחה על כל המכשירים!');
-    }
-  }).catch(function(){toast('שגיאה בשמירת הסיסמה');});
+  /* ההחלפה נעשית בשרת. הסיסמה הנוכחית נבדקת שם, לא כאן. */
+  rpc("nsf_change_password",{p_token:NSF_TOKEN,p_old:cur,p_new:p1}).then(function(res){
+    if(!res||!res.ok){ toast((res&&res.err)||'החלפת הסיסמה נכשלה'); return; }
+    document.getElementById('pass-cur').value='';
+    document.getElementById('pass-new1').value='';
+    document.getElementById('pass-new2').value='';
+    toast('הסיסמה עודכנה');
+  }).catch(function(){toast('החלפת הסיסמה נכשלה');});
 }
 
 // ---- עזרים ----
