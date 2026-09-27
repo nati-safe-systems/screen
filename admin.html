@@ -930,8 +930,14 @@ window.addEventListener('load',function(){
 });
 
 function loadAll(){
-  Promise.all([sf('screens'),sf('companies')]).then(function(res){
-    allScreens=res[0]||[];allCompanies=res[1]||[];
+  /* companies נותקה מהמפתח האנונימי בשלב 1 ונקראת דרך פונקציית שרת.
+     כל קריאה נתפסת בנפרד: Promise.all נכשל כולו אם אחד נכשל, ולכן
+     כישלון ברשימת הלקוחות הפיל גם את רשימת המסכים. */
+  Promise.all([
+    sf('screens').catch(function(e){ console.warn('screens',e); return []; }),
+    rpc('nsf_admin_companies',{p_token:NSF_TOKEN}).catch(function(e){ console.warn('companies',e); return []; })
+  ]).then(function(res){
+    allScreens=res[0]||[]; allCompanies=res[1]||[];
     renderDash();renderScreens();renderCompanies();
   });
 }
@@ -2047,20 +2053,20 @@ function saveCompany(){
   if(!orig){
     body.company_id=id;
     body.activation_code=genActivationCode();
-    sf('companies',{method:'POST',body:JSON.stringify(body)}).then(function(){
+    rpc('nsf_save_company',{p_token:NSF_TOKEN,p_orig:null,p_row:body}).then(function(){
       closeModal('modal-co');
       toast('הלקוח נוסף! קוד הפעלה לאפליקציה: '+body.activation_code);
       loadAll();
     });
   }else{
-    sf('companies?company_id=eq.'+encodeURIComponent(orig),{method:'PATCH',body:JSON.stringify(body)}).then(function(){closeModal('modal-co');toast('הלקוח עודכן!');loadAll();});
+    rpc('nsf_save_company',{p_token:NSF_TOKEN,p_orig:orig,p_row:body}).then(function(){closeModal('modal-co');toast('הלקוח עודכן!');loadAll();});
   }
 }
 
 function resetPass(cid,cname){
   var np=prompt('סיסמה זמנית חדשה עבור '+cname+':');
   if(!np||np.length<4){if(np!==null)alert('סיסמה קצרה מדי');return;}
-  sf('companies?company_id=eq.'+encodeURIComponent(cid),{method:'PATCH',body:JSON.stringify({password:np,must_change_password:true,password_changed_at:null})}).then(function(){toast('הסיסמה אופסה!');loadAll();});
+  rpc('nsf_reset_company_password',{p_token:NSF_TOKEN,p_cid:cid,p_new:np}).then(function(){toast('הסיסמה אופסה!');loadAll();});
 }
 
 function copyTenantUrl(cid,cname){
@@ -2094,10 +2100,8 @@ function regenActivationCode(cid,cname){
   function tryOnce(){
     attempts++;
     var code=genActivationCode();
-    sf('companies?company_id=eq.'+encodeURIComponent(cid),{
-      method:'PATCH',
-      body:JSON.stringify({activation_code:code})
-    }).then(function(){
+    rpc('nsf_save_company',{p_token:NSF_TOKEN,p_orig:cid,
+        p_row:{activation_code:code}}).then(function(){
       toast('קוד הפעלה חדש לאפליקציה: '+code);
       loadAll();
     }).catch(function(){
@@ -2110,7 +2114,7 @@ function regenActivationCode(cid,cname){
 
 function delCompany(cid,cname){
   if(!confirm('למחוק את הלקוח '+cname+'?'))return;
-  sf('companies?company_id=eq.'+encodeURIComponent(cid),{method:'DELETE'}).then(function(){toast('נמחקה');loadAll();});
+  rpc('nsf_delete_company',{p_token:NSF_TOKEN,p_cid:cid}).then(function(){toast('נמחקה');loadAll();});
 }
 
 // ---- הגדרות ----

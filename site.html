@@ -54,6 +54,30 @@ button.dz:hover{color:#ff6b6b}
 .autos{font-size:11.5px;color:#3fb950;background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);
   border-radius:6px;padding:6px 10px;margin-bottom:12px;line-height:1.5}
 </style></head><body>
+<!-- ===== מסך כניסה =====
+     הדף היה פתוח לחלוטין ושלף את רשימת כל בתי הכנסת במערכת. -->
+<div id="st-login" style="position:fixed;inset:0;z-index:99999;display:flex;
+     align-items:center;justify-content:center;background:#0b0f18;direction:rtl;
+     font-family:Heebo,Assistant,Arial,sans-serif;">
+  <div style="background:#141a26;border:1px solid rgba(255,204,0,.35);border-radius:14px;
+       padding:34px 30px;width:min(92vw,380px);text-align:center;">
+    <div style="font-size:24px;font-weight:900;color:#fff;margin-bottom:6px;">
+      נתי <span style="color:#ffcc00">SAFE</span></div>
+    <div style="font-size:13px;color:#8b949e;margin-bottom:22px;">ניהול בית הכנסת</div>
+    <input id="st-user" placeholder="שם משתמש" autocomplete="off" autocapitalize="none"
+      style="width:100%;padding:11px 12px;margin-bottom:10px;border-radius:8px;
+             border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-size:15px;">
+    <input id="st-pass" type="password" placeholder="סיסמה"
+      style="width:100%;padding:11px 12px;margin-bottom:14px;border-radius:8px;
+             border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-size:15px;">
+    <button onclick="stLogin()"
+      style="width:100%;padding:11px;border-radius:8px;border:0;background:#ffcc00;
+             color:#161b22;font-weight:800;font-size:15px;cursor:pointer;">כניסה</button>
+    <div id="st-err" style="display:none;color:#ff7b72;font-size:13px;margin-top:12px;"></div>
+  </div>
+</div>
+
+
 
 <h1>ניהול בית הכנסת</h1>
 <div class="sub">מה שתעדכן כאן מופיע בכל המסכים תוך דקה.</div>
@@ -574,10 +598,78 @@ button.dz:hover{color:#ff6b6b}
 
 var SB="https://cxtrrejclkhqhkqbicmz.supabase.co", SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dHJyZWpjbGtocWhrcWJpY216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTk3MDksImV4cCI6MjA5NTU3NTcwOX0._7wB4YwrYEnK6hWuR6YqcFxRb05OLnWvOelIC-ahIEQ";
 /* מציג את השגיאה האמיתית מ-Supabase במקום הודעה גנרית */
+/* =====================================================================
+   גישה לנתונים
+   ---------------------------------------------------------------------
+   הדף הזה היה ללא אימות כלל, ושלף את רשימת כל בתי הכנסת במערכת
+   כדי שהמשתמש יבחר מתוכה. כלומר כל מי שהחזיק את הכתובת ערך כל אתר.
+
+   עכשיו: כניסה עם שם וסיסמה, והדף נעול לאתרים של אותו לקוח בלבד.
+   הכתיבה מנותבת לפונקציות השרת, שמאמתות את הבעלות שוב.
+   ===================================================================== */
+var NSF_TOKEN = sessionStorage.getItem('nati_site_token') || '';
+var MY_COMPANY = null;
+
+function rpc(fn,args){
+  return fetch(SB+"/rest/v1/rpc/"+fn,{
+    method:"POST",
+    headers:{apikey:SK,Authorization:"Bearer "+SK,"Content-Type":"application/json"},
+    body:JSON.stringify(args||{})
+  }).then(function(r){
+    if(!r.ok) throw new Error("rpc "+fn+" "+r.status);
+    return r.json();
+  }).then(function(res){
+    if(res && res.ok===false){ var e=new Error(res.err||"נדחה"); e.rpc=true; throw e; }
+    return res;
+  });
+}
+function setSiteToken(t){
+  NSF_TOKEN=t||'';
+  if(t) sessionStorage.setItem('nati_site_token',t);
+  else  sessionStorage.removeItem('nati_site_token');
+}
+
+var NSF_SAVE={rooms:"nsf_save_room", prayer_times:"nsf_save_prayer",
+              announcements:"nsf_save_announcement", sponsors:"nsf_save_sponsor"};
+
 function sf(p,o){
+  o = o || {};
+  var method=(o.method||"GET").toUpperCase();
+
+  /* הלקוח רואה רק את האתרים שלו. הסינון כאן הוא נוחות —
+     האכיפה האמיתית היא בפונקציות השרת. */
+  if(method==="GET" && p.indexOf("sites?")===0 && MY_COMPANY){
+    p += (p.indexOf("?")>-1?"&":"?")+"company_id=eq."+encodeURIComponent(MY_COMPANY);
+  }
+
+  if(method!=="GET"){
+    var table=p.split("?")[0];
+    var idm=/id=eq\.([^&]+)/.exec(p);
+    var rowId=idm?decodeURIComponent(idm[1]):null;
+    var body={}; try{ body=o.body?JSON.parse(o.body):{}; }catch(e){}
+
+    if(method==="DELETE"){
+      if(table==="sites") return Promise.reject(new Error("מחיקת אתר אינה נתמכת"));
+      return rpc("nsf_delete_row",{p_token:NSF_TOKEN,p_table:table,p_id:rowId})
+             .then(function(){ return null; });
+    }
+    if(table==="sites"){
+      /* יצירת אתר חדש שמורה למנהל */
+      if(method==="POST") return Promise.reject(new Error("יצירת אתר נעשית בממשק הניהול"));
+      body.id = rowId || (SITE&&SITE.id);
+      return rpc("nsf_save_site",{p_token:NSF_TOKEN,p_row:body}).then(function(){ return null; });
+    }
+    if(NSF_SAVE[table]){
+      if(rowId) body.id=rowId;
+      if(!body.site_id && typeof SITE!=="undefined" && SITE) body.site_id=SITE.id;
+      return rpc(NSF_SAVE[table],{p_token:NSF_TOKEN,p_row:body})
+             .then(function(r){ return [Object.assign({},body,{id:r.id})]; });
+    }
+  }
+
   var st=0;
   return fetch(SB+"/rest/v1/"+p,Object.assign({headers:{
-    apikey:SK,Authorization:"Bearer "+SK,"Content-Type":"application/json",Prefer:"return=representation"}},o||{}))
+    apikey:SK,Authorization:"Bearer "+SK,"Content-Type":"application/json",Prefer:"return=representation"}},o))
   .then(function(r){ st=r.status; return r.status===204?null:r.json(); })
   .then(function(j){
     if(st>=400){
@@ -929,5 +1021,36 @@ function preview(){
        (nx?((PRAYERS[nx.prayer]||nx.prayer)+" "+nx.time+" — "+NatiMinyan.countdown(nx.minutes,nowMin)):"אין נוספים היום")+'</div>';
   document.getElementById("prev").innerHTML=out;}
 
-boot(); setInterval(preview,30000);
+
+/* ---- כניסה ---- */
+function stStart(res){
+  /* מנהל רואה הכל; לקוח נעול לאתרים של החברה שלו */
+  MY_COMPANY = res.is_admin ? null : ((res.company && res.company.company_id) || null);
+  document.getElementById("st-login").style.display="none";
+  boot(); setInterval(preview,30000);
+}
+function stLogin(){
+  var u=document.getElementById("st-user").value.trim();
+  var p=document.getElementById("st-pass").value;
+  var e=document.getElementById("st-err");
+  e.style.display="none";
+  if(!u||!p) return;
+  rpc("nsf_login",{p_user:u,p_pass:p}).then(function(res){
+    if(!res||!res.ok){ e.textContent="שם משתמש או סיסמה שגויים"; e.style.display="block"; return; }
+    setSiteToken(res.token);
+    return rpc("nsf_me",{p_token:res.token}).then(stStart);
+  }).catch(function(){
+    e.textContent="שגיאת התחברות"; e.style.display="block";
+  });
+}
+
+/* אימות האסימון מול השרת בכל טעינה — לא די בכך שהוא קיים בדפדפן */
+(function(){
+  if(!NSF_TOKEN) return;
+  rpc("nsf_me",{p_token:NSF_TOKEN}).then(function(res){
+    if(res&&res.ok) stStart(res); else setSiteToken('');
+  }).catch(function(){ setSiteToken(''); });
+})();
+/* boot רץ רק אחרי כניסה מוצלחת */
+
 </script></body></html>
