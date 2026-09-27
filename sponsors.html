@@ -1839,7 +1839,12 @@ function load(){
     var t=new Date(), iso=t.getFullYear()+"-"+p2(t.getMonth()+1)+"-"+p2(t.getDate());
     Promise.all([
       sf("sites?id=eq."+sid+"&select=*"),
-      sf("sponsors?site_id=eq."+sid+"&select=*&active=eq.true&date_from=lte."+iso+"&date_to=gte."+iso+"&order=priority&or=(scope.eq.all,scope.eq.main)")
+      /* הסינון עבר ל-JavaScript בכוונה.
+         ב-PostgREST תנאי על עמודה ריקה מחזיר NULL והשורה נופלת:
+         פרנס בלי date_from, בלי date_to או בלי scope פשוט נעלם
+         מהמסך, בלי שום שגיאה. עמודה ריקה פירושה "בלי הגבלה",
+         ולא "לא להציג". */
+      sf("sponsors?site_id=eq."+sid+"&select=*&order=priority")
     ]).then(function(r){
       SITE=r[0][0]; SPON=r[1]||[];
       document.getElementById("siteName").textContent=SITE?SITE.name:"";
@@ -2168,7 +2173,15 @@ function spOpts(){
 function draw(){
   var g=document.getElementById("sgrid");
   if(!g) return;
+  /* עמודה ריקה = בלי הגבלה. כך פרנס שנוסף במהירות, בלי תאריכים
+     ובלי scope, עדיין מוצג — וזה המקרה הנפוץ בחג. */
+  var today=new Date(); today.setHours(0,0,0,0);
+  var iso=today.getFullYear()+"-"+p2(today.getMonth()+1)+"-"+p2(today.getDate());
   var cur=SPON.filter(function(s){
+    if(s.active===false) return false;
+    if(s.date_from && s.date_from > iso) return false;
+    if(s.date_to   && s.date_to   < iso) return false;
+    if(s.scope && s.scope!=="all" && s.scope!=="main") return false;
     if(s.screen_ids && s.screen_ids.length && SCREEN_ID &&
        s.screen_ids.indexOf(SCREEN_ID)===-1) return false;
     return true;
@@ -2210,5 +2223,5 @@ setInterval(function(){ZDAY="";load();},5*60*1000);
 })();
 /* האתחול רץ רק אחרי שהמסך עבר רישיון, טוקן ונעילת מכשיר */
 NatiGuard.check(function(){ load(); tick(); });
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · פרנסים · גרסה 2.0 · 27.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · פרנסים · גרסה 2.1 · 27.09.26</div>
 </body></html>
