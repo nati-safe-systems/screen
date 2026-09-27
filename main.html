@@ -2218,12 +2218,19 @@ setInterval(fetchParasha, 60*60*1000);
 setTimeout(fetchParasha, 3000);
 /* ---- החלת ערכת העיצוב ----
    SITE מגיע אסינכרונית מ-Supabase, ואירוע load עלול להקדים אותו.
-   לכן הערכה נבדקת שוב עד שהנתונים מגיעים, ומוחלת מחדש בכל שינוי.
-   סדר עדיפות: ?theme= בכתובת, אחריו הערכה של האתר, ואם אין — marble.
+   לכן הערכה נבדקת שוב עד שהנתונים מגיעים, ומוחלת מחדש רק כשהיא משתנה.
 
-   marble אינה ערכת מסגרות של NatiOrnate אלא עיצוב מלא: לוחות שנהב,
-   מסגרות זהב ופילסטרים. לכן בזמן שהיא פעילה NatiOrnate מכובה,
-   והפינות מוזרקות ישירות ללוחות. */
+   marble אינה ערכת מסגרות של NatiOrnate אלא עיצוב מלא. שתי תקלות
+   שהיו כאן ותוקנו:
+
+   1. כיבוי NatiOrnate נעשה בקריאה theme:"none". הערכה הזו אינה קיימת,
+      ו-ornate נופל ל-THEMES.classic — כלומר צייר את המסגרות הרגילות
+      מעל ערכת השיש. שתי מערכות קישוט ציירו יחד.
+      עכשיו ornate פשוט אינו נקרא, והשאריות שלו מוסרות מה-DOM.
+
+   2. הפינות הוזרקו מחדש כל שתי שניות, וכל הזרקה גררה חישוב פריסה.
+      זה מה שגרם לקופסאות המניינים לרצד ולקפץ.
+      עכשיו הן מוזרקות פעם אחת, ומתווספות לחדרים חדשים בלבד. */
 (function(){
   var last=null;
 
@@ -2233,13 +2240,29 @@ setTimeout(fetchParasha, 3000);
       '<use href="#mbcn" xlink:href="#mbcn"/></svg>';}).join("");
 
   function addCorners(el){
-    if(!el || el.querySelector(":scope > .ocn")) return;
+    if(!el) return;
+    if(el.getAttribute("data-mbcn")==="1") return;   /* כבר מקושט */
+    el.setAttribute("data-mbcn","1");
     el.insertAdjacentHTML("afterbegin", CORNERS);
   }
   function dropCorners(){
     var l=document.querySelectorAll(".ocn");
     for(var i=0;i<l.length;i++) l[i].remove();
+    var m=document.querySelectorAll('[data-mbcn]');
+    for(var j=0;j<m.length;j++) m[j].removeAttribute("data-mbcn");
   }
+
+  /* הסרת שאריות NatiOrnate — הוא אינו נקרא במצב שיש */
+  function stripOrnate(){
+    ["nsf-orn-css","nsf-frame","nsf-tex","nsf-vig"].forEach(function(id){
+      var e=document.getElementById(id); if(e) e.remove();
+    });
+    var o=document.querySelectorAll(".orn");
+    for(var i=0;i<o.length;i++) o[i].classList.remove("orn");
+    var c=document.querySelectorAll(".oc");
+    for(var k=0;k<c.length;k++) c[k].remove();
+  }
+
   function marbleDecorate(){
     addCorners(document.querySelector(".col.r"));
     addCorners(document.querySelector(".center"));
@@ -2247,23 +2270,36 @@ setTimeout(fetchParasha, 3000);
     for(var i=0;i<rooms.length;i++) addCorners(rooms[i]);
   }
 
-  /* לוגו בית הכנסת — מהשדה logo_url של האתר */
+  /* החדרים נבנים מחדש בכל רענון נתונים. במקום לסרוק כל שתי שניות,
+     מקשיבים לשינוי בפועל — בלי חישוב פריסה מיותר ובלי ריצוד. */
+  function watchRooms(){
+    var host=document.getElementById("mlist");
+    if(!host || host.__mbWatch) return;
+    host.__mbWatch=true;
+    try{
+      new MutationObserver(function(){
+        if(document.body.classList.contains("marble")) marbleDecorate();
+      }).observe(host,{childList:true});
+    }catch(e){}
+  }
+
   function setLogo(){
     var img=document.getElementById("siteLogo"); if(!img) return;
     var u=(SITE && (SITE.logo_url||SITE.logo)) || "";
-    if(u){ img.src=u; img.className="on"; } else { img.removeAttribute("src"); img.className=""; }
+    if(u){ if(img.getAttribute("src")!==u){ img.src=u; img.className="on"; } }
+    else { img.removeAttribute("src"); img.className=""; }
   }
 
   function applyTheme(){
     var TH=(Q.get("theme"))||(SITE&&SITE.theme)||"marble";
     setLogo();
-    if(TH===last){ if(TH==="marble") marbleDecorate(); return; }
+    if(TH===last) return;                    /* בלי עבודה מיותרת */
     last=TH;
     if(TH==="marble"){
       document.body.classList.add("marble");
-      try{ NatiOrnate.apply({theme:"none",replace:true}); }catch(e){}
+      stripOrnate();
       marbleDecorate();
-      setInterval(marbleDecorate, 2000);
+      watchRooms();
     }else{
       document.body.classList.remove("marble");
       dropCorners();
@@ -2277,5 +2313,5 @@ setTimeout(fetchParasha, 3000);
 })();
 /* האתחול רץ רק אחרי שהמסך עבר רישיון, טוקן ונעילת מכשיר */
 NatiGuard.check(function(){ load(); tick(); });
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 1.9 · 20.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 2.0 · 27.09.26</div>
 </body></html>
