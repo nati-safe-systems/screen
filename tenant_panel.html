@@ -846,29 +846,21 @@ var PREVIEW_MODE=false;
    ?asco=<company_id>&preview=1  — נכנס לממשק של הלקוח בלי סיסמה,
    במצב קריאה בלבד, כדי לראות בדיוק מה הוא רואה. */
 function tryAdminPreview(){
+  /* עד כה ?preview=1&asco=X טען כל לקוח בלי שום אימות.
+     עכשיו נדרש אסימון של מנהל, והשרת הוא שמאמת אותו. */
   var q=new URLSearchParams(location.search);
   if(q.get("preview")!=="1") return false;
   var cid=q.get("asco")||"";
-  var sub=(q.get("assub")||"").toLowerCase();
-  if(!cid) return false;
-
+  if(!cid || !NSF_TOKEN) return false;
   PREVIEW_MODE=true;
-  sf("companies?company_id=eq."+encodeURIComponent(cid)).then(function(d){
-    if(!d||!d.length){ alert("לא נמצא לקוח"); return; }
-    co=d[0];
-    CURRENT_USER=co.username||cid; CURRENT_PASS=""; IS_ADMIN=false;
+  rpc("nsf_admin_company",{p_token:NSF_TOKEN,p_cid:cid}).then(function(res){
+    if(!res||!res.ok){ alert("אין הרשאה לצפייה"); PREVIEW_MODE=false; return; }
+    co=res.company;
+    CURRENT_USER=co.username||cid; IS_ADMIN=false;
     CURRENT_PERMS=companyPerms(co);
-    if(sub){
-      (Array.isArray(co.sub_users)?co.sub_users:[]).forEach(function(su){
-        if(su&&(su.username||"").toLowerCase()===sub){
-          CURRENT_USER=su.username;
-          CURRENT_PERMS=intersectPerms(companyPerms(co), migratePermsT(su.perms||{})||{});
-        }
-      });
-    }
+    document.getElementById("login-wrap").style.display="none";
     enterApp();
-    setTimeout(lockPreview,300);
-  }).catch(function(){ alert("טעינת התצוגה המקדימה נכשלה"); });
+  }).catch(function(){ PREVIEW_MODE=false; });
   return true;
 }
 
@@ -900,6 +892,31 @@ var schedules=[];           // מודעות מתוזמנות של המסך הנ�
 var sfIndex=-1;             // אינדקס בעריכה (-1 = חדשה)
 var sfType="scroll";        // סוג תוכן בתת-טופס
 var dtStartVal=null, dtEndVal=null;  // ISO של הבורר המותאם
+
+/* =====================================================================
+   קריאה לפונקציות השרת
+   ---------------------------------------------------------------------
+   האימות עבר לשרת. הדפדפן שולח שם וסיסמה פעם אחת ומקבל אסימון;
+   מכאן והלאה הוא מחזיק רק את האסימון. סיסמה אינה נשמרת בשום מקום
+   בצד הלקוח, וטבלת companies אינה נקראת עוד ישירות.
+   ===================================================================== */
+var NSF_TOKEN = sessionStorage.getItem('nati_token') || '';
+
+function rpc(fn, args){
+  return fetch(SB+"/rest/v1/rpc/"+fn, {
+    method:"POST",
+    headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json"},
+    body:JSON.stringify(args||{})
+  }).then(function(r){
+    if(!r.ok) throw new Error("rpc "+fn+" "+r.status);
+    return r.json();
+  });
+}
+function setToken(t){
+  NSF_TOKEN = t || '';
+  if(t) sessionStorage.setItem('nati_token', t);
+  else  sessionStorage.removeItem('nati_token');
+}
 
 function sf(p,o){
   return fetch(SB+"/rest/v1/"+p,Object.assign({headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json","Prefer":"return=representation"}},o)).then(function(r){return r.json();});
@@ -971,64 +988,73 @@ function fillCoBg(logoB64){
 
 function login(){
   var u=document.getElementById("uname").value.trim();
-  var p=document.getElementById("upass").value.trim();
+  var p=document.getElementById("upass").value;
   if(!u||!p)return;
   document.getElementById("login-err").style.display="none";
-  if(u.toLowerCase()==="admin"){ return adminLogin(p); }
-  var ul=u.toLowerCase();
-  // שם משתמש אינו רגיש לאותיות גדולות/קטנות; סיסמה — כן.
-  sf("companies").then(function(list){
-    list=list||[];
-    // 1) משתמש ראשי (המשרד) — הרשאות מלאות
-    var masterCo=null;
-    list.forEach(function(c){ if(!masterCo && (c.username||"").toLowerCase()===ul && c.password===p) masterCo=c; });
-    if(masterCo){
-      co=masterCo; CURRENT_PERMS=companyPerms(masterCo); CURRENT_USER=u; CURRENT_PASS=p; IS_ADMIN=false;
-      if(co.must_change_password){
-        document.getElementById("login-wrap").style.display="none";
-        showChPass(true);
-      }else{enterApp();}
+
+  rpc("nsf_login",{p_user:u,p_pass:p}).then(function(res){
+    if(!res || !res.ok){
+      document.getElementById("login-err").style.display="block";
       return;
     }
-    // 2) משתמש-משנה — הרשאות חלקיות
-    var found=null,perms=null;
-    list.forEach(function(c){
-      (Array.isArray(c.sub_users)?c.sub_users:[]).forEach(function(su){
-        if(su&&(su.username||"").toLowerCase()===ul&&su.password===p){ found=c; perms=su.perms||{}; }
-      });
-    });
-    if(found){
-      co=found; CURRENT_PERMS=intersectPerms(companyPerms(found), migratePermsT(perms)||{}); CURRENT_USER=u; CURRENT_PASS=p; IS_ADMIN=false;
-      enterApp();
-    }else{
-      document.getElementById("login-err").style.display="block";
+    setToken(res.token);
+    IS_ADMIN      = !!res.is_admin;
+    CURRENT_USER  = u;
+    CURRENT_PERMS = res.perms || {};
+
+    if(IS_ADMIN){
+      CURRENT_PERMS = FULL_PERMS;
+      var urlCo=new URLSearchParams(window.location.search).get("co");
+      if(urlCo){ loadCompanyAsAdmin(urlCo); } else { showScreenPicker(); }
+      return;
     }
-  }).catch(function(){ document.getElementById("login-err").style.display="block"; });
-}
-
-function adminLogin(p){
-  // מפתח-על קבוע: שם משתמש admin + סיסמת המנהל (settings.admin_pass)
-  sf("settings?key=eq.admin_pass&select=value").then(function(d){
-    var ap=(d&&d[0])?d[0].value:null;
-    if(!ap||p!==ap){ document.getElementById("login-err").style.display="block"; return; }
-    IS_ADMIN=true; CURRENT_PERMS=FULL_PERMS; CURRENT_USER="admin"; CURRENT_PASS="";
-    var urlCo=new URLSearchParams(window.location.search).get("co");
-    if(urlCo){ loadCompanyAsAdmin(urlCo); }
-    else { showScreenPicker(); }
-  }).catch(function(){ document.getElementById("login-err").style.display="block"; });
-}
-
-function loadCompanyAsAdmin(cid){
-  sf("companies?company_id=eq."+encodeURIComponent(cid)).then(function(d){
-    if(d&&d.length>0){ co=d[0]; CURRENT_PERMS=FULL_PERMS; IS_ADMIN=true; CURRENT_USER="admin"; enterApp(); }
-    else { toast("הלקוח לא נמצא"); }
+    if(res.must_change_password){
+      document.getElementById("login-wrap").style.display="none";
+      showChPass(true);
+      return;
+    }
+    loadMe();
+  }).catch(function(){
+    document.getElementById("login-err").style.display="block";
   });
 }
 
+/* טעינת פרטי הלקוח לפי האסימון */
+function loadMe(){
+  return rpc("nsf_me",{p_token:NSF_TOKEN}).then(function(res){
+    if(!res || !res.ok){ logout(); return; }
+    IS_ADMIN=!!res.is_admin;
+    if(IS_ADMIN){ CURRENT_PERMS=FULL_PERMS; showScreenPicker(); return; }
+    co=res.company||{};
+    CURRENT_PERMS=res.perms||{};
+    CURRENT_USER=res.username||CURRENT_USER;
+    enterApp();
+  });
+}
+
+function adminLogin(p){
+  /* נשאר לתאימות: הכניסה כולה עוברת דרך nsf_login. */
+  document.getElementById("uname").value="admin";
+  document.getElementById("upass").value=p;
+  login();
+}
+
+function loadCompanyAsAdmin(cid){
+  rpc("nsf_admin_company",{p_token:NSF_TOKEN,p_cid:cid}).then(function(res){
+    if(!res||!res.ok){ toast("לא נמצא לקוח"); return; }
+    co=res.company; CURRENT_PERMS=FULL_PERMS; IS_ADMIN=true; CURRENT_USER="admin";
+    enterApp();
+  }).catch(function(){ toast("שגיאה בטעינת הלקוח"); });
+}
+
 function showScreenPicker(){
+  /* רשימת הלקוחות מגיעה מ-nsf_me, שמחזירה אותה רק לאסימון של מנהל.
+     קריאה ישירה ל-companies כבר אינה מורשית למפתח האנונימי. */
   Promise.all([
     sf("screens?select=screen_id,building_name,company_id&order=building_name.asc"),
-    sf("companies?select=company_id,company_name")
+    rpc("nsf_me",{p_token:NSF_TOKEN}).then(function(r){
+      return (r&&r.ok&&r.is_admin)?(r.companies||[]):[];
+    })
   ]).then(function(res){
     var screens=res[0]||[], comps=res[1]||[], cmap={};
     comps.forEach(function(c){ cmap[c.company_id]=c.company_name; });
@@ -1093,19 +1119,24 @@ function showChPass(first){
 }
 
 function changePass(){
-  var p1=document.getElementById("np1").value.trim();
-  var p2=document.getElementById("np2").value.trim();
+  var p0=(document.getElementById("op")||{}).value||"";
+  var p1=document.getElementById("np1").value;
+  var p2=document.getElementById("np2").value;
   var e=document.getElementById("chpass-err");
-  if(p1.length<6){e.textContent="לפחות 6 תווים";e.style.display="block";return;}
+  if(p1.length<8){e.textContent="לפחות 8 תווים";e.style.display="block";return;}
   if(p1!==p2){e.textContent="הסיסמאות לא תואמות";e.style.display="block";return;}
   e.style.display="none";
-  sf("companies?company_id=eq."+encodeURIComponent(co.company_id),{method:"PATCH",body:JSON.stringify({password:p1,must_change_password:false,password_changed_at:new Date().toISOString()})})
-  .then(function(){
-    co.password=p1;co.must_change_password=false;CURRENT_PASS=p1;
-    sessionStorage.setItem('nati_co_pass',p1);
+  /* הסיסמה מוחלפת בשרת ואינה נשמרת בצד הלקוח בשום צורה. */
+  rpc("nsf_change_password",{p_token:NSF_TOKEN,p_old:p0,p_new:p1}).then(function(res){
+    if(!res||!res.ok){
+      e.textContent=(res&&res.err)||"החלפת הסיסמה נכשלה";
+      e.style.display="block"; return;
+    }
     document.getElementById("chpass-wrap").style.display="none";
-    if(fromApp){document.getElementById("app").style.display="block";toast("הסיסמה עודכנה!");}
-    else{enterApp();}
+    var inApp=document.getElementById("app").style.display==="block";
+    if(inApp){ toast("הסיסמה עודכנה"); } else { loadMe(); }
+  }).catch(function(){
+    e.textContent="החלפת הסיסמה נכשלה"; e.style.display="block";
   });
 }
 
@@ -1122,7 +1153,7 @@ function enterApp(){
     topLogo.alt=co.company_name||"לוגו";
   }
   if(!PREVIEW_MODE) sessionStorage.setItem('nati_co_logged',co.company_id);
-  sessionStorage.setItem('nati_co_pass',CURRENT_PASS||'');
+  /* הסיסמה אינה נשמרת בצד הלקוח. האסימון הוא מה שמחזיקים. */
   sessionStorage.setItem('nati_user',CURRENT_USER||'');
   sessionStorage.setItem('nati_is_admin',IS_ADMIN?'1':'0');
   sessionStorage.setItem('nati_perms',JSON.stringify(CURRENT_PERMS||FULL_PERMS));
@@ -1160,7 +1191,8 @@ function logout(){
   co=null;
   CURRENT_PERMS=null; CURRENT_USER=''; CURRENT_PASS=''; IS_ADMIN=false;
   sessionStorage.removeItem('nati_co_logged');
-  sessionStorage.removeItem('nati_co_pass');
+  setToken('');
+  try{ rpc('nsf_logout',{p_token:NSF_TOKEN}); }catch(e){}
   sessionStorage.removeItem('nati_user');
   sessionStorage.removeItem('nati_is_admin');
   sessionStorage.removeItem('nati_perms');
@@ -1714,14 +1746,14 @@ function addOrUpdateUser(){
 }
 function saveUsers(){
   if(!(isMasterUser()||IS_ADMIN)){toast("אין הרשאה");return;}
-  sf("companies?company_id=eq."+encodeURIComponent(co.company_id),
-     {method:"PATCH",body:JSON.stringify({sub_users:_coSubUsers})})
-  .then(function(){
+  /* ההרשאה נבדקת שוב בשרת — בדיקה בדפדפן אינה הרשאה. */
+  rpc("nsf_save_sub_users",{p_token:NSF_TOKEN,p_subs:_coSubUsers}).then(function(res){
+    if(!res||!res.ok){ toast((res&&res.err)||"שמירה נכשלה"); return; }
     co.sub_users=_coSubUsers.slice();
     renderUsersList();
     resetUserForm();
-    toast("המשתמשים עודכנו");
-  }).catch(function(){ toast("שגיאה בשמירה"); });
+    toast("נשמר");
+  }).catch(function(){ toast("שמירה נכשלה"); });
 }
 function openUsersModal(){
   if(!(isMasterUser()||IS_ADMIN)){toast("אין הרשאה");return;}
@@ -2096,11 +2128,9 @@ window.addEventListener("load",function(){
       }
     }).catch(function(){});
   }
-  var savedCo=sessionStorage.getItem('nati_co_logged');
-  var savedPass=sessionStorage.getItem('nati_co_pass');
-  var savedUser=sessionStorage.getItem('nati_user')||'';
-  var savedAdmin=sessionStorage.getItem('nati_is_admin')==='1';
-  var savedPerms=null; try{ savedPerms=JSON.parse(sessionStorage.getItem('nati_perms')||'null'); }catch(e){}
+  /* שחזור הפעלה: האסימון הוא מקור האמת, והשרת מאמת אותו בכל טעינה. */
+  if(NSF_TOKEN){ loadMe().catch(function(){ setToken(''); }); return; }
+  var savedCo=null;
   if(savedCo){
     var SB2="https://cxtrrejclkhqhkqbicmz.supabase.co";
     var SK2="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dHJyZWpjbGtocWhrcWJpY216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTk3MDksImV4cCI6MjA5NTU3NTcwOX0._7wB4YwrYEnK6hWuR6YqcFxRb05OLnWvOelIC-ahIEQ";
