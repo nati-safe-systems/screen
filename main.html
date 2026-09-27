@@ -207,6 +207,27 @@ body.marble .hdr{background:transparent;border-bottom:.2vh dotted rgba(212,171,7
   color:var(--gh)}
 body.marble .ft{background:transparent}
 
+
+/* ===== הדגשת זמן מתקרב =====
+   שתי מדרגות. הפעימה על הצבע והזוהר בלבד — לא על המיקום, כדי
+   שהשורות שמסביב לא יזוזו וזה לא יטריד את העין. */
+.zr{transition:font-size .5s ease, color .5s ease}
+.zr-soon{color:#ffd86b}
+.zr-soon b{color:#ffd86b;font-size:1.22em}
+.zr-hot{color:#ff6b5a}
+.zr-hot b{
+  color:#ff6b5a;
+  font-size:1.62em;
+  letter-spacing:.02em;
+  animation:zrHot 1.6s ease-in-out infinite;
+}
+@keyframes zrHot{
+  0%,100%{ text-shadow:0 0 .6vh rgba(255,80,60,.45); opacity:.92 }
+  50%    { text-shadow:0 0 2.4vh rgba(255,80,60,.95), 0 0 5vh rgba(255,60,40,.5); opacity:1 }
+}
+body.marble .zr-soon,body.marble .zr-soon b{color:#9a5a12}
+body.marble .zr-hot,body.marble .zr-hot b{color:#a52216}
+@media (prefers-reduced-motion:reduce){ .zr-hot b{animation:none} }
 </style></head><body>
 
 
@@ -1992,11 +2013,20 @@ function drawMinyanim(now,nowMin){
     out+='<div class="room"><div class="rn">'+esc(r.display_name||r.name)+'</div>'+rh+'</div>';
   });
   var box=document.getElementById("mlist");
-  box.innerHTML=out||'<div class="none">לא הוגדרו מניינים</div>';
-  var rooms=box.querySelectorAll(".room").length||1;
-  var lines=box.querySelectorAll(".prow").length||1;
-  var k=Math.max(.55, Math.min(1, 11/(rooms*1.6+lines)));
-  box.style.setProperty("--mk", k);
+  var html=out||'<div class="none">לא הוגדרו מניינים</div>';
+  /* ------------------------------------------------------------------
+     tick רצה כל שנייה, וכאן נבנתה כל רשימת המניינים מחדש בכל פעם.
+     הדפדפן מחק ויצר את כל הקופסאות, חישב פריסה מאפס, והטקסט קפץ —
+     זה מקור הריצוד. ברוב השניות התוכן זהה לחלוטין.
+     עכשיו הבנייה מחדש מתבצעת רק כשה-HTML באמת השתנה. */
+  if(box.__lastHtml !== html){
+    box.__lastHtml = html;
+    box.innerHTML = html;
+    var rooms=box.querySelectorAll(".room").length||1;
+    var lines=box.querySelectorAll(".prow").length||1;
+    var k=Math.max(.55, Math.min(1, 11/(rooms*1.6+lines)));
+    box.style.setProperty("--mk", k);
+  }
 }
 /* בדיקה: ?mdebug=1 — מציג כל שורת מניין ומה קרה לה */
 function mdebug(now){
@@ -2200,12 +2230,28 @@ function tick(){
     _par.textContent = PARASHA;
   }
   var nowMin=h*60+m+sc/60;
-  document.getElementById("zlist").innerHTML=
-    [["עלות השחר",Z.alotHashachar],["נץ החמה",Z.netz],['סו"ז ק"ש מג"א',Z.sofZmanShmaMGA],
+  /* ------------------------------------------------------------------
+     זמן שמתקרב מקבל הדגשה מדורגת:
+       15 דקות לפני  ->  ענבר, גדל מעט
+        5 דקות לפני  ->  אדום, גדול משמעותית, פועם
+     הפעימה היא על עוצמת הזוהר והצבע ולא על המיקום, כדי שהעין
+     תיתפס אליה בלי שהשורה תזוז ותטריד. השורות שמסביב שומרות
+     על מקומן — רק השורה הבולטת משנה גודל. */
+  var _zl=document.getElementById("zlist");
+  var _zHtml=[["עלות השחר",Z.alotHashachar],["נץ החמה",Z.netz],['סו"ז ק"ש מג"א',Z.sofZmanShmaMGA],
      ['סו"ז ק"ש גר"א',Z.sofZmanShmaGRA],['סו"ז תפילה',Z.sofZmanTfilaGRA],["חצות",Z.chatzot],
      ["מנחה גדולה",Z.minchaGedola],["פלג המנחה",Z.plagHamincha],["שקיעה",Z.shkia],
      ["צאת הכוכבים",Z.tzeitHakochavim],["רבינו תם",Z.tzeitRT]]
-    .map(function(x){return '<div class="zr"><span>'+x[0]+'</span><b>'+NatiMinyan.fmt(x[1])+'</b></div>';}).join("");
+    .map(function(x){
+      var left = (typeof x[1]==="number") ? (x[1]-nowMin) : null;
+      var cls  = "zr";
+      if(left!==null && left>0){
+        if(left<=5)       cls+=" zr-hot";
+        else if(left<=15) cls+=" zr-soon";
+      }
+      return '<div class="'+cls+'"><span>'+x[0]+'</span><b>'+NatiMinyan.fmt(x[1])+'</b></div>';
+    }).join("");
+  if(_zl.__lastHtml!==_zHtml){ _zl.__lastHtml=_zHtml; _zl.innerHTML=_zHtml; }
   drawMinyanim(now,nowMin);
   if(new URLSearchParams(location.search).get("mdebug")==="1"){
     if(!window._mdt||Date.now()-window._mdt>5000){ window._mdt=Date.now(); try{ mdebug(now); }catch(e){} }
@@ -2313,5 +2359,5 @@ setTimeout(fetchParasha, 3000);
 })();
 /* האתחול רץ רק אחרי שהמסך עבר רישיון, טוקן ונעילת מכשיר */
 NatiGuard.check(function(){ load(); tick(); });
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 2.0 · 27.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 2.1 · 27.09.26</div>
 </body></html>
