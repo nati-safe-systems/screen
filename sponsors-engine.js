@@ -47,9 +47,11 @@
      span   — כמה מקום תופסת קובייה לפי רמת החשיבות. זה מה שנותן
               לפרנס חשוב להיראות גדול, גם כשהמסך נוסע.
      dir    — y: עולה מלמטה למעלה. x: נוסע כמו רצועת חדשות. */
-  var DEF = { staticMax:6, dir:"x", speed:22, gap:1.1,
+  var DEF = { staticMax:6, dir:"x", speed:70, gap:1.1, restSec:1.6,
               minCardVw:17, ratio:1.9, maxCols:4,
-              span:{1:2.15, 2:1.45, 3:1, 4:1, 5:1} };
+              /* speed = פיקסלים בשנייה. קבוע ואינו תלוי בכמות
+                 הפרנסים, כך שהמהירות נשארת אותה מהירות תמיד. */
+              span:{1:2.6, 2:1.8, 3:1.05, 4:1, 5:1} };
 
 
   /* ---- בחירת הרשת ----
@@ -226,20 +228,41 @@
           : "flex:0 0 "+(unit*w)+"px;width:100%;";
         return cardHtml(x, t<=2, st);
       }
-      var one=arr.map(block).join("");
-      track.innerHTML=one+one;
+      /* עותק אחד בלבד.
+         קודם הכפלתי את הרשימה כדי שהמעבר יהיה חלק, אבל אז לא היו
+         התחלה וסוף — הצופה לא ידע מתי הרשימה מתחילה ומתי נגמרה.
+         עכשיו הרשימה נכנסת מהצד, עוברת במלואה, יוצאת, נעצרת רגע,
+         ומתחילה שוב מההתחלה. */
+      track.innerHTML=arr.map(block).join("");
       host.appendChild(track);
 
-      var cycle = horiz ? track.scrollWidth/2 : track.scrollHeight/2;
-      var pos=0, last=0;
-      var pps=Math.max(14, cycle/Math.max(12, n*O.speed/10));
+      var CS   = horiz ? W : H;                                  /* גודל המסך */
+      var TS   = horiz ? track.scrollWidth : track.scrollHeight;  /* אורך הרשימה */
+      var span = CS + TS;                                         /* מסלול מלא */
+      var pps  = Math.max(8, +O.speed || 70);                     /* פיקסלים בשנייה */
+      var pos=0, last=0, restUntil=0;
+
+      function place(){
+        var off = CS - pos;                /* מתחיל מחוץ למסך ויוצא בצד השני */
+        track.style.transform = horiz
+          ? "translateX("+(-off)+"px)"     /* עברית: נכנס מימין */
+          : "translateY("+off+"px)";       /* אנכי: עולה מלמטה */
+      }
+      place();
+
       function step(ts){
         if(!last) last=ts;
-        pos+=pps*((ts-last)/1000); last=ts;
-        if(pos>=cycle) pos-=cycle;
-        track.style.transform = horiz
-          ? "translateX("+pos+"px)"     /* עברית — נע ימינה */
-          : "translateY("+(-pos)+"px)";
+        var dt=(ts-last)/1000; last=ts;
+        if(restUntil){
+          if(ts>=restUntil){ restUntil=0; pos=0; place(); }
+        }else{
+          pos+=pps*dt;
+          if(pos>=span){                   /* הרשימה יצאה במלואה */
+            restUntil = ts + Math.max(0,(+O.restSec||0))*1000;
+            if(!restUntil){ pos=0; }
+          }
+          place();
+        }
         raf=requestAnimationFrame(step);
       }
       raf=requestAnimationFrame(step);
