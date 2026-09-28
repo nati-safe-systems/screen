@@ -1663,11 +1663,20 @@ function markCampPaid(id){
 }
 
 function payLink(id){
-  /* עד שתחובר הסליקה האוטומטית — העתקה ידנית של הקישור שתפיק בסאמית */
-  var u=prompt('הדבק כאן את קישור התשלום מסאמית:','');
-  if(!u) return;
-  navigator.clipboard && navigator.clipboard.writeText(u);
-  toast('הקישור הועתק — שלח אותו ללקוח במייל');
+  /* הקישור נוצר בשרת. ה-APIKey של סאמית אינו נמצא בקובץ הזה
+     ואינו יכול להימצא בו — הוא מאפשר להוציא חשבוניות ולחייב. */
+  toast('יוצר קישור תשלום...');
+  fetch(SB+'/functions/v1/nsf-pay-link',{
+    method:'POST',
+    headers:{'Content-Type':'application/json',
+             'Authorization':'Bearer '+SK, apikey:SK},
+    body:JSON.stringify({token:NSF_TOKEN, campaign_id:id})
+  }).then(function(r){ return r.json(); }).then(function(r){
+    if(!r||!r.ok){ toast((r&&r.err)||'יצירת הקישור נכשלה'); return; }
+    try{ navigator.clipboard.writeText(r.url); }catch(e){}
+    prompt('קישור התשלום — שלח אותו ללקוח:', r.url);
+    loadQueue();
+  }).catch(function(){ toast('שגיאה ביצירת הקישור'); });
 }
 
 function loadAdsTab(){
