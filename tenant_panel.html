@@ -744,7 +744,30 @@ input:focus,select:focus{border-color:#58a6ff;}
               <div class="hint">לחיצה על השדה פותחת לוח שנה ושעון. השאר ריק = ללא הגבלה בצד זה.</div>
             </div>
 
-            <div class="sf-foot">
+            <div id="sfb-wrap" style="margin:14px 0;padding-top:12px;
+     border-top:1px solid rgba(255,255,255,.1);">
+  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:700;">
+    <input type="checkbox" id="sfb-on" onchange="sfbToggle()" style="width:16px;height:16px;cursor:pointer;">
+    <span>לשדר את המודעה המתוזמנת גם למסכים נוספים</span>
+  </label>
+  <div id="sfb-box" style="display:none;margin-top:10px;">
+    <div style="display:flex;gap:10px;margin-bottom:8px;">
+      <button type="button" onclick="sfbAll(true)"
+        style="background:#21262d;border:1px solid #30363d;color:#ffcc00;border-radius:6px;
+               padding:4px 10px;font-size:12px;cursor:pointer;">סמן הכל</button>
+      <button type="button" onclick="sfbAll(false)"
+        style="background:#21262d;border:1px solid #30363d;color:#8b949e;border-radius:6px;
+               padding:4px 10px;font-size:12px;cursor:pointer;">נקה</button>
+      <span id="sfb-count" style="font-size:12px;color:#8b949e;align-self:center;"></span>
+    </div>
+    <div id="sfb-list" style="max-height:180px;overflow:auto;border:1px solid #30363d;
+         border-radius:8px;padding:8px;"></div>
+    <div style="font-size:11px;color:#8b949e;margin-top:6px;">
+      המודעה <b>תתווסף</b> לרשימת המתוזמנות של כל מסך שנבחר. מודעות קיימות בהם לא ייפגעו.
+    </div>
+  </div>
+</div>
+<div class="sf-foot">
               <button class="btn-cancel" type="button" onclick="closeSchedForm()">ביטול</button>
               <button class="btn-sf-save" type="button" onclick="saveSchedForm()">שמור מודעה מתוזמנת</button>
             </div>
@@ -752,6 +775,33 @@ input:focus,select:focus{border-color:#58a6ff;}
         </div>
       </div>
 
+      <!-- ===== הפצה לכמה מסכים =====
+           עד כה מודעה נשמרה למסך אחד בלבד — זה שנפתח לעריכה.
+           כאן אפשר לסמן מסכים נוספים ולשמור לכולם בפעולה אחת. -->
+      <div id="bcast-wrap" style="margin-top:16px;padding-top:14px;
+           border-top:1px solid rgba(255,255,255,.1);">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:700;">
+          <input type="checkbox" id="bcast-on" onchange="bcastToggle()"
+                 style="width:16px;height:16px;cursor:pointer;">
+          <span>להציג את המודעה גם במסכים נוספים</span>
+        </label>
+        <div id="bcast-box" style="display:none;margin-top:10px;">
+          <div style="display:flex;gap:10px;margin-bottom:8px;">
+            <button type="button" onclick="bcastAll(true)"
+              style="background:#21262d;border:1px solid #30363d;color:#ffcc00;
+                     border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;">סמן הכל</button>
+            <button type="button" onclick="bcastAll(false)"
+              style="background:#21262d;border:1px solid #30363d;color:#8b949e;
+                     border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;">נקה</button>
+            <span id="bcast-count" style="font-size:12px;color:#8b949e;align-self:center;"></span>
+          </div>
+          <div id="bcast-list" style="max-height:200px;overflow:auto;
+               border:1px solid #30363d;border-radius:8px;padding:8px;"></div>
+          <div style="font-size:11px;color:#8b949e;margin-top:6px;">
+            המודעה תישמר לכל המסכים המסומנים. מודעות קיימות בהם יוחלפו.
+          </div>
+        </div>
+      </div>
     </div>
     <div class="modal-foot">
       <button class="btn-del" id="btn-del-msg" onclick="clearMsg()">מחק מודעה קבועה</button>
@@ -1363,7 +1413,12 @@ function openEdit(el){
     }
     applyTenantPerms();
     try{ tApplyPurpose(); }catch(e){}   /* אחרי ההרשאות — ההתאמה לסוג המסך קובעת */
-    document.getElementById("edit-modal").classList.add("open");
+      /* הבורר נפתח נקי בכל עריכה, כדי שלא יישאר סימון מפעם קודמת */
+  var _bo=document.getElementById("bcast-on");
+  if(_bo){ _bo.checked=false; document.getElementById("bcast-box").style.display="none"; }
+  var _bl=document.getElementById("bcast-list"); if(_bl) _bl.innerHTML="";
+  bcastCount();
+  document.getElementById("edit-modal").classList.add("open");
   });
 }
 
@@ -1789,6 +1844,49 @@ function setType(t){
 
 function drvUrl(u){var m=u.match(/file\/d\/([^/]+)/);return m?"https://drive.google.com/file/d/"+m[1]+"/preview":u;}
 
+/* ============ הפצת מודעה לכמה מסכים ============ */
+function bcastToggle(){
+  var on=document.getElementById("bcast-on").checked;
+  document.getElementById("bcast-box").style.display = on ? "block" : "none";
+  if(on) bcastRender();
+}
+function bcastRender(){
+  var box=document.getElementById("bcast-list");
+  if(!box) return;
+  var list=(typeof allScreens!=="undefined" && Array.isArray(allScreens)) ? allScreens : [];
+  var others=list.filter(function(x){ return x.screen_id!==sid; });
+  if(!others.length){
+    box.innerHTML='<div style="color:#8b949e;font-size:13px;">אין מסכים נוספים</div>';
+    bcastCount(); return;
+  }
+  box.innerHTML=others.map(function(x){
+    return '<label style="display:flex;align-items:center;gap:8px;padding:5px 2px;cursor:pointer;">'+
+      '<input type="checkbox" class="bcast-cb" value="'+escTP(x.screen_id)+'" onchange="bcastCount()" '+
+      'style="width:15px;height:15px;cursor:pointer;">'+
+      '<span>'+escTP(x.building_name||x.screen_id)+
+      '<span style="color:#8b949e;font-size:12px;"> · '+escTP(x.screen_id)+'</span></span></label>';
+  }).join("");
+  bcastCount();
+}
+function bcastAll(v){
+  Array.prototype.forEach.call(document.querySelectorAll(".bcast-cb"),function(c){ c.checked=!!v; });
+  bcastCount();
+}
+function bcastCount(){
+  var n=document.querySelectorAll(".bcast-cb:checked").length;
+  var e=document.getElementById("bcast-count");
+  if(e) e.textContent = n ? ("נבחרו "+n) : "לא נבחר אף מסך";
+  var b=document.getElementById("btn-save-msg");
+  if(b) b.textContent = n ? ("שמור ל-"+(n+1)+" מסכים") : "שמור ועדכן מסך";
+}
+/* המסכים הנוספים שנבחרו, או רשימה ריקה */
+function bcastTargets(){
+  var on=(document.getElementById("bcast-on")||{}).checked;
+  if(!on) return [];
+  return Array.prototype.map.call(document.querySelectorAll(".bcast-cb:checked"),
+    function(c){ return c.value; });
+}
+
 function saveMsg(){
   var html=document.getElementById("rte-editor").innerHTML;
   var pdf=document.getElementById("pdf-url").value.trim();
@@ -1811,7 +1909,26 @@ function saveMsg(){
     body.display_config=JSON.stringify(_dc);
     _tenantDC=_dc;
   }
-  sf("screens?screen_id=eq."+encodeURIComponent(sid),{method:"PATCH",body:JSON.stringify(body)}).then(function(){closeModal();toast("עודכן!");loadScreens();});
+  /* המסך הנוכחי תמיד, ואחריו כל מסך שסומן.
+     למסכים האחרים נשלחת המודעה הקבועה בלבד — בלי schedules.
+     שליחת הרשימה המלאה הייתה מוחקת להם את המודעות המתוזמנות
+     שלהם ומחליפה אותן בשל המסך הזה. */
+  var _others=bcastTargets().filter(function(x){return x!==sid;});
+  var _bodyOther={};
+  for(var _k in body){ if(_k!=="schedules") _bodyOther[_k]=body[_k]; }
+
+  var _jobs=[ sf("screens?screen_id=eq."+encodeURIComponent(sid),
+                 {method:"PATCH",body:JSON.stringify(body)}) ];
+  _others.forEach(function(t){
+    _jobs.push(sf("screens?screen_id=eq."+encodeURIComponent(t),
+                  {method:"PATCH",body:JSON.stringify(_bodyOther)}));
+  });
+  var _targets=[sid].concat(_others);
+  Promise.all(_jobs).then(function(){
+    closeModal();
+    if(_targets.length>1) toast("נשמר ל-"+_targets.length+" מסכים");
+    load();
+  }).catch(function(){ toast("השמירה נכשלה"); });
 }
 
 function clearMsg(){
@@ -1990,6 +2107,7 @@ function sfSetType(t){
   document.getElementById("sf-pdf-show-sec").style.display=t==="scrollpdf"?"block":"none";
 }
 function openSchedForm(){
+  sfbReset();
   sfIndex=-1;
   document.getElementById("sf-title").textContent="מודעה מתוזמנת חדשה";
   sfSetType("scroll");
@@ -2021,6 +2139,70 @@ function editSched(i){
   document.getElementById("sf-wrap").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 function closeSchedForm(){document.getElementById("sf-wrap").classList.remove("open");sfIndex=-1;}
+/* ============ שידור מודעה מתוזמנת לכמה מסכים ============
+   בניגוד למודעה הקבועה, כאן המודעה מתווספת לרשימה הקיימת בכל מסך
+   ואינה מחליפה אותה. לכן קוראים את הרשימה של כל מסך, מוסיפים,
+   וכותבים בחזרה. */
+function sfbToggle(){
+  var on=document.getElementById("sfb-on").checked;
+  document.getElementById("sfb-box").style.display = on ? "block" : "none";
+  if(on) sfbRender();
+}
+function sfbRender(){
+  var box=document.getElementById("sfb-list"); if(!box) return;
+  var list=(typeof allScreens!=="undefined" && Array.isArray(allScreens)) ? allScreens : [];
+  var others=list.filter(function(x){ return x.screen_id!==sid; });
+  if(!others.length){
+    box.innerHTML='<div style="color:#8b949e;font-size:13px;">אין מסכים נוספים</div>';
+    sfbCount(); return;
+  }
+  box.innerHTML=others.map(function(x){
+    return '<label style="display:flex;align-items:center;gap:8px;padding:5px 2px;cursor:pointer;">'+
+      '<input type="checkbox" class="sfb-cb" value="'+escTP(x.screen_id)+'" onchange="sfbCount()" '+
+      'style="width:15px;height:15px;cursor:pointer;">'+
+      '<span>'+escTP(x.building_name||x.screen_id)+
+      '<span style="color:#8b949e;font-size:12px;"> · '+escTP(x.screen_id)+'</span></span></label>';
+  }).join("");
+  sfbCount();
+}
+function sfbAll(v){
+  Array.prototype.forEach.call(document.querySelectorAll(".sfb-cb"),function(c){c.checked=!!v;});
+  sfbCount();
+}
+function sfbCount(){
+  var n=document.querySelectorAll(".sfb-cb:checked").length;
+  var e=document.getElementById("sfb-count");
+  if(e) e.textContent = n ? ("נבחרו "+n+" מסכים נוספים") : "לא נבחר אף מסך";
+}
+function sfbTargets(){
+  var on=(document.getElementById("sfb-on")||{}).checked;
+  if(!on) return [];
+  return Array.prototype.map.call(document.querySelectorAll(".sfb-cb:checked"),
+    function(c){ return c.value; }).filter(function(x){ return x!==sid; });
+}
+function sfbReset(){
+  var o=document.getElementById("sfb-on");
+  if(o){ o.checked=false; document.getElementById("sfb-box").style.display="none"; }
+  var l=document.getElementById("sfb-list"); if(l) l.innerHTML="";
+  sfbCount();
+}
+
+/* מוסיף רשומה אחת לרשימת המתוזמנות של כל מסך שנבחר */
+function sfbBroadcast(rec, targets){
+  if(!targets.length) return Promise.resolve(0);
+  var jobs=targets.map(function(t){
+    return sf("screens?screen_id=eq."+encodeURIComponent(t)+"&select=schedules")
+      .then(function(rows){
+        var cur=[];
+        try{ cur=parseSchedules(rows&&rows[0]?rows[0].schedules:null)||[]; }catch(e){ cur=[]; }
+        cur.push(rec);
+        return sf("screens?screen_id=eq."+encodeURIComponent(t),
+                  {method:"PATCH",body:JSON.stringify({schedules:JSON.stringify(cur)})});
+      });
+  });
+  return Promise.all(jobs).then(function(){ return targets.length; });
+}
+
 function saveSchedForm(){
   var msg=document.getElementById("sf-rte").innerHTML;
   var pdfRaw=document.getElementById("sf-pdf-url").value.trim();
@@ -2043,9 +2225,20 @@ function saveSchedForm(){
     end: dtEndVal
   };
   if(sfIndex>=0)schedules[sfIndex]=rec; else schedules.push(rec);
+
+  var _t=sfbTargets();
+  if(_t.length){
+    /* למסכים האחרים נשמר מיד. במסך הנוכחי — בלחיצת "שמור ועדכן מסך",
+       כמו קודם, כדי לא לשנות התנהגות שאתה כבר מכיר. */
+    sfbBroadcast(rec,_t).then(function(n){
+      toast("שודר ל-"+n+" מסכים נוספים · לחץ 'שמור ועדכן מסך' למסך הזה");
+    }).catch(function(){ toast("השידור למסכים הנוספים נכשל"); });
+  }else{
+    toast("נשמר (לחץ 'שמור ועדכן מסך' לעדכון המסך)");
+  }
+  sfbReset();
   closeSchedForm();
   renderSchedList();
-  toast("נשמר (לחץ 'שמור ועדכן מסך' לעדכון המסך)");
 }
 /* ============ סוף מנוע תזמון ============ */
 
