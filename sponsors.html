@@ -1909,7 +1909,7 @@ function load(){
               minCardVw:17, ratio:1.9, maxCols:4,
               /* speed = פיקסלים בשנייה. קבוע ואינו תלוי בכמות
                  הפרנסים, כך שהמהירות נשארת אותה מהירות תמיד. */
-              span:{1:2.6, 2:1.8, 3:1.05, 4:1, 5:1} };
+              span:{1:2.6, 2:1.35, 3:1.05, 4:1, 5:1} };
 
 
   /* ---- בחירת הרשת ----
@@ -2090,7 +2090,11 @@ function load(){
         var out=[], buf=[];
         function flush(){
           if(!buf.length) return;
-          var rows=buf.length;
+          /* מספר השורות קבוע ואינו נגזר מכמה יש בעמודה.
+             קודם עמודה אחרונה עם פרנס בודד קיבלה שורה אחת בגובה
+             מלא, והוא נראה פתאום ענק. עכשיו הוא יושב בשורה העליונה
+             בדיוק באותו גודל, והשאר נשאר ריק. */
+          var rows=Math.max(1,+O.smallRows||3);
           var w = horiz ? (unit*1.0) : null;
           var st = horiz
             ? "flex:0 0 "+w+"px;height:100%;display:grid;"+
@@ -2284,5 +2288,5 @@ setInterval(function(){ZDAY="";load();},5*60*1000);
 })();
 /* האתחול רץ רק אחרי שהמסך עבר רישיון, טוקן ונעילת מכשיר */
 NatiGuard.check(function(){ load(); tick(); });
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · פרנסים · גרסה 3.3 · 27.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · פרנסים · גרסה 3.4 · 27.09.26</div>
 </body></html>
