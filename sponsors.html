@@ -1900,43 +1900,22 @@ function load(){
      והקדשה אינה קריאה מהצד השני של בית הכנסת מתחת לגדלים האלה.
      maxCols מוגבל כי שם בעברית זקוק לרוחב — שמונה עמודות היו
      מייצרות עמודות צרות שבהן כל שם נשבר לשלוש שורות. */
-  var DEF = { mode:"auto", pageSec:12,
-              minCardVh:19, minCardVw:20, maxCols:4, maxPerPage:12,
-              ratio:2.1, gap:1.1, fadeMs:900, marqueeSpeed:22,
-              /* רצועת המובילים: מי נכנס אליה, כמה, ואיזה חלק מהגובה */
-              heroMaxTier:1, heroMax:3, heroVh1:34, heroVhN:28,
-              /* y = גלילה כלפי מעלה, x = נסיעה כמו רצועת חדשות */
-              marqueeDir:"y" };
+  /* staticMax — עד כמה פרנסים המסך עומד. מעבר לזה הוא נוסע.
+     span   — כמה מקום תופסת קובייה לפי רמת החשיבות. זה מה שנותן
+              לפרנס חשוב להיראות גדול, גם כשהמסך נוסע.
+     dir    — y: עולה מלמטה למעלה. x: נוסע כמו רצועת חדשות. */
+  var DEF = { staticMax:6, dir:"x", speed:22, gap:1.1,
+              minCardVw:17, ratio:1.9, maxCols:4,
+              span:{1:2.15, 2:1.45, 3:1, 4:1, 5:1} };
+
 
   /* ---- בחירת הרשת ----
      עוברים על כל מספר עמודות אפשרי ומחשבים כמה שורות נדרשות.
      מנקדים לפי שטח הקובייה ולפי קרבה ליחס המועדף, ובוחרים
      את הציון הגבוה ביותר שעדיין עומד בגודל המינימלי. */
-  function bestGrid(n, W, H, gapPx, minH, ratio, maxCols){
-    if(n<=0) return {cols:1, rows:1, cw:W, ch:H, score:0};
-    var best=null;
-    for(var c=1;c<=Math.min(n, maxCols||4);c++){
-      var r=Math.ceil(n/c);
-      var cw=(W-gapPx*(c-1))/c;
-      var ch=(H-gapPx*(r-1))/r;
-      if(cw<=0||ch<=0) continue;
-      var arOff=Math.abs((cw/ch)-ratio)/ratio;      /* 0 = יחס מושלם */
-      var score=(cw*ch)*(1-Math.min(.6,arOff*.5));
-      var cand={cols:c, rows:r, cw:cw, ch:ch, score:score, fits:ch>=minH};
-      if(!best || (cand.fits&&!best.fits) ||
-         (cand.fits===best.fits && cand.score>best.score)) best=cand;
-    }
-    return best||{cols:1, rows:n, cw:W, ch:H/n, score:0, fits:false};
-  }
 
   /* כמה פריטים נכנסים בגודל שעדיין נקרא מרחוק.
      זה המספר שקובע אם צריך עמודים, וכמה יהיו. */
-  function capacity(W, H, gapPx, minH, minW, maxCols, maxPer){
-    var rows=Math.max(1, Math.floor((H+gapPx)/(minH+gapPx)));
-    var cols=Math.max(1, Math.floor((W+gapPx)/(minW+gapPx)));
-    cols=Math.min(cols, maxCols||4);
-    return Math.max(1, Math.min(rows*cols, maxPer||12));
-  }
 
   function esc(s){
     return String(s==null?"":s).replace(/[&<>"']/g,function(c){
@@ -1944,9 +1923,10 @@ function load(){
     });
   }
 
-  function cardHtml(s, isHero){
+  function cardHtml(s, big, style){
     var tier=Math.min(5,Math.max(1,+s.priority||3));
-    return '<div class="sc t'+tier+(isHero?' nsp-h':'')+'">'+
+    return '<div class="sc t'+tier+(big?' nsp-h':'')+'"'+
+           (style?' style="'+style+'"':'')+'>'+
              (s.category   ? '<div class="cat">'+esc(s.category)+'</div>' : '')+
              '<div class="nm">'+esc(s.name)+'</div>'+
              (s.dedication ? '<div class="dd">'+esc(s.dedication)+'</div>' : '')+
@@ -1970,7 +1950,9 @@ function load(){
       '.nsp-track{position:absolute;left:0;right:0;top:0;display:grid;',
         'will-change:transform}',
       /* בנסיעה אופקית הרצועה רחבה מהמסך, ולכן right משוחרר */
-      '.nsp-track.x{right:auto;top:0;bottom:0}',
+      '.nsp-track{position:absolute;left:0;top:0;will-change:transform}',
+      '.nsp-track.x{right:auto;bottom:0}',
+      '.nsp-track.y{right:0}',
       '.nsp-hero{z-index:2}',
       '.sc.nsp-h .nm{font-size:1.45em}',
       '.sc.nsp-h .cat{font-size:1.15em}',
@@ -2030,6 +2012,9 @@ function load(){
       return {hero:hero, rest:rest};
     }
 
+    function tierOf(x){ return Math.min(5,Math.max(1,+x.priority||3)); }
+    function wOf(x){ return O.span[tierOf(x)] || 1; }
+
     function render(){
       clearTimers();
       host.innerHTML="";
@@ -2038,133 +2023,83 @@ function load(){
         host.innerHTML='<div class="none" style="margin:auto">אין פרנסים להיום</div>';
         return;
       }
-
       var W=host.clientWidth, H=host.clientHeight;
       if(W<40||H<40){ setTimeout(render,180); return; }
-
       var gapPx=px(O.gap);
-      var sp=split(arr);
 
-      /* הרצועה העליונה תופסת חלק מהגובה, והשאר לרשת */
-      var heroH=0, restH=H;
-      if(sp.hero.length){
-        heroH = H * (sp.hero.length===1 ? O.heroVh1 : O.heroVhN) / 100;
-        heroH = Math.min(heroH, H*0.5);
-        restH = H - heroH - gapPx;
-      }
-
-      if(sp.hero.length){
-        var hg=bestGrid(sp.hero.length, W, heroH, gapPx,
-                        heroH*0.6, O.ratio*1.4, Math.min(sp.hero.length,3));
-        var hb=document.createElement("div");
-        hb.className="nsp-hero";
-        hb.setAttribute("style",
-          "position:absolute;left:0;right:0;top:0;height:"+heroH+"px;"+
-          "display:grid;grid-template-columns:repeat("+hg.cols+",minmax(0,1fr));"+
-          "grid-auto-rows:minmax(0,1fr);gap:"+gapPx+"px;");
-        hb.innerHTML=sp.hero.map(function(x){ return cardHtml(x,true); }).join("");
-        host.appendChild(hb);
-      }
-
-      if(!sp.rest.length) return;
-
-      /* אזור הרשת */
-      var area=document.createElement("div");
-      area.className="nsp-area";
-      area.setAttribute("style",
-        "position:absolute;left:0;right:0;bottom:0;height:"+restH+"px;overflow:hidden;");
-      host.appendChild(area);
-
-      var minH=px(O.minCardVh), minW=W*O.minCardVw/100;
-      var cap=capacity(W,restH,gapPx,minH,minW,O.maxCols,O.maxPerPage);
-      var m=sp.rest.length;
-
-      var mode=O.mode;
-      /* ברירת המחדל כשלא הכל נכנס היא גלילה ולא עמודים.
-         עמוד מתחלף דורש מהצופה לדעת שיש המשך ולהמתין לו, ורוב
-         האנשים לא ימתינו. תנועה רציפה תופסת את העין מעצמה —
-         עומדים ומסתכלים עד שהשם שלהם עובר. */
-      if(mode==="auto") mode = (m<=cap) ? "fit" : "marquee";
-
-      /* רשת אחת לכל העמודים.
-         קודם כל עמוד חישב רשת משלו, ולכן עמוד אחרון עם שלושה
-         פרנסים ניפח אותם לכל המסך בעוד בעמוד הראשון היו קטנים.
-         עכשיו הגודל אחיד, והעמוד האחרון פשוט מלא פחות. */
-      var gridN = (mode==="fit") ? m : Math.min(cap,m);
-      var g=bestGrid(gridN, W, restH, gapPx, minH, O.ratio, O.maxCols);
-      var gs="grid-template-columns:repeat("+g.cols+",minmax(0,1fr));"+
-             "grid-auto-rows:minmax(0,1fr);gap:"+gapPx+"px;";
-
-      if(mode==="fit" || m<=cap){
-        var p0=document.createElement("div");
-        p0.className="nsp-page solo on";
-        p0.setAttribute("style", gs);
-        p0.innerHTML=sp.rest.map(function(x){ return cardHtml(x,false); }).join("");
-        area.appendChild(p0);
+      /* ---------- מעט פרנסים: המסך עומד ----------
+         רשת שבה קובייה חשובה תופסת יותר תאים. הכל נראה בבת אחת
+         ואין צורך להמתין לדבר. */
+      if(n<=O.staticMax){
+        var cols = n<=2 ? n : (n<=4 ? 2 : 3);
+        var cells=0;
+        arr.forEach(function(x){
+          var t=tierOf(x);
+          cells += (t===1 ? 4 : (t===2 ? 2 : 1));
+        });
+        var rows=Math.max(1, Math.ceil(cells/cols));
+        var p=document.createElement("div");
+        p.className="nsp-page solo on";
+        p.setAttribute("style",
+          "position:absolute;inset:0;display:grid;grid-auto-flow:dense;"+
+          "grid-template-columns:repeat("+cols+",minmax(0,1fr));"+
+          "grid-template-rows:repeat("+rows+",minmax(0,1fr));gap:"+gapPx+"px;");
+        p.innerHTML=arr.map(function(x){
+          var t=tierOf(x), st="";
+          if(t===1 && cols>=2) st="grid-column:span 2;grid-row:span 2;";
+          else if(t===2 && cols>=2) st="grid-column:span 2;";
+          return cardHtml(x, t<=2, st);
+        }).join("");
+        host.appendChild(p);
         return;
       }
 
-      if(mode==="marquee"){
-        var horiz = (O.marqueeDir==="x");
-        var track=document.createElement("div");
-        track.className="nsp-track"+(horiz?" x":"");
-        var one=sp.rest.map(function(x){ return cardHtml(x,false); }).join("");
+      /* ---------- הרבה פרנסים: המסך נוסע ----------
+         זרם אחד רציף. גודל הקובייה נגזר מרמת החשיבות, כך שפרנס
+         חשוב בולט בתוך התנועה ולא צריך רצועה נפרדת.
+         הרשימה מוכפלת כדי שהחזרה להתחלה לא תיראה כקפיצה. */
+      var horiz = (O.dir!=="y");
+      var track=document.createElement("div");
+      track.className="nsp-track"+(horiz?" x":" y");
 
-        if(horiz){
-          /* נסיעה מימין לשמאל: שורה אחת, כל קובייה ברוחב קבוע */
-          var rowsX=Math.max(1,Math.min(g.rows,2));
-          var cwX=(W-gapPx*(O.maxCols-1))/O.maxCols;
-          track.setAttribute("style",
-            "grid-auto-flow:column;grid-auto-columns:"+cwX+"px;"+
-            "grid-template-rows:repeat("+rowsX+",minmax(0,1fr));"+
-            "gap:"+gapPx+"px;height:"+restH+"px;width:max-content;");
-        }else{
-          track.setAttribute("style", gs);
-        }
-        track.innerHTML=one+one;
-        area.appendChild(track);
+      var unit;
+      if(horiz){
+        /* יחידת הרוחב הבסיסית; קובייה חשובה מקבלת כפולה שלה */
+        unit=Math.max(W*O.minCardVw/100, 150);
+        track.setAttribute("style",
+          "display:flex;flex-direction:row;align-items:stretch;"+
+          "gap:"+gapPx+"px;height:100%;width:max-content;");
+      }else{
+        unit=Math.max(H*0.20, 110);
+        track.setAttribute("style",
+          "display:flex;flex-direction:column;"+
+          "gap:"+gapPx+"px;width:100%;");
+      }
 
-        /* הרשימה מוכפלת, ולכן החזרה להתחלה אינה נראית כקפיצה */
-        var cycle = horiz ? track.scrollWidth/2 : track.scrollHeight/2;
-        var pos=0, last=0;
-        var pps=Math.max(10, cycle/Math.max(10, m*O.marqueeSpeed/10));
-        function step(ts){
-          if(!last) last=ts;
-          pos+=pps*((ts-last)/1000); last=ts;
-          if(pos>=cycle) pos-=cycle;
-          track.style.transform = horiz
-            ? "translateX("+pos+"px)"      /* עברית — נע ימינה */
-            : "translateY("+(-pos)+"px)";
-          raf=requestAnimationFrame(step);
-        }
+      function block(x){
+        var w=wOf(x), t=tierOf(x);
+        var st = horiz
+          ? "flex:0 0 "+(unit*w)+"px;height:100%;"
+          : "flex:0 0 "+(unit*w)+"px;width:100%;";
+        return cardHtml(x, t<=2, st);
+      }
+      var one=arr.map(block).join("");
+      track.innerHTML=one+one;
+      host.appendChild(track);
+
+      var cycle = horiz ? track.scrollWidth/2 : track.scrollHeight/2;
+      var pos=0, last=0;
+      var pps=Math.max(14, cycle/Math.max(12, n*O.speed/10));
+      function step(ts){
+        if(!last) last=ts;
+        pos+=pps*((ts-last)/1000); last=ts;
+        if(pos>=cycle) pos-=cycle;
+        track.style.transform = horiz
+          ? "translateX("+pos+"px)"     /* עברית — נע ימינה */
+          : "translateY("+(-pos)+"px)";
         raf=requestAnimationFrame(step);
-        return;
       }
-
-      pages=[];
-      for(var i2=0;i2<m;i2+=cap) pages.push(sp.rest.slice(i2,i2+cap));
-      pages.forEach(function(list,i3){
-        var el=document.createElement("div");
-        el.className="nsp-page"+(i3===0?" on":"");
-        el.setAttribute("style", gs+"align-content:start;");
-        el.innerHTML=list.map(function(x){ return cardHtml(x,false); }).join("");
-        area.appendChild(el);
-      });
-
-      if(pages.length>1){
-        var dots=document.createElement("div");
-        dots.className="nsp-dots";
-        dots.innerHTML=pages.map(function(_,i4){return '<i'+(i4?'':' class="on"')+'></i>';}).join("");
-        host.appendChild(dots);
-        idx=0;
-        timer=setInterval(function(){
-          var els=area.querySelectorAll(".nsp-page");
-          var ds=host.querySelectorAll(".nsp-dots i");
-          els[idx].classList.remove("on"); if(ds[idx]) ds[idx].classList.remove("on");
-          idx=(idx+1)%els.length;
-          els[idx].classList.add("on"); if(ds[idx]) ds[idx].classList.add("on");
-        }, Math.max(4,O.pageSec)*1000);
-      }
+      raf=requestAnimationFrame(step);
     }
 
     /* חתימה על הנתונים: מרנדרים רק כשהתוכן באמת השתנה.
@@ -2214,7 +2149,7 @@ function load(){
     };
   }
 
-  root.NatiSponsors = { mount:mount, VERSION:"1.0" };
+  root.NatiSponsors = { mount:mount, VERSION:"2.0" };
 })(typeof window !== "undefined" ? window : globalThis);
 
 
@@ -2234,13 +2169,11 @@ var SPCTL=null;
 function spOpts(){
   var d=(typeof DC!=="undefined"&&DC)?DC:{};
   return {
-    mode:       d.sponsors_mode     || "auto",
-    pageSec:   +d.sponsors_page_sec || 12,
-    minCardVh: +d.sponsors_min_h    || 19,
-    maxCols:   +d.sponsors_max_cols || 4,
-    maxPerPage:+d.sponsors_max_page || 12,
-    marqueeDir: d.sponsors_dir      || "y",
-    marqueeSpeed:+d.sponsors_speed  || 22
+    staticMax:+d.sponsors_static_max || 6,   /* עד כמה המסך עומד */
+    dir:       d.sponsors_dir        || "x", /* x=נוסע · y=עולה */
+    speed:    +d.sponsors_speed      || 22,
+    maxCols:  +d.sponsors_max_cols   || 4,
+    minCardVw:+d.sponsors_min_w      || 17
   };
 }
 
@@ -2297,5 +2230,5 @@ setInterval(function(){ZDAY="";load();},5*60*1000);
 })();
 /* האתחול רץ רק אחרי שהמסך עבר רישיון, טוקן ונעילת מכשיר */
 NatiGuard.check(function(){ load(); tick(); });
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · פרנסים · גרסה 2.3 · 27.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · פרנסים · גרסה 3.0 · 27.09.26</div>
 </body></html>
