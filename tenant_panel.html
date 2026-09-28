@@ -1020,6 +1020,7 @@ function hc_mevMolad(info){
     var st=document.createElement('style'); st.id='nhp-css';
     st.textContent=[
       '.nhp-lbl{font-size:12px;color:#8b949e;margin-top:4px;direction:rtl}',
+      'input[type=date].nhp-on{cursor:pointer}',
       '.nhp-lbl b{color:#ffcc00;font-weight:700}',
       '.nhp-btn{background:#21262d;border:1px solid #30363d;color:#ffcc00;border-radius:6px;',
         'padding:4px 9px;font:700 12px Heebo,Assistant,Arial,sans-serif;cursor:pointer;margin-inline-start:6px}',
@@ -1171,17 +1172,34 @@ function hc_mevMolad(info){
     var lbl=document.createElement('div');
     lbl.className='nhp-lbl';
     input.__nhpLbl=lbl;
+    input.parentNode.insertBefore(lbl, input.nextSibling);
 
-    var btn=document.createElement('button');
-    btn.type='button'; btn.className='nhp-btn'; btn.textContent='לוח עברי';
-    btn.onclick=function(e){ e.preventDefault(); e.stopPropagation(); open(input); };
+    /* ---- הלחיצה על השדה פותחת את הלוח המשולב ----
+       בורר התאריך המובנה של הדפדפן מציג לועזי בלבד, ואי אפשר
+       להוסיף לו תאריך עברי. לכן הוא נחסם והלחיצה מופנית ללוח שלנו.
 
-    var wrap=document.createElement('div');
-    wrap.style.cssText='display:flex;align-items:center;flex-wrap:wrap';
-    input.parentNode.insertBefore(wrap, input.nextSibling);
-    wrap.appendChild(btn);
+       המחיר: אי אפשר להקליד תאריך ידנית, רק לבחור מהלוח. בטלפון
+       ממילא כמעט אף אחד לא מקליד תאריך. הערך שנשמר לא משתנה —
+       הטופס ממשיך לקבל yyyy-mm-dd. */
+    input.setAttribute('readonly','readonly');
+    input.style.cursor='pointer';
 
-    input.parentNode.insertBefore(lbl, wrap.nextSibling);
+    function grab(e){
+      e.preventDefault();
+      e.stopPropagation();
+      input.blur();
+      open(input);
+    }
+    input.addEventListener('mousedown', grab);
+    input.addEventListener('focus', function(e){
+      e.preventDefault(); input.blur();
+    });
+    input.addEventListener('keydown', function(e){
+      if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(input); }
+    });
+    /* ניסיון לפתוח את הבורר המובנה — נחסם */
+    input.addEventListener('click', grab);
+
     input.addEventListener('change', function(){ refresh(input); });
     refresh(input);
   }
@@ -1197,7 +1215,7 @@ function hc_mevMolad(info){
     toHeb: toHeb,
     hebParts: hebParts,
     heNum: heNum,
-    VERSION: '1.0'
+    VERSION: '1.1'
   };
 })(typeof window !== 'undefined' ? window : globalThis);
 
