@@ -148,12 +148,13 @@
 
     function px(vh){ return host.clientHeight * vh / 100; }
 
-    /* סידור לפי עדיפות, כדי שהבולטים יופיעו בעמוד הראשון */
+    /* מיון לפי דרגת החשיבות בלבד.
+       בתוך אותה דרגה נשמר הסדר שהגיע מהשרת — כלומר סדר ההוספה,
+       מי שתרם ראשון מופיע ראשון. Array.sort יציב, ולכן די במיון
+       לפי הדרגה כדי לשמר אותו. מיון משני לפי שם היה מבטל את זה. */
     function ordered(){
       return items.slice().sort(function(a,b){
-        var pa=+a.priority||3, pb=+b.priority||3;
-        if(pa!==pb) return pa-pb;
-        return String(a.name||"").localeCompare(String(b.name||""),"he");
+        return (+a.priority||3) - (+b.priority||3);
       });
     }
 

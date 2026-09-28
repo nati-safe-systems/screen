@@ -1844,7 +1844,7 @@ function load(){
          פרנס בלי date_from, בלי date_to או בלי scope פשוט נעלם
          מהמסך, בלי שום שגיאה. עמודה ריקה פירושה "בלי הגבלה",
          ולא "לא להציג". */
-      sf("sponsors?site_id=eq."+sid+"&select=*&order=priority")
+      sf("sponsors?site_id=eq."+sid+"&select=*&order=priority.asc,created_at.asc")
     ]).then(function(r){
       SITE=r[0][0]; SPON=r[1]||[];
       document.getElementById("siteName").textContent=SITE?SITE.name:"";
@@ -2005,12 +2005,13 @@ function load(){
 
     function px(vh){ return host.clientHeight * vh / 100; }
 
-    /* סידור לפי עדיפות, כדי שהבולטים יופיעו בעמוד הראשון */
+    /* מיון לפי דרגת החשיבות בלבד.
+       בתוך אותה דרגה נשמר הסדר שהגיע מהשרת — כלומר סדר ההוספה,
+       מי שתרם ראשון מופיע ראשון. Array.sort יציב, ולכן די במיון
+       לפי הדרגה כדי לשמר אותו. מיון משני לפי שם היה מבטל את זה. */
     function ordered(){
       return items.slice().sort(function(a,b){
-        var pa=+a.priority||3, pb=+b.priority||3;
-        if(pa!==pb) return pa-pb;
-        return String(a.name||"").localeCompare(String(b.name||""),"he");
+        return (+a.priority||3) - (+b.priority||3);
       });
     }
 
@@ -2341,5 +2342,5 @@ setInterval(function(){ZDAY="";load();},5*60*1000);
 })();
 /* האתחול רץ רק אחרי שהמסך עבר רישיון, טוקן ונעילת מכשיר */
 NatiGuard.check(function(){ load(); tick(); });
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · פרנסים · גרסה 3.7 · 27.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · פרנסים · גרסה 3.8 · 27.09.26</div>
 </body></html>
