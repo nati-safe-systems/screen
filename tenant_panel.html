@@ -910,8 +910,22 @@ function tryAdminPreview(){
     CURRENT_PERMS=companyPerms(co);
     document.getElementById("login-wrap").style.display="none";
     enterApp();
+    previewBanner(co.company_name||cid);
   }).catch(function(){ PREVIEW_MODE=false; });
   return true;
+}
+
+/* חיווי קבוע — כדי שלא תחשוב בטעות שאתה בחשבון אמיתי של הלקוח */
+function previewBanner(name){
+  if(document.getElementById("nsf-asview")) return;
+  var b=document.createElement("div");
+  b.id="nsf-asview";
+  b.style.cssText="position:fixed;top:0;left:0;right:0;z-index:2147483000;"+
+    "background:#7a5200;color:#ffe9a8;font:700 13px Heebo,Assistant,Arial,sans-serif;"+
+    "padding:6px 14px;text-align:center;direction:rtl;box-shadow:0 2px 10px rgba(0,0,0,.5)";
+  b.textContent="צפייה כלקוח — "+name+" · כל שינוי כאן נשמר אצל הלקוח";
+  document.body.appendChild(b);
+  document.body.style.paddingTop="30px";
 }
 
 /* חוסם כל שמירה — זו תצוגה בלבד, לא נגיעה בהגדרות של הלקוח */
@@ -951,6 +965,22 @@ var dtStartVal=null, dtEndVal=null;  // ISO של הבורר המותאם
    בצד הלקוח, וטבלת companies אינה נקראת עוד ישירות.
    ===================================================================== */
 var NSF_TOKEN = sessionStorage.getItem('nati_token') || '';
+/* צפייה כלקוח נפתחת מלשונית חדשה, ו-sessionStorage אינו עובר בין
+   לשוניות. לכן האסימון מגיע בכתובת פעם אחת, נשמר, ומיד נמחק מה-URL
+   כדי שלא יישאר בהיסטוריה או בשיתוף קישור. */
+(function(){
+  try{
+    var q=new URLSearchParams(location.search);
+    var t=q.get("t");
+    if(t){
+      NSF_TOKEN=t;
+      sessionStorage.setItem('nati_token', t);
+      q.delete("t");
+      var u=location.pathname+(q.toString()?("?"+q.toString()):"")+location.hash;
+      history.replaceState(null,"",u);
+    }
+  }catch(e){}
+})();
 
 function rpc(fn, args){
   return fetch(SB+"/rest/v1/rpc/"+fn, {

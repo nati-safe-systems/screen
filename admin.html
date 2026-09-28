@@ -1173,6 +1173,14 @@ function renderCompanies(){
     var b1=document.createElement('button');b1.className='btn-sm blue';b1.textContent='ערוך';b1.onclick=function(){openEditCompany(c.company_id);};acts.appendChild(b1);
     var b2=document.createElement('button');b2.className='btn-sm gray';b2.textContent='אפס סיסמה';b2.onclick=function(){resetPass(c.company_id,c.company_name);};acts.appendChild(b2);
     var b4=document.createElement('button');b4.className='btn-sm green';b4.textContent='קישור לקוח';b4.title='העתק קישור ייחודי ללקוח';b4.onclick=function(){copyTenantUrl(c.company_id,c.company_name);};acts.appendChild(b4);
+    /* צפייה כלקוח — פותח את הפאנל שלו עם אסימון המנהל.
+       זה המסלול preview=1&asco= שכבר קיים בפאנל, ודורש אסימון מנהל
+       תקף. האסימון נמחק מהכתובת ברגע שהפאנל נטען. */
+    var bv=document.createElement('button');
+    bv.className='btn-sm gray'; bv.textContent='צפה כלקוח';
+    bv.title='פותח את ממשק הלקוח בדיוק כפי שהוא רואה אותו';
+    bv.onclick=function(){ viewAsClient(c.company_id); };
+    acts.appendChild(bv);
     var b3=document.createElement('button');b3.className='btn-sm red';b3.textContent='מחק';b3.onclick=function(){delCompany(c.company_id,c.company_name);};acts.appendChild(b3);
     tbody2.appendChild(tr);
   });
@@ -2217,6 +2225,14 @@ function regenActivationCode(cid,cname){
     });
   }
   tryOnce();
+}
+
+/* פתיחת ממשק הלקוח כפי שהוא רואה אותו */
+function viewAsClient(cid){
+  if(!NSF_TOKEN){ toast('יש להתחבר מחדש'); return; }
+  var url='tenant_panel.html?preview=1&asco='+encodeURIComponent(cid)+
+          '&t='+encodeURIComponent(NSF_TOKEN);
+  window.open(url,'_blank');
 }
 
 function delCompany(cid,cname){
