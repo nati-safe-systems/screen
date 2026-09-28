@@ -277,6 +277,28 @@ tr:hover td{background:rgba(128,0,0,0.05);}
   <!-- ===== פרסומות בתשלום ===== -->
   <div id="pane-ads" class="tab-pane" style="display:none;">
 
+    <!-- ===== תור ההזמנות =====
+         כאן נוחתות ההזמנות מהטופס הציבורי. האישור הוא גם הרגע שבו
+         חלוקת ההכנסה נכתבת ונקפאת לפי האחוזים שתקפים באותו רגע. -->
+    <div class="settings-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;
+           flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+        <div class="settings-title" style="margin:0;">תור ההזמנות</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select id="aq-filter" onchange="loadQueue()" style="width:auto;">
+            <option value="pending">ממתינות לאישור</option>
+            <option value="approved">מאושרות — ממתינות לתשלום</option>
+            <option value="paid">שולמו</option>
+            <option value="active">פעילות</option>
+            <option value="rejected">נדחו</option>
+            <option value="">הכל</option>
+          </select>
+          <button class="btn-sm gray" onclick="loadQueue()">רענן</button>
+        </div>
+      </div>
+      <div id="aq-list"><div style="color:#8b949e;">טוען...</div></div>
+    </div>
+
     <div class="settings-card">
       <div class="settings-title">מחירון</div>
       <div style="font-size:12px;color:#8b949e;margin-bottom:12px;">
@@ -1561,6 +1583,93 @@ function loadAll(){
    =================================================================== */
 var _adScreens=[];
 
+/* ---- תור ההזמנות ---- */
+var ST={pending:['ממתינה לאישור','#d29922'], approved:['מאושרת · ממתינה לתשלום','#58a6ff'],
+        paid:['שולמה','#3fb950'], active:['פעילה','#3fb950'],
+        done:['הסתיימה','#8b949e'], rejected:['נדחתה','#f85149'],
+        cancelled:['בוטלה','#8b949e'], draft:['טיוטה','#8b949e']};
+
+function loadQueue(){
+  var f=(document.getElementById('aq-filter')||{}).value;
+  var box=document.getElementById('aq-list');
+  box.innerHTML='<div style="color:#8b949e;">טוען...</div>';
+  rpc('nsf_ad_queue',{p_token:NSF_TOKEN,p_status:(f===undefined?'pending':f)}).then(function(list){
+    if(!Array.isArray(list)||!list.length){
+      box.innerHTML='<div style="color:#8b949e;">אין הזמנות בסטטוס הזה</div>'; return;
+    }
+    box.innerHTML=list.map(function(c){
+      var st=ST[c.status]||[c.status,'#8b949e'];
+      var scr=(c.screens||[]).join(' · ');
+      var cre=(c.creatives||[]).map(function(x){
+        return '<a href="'+escH(x.url)+'" target="_blank" rel="noopener" '+
+          'style="color:#58a6ff;font-size:12px;">פתח את '+(x.kind==='pdf'?'ה-PDF':'התמונה')+'</a>';
+      }).join(' · ') || '<span style="color:#f85149;font-size:12px;">לא צורף קובץ</span>';
+
+      var acts='';
+      if(c.status==='pending'){
+        acts='<button class="btn-sm green" onclick="decide(\''+c.id+'\',\'approve\')">אשר</button>'+
+             '<button class="btn-sm red" onclick="decide(\''+c.id+'\',\'reject\')">דחה</button>';
+      }else if(c.status==='approved'){
+        acts='<button class="btn-sm blue" onclick="payLink(\''+c.id+'\')">קישור לתשלום</button>'+
+             '<button class="btn-sm green" onclick="markCampPaid(\''+c.id+'\')">סמן כשולם</button>';
+      }
+
+      return '<div style="background:#0d1117;border:1px solid #30363d;border-radius:10px;'+
+        'padding:13px;margin-bottom:10px;">'+
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">'+
+          '<div style="flex:1;min-width:190px;">'+
+            '<div style="font-weight:800;font-size:15px;">'+escH(c.business||c.contact||'ללא שם')+'</div>'+
+            '<div style="color:#8b949e;font-size:12.5px;margin-top:3px;">'+
+              escH(c.contact||'')+' · '+escH(c.phone||'')+'<br>'+escH(c.email||'')+'</div>'+
+          '</div>'+
+          '<div style="text-align:left;">'+
+            '<div style="color:'+st[1]+';font-weight:800;font-size:12.5px;">'+st[0]+'</div>'+
+            '<div style="font-size:19px;font-weight:800;color:#ffcc00;margin-top:3px;">'+
+              Number(c.total_incl||0).toLocaleString('he-IL')+' ₪</div>'+
+            '<div style="color:#8b949e;font-size:11px;">כולל מע״מ</div>'+
+          '</div>'+
+        '</div>'+
+        '<div style="margin-top:10px;padding-top:10px;border-top:1px solid #21262d;'+
+          'font-size:12.5px;color:#8b949e;line-height:1.7;">'+
+          (c.title?('<b style="color:#e6edf3;">'+escH(c.title)+'</b><br>'):'')+
+          c.date_from+' עד '+c.date_to+' · '+c.days+' ימים<br>'+
+          'בניינים: '+escH(scr)+'<br>'+cre+
+        '</div>'+
+        (acts?('<div style="display:flex;gap:8px;margin-top:11px;">'+acts+'</div>'):'')+
+      '</div>';
+    }).join('');
+  }).catch(function(){ box.innerHTML='<div style="color:#f85149;">שגיאה בטעינה</div>'; });
+}
+
+function decide(id,what){
+  var q = what==='approve'
+    ? 'לאשר את ההזמנה? חלוקת ההכנסה תיכתב לפי האחוזים התקפים כעת.'
+    : 'לדחות את ההזמנה?';
+  if(!confirm(q)) return;
+  rpc('nsf_ad_decide',{p_token:NSF_TOKEN,p_campaign:id,p_decision:what,p_note:''})
+    .then(function(r){
+      if(!r||!r.ok){ toast((r&&r.err)||'הפעולה נכשלה'); return; }
+      toast(what==='approve'?'ההזמנה אושרה':'ההזמנה נדחתה');
+      loadQueue();
+    }).catch(function(){ toast('הפעולה נכשלה'); });
+}
+
+function markCampPaid(id){
+  var doc=prompt('מספר מסמך בסאמיט (אפשר להשאיר ריק):','');
+  if(doc===null) return;
+  rpc('nsf_ad_mark_campaign_paid',{p_token:NSF_TOKEN,p_campaign:id,p_doc:doc||''})
+    .then(function(){ toast('סומן כשולם'); loadQueue(); })
+    .catch(function(){ toast('נכשל'); });
+}
+
+function payLink(id){
+  /* עד שתחובר הסליקה האוטומטית — העתקה ידנית של הקישור שתפיק בסאמית */
+  var u=prompt('הדבק כאן את קישור התשלום מסאמית:','');
+  if(!u) return;
+  navigator.clipboard && navigator.clipboard.writeText(u);
+  toast('הקישור הועתק — שלח אותו ללקוח במייל');
+}
+
 function loadAdsTab(){
   rpc('nsf_ad_pricing_get',{p_token:NSF_TOKEN}).then(function(r){
     if(!r||!r.ok) return;
@@ -1590,6 +1699,8 @@ function loadAdsTab(){
         '</div>';
     }).join('');
   }).catch(function(){});
+
+  loadQueue();
 
   var mi=document.getElementById('ar-month');
   if(mi && !mi.value){ var d=new Date(); mi.value=d.getFullYear()+'-'+(d.getMonth()<9?'0':'')+(d.getMonth()+1); }
