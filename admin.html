@@ -797,6 +797,34 @@ tr:hover td{background:rgba(128,0,0,0.05);}
         </div>
 
       <div class="accm" data-t="פרסומות" data-k="all"></div>
+
+        <!-- ===== פרסום בתשלום =====
+             אחוז הרווח הוא הגדרה של המסך, ולכן מקומו כאן ולא רק
+             במחשבון המחיר. שני המקומות כותבים לאותו שדה. -->
+        <div class="field" id="ads-paid" style="border:1px solid rgba(88,166,255,.3);
+             border-radius:8px;padding:12px;background:rgba(88,166,255,.05);margin-bottom:14px;">
+          <label style="color:#58a6ff;font-weight:800;">פרסום בתשלום</label>
+
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:10px;font-weight:400;">
+            <input type="checkbox" id="edit-sc-adson" style="width:16px;height:16px;cursor:pointer;">
+            <span>המסך פתוח למכירת פרסום</span>
+          </label>
+
+          <div style="margin-top:12px;">
+            <label>אחוז לחברת הניהול</label>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <input type="number" id="edit-sc-adpct" min="0" max="100" step="0.5"
+                     placeholder="ברירת מחדל" style="width:110px;">
+              <span style="color:#8b949e;">%</span>
+              <span style="font-size:12px;color:#8b949e;" id="adpct-hint"></span>
+            </div>
+            <div style="font-size:11px;color:#8b949e;margin-top:6px;line-height:1.5;">
+              החלק שמגיע לחברת הניהול מכל קמפיין שירוץ על המסך הזה,
+              מחושב על הסכום <b>לפני</b> מע״מ. שדה ריק — ברירת המחדל מהמחירון.
+            </div>
+          </div>
+        </div>
+
         <div class="field" id="ads-mgmt" style="margin-top:12px;display:none;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:14px;">
           <label style="color:#ffcc00;font-weight:800;">ניהול פרסומות (רצועת צד)</label>
           <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
@@ -1169,8 +1197,9 @@ function loadAdsTab(){
         '<input type="checkbox" class="aq-cb" value="'+escH(s.screen_id)+'" style="width:15px;height:15px;">'+
         '<span style="flex:1">'+escH(s.building_name||s.screen_id)+
         '<span style="color:#8b949e;font-size:12px;"> · '+escH(s.company_name||'ללא לקוח')+'</span></span>'+
-        '<span style="font-size:12px;color:#8b949e;">אחוז לוועד</span>'+
-        '<input type="number" value="'+pct+'" placeholder="ברירת מחדל" style="width:78px;" '+
+        '<span style="font-size:12px;color:#8b949e;white-space:nowrap;">אחוז לוועד</span>'+
+        '<input type="number" value="'+pct+'" placeholder="—" title="ריק = ברירת מחדל" '+
+        'style="width:64px;text-align:center;flex:0 0 64px;" '+
         'onchange="saveScreenPct(\''+escH(s.screen_id)+'\',this.value)">'+
         '</div>';
     }).join('');
@@ -2014,6 +2043,12 @@ function openEditScreen(sid){
   if(_kd) _kd.value = s.screen_kind || kindFromPurpose(s.purpose);
   /* "main" אינו קיים ברשימת הייעודים של בית כנסת — משאירים את הרשימה
      על לובי כדי שלא תיבחר אפשרות ריקה. */
+  var _ao=document.getElementById('edit-sc-adson');
+  if(_ao) _ao.checked = (s.ads_enabled===true);
+  var _ap=document.getElementById('edit-sc-adpct');
+  if(_ap) _ap.value = (s.ad_owner_pct!=null) ? s.ad_owner_pct : '';
+  var _ah=document.getElementById('adpct-hint');
+  if(_ah) _ah.textContent = (s.ad_owner_pct==null) ? 'כרגע לפי ברירת המחדל' : '';
   var _pp=document.getElementById('edit-sc-purpose');
   if(_pp && (!s.purpose || s.purpose==='main')) _pp.value='lobby';
   kindChanged();
@@ -2140,6 +2175,11 @@ function saveScreen(){
   body.lock_enabled = _lk ? !!_lk.checked : true;
   var _kd=document.getElementById('edit-sc-kind');
   body.screen_kind = _kd ? _kd.value : 'building';
+  /* פרסום בתשלום — עמודות על הטבלה עצמה */
+  var _ao=document.getElementById('edit-sc-adson');
+  body.ads_enabled = _ao ? !!_ao.checked : false;
+  var _ap=document.getElementById('edit-sc-adpct');
+  body.ad_owner_pct = (_ap && _ap.value!=='') ? parseFloat(_ap.value) : null;
   if(!orig){
     body.message='';body.message_type='scroll';
     // צור טוקן אוטומטי
