@@ -480,6 +480,17 @@ tr:hover td{background:rgba(128,0,0,0.05);}
             <input id="edit-sc-rotshow" type="number" min="2" max="120" value="8" oninput="markCustom()" style="width:78px;">
             <span style="font-size:13px;color:#8b949e;">שניות</span>
           </div>
+          <!-- סדר ההצגה כשיש כמה הודעות -->
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;">
+            <span style="font-size:13px;color:#8b949e;">כשיש כמה הודעות</span>
+            <select id="edit-sc-rotmode" onchange="markCustom()" style="width:auto;">
+              <option value="one">אחת בכל הופעה, וחזרה למסך הראשי ביניהן</option>
+              <option value="all">כולן ברצף, וחזרה למסך הראשי רק בסוף</option>
+            </select>
+          </div>
+          <div style="font-size:11px;color:#8b949e;margin-top:4px;">
+            ב״כולן ברצף״ המשך ההצגה מוכפל במספר ההודעות — שלוש הודעות בנות 8 שניות יציגו 24 שניות ברצף.
+          </div>
           <div id="rotList" style="margin-top:8px;"></div>
           <button type="button" onclick="rotAdd()" style="background:#21262d;border:1px solid #30363d;color:#ffcc00;border-radius:6px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer;margin-top:4px;">+ מסך הודעה</button>
         </div>
@@ -556,8 +567,33 @@ tr:hover td{background:rgba(128,0,0,0.05);}
             <input id="edit-sc-audiovol" type="range" min="0" max="100" oninput="document.getElementById('volShow').textContent=this.value+'%';markCustom()" style="flex:1;">
             <span id="volShow" style="font-size:13px;color:#ffcc00;min-width:42px;">40%</span>
           </div>
+          <!-- ===== תקופות אבלות =====
+               המסכים כבר קוראים את שני השדות האלה מ-display_config.
+               עד כה לא הייתה דרך להגדיר אותם מלבד עריכה ידנית. -->
+          <div class="field" style="margin-top:14px;padding-top:12px;
+               border-top:1px solid rgba(255,255,255,.1);">
+            <label>ספירת העומר — מתי המוזיקה מושתקת</label>
+            <select id="dc-omer">
+              <option value="pesach-lag">מאסרו חג פסח ועד ל״ג בעומר</option>
+              <option value="rc-iyar">מראש חודש אייר ועד ערב שבועות</option>
+              <option value="none">בלי השתקה בספירה</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>בין המצרים — מתי המוזיקה מושתקת</label>
+            <select id="dc-metzarim">
+              <option value="tammuz17">מי״ז בתמוז ועד ט׳ באב</option>
+              <option value="rosh-av">מראש חודש אב ועד ט׳ באב</option>
+              <option value="none">בלי השתקה</option>
+            </select>
+            <div style="font-size:11px;color:#8b949e;margin-top:4px;">
+              ט׳ באב שנדחה לעשירי מטופל אוטומטית.
+            </div>
+          </div>
+
           <div style="font-size:12px;color:#8b949e;margin-top:5px;line-height:1.5;">
-            נכבית אוטומטית בכניסת שבת ובערבי חג, וחוזרת אחרי צאת רבינו תם.<br><br>
+            נכבית אוטומטית בכניסת שבת, ביום כיפור ובערבי חג, וחוזרת אחרי צאת רבינו תם.<br><br>
             <b style="color:#3fb950">הכי אמין — כתובת של שידור רדיו.</b> רץ ברצף, בלי פרסומות,
             בלי אחסון ובלי הגבלת נפח. לדוגמה:<br>
             <span dir="ltr" style="font-size:11px;color:#8b949e">https://…/stream.mp3</span><br><br>
@@ -1302,6 +1338,9 @@ function readDisplayConfig(){
     audio_list: _audList.filter(function(u){return u && u.trim();}),
     audio_url: (_audList[0]||'').trim(),
     audio_volume: parseInt((document.getElementById('edit-sc-audiovol')||{}).value,10)||40,
+    /* תקופות אבלות — משפיעות על המוזיקה בלבד */
+    omer_custom:     (document.getElementById('dc-omer')||{}).value || 'pesach-lag',
+    metzarim_custom: (document.getElementById('dc-metzarim')||{}).value || 'tammuz17',
     /* מסך הפרנסים */
     sponsors_dir:        (document.getElementById('sp-dir')||{}).value || 'x',
     sponsors_speed:      parseInt((document.getElementById('sp-speed')||{}).value,10)||70,
@@ -1311,6 +1350,7 @@ function readDisplayConfig(){
     alert_seconds: parseInt((document.getElementById('edit-sc-alertsec')||{}).value,10)||60,
     rotate: { every: parseInt((document.getElementById('edit-sc-rotevery')||{}).value,10)||20,
               show:  parseInt((document.getElementById('edit-sc-rotshow')||{}).value,10)||8,
+              mode:  (document.getElementById('edit-sc-rotmode')||{}).value || 'one',
               slides: _rotList.filter(function(x){return x && x.title && x.title.trim();}) },
     pdf_list: _pdfDocs.filter(function(x){return x && x.url && x.url.trim();}),
     bg_images: _bgImgs.filter(function(u){return u && u.trim();}),
@@ -1630,6 +1670,9 @@ function fillDisplayConfig(cfg){
   document.getElementById('dc-bg-bright').value = cfg.bgBrightness || 100;
   document.getElementById('dc-bg-bright-val').textContent = cfg.bgBrightness || 100;
   document.getElementById('edit-sc-rss').value  = cfg.rss_url || '';
+  /* תקופות אבלות */
+  var _om=document.getElementById('dc-omer');     if(_om) _om.value = cfg.omer_custom     || 'pesach-lag';
+  var _mz=document.getElementById('dc-metzarim'); if(_mz) _mz.value = cfg.metzarim_custom || 'tammuz17';
   /* מסך הפרנסים */
   var _sd=document.getElementById('sp-dir');    if(_sd) _sd.value = cfg.sponsors_dir || 'x';
   var _ss=document.getElementById('sp-speed');  if(_ss){ _ss.value = cfg.sponsors_speed || 70;
@@ -1650,6 +1693,7 @@ function fillDisplayConfig(cfg){
   rotDraw();
   var _re=document.getElementById('edit-sc-rotevery'); if(_re) _re.value=_r.every||20;
   var _rs=document.getElementById('edit-sc-rotshow');  if(_rs) _rs.value=_r.show||8;
+  var _rm=document.getElementById('edit-sc-rotmode');  if(_rm) _rm.value=_r.mode||'one';
   _bgImgs = Array.isArray(cfg.bg_images) ? cfg.bg_images.slice() : (cfg.bg_url?[cfg.bg_url]:[]);
   bgDraw();
   var _bs=document.getElementById('edit-sc-bgsec'); if(_bs) _bs.value = cfg.bg_sec || 10;
