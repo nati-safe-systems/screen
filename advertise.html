@@ -47,7 +47,9 @@ input:focus,select:focus,textarea:focus{outline:0;border-color:var(--gold-d)}
 input.bad{border-color:var(--err)}
 .fe{color:var(--err);font-size:12px;margin:-9px 0 12px}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:11px}
-.phone{display:grid;grid-template-columns:110px 1fr;gap:9px}
+/* הקידומת משמאל והמספר מימין. ב-RTL העמודה הראשונה ברשת
+   מוצגת בימין, ולכן המספר מוגדר ראשון. */
+.phone{display:grid;grid-template-columns:1fr 104px;gap:9px}
 @media(max-width:470px){.row{grid-template-columns:1fr}}
 
 .scr{display:flex;align-items:center;gap:11px;padding:10px 4px;border-bottom:1px solid #202a38}
@@ -138,6 +140,7 @@ footer a{color:var(--gold-d);cursor:pointer;text-decoration:underline;margin:0 7
 
       <label class="req" for="f-phone2">טלפון</label>
       <div class="phone">
+        <input id="f-phone2" type="tel" inputmode="numeric" maxlength="7" placeholder="0000000">
         <select id="f-phone1" aria-label="קידומת">
           <option>050</option><option>052</option><option>053</option>
           <option>054</option><option>055</option><option>058</option>
@@ -145,7 +148,6 @@ footer a{color:var(--gold-d);cursor:pointer;text-decoration:underline;margin:0 7
           <option>08</option><option>09</option><option>072</option>
           <option>073</option><option>077</option>
         </select>
-        <input id="f-phone2" type="tel" inputmode="numeric" maxlength="7" placeholder="0000000">
       </div>
       <div class="fe" id="e-phone" style="display:none"></div>
 
