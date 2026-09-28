@@ -243,10 +243,13 @@
       var pos=0, last=0, restUntil=0;
 
       function place(){
-        var off = CS - pos;                /* מתחיל מחוץ למסך ויוצא בצד השני */
+        /* off יורד מ-CS ל-(-TS): הרשימה מתחילה מחוץ למסך בצד אחד
+           ויוצאת בצד השני. הסימן זהה בשני הכיוונים — translateX
+           חיובי מזיז ימינה, וזהו צד הכניסה בעברית. */
+        var off = CS - pos;
         track.style.transform = horiz
-          ? "translateX("+(-off)+"px)"     /* עברית: נכנס מימין */
-          : "translateY("+off+"px)";       /* אנכי: עולה מלמטה */
+          ? "translateX("+off+"px)"        /* נכנס מימין, יוצא שמאלה */
+          : "translateY("+off+"px)";       /* נכנס מלמטה, יוצא למעלה */
       }
       place();
 
