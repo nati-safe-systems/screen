@@ -209,6 +209,7 @@ tr:hover td{background:rgba(128,0,0,0.05);}
     <div class="tab active" onclick="switchTab('dash')">סקירה כללית</div>
     <div class="tab" onclick="switchTab('screens')">מסכים</div>
     <div class="tab" onclick="switchTab('companies')">לקוחות</div>
+    <div class="tab" onclick="switchTab('ads')">פרסומות</div>
     <div class="tab" onclick="switchTab('settings')">הגדרות</div>
   </div>
 
@@ -273,6 +274,66 @@ tr:hover td{background:rgba(128,0,0,0.05);}
   </div>
 
   <!-- SETTINGS -->
+  <!-- ===== פרסומות בתשלום ===== -->
+  <div id="pane-ads" class="tab-pane" style="display:none;">
+
+    <div class="settings-card">
+      <div class="settings-title">מחירון</div>
+      <div style="font-size:12px;color:#8b949e;margin-bottom:12px;">
+        כל המחירים כוללים מע״מ. חלוקת הרווחים מחושבת תמיד על הסכום
+        <b>לפני</b> מע״מ — המע״מ אינו של אף צד, הוא של המדינה.
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;">
+        <div class="field"><label>יום בודד</label><input type="number" id="ap-day" step="1"></div>
+        <div class="field"><label>3 ימים</label><input type="number" id="ap-3days" step="1"></div>
+        <div class="field"><label>שבוע</label><input type="number" id="ap-week" step="1"></div>
+        <div class="field"><label>חודש</label><input type="number" id="ap-month" step="1"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;">
+        <div class="field"><label>תוספת חג %</label><input type="number" id="ap-hol" step="0.5"></div>
+        <div class="field"><label>2 מסכים %</label><input type="number" id="ap-d2" step="0.5"></div>
+        <div class="field"><label>3 מסכים %</label><input type="number" id="ap-d3" step="0.5"></div>
+        <div class="field"><label>4+ מסכים %</label><input type="number" id="ap-d4" step="0.5"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;">
+        <div class="field"><label>מע״מ %</label><input type="number" id="ap-vat" step="0.5"></div>
+        <div class="field"><label>ברירת מחדל לוועד %</label><input type="number" id="ap-owner" step="0.5">
+          <div style="font-size:11px;color:#8b949e;margin-top:4px;">חל על מסך שלא הוגדר לו אחוז משלו</div>
+        </div>
+      </div>
+      <button class="btn-sm blue" onclick="savePricing()">שמור מחירון</button>
+      <div style="font-size:11px;color:#8b949e;margin-top:8px;">
+        שינוי מחירון אינו משפיע על קמפיינים שכבר אושרו — הם שומרים את התמחור שלהם.
+      </div>
+    </div>
+
+    <div class="settings-card">
+      <div class="settings-title">מחשבון מחיר</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;">
+        <div class="field"><label>מתאריך</label><input type="date" id="aq-from"></div>
+        <div class="field"><label>עד תאריך</label><input type="date" id="aq-to"></div>
+      </div>
+      <div class="field"><label>מסכים</label>
+        <div id="aq-screens" style="max-height:170px;overflow:auto;border:1px solid #30363d;
+             border-radius:8px;padding:8px;"></div>
+      </div>
+      <button class="btn-sm blue" onclick="calcQuote()">חשב</button>
+      <div id="aq-out" style="margin-top:12px;"></div>
+    </div>
+
+    <div class="settings-card">
+      <div class="settings-title">דוח חודשי — חלוקה לוועדי בתים</div>
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="margin:0;"><label>חודש</label>
+          <input type="month" id="ar-month"></div>
+        <button class="btn-sm blue" onclick="loadMonthly()">הצג</button>
+        <button class="btn-sm gray" onclick="printMonthly()">הדפס / PDF</button>
+      </div>
+      <div id="ar-out" style="margin-top:14px;"></div>
+    </div>
+
+  </div>
+
   <div id="pane-settings" class="tab-pane" style="display:none;">
     <div class="settings-card">
       <div class="settings-title">שינוי סיסמת מנהל</div>
@@ -1026,10 +1087,155 @@ function loadAll(){
   });
 }
 
+/* ===================================================================
+   פרסומות בתשלום
+   ------------------------------------------------------------------
+   הטבלאות סגורות לגישה ישירה; הכל עובר דרך פונקציות עם אסימון מנהל.
+   =================================================================== */
+var _adScreens=[];
+
+function loadAdsTab(){
+  rpc('nsf_ad_pricing_get',{p_token:NSF_TOKEN}).then(function(r){
+    if(!r||!r.ok) return;
+    var p=r.pricing||{};
+    var m={'ap-day':'price_day','ap-3days':'price_3days','ap-week':'price_week',
+           'ap-month':'price_month','ap-hol':'holiday_pct','ap-d2':'disc_2',
+           'ap-d3':'disc_3','ap-d4':'disc_4plus','ap-vat':'vat_pct',
+           'ap-owner':'default_owner_pct'};
+    for(var k in m){ var e=document.getElementById(k); if(e) e.value=p[m[k]]!=null?p[m[k]]:''; }
+  }).catch(function(){});
+
+  rpc('nsf_ad_screens',{p_token:NSF_TOKEN}).then(function(list){
+    _adScreens=Array.isArray(list)?list:[];
+    var box=document.getElementById('aq-screens');
+    if(!box) return;
+    if(!_adScreens.length){ box.innerHTML='<div style="color:#8b949e">אין מסכי בניינים</div>'; return; }
+    box.innerHTML=_adScreens.map(function(s){
+      var pct=(s.ad_owner_pct!=null)?s.ad_owner_pct:'';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:5px 2px;">'+
+        '<input type="checkbox" class="aq-cb" value="'+escH(s.screen_id)+'" style="width:15px;height:15px;">'+
+        '<span style="flex:1">'+escH(s.building_name||s.screen_id)+
+        '<span style="color:#8b949e;font-size:12px;"> · '+escH(s.company_name||'ללא לקוח')+'</span></span>'+
+        '<span style="font-size:12px;color:#8b949e;">אחוז לוועד</span>'+
+        '<input type="number" value="'+pct+'" placeholder="ברירת מחדל" style="width:78px;" '+
+        'onchange="saveScreenPct(\''+escH(s.screen_id)+'\',this.value)">'+
+        '</div>';
+    }).join('');
+  }).catch(function(){});
+
+  var mi=document.getElementById('ar-month');
+  if(mi && !mi.value){ var d=new Date(); mi.value=d.getFullYear()+'-'+(d.getMonth()<9?'0':'')+(d.getMonth()+1); }
+}
+
+function savePricing(){
+  var g=function(id){ var e=document.getElementById(id); return e?e.value:null; };
+  rpc('nsf_ad_pricing_save',{p_token:NSF_TOKEN,p_row:{
+    price_day:g('ap-day'), price_3days:g('ap-3days'), price_week:g('ap-week'),
+    price_month:g('ap-month'), holiday_pct:g('ap-hol'), disc_2:g('ap-d2'),
+    disc_3:g('ap-d3'), disc_4plus:g('ap-d4'), vat_pct:g('ap-vat'),
+    default_owner_pct:g('ap-owner')
+  }}).then(function(r){
+    toast((r&&r.ok)?'המחירון נשמר':'השמירה נכשלה');
+  }).catch(function(){ toast('השמירה נכשלה'); });
+}
+
+function saveScreenPct(sid,val){
+  var v=(val===''||val==null)?null:parseFloat(val);
+  rpc('nsf_ad_screen_pct',{p_token:NSF_TOKEN,p_screen:sid,p_pct:v})
+    .then(function(r){ toast((r&&r.ok)?'עודכן':'נכשל'); })
+    .catch(function(){ toast('נכשל'); });
+}
+
+function calcQuote(){
+  var ids=Array.prototype.map.call(document.querySelectorAll('.aq-cb:checked'),
+            function(c){return c.value;});
+  var f=document.getElementById('aq-from').value, t=document.getElementById('aq-to').value;
+  var out=document.getElementById('aq-out');
+  if(!ids.length||!f||!t){ out.innerHTML='<div style="color:#d29922">בחר מסכים ותאריכים</div>'; return; }
+  rpc('nsf_ad_quote',{p_screens:ids,p_from:f,p_to:t}).then(function(q){
+    if(!q||!q.ok){ out.innerHTML='<div style="color:#f85149">'+((q&&q.err)||'שגיאה')+'</div>'; return; }
+    var row=function(l,v,b){ return '<div style="display:flex;justify-content:space-between;padding:4px 0;'+
+      (b?'border-top:1px solid #30363d;margin-top:6px;padding-top:8px;font-weight:800;':'')+'">'+
+      '<span>'+l+'</span><span>'+Number(v).toLocaleString('he-IL')+' ₪</span></div>'; };
+    out.innerHTML='<div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:12px;">'+
+      '<div style="color:#8b949e;font-size:12px;margin-bottom:8px;">'+
+        q.days+' ימים · '+q.screens+' מסכים</div>'+
+      row('בסיס',q.base_incl)+
+      (q.holiday_incl>0?row('תוספת חג '+q.holiday_pct+'%',q.holiday_incl):'')+
+      (q.discount_incl>0?row('הנחת כמות '+q.discount_pct+'%','-'+q.discount_incl):'')+
+      row('לתשלום, כולל מע״מ',q.total_incl,true)+
+      '<div style="color:#8b949e;font-size:12px;margin-top:8px;">'+
+        'לפני מע״מ '+Number(q.total_excl).toLocaleString('he-IL')+' ₪ · '+
+        'מע״מ '+q.vat_pct+'% = '+Number(q.vat_amount).toLocaleString('he-IL')+' ₪<br>'+
+        'חלוקת הרווחים מחושבת על הסכום לפני מע״מ</div></div>';
+  }).catch(function(){ out.innerHTML='<div style="color:#f85149">שגיאה בחישוב</div>'; });
+}
+
+function loadMonthly(){
+  var m=document.getElementById('ar-month').value;
+  var out=document.getElementById('ar-out');
+  if(!m){ out.innerHTML=''; return; }
+  rpc('nsf_ad_report',{p_token:NSF_TOKEN,p_month:m+'-01'}).then(function(r){
+    if(!r||!r.ok){ out.innerHTML='<div style="color:#f85149">שגיאה</div>'; return; }
+    var rows=r.rows||[];
+    if(!rows.length){ out.innerHTML='<div style="color:#8b949e">אין הכנסות בחודש זה</div>'; return; }
+    var tot=0, mine=0, owed=0;
+    var h='<table style="width:100%;border-collapse:collapse;font-size:13px;">'+
+      '<tr style="color:#8b949e;text-align:right;">'+
+      '<th style="padding:6px;">חברת ניהול</th><th>מסכים</th><th>קמפיינים</th>'+
+      '<th>סה״כ לפני מע״מ</th><th>לוועד</th><th>שלי</th><th>פתוח</th><th></th></tr>';
+    rows.forEach(function(x){
+      tot+=+x.total_excl; mine+=+x.nati_amount; owed+=+x.open_amount;
+      h+='<tr style="border-top:1px solid #21262d;">'+
+        '<td style="padding:6px;">'+escH(x.company_name||x.company_id||'—')+'</td>'+
+        '<td>'+x.screens+'</td><td>'+x.campaigns+'</td>'+
+        '<td>'+Number(x.total_excl).toLocaleString('he-IL')+' ₪</td>'+
+        '<td style="color:#ffcc00;">'+Number(x.owner_amount).toLocaleString('he-IL')+' ₪</td>'+
+        '<td style="color:#3fb950;">'+Number(x.nati_amount).toLocaleString('he-IL')+' ₪</td>'+
+        '<td>'+Number(x.open_amount).toLocaleString('he-IL')+' ₪</td>'+
+        '<td>'+(x.open_amount>0?'<button class="btn-sm gray" onclick="markPaid(\''+
+          escH(x.company_id)+'\')">סמן כהועבר</button>':'<span style="color:#3fb950">הועבר</span>')+'</td></tr>';
+    });
+    h+='<tr style="border-top:2px solid #30363d;font-weight:800;">'+
+      '<td style="padding:8px;">סה״כ</td><td></td><td></td>'+
+      '<td>'+tot.toLocaleString('he-IL')+' ₪</td>'+
+      '<td style="color:#ffcc00;">'+(tot-mine).toLocaleString('he-IL')+' ₪</td>'+
+      '<td style="color:#3fb950;">'+mine.toLocaleString('he-IL')+' ₪</td>'+
+      '<td>'+owed.toLocaleString('he-IL')+' ₪</td><td></td></tr></table>';
+    out.innerHTML=h;
+  }).catch(function(){ out.innerHTML='<div style="color:#f85149">שגיאה</div>'; });
+}
+
+function markPaid(cid){
+  var m=document.getElementById('ar-month').value;
+  if(!confirm('לסמן שההעברה לחברה בוצעה?')) return;
+  rpc('nsf_ad_mark_paid',{p_token:NSF_TOKEN,p_company:cid,p_month:m+'-01',p_note:''})
+    .then(function(){ toast('סומן'); loadMonthly(); })
+    .catch(function(){ toast('נכשל'); });
+}
+
+function printMonthly(){
+  var m=document.getElementById('ar-month').value||'';
+  var html=document.getElementById('ar-out').innerHTML;
+  if(!html){ toast('אין מה להדפיס'); return; }
+  var w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="utf-8">'+
+    '<title>דוח פרסומות '+m+'</title><style>'+
+    'body{font-family:Heebo,Arial,sans-serif;direction:rtl;padding:24px;color:#111}'+
+    'h1{font-size:20px;margin-bottom:4px}.s{color:#666;font-size:13px;margin-bottom:18px}'+
+    'table{width:100%;border-collapse:collapse;font-size:13px}'+
+    'th,td{padding:7px;border-bottom:1px solid #ddd;text-align:right}'+
+    'th{background:#f4f4f4}button{display:none}</style></head><body>'+
+    '<h1>נתי SAFE — דוח פרסומות</h1><div class="s">חודש '+m+
+    ' · כל הסכומים לפני מע״מ</div>'+html+'</body></html>');
+  w.document.close(); w.print();
+}
+
 function switchTab(t){
-  var tabs=['dash','screens','companies','settings'];
+  var tabs=['dash','screens','companies','ads','settings'];
   document.querySelectorAll('.tab').forEach(function(el,i){el.className='tab'+(tabs[i]===t?' active':'');});
   tabs.forEach(function(n){document.getElementById('pane-'+n).style.display=n===t?'block':'none';});
+  if(t==='ads') loadAdsTab();
 }
 
 function makeScRow(s,cm,now){
