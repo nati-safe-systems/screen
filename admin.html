@@ -1672,7 +1672,14 @@ function payLink(id){
              'Authorization':'Bearer '+SK, apikey:SK},
     body:JSON.stringify({token:NSF_TOKEN, campaign_id:id})
   }).then(function(r){ return r.json(); }).then(function(r){
-    if(!r||!r.ok){ toast((r&&r.err)||'יצירת הקישור נכשלה'); return; }
+    if(!r||!r.ok){
+      /* סאמית מפרט את השדה הבעייתי ב-TechnicalErrorDetails.
+         בלעדיו ההודעה גנרית ואי אפשר לדעת מה לתקן. */
+      var msg=(r&&r.err)||'יצירת הקישור נכשלה';
+      if(r&&r.detail) msg+="\n\n"+r.detail;
+      alert(msg);
+      return;
+    }
     try{ navigator.clipboard.writeText(r.url); }catch(e){}
     prompt('קישור התשלום — שלח אותו ללקוח:', r.url);
     loadQueue();
