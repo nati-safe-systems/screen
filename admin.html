@@ -677,6 +677,54 @@ tr:hover td{background:rgba(128,0,0,0.05);}
           <div style="font-size:11px;color:#8b949e;margin-top:4px;">כשמופעל, הלקוח יוכל להוסיף/למחוק מודעות פרסום משלו דרך הממשק שלו.</div>
         </div>
 
+      <div class="accm" data-t="מסך הפרנסים" data-k="synagogue"></div>
+      <div id="grp-spon">
+        <div style="font-size:12px;color:#8b949e;margin-bottom:10px;">
+          חל על מסך שהייעוד שלו הוא <b>פרנסים ותורמים</b>.
+          עד המספר שנקבע למטה המסך עומד ומחלק את עצמו לפי דרגת הפרנס;
+          מעבר לזה הוא נוסע.
+        </div>
+
+        <div class="field">
+          <label>כיוון הגלילה</label>
+          <select id="sp-dir">
+            <option value="x">נוסע — משמאל לימין, כמו רצועת חדשות</option>
+            <option value="y">עולה — מלמטה למעלה, כמו מסכי הבניינים</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>מהירות הגלילה — <span id="sp-speed-val">70</span> פיקסלים בשנייה</label>
+          <input type="range" id="sp-speed" min="20" max="200" step="5" value="70"
+                 oninput="document.getElementById('sp-speed-val').textContent=this.value">
+          <div style="font-size:11px;color:#8b949e;margin-top:4px;">
+            המהירות קבועה ואינה תלויה בכמות הפרנסים. 70 הוא קצב נוח לקריאה.
+          </div>
+        </div>
+
+        <div class="field">
+          <label>רווח בין מחזורים — <span id="sp-gap-val">45</span>% מרוחב המסך</label>
+          <input type="range" id="sp-gap" min="0" max="100" step="5" value="45"
+                 oninput="document.getElementById('sp-gap-val').textContent=this.value">
+          <div style="font-size:11px;color:#8b949e;margin-top:4px;">
+            הרווח מסמן איפה הרשימה נגמרת ומתחילה מחדש.
+          </div>
+        </div>
+
+        <div class="field">
+          <label>עד כמה פרנסים המסך עומד</label>
+          <input type="number" id="sp-static" min="1" max="20" value="6">
+          <div style="font-size:11px;color:#8b949e;margin-top:4px;">
+            מתחת למספר הזה הכל מוצג יחד בלי תנועה.
+          </div>
+        </div>
+
+        <div class="field">
+          <label>כמה פרנסים רגילים בעמודה</label>
+          <input type="number" id="sp-rows" min="1" max="6" value="3">
+        </div>
+      </div>
+
       <div class="accm" data-t="הרשאות ללקוח" data-k="all"></div>
         <div style="border-top:1px solid rgba(255,255,255,0.08);margin-top:14px;padding-top:12px;">
           <label class="dc-chk" style="font-weight:700;">
@@ -1254,6 +1302,12 @@ function readDisplayConfig(){
     audio_list: _audList.filter(function(u){return u && u.trim();}),
     audio_url: (_audList[0]||'').trim(),
     audio_volume: parseInt((document.getElementById('edit-sc-audiovol')||{}).value,10)||40,
+    /* מסך הפרנסים */
+    sponsors_dir:        (document.getElementById('sp-dir')||{}).value || 'x',
+    sponsors_speed:      parseInt((document.getElementById('sp-speed')||{}).value,10)||70,
+    sponsors_gap:        (parseInt((document.getElementById('sp-gap')||{}).value,10)||45)/100,
+    sponsors_static_max: parseInt((document.getElementById('sp-static')||{}).value,10)||6,
+    sponsors_small_rows: parseInt((document.getElementById('sp-rows')||{}).value,10)||3,
     alert_seconds: parseInt((document.getElementById('edit-sc-alertsec')||{}).value,10)||60,
     rotate: { every: parseInt((document.getElementById('edit-sc-rotevery')||{}).value,10)||20,
               show:  parseInt((document.getElementById('edit-sc-rotshow')||{}).value,10)||8,
@@ -1576,6 +1630,15 @@ function fillDisplayConfig(cfg){
   document.getElementById('dc-bg-bright').value = cfg.bgBrightness || 100;
   document.getElementById('dc-bg-bright-val').textContent = cfg.bgBrightness || 100;
   document.getElementById('edit-sc-rss').value  = cfg.rss_url || '';
+  /* מסך הפרנסים */
+  var _sd=document.getElementById('sp-dir');    if(_sd) _sd.value = cfg.sponsors_dir || 'x';
+  var _ss=document.getElementById('sp-speed');  if(_ss){ _ss.value = cfg.sponsors_speed || 70;
+    document.getElementById('sp-speed-val').textContent = _ss.value; }
+  var _sg=document.getElementById('sp-gap');
+  if(_sg){ _sg.value = Math.round(((cfg.sponsors_gap!=null?cfg.sponsors_gap:0.45))*100);
+    document.getElementById('sp-gap-val').textContent = _sg.value; }
+  var _st=document.getElementById('sp-static'); if(_st) _st.value = cfg.sponsors_static_max || 6;
+  var _sr=document.getElementById('sp-rows');   if(_sr) _sr.value = cfg.sponsors_small_rows || 3;
   var _zs=document.getElementById('edit-sc-zmsrc'); if(_zs) _zs.value = (cfg.zmanim_source==='engine')?'engine':'hebcal';
   var _or=document.getElementById('edit-sc-orient'); if(_or) _or.value = cfg.orientation || 'auto';
   var _wx=document.getElementById('edit-sc-wx'); if(_wx) _wx.value = cfg.weather_pos || 'off';
