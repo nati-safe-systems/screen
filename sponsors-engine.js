@@ -48,6 +48,7 @@
               לפרנס חשוב להיראות גדול, גם כשהמסך נוסע.
      dir    — y: עולה מלמטה למעלה. x: נוסע כמו רצועת חדשות. */
   var DEF = { staticMax:6, dir:"x", speed:70, gap:1.1, restSec:1.6,
+              smallRows:3,   /* כמה פרנסים רגילים נערמים בעמודה */
               minCardVw:17, ratio:1.9, maxCols:4,
               /* speed = פיקסלים בשנייה. קבוע ואינו תלוי בכמות
                  הפרנסים, כך שהמהירות נשארת אותה מהירות תמיד. */
@@ -98,6 +99,7 @@
       '.nsp-track{position:absolute;left:0;top:0;will-change:transform}',
       '.nsp-track.x{right:auto;bottom:0}',
       '.nsp-track.y{right:0}',
+      '.nsp-col{min-width:0;min-height:0}',
       '.nsp-hero{z-index:2}',
       '.sc.nsp-h .nm{font-size:1.45em}',
       '.sc.nsp-h .cat{font-size:1.15em}',
@@ -221,19 +223,45 @@
           "gap:"+gapPx+"px;width:100%;");
       }
 
-      function block(x){
-        var w=wOf(x), t=tierOf(x);
-        var st = horiz
-          ? "flex:0 0 "+(unit*w)+"px;height:100%;"
-          : "flex:0 0 "+(unit*w)+"px;width:100%;";
-        return cardHtml(x, t<=2, st);
+      /* הרכב הזרם.
+         דרגה 1 ו-2 מקבלות קובייה בודדת בגובה מלא — הן צריכות
+         להיראות מרחוק. הדרגות הרגילות נערמות בעמודות של כמה
+         קוביות, כך שהזרם נראה כטבלה נוסעת ולא כרכבת של יחידות. */
+      function cell(x, st){ return cardHtml(x, tierOf(x)<=2, st); }
+
+      function buildStream(list){
+        var out=[], buf=[];
+        function flush(){
+          if(!buf.length) return;
+          var rows=buf.length;
+          var w = horiz ? (unit*1.0) : null;
+          var st = horiz
+            ? "flex:0 0 "+w+"px;height:100%;display:grid;"+
+              "grid-template-rows:repeat("+rows+",minmax(0,1fr));gap:"+gapPx+"px;"
+            : "flex:0 0 auto;width:100%;display:grid;"+
+              "grid-template-columns:repeat("+rows+",minmax(0,1fr));gap:"+gapPx+"px;"+
+              "height:"+(unit)+"px;";
+          out.push('<div class="nsp-col" style="'+st+'">'+
+                   buf.map(function(y){ return cell(y,""); }).join("")+'</div>');
+          buf=[];
+        }
+        list.forEach(function(x){
+          var t=tierOf(x);
+          if(t<=2){
+            flush();
+            var w2=unit*(O.span[t]||1);
+            var st2 = horiz ? "flex:0 0 "+w2+"px;height:100%;"
+                            : "flex:0 0 "+w2+"px;width:100%;";
+            out.push(cell(x, st2));
+          }else{
+            buf.push(x);
+            if(buf.length >= Math.max(1,+O.smallRows||3)) flush();
+          }
+        });
+        flush();
+        return out.join("");
       }
-      /* עותק אחד בלבד.
-         קודם הכפלתי את הרשימה כדי שהמעבר יהיה חלק, אבל אז לא היו
-         התחלה וסוף — הצופה לא ידע מתי הרשימה מתחילה ומתי נגמרה.
-         עכשיו הרשימה נכנסת מהצד, עוברת במלואה, יוצאת, נעצרת רגע,
-         ומתחילה שוב מההתחלה. */
-      track.innerHTML=arr.map(block).join("");
+      track.innerHTML=buildStream(arr);
       host.appendChild(track);
 
       var CS   = horiz ? W : H;                                  /* גודל המסך */
@@ -243,13 +271,12 @@
       var pos=0, last=0, restUntil=0;
 
       function place(){
-        /* off יורד מ-CS ל-(-TS): הרשימה מתחילה מחוץ למסך בצד אחד
-           ויוצאת בצד השני. הסימן זהה בשני הכיוונים — translateX
-           חיובי מזיז ימינה, וזהו צד הכניסה בעברית. */
-        var off = CS - pos;
+        /* אופקי: off עולה מ-(-TS) ל-CS, כלומר הרשימה נכנסת מצד
+           שמאל ויוצאת מימין. אנכי נשאר כניסה מלמטה ויציאה למעלה. */
+        var off = -TS + pos;
         track.style.transform = horiz
-          ? "translateX("+off+"px)"        /* נכנס מימין, יוצא שמאלה */
-          : "translateY("+off+"px)";       /* נכנס מלמטה, יוצא למעלה */
+          ? "translateX("+off+"px)"        /* נכנס משמאל, יוצא ימינה */
+          : "translateY("+(CS-pos)+"px)";  /* אנכי: נכנס מלמטה, יוצא למעלה */
       }
       place();
 
@@ -318,5 +345,5 @@
     };
   }
 
-  root.NatiSponsors = { mount:mount, VERSION:"2.0" };
+  root.NatiSponsors = { mount:mount, VERSION:"2.1" };
 })(typeof window !== "undefined" ? window : globalThis);
