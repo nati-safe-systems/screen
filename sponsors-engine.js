@@ -49,6 +49,7 @@
      dir    — y: עולה מלמטה למעלה. x: נוסע כמו רצועת חדשות. */
   var DEF = { staticMax:6, dir:"x", speed:70, gap:1.1, restSec:1.6,
               smallRows:3,   /* כמה פרנסים רגילים נערמים בעמודה */
+              loopGap:0.45,  /* הרווח בין סוף הרשימה לתחילתה, כחלק מרוחב המסך */
               minCardVw:17, ratio:1.9, maxCols:4,
               /* speed = פיקסלים בשנייה. קבוע ואינו תלוי בכמות
                  הפרנסים, כך שהמהירות נשארת אותה מהירות תמיד. */
@@ -108,7 +109,8 @@
         'will-change:transform}',
       /* בנסיעה אופקית הרצועה רחבה מהמסך, ולכן right משוחרר */
       '.nsp-track{position:absolute;left:0;top:0;will-change:transform}',
-      '.nsp-track.x{right:auto;bottom:0}',
+      '.nsp-track.x{right:auto;bottom:0;direction:rtl}',
+      '.nsp-gap{pointer-events:none}',
       '.nsp-track.y{right:0}',
       '.nsp-col{min-width:0;min-height:0}',
       '.nsp-hero{z-index:2}',
@@ -311,39 +313,43 @@
         flush();
         return out.join("");
       }
-      track.innerHTML=buildStream(arr);
+      /* שני עותקים עם רווח ביניהם.
+         עותק אחד נתן התחלה וסוף ברורים אבל חייב להמתין עד שהכל
+         יוצא מהמסך. הכפלה בלי רווח נתנה תור אינסופי בלי גבולות.
+         רווח נראה בין העותקים נותן את שניהם: הגבול מסומן, והרשימה
+         מתחילה מחדש מיד אחריו בלי זמן מת ובלי קפיצה. */
+      var one=buildStream(arr);
+      var gapStyle = horiz
+        ? "flex:0 0 "+(W*(+O.loopGap||0))+"px;"
+        : "flex:0 0 "+(H*(+O.loopGap||0))+"px;";
+      var spacer='<div class="nsp-gap" style="'+gapStyle+'"></div>';
+      track.innerHTML = one + spacer + one + spacer;
       host.appendChild(track);
       fitText(track);
 
-      var CS   = horiz ? W : H;                                  /* גודל המסך */
-      var TS   = horiz ? track.scrollWidth : track.scrollHeight;  /* אורך הרשימה */
-      var span = CS + TS;                                         /* מסלול מלא */
-      var pps  = Math.max(8, +O.speed || 70);                     /* פיקסלים בשנייה */
-      var pos=0, last=0, restUntil=0;
+      /* המחזור הוא אורך עותק אחד ועוד הרווח — בדיוק הנקודה שבה
+         העותק השני נמצא היכן שהראשון היה, ולכן האיפוס אינו נראה. */
+      var TOT = horiz ? track.scrollWidth : track.scrollHeight;
+      var cycle = TOT/2;
+      var pps = Math.max(8, +O.speed || 70);
+      var pos=0, last=0;
 
       function place(){
-        /* אופקי: off עולה מ-(-TS) ל-CS, כלומר הרשימה נכנסת מצד
-           שמאל ויוצאת מימין. אנכי נשאר כניסה מלמטה ויציאה למעלה. */
-        var off = -TS + pos;
+        /* אופקי: הרצועה מתחילה מוסטת שמאלה באורך עותק שלם ונעה
+           ימינה. הפריט הראשון יושב בקצה הימני של הרצועה (סדר RTL),
+           ולכן הוא הראשון שנכנס מצד שמאל של המסך.
+           אנכי: הרצועה נעה מעלה, והפריט הראשון עולה מלמטה. */
         track.style.transform = horiz
-          ? "translateX("+off+"px)"        /* נכנס משמאל, יוצא ימינה */
-          : "translateY("+(CS-pos)+"px)";  /* אנכי: נכנס מלמטה, יוצא למעלה */
+          ? "translateX("+(pos-cycle)+"px)"
+          : "translateY("+(-pos)+"px)";
       }
       place();
 
       function step(ts){
         if(!last) last=ts;
-        var dt=(ts-last)/1000; last=ts;
-        if(restUntil){
-          if(ts>=restUntil){ restUntil=0; pos=0; place(); }
-        }else{
-          pos+=pps*dt;
-          if(pos>=span){                   /* הרשימה יצאה במלואה */
-            restUntil = ts + Math.max(0,(+O.restSec||0))*1000;
-            if(!restUntil){ pos=0; }
-          }
-          place();
-        }
+        pos += pps*((ts-last)/1000); last=ts;
+        if(pos>=cycle) pos-=cycle;        /* איפוס במקום הזהה — בלי קפיצה */
+        place();
         raf=requestAnimationFrame(step);
       }
       raf=requestAnimationFrame(step);
