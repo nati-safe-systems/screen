@@ -2826,7 +2826,9 @@ function GHD_MONTH_INDEX(name){
 /* קריאת התורה של שבת שחלה ביום טוב. מה שאינו כאן — נופל לשם החג בלבד. */
 function chagTorahReading(mi,d){
   if(mi===7){
-    if(d===22) return "וְזֹאת הַבְּרָכָה (דברים לג, א – לד, יב)";
+    /* בלי הפניית פרקים — מי שעומד מול המסך אינו זקוק לה,
+       והיא מאריכה את השורה לשתיים. */
+    if(d===22) return "וְזֹאת הַבְּרָכָה";
     if(d===1||d===2) return "";      /* ראש השנה — לא נקבע כאן */
     if(d===10) return "";            /* יום כיפור */
   }
@@ -3732,6 +3734,6 @@ function start(){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 8.0</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 8.1</div>
 </body>
 </html>
