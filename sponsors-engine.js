@@ -69,10 +69,17 @@
     });
   }
 
-  function cardHtml(s, big, style){
+  /* גודל בסיס לפי ממדי הקובייה. הטקסט בפנים נמדד ממנו ב-em,
+     ולכן קובייה גדולה מקבלת טקסט גדול בלי לגעת בכל כלל בנפרד. */
+  function baseFs(w,h){
+    if(!w||!h) return null;
+    return Math.max(12, Math.min(h*0.30, w*0.115));
+  }
+  function cardHtml(s, big, style, fs){
     var tier=Math.min(5,Math.max(1,+s.priority||3));
+    var st=(style||"")+(fs?("--fs:"+Math.round(fs)+"px;"):"");
     return '<div class="sc t'+tier+(big?' nsp-h':'')+'"'+
-           (style?' style="'+style+'"':'')+'>'+
+           (st?' style="'+st+'"':'')+'>'+
              (s.category   ? '<div class="cat">'+esc(s.category)+'</div>' : '')+
              '<div class="nm">'+esc(s.name)+'</div>'+
              (s.dedication ? '<div class="dd">'+esc(s.dedication)+'</div>' : '')+
@@ -101,8 +108,11 @@
       '.nsp-track.y{right:0}',
       '.nsp-col{min-width:0;min-height:0}',
       '.nsp-hero{z-index:2}',
-      '.sc.nsp-h .nm{font-size:1.45em}',
-      '.sc.nsp-h .cat{font-size:1.15em}',
+      /* גובר על גדלי ה-vh הקבועים שבקובץ המארח */
+      '.sc{--fs:3.2vh}',
+      '.sc .nm{font-size:var(--fs);line-height:1.12}',
+      '.sc .cat{font-size:calc(var(--fs) * .40)}',
+      '.sc .dd{font-size:calc(var(--fs) * .40);line-height:1.3}',
       '.nsp-dots{position:absolute;bottom:.6vh;left:50%;transform:translateX(-50%);',
         'display:flex;gap:.7vh;z-index:5;pointer-events:none}',
       '.nsp-dots i{width:.85vh;height:.85vh;border-radius:50%;display:block;',
@@ -162,6 +172,23 @@
     function tierOf(x){ return Math.min(5,Math.max(1,+x.priority||3)); }
     function wOf(x){ return O.span[tierOf(x)] || 1; }
 
+    /* מדידה אחרי הרינדור: החישוב הגיאומטרי הוא הערכה, ושם ארוך
+       עדיין יכול לחרוג. כאן מכווצים רק את מי שבאמת חורג, פעם אחת
+       בכל רינדור ולא בכל פריים. */
+    function fitText(root){
+      var cards=root.querySelectorAll(".sc");
+      for(var i=0;i<cards.length;i++){
+        var c=cards[i];
+        var fs=parseFloat(getComputedStyle(c).getPropertyValue("--fs"))||0;
+        if(!fs) continue;
+        var guard=0;
+        while(c.scrollHeight>c.clientHeight+1 && fs>10 && guard++<14){
+          fs*=0.92;
+          c.style.setProperty("--fs", Math.round(fs)+"px");
+        }
+      }
+    }
+
     function render(){
       clearTimers();
       host.innerHTML="";
@@ -195,9 +222,12 @@
           var t=tierOf(x), st="";
           if(t===1 && cols>=2) st="grid-column:span 2;grid-row:span 2;";
           else if(t===2 && cols>=2) st="grid-column:span 2;";
-          return cardHtml(x, t<=2, st);
+          var cw2=W/cols, ch2=H/rows;
+          if(t===1&&cols>=2){ cw2*=2; ch2*=2; } else if(t===2&&cols>=2){ cw2*=2; }
+          return cardHtml(x, t<=2, st, baseFs(cw2,ch2));
         }).join("");
         host.appendChild(p);
+        fitText(p);
         return;
       }
 
@@ -227,7 +257,7 @@
          דרגה 1 ו-2 מקבלות קובייה בודדת בגובה מלא — הן צריכות
          להיראות מרחוק. הדרגות הרגילות נערמות בעמודות של כמה
          קוביות, כך שהזרם נראה כטבלה נוסעת ולא כרכבת של יחידות. */
-      function cell(x, st){ return cardHtml(x, tierOf(x)<=2, st); }
+      function cell(x, st, w, h){ return cardHtml(x, tierOf(x)<=2, st, baseFs(w,h)); }
 
       function buildStream(list){
         var out=[], buf=[];
@@ -245,8 +275,10 @@
             : "flex:0 0 auto;width:100%;display:grid;"+
               "grid-template-columns:repeat("+rows+",minmax(0,1fr));gap:"+gapPx+"px;"+
               "height:"+(unit)+"px;";
+          var cw = horiz ? unit : (W/rows);
+          var chh= horiz ? ((H-gapPx*(rows-1))/rows) : unit;
           out.push('<div class="nsp-col" style="'+st+'">'+
-                   buf.map(function(y){ return cell(y,""); }).join("")+'</div>');
+                   buf.map(function(y){ return cell(y,"",cw,chh); }).join("")+'</div>');
           buf=[];
         }
         list.forEach(function(x){
@@ -256,7 +288,7 @@
             var w2=unit*(O.span[t]||1);
             var st2 = horiz ? "flex:0 0 "+w2+"px;height:100%;"
                             : "flex:0 0 "+w2+"px;width:100%;";
-            out.push(cell(x, st2));
+            out.push(cell(x, st2, horiz?w2:W, horiz?H:w2));
           }else{
             buf.push(x);
             if(buf.length >= Math.max(1,+O.smallRows||3)) flush();
@@ -267,6 +299,7 @@
       }
       track.innerHTML=buildStream(arr);
       host.appendChild(track);
+      fitText(track);
 
       var CS   = horiz ? W : H;                                  /* גודל המסך */
       var TS   = horiz ? track.scrollWidth : track.scrollHeight;  /* אורך הרשימה */
@@ -349,5 +382,5 @@
     };
   }
 
-  root.NatiSponsors = { mount:mount, VERSION:"2.1" };
+  root.NatiSponsors = { mount:mount, VERSION:"2.2" };
 })(typeof window !== "undefined" ? window : globalThis);
