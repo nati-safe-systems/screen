@@ -52,7 +52,11 @@
               minCardVw:17, ratio:1.9, maxCols:4,
               /* speed = פיקסלים בשנייה. קבוע ואינו תלוי בכמות
                  הפרנסים, כך שהמהירות נשארת אותה מהירות תמיד. */
-              span:{1:2.6, 2:1.35, 3:1.05, 4:1, 5:1} };
+              span:{1:2.6, 2:1.35, 3:1.05, 4:1, 5:1},
+              /* חלק הגובה שכל דרגה תופסת. דרגה 1 במלוא הגובה,
+                 דרגה 2 נמוכה יותר וממורכזת — כך ההבדל בין הדרגות
+                 נראה מיד, גם בלי להשוות רוחב. */
+              hFrac:{1:1, 2:0.68, 3:1, 4:1, 5:1} };
 
 
   /* ---- בחירת הרשת ----
@@ -249,7 +253,7 @@
       }else{
         unit=Math.max(H*0.20, 110);
         track.setAttribute("style",
-          "display:flex;flex-direction:column;"+
+          "display:flex;flex-direction:column;align-items:stretch;"+
           "gap:"+gapPx+"px;width:100%;");
       }
 
@@ -286,9 +290,19 @@
           if(t<=2){
             flush();
             var w2=unit*(O.span[t]||1);
-            var st2 = horiz ? "flex:0 0 "+w2+"px;height:100%;"
-                            : "flex:0 0 "+w2+"px;width:100%;";
-            out.push(cell(x, st2, horiz?w2:W, horiz?H:w2));
+            var hf=O.hFrac[t]; if(hf==null) hf=1;
+            /* פחות מגובה מלא -> ממורכז בציר השני */
+            var st2, bw, bh;
+            if(horiz){
+              bw=w2; bh=H*hf;
+              st2="flex:0 0 "+w2+"px;height:"+(hf>=1?"100%":(hf*100).toFixed(1)+"%")+";"+
+                  (hf<1?"align-self:center;":"");
+            }else{
+              bw=W*hf; bh=w2;
+              st2="flex:0 0 "+w2+"px;width:"+(hf>=1?"100%":(hf*100).toFixed(1)+"%")+";"+
+                  (hf<1?"align-self:center;":"");
+            }
+            out.push(cell(x, st2, bw, bh));
           }else{
             buf.push(x);
             if(buf.length >= Math.max(1,+O.smallRows||3)) flush();
