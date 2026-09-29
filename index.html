@@ -3267,8 +3267,14 @@ function got(n){
 
 function fmt(v){
   if(isNaN(v))return "--:--";
-  var h=Math.floor(v)%24;if(h<0)h+=24;
-  var m=Math.floor(Math.round(v*60)%60);if(m<0)m+=60;
+  /* השעה והדקות נגזרות מאותו מספר דקות מעוגל.
+     קודם הן חושבו בנפרד: h מ-Math.floor(v) ו-m מהעיגול של v*60.
+     כששניות התעגלו למעלה מעבר ל-59.5 הדקות אופסו ל-0 והשעה
+     נשארה במקומה — 12:59:40 הוצג כ-"12:00" במקום "13:00".
+     הבאג חל על כל זמן שהשניות שלו מתעגלות למעלה. */
+  var t=Math.round(v*60);            /* סך הדקות מחצות הלילה */
+  var h=Math.floor(t/60)%24; if(h<0)h+=24;
+  var m=((t%60)+60)%60;
   return (h<10?"0"+h:h)+":"+(m<10?"0"+m:m);
 }
 
@@ -3893,6 +3899,6 @@ function start(){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 8.5</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 8.6</div>
 </body>
 </html>
