@@ -460,6 +460,20 @@ body.portrait #mus .bars i{width:0.35vw}
 
 #timer .sec{font-size:.4em;vertical-align:.62em;margin-right:.14em;font-weight:700;
   -webkit-text-fill-color:#5fbf90;background:none;filter:none}
+
+/* ===== כרטיס הזמנת פרסום =====
+   יושב בתחתית רצועת הפרסום, קבוע. גודל ה-QR נקבע באחוזי רוחב
+   הרצועה כדי שיישאר סָריק גם כשגודל המסך משתנה. */
+.adqr{flex-shrink:0;padding:1.4vh 12px 1.6vh;text-align:center;
+  background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
+  border-top:1px solid rgba(255,255,255,.12)}
+.adqr-t{color:#ffcc00;font-size:1.65vh;font-weight:800;margin-bottom:.9vh;
+  letter-spacing:.02em}
+.adqr-img{width:58%;max-width:150px;margin:0 auto;background:#fff;
+  padding:6px;border-radius:9px;line-height:0}
+.adqr-img svg,.adqr-img img{width:100%;height:auto;display:block}
+.adqr-s{color:#cfe0ff;font-size:1.25vh;margin-top:.8vh;font-weight:600}
+.adqr-m{color:#8fa8c8;font-size:1.1vh;margin-top:.5vh;direction:ltr}
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;800;900&family=Heebo:wght@300;400;500;700;800;900&family=Rubik:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,900&family=Suez+One&display=swap" rel="stylesheet">
 </head>
@@ -550,6 +564,14 @@ body.portrait #mus .bars i{width:0.35vw}
 <div class="adbar" id="adbar">
   <div class="adbar-hdr">פרסום ומידע</div>
   <div class="adbar-body" id="adbar-body"></div>
+  <!-- כרטיס "רוצים לפרסם" — מוצג בתחתית רצועת הפרסום.
+       נשאר קבוע ואינו משתתף בסבב המודעות. -->
+  <div class="adqr" id="adqr" style="display:none">
+    <div class="adqr-t">רוצים לפרסם כאן?</div>
+    <div class="adqr-img" id="adqr-img"></div>
+    <div class="adqr-s">סרקו את הקוד</div>
+    <div class="adqr-m" id="adqr-mail"></div>
+  </div>
   <div class="adbar-foot"></div>
 </div>
 
@@ -559,6 +581,8 @@ body.portrait #mus .bars i{width:0.35vw}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<!-- יצירת QR. נכשלה הטעינה — המקודד המקומי משמש כגיבוי. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"></script>
 <script>
 /* =====================================================================
    נתי SAFE — התראות פיקוד העורף  ·  v1.0
@@ -1385,6 +1409,9 @@ function chkLic(cb) {
 function proceedWithScreen(s, myToken, cb) {
   ok=true;
   document.getElementById("lock").style.display="none";
+  /* האם המסך נפתח למכירת פרסום — נקבע באדמין, במגירת הפרסומות.
+     רק אז מוצג כרטיס ה-QR להזמנת פרסום. */
+  SCREEN_ADS_ON = (s.ads_enabled === true);
   // החל תצוגה לפי קהל היעד
   applyDisplayConfig(parseDisplayConfig(s.display_config));
   // שמור offset לכניסת שבת
@@ -2086,6 +2113,9 @@ function applyDisplayConfig(cfg){
     // בצד שמאל: מודעות ש'שני הצדדים' או 'שמאל בלבד'
     if(cfg.ads){ adbar.style.display="flex"; startAds(adsForSide(cfg.ads_list,"left"),"adbar-body","main"); }
     else{ adbar.style.display="none"; stopAds("main"); _adsSig["main"]=null; }
+    /* הכרטיס מוצג רק כשהמסך נפתח למכירת פרסום באדמין.
+       מחוץ ל-if/else, אחרת הוא היה שובר את הצירוף ביניהם. */
+    try{ showAdQR(!!cfg.ads && (cfg.ads_qr!==false) && SCREEN_ADS_ON, cfg.ads_email); }catch(e){}
   }
 
   // --- פרסומות בסיידבר במקום הזמנים (כשהזמנים כבויים והפרסומות פעילות) ---
@@ -2231,7 +2261,53 @@ function drvImg(u){
 
    הרשימה מתרעננת בנפרד מהקונפיג, ולכן מודעה ששולמה עולה תוך דקות
    בלי להמתין לרענון מלא של המסך. */
-var PAID_ADS=[], CFG_LAST=null;
+/* ---- כרטיס הזמנת פרסום ----
+   מוצג רק על מסך שנפתח למכירת פרסום. הקוד נוצר פעם אחת: אין סיבה
+   לייצר אותו מחדש, הכתובת קבועה.
+
+   ה-QR נוצר בספרייה בדוקה מ-CDN. אם היא אינה נטענת — למשל ברשת
+   מסוננת — נעשה שימוש במקודד המקומי כגיבוי, כדי שהכרטיס לא יישאר
+   ריק. */
+var ADS_URL="https://nati-safe-systems.github.io/screen/advertise.html";
+var ADS_MAIL="";
+var _qrDone=false;
+
+function drawQR(){
+  if(_qrDone) return;
+  var box=document.getElementById("adqr-img");
+  if(!box) return;
+  try{
+    if(window.QRCode && QRCode.toString){
+      QRCode.toString(ADS_URL,{type:"svg",margin:1,width:300,
+        errorCorrectionLevel:"M"},function(e,str){
+        if(!e && str){ box.innerHTML=str; _qrDone=true; }
+        else fallbackQR(box);
+      });
+      return;
+    }
+  }catch(e){}
+  fallbackQR(box);
+}
+function fallbackQR(box){
+  try{
+    if(window.NatiQR){
+      var s=NatiQR.svg(ADS_URL,{quiet:1});
+      if(s){ box.innerHTML=s; _qrDone=true; return; }
+    }
+  }catch(e){}
+}
+
+function showAdQR(on, mail){
+  var el=document.getElementById("adqr");
+  if(!el) return;
+  el.style.display = on ? "block" : "none";
+  if(!on) return;
+  var m=document.getElementById("adqr-mail");
+  if(m) m.textContent = mail || ADS_MAIL || "";
+  drawQR();
+}
+
+var PAID_ADS=[], CFG_LAST=null, SCREEN_ADS_ON=false;
 
 function pullPaidAds(){
   if(!SCREEN_ID) return;
@@ -3790,6 +3866,6 @@ function start(){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 8.3</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 8.4</div>
 </body>
 </html>
