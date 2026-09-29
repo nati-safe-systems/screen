@@ -228,6 +228,92 @@ body.marble .ft{background:transparent}
 body.marble .zr-soon,body.marble .zr-soon b{color:#9a5a12}
 body.marble .zr-hot,body.marble .zr-hot b{color:#a52216}
 @media (prefers-reduced-motion:reduce){ .zr-hot b{animation:none} }
+
+/* =====================================================================
+   ערכת "המרכז הרוחני חפציבה בית שמש"
+   ---------------------------------------------------------------------
+   מסגרת מקובץ המעצב, מוחלת כ-border-image בחיתוך תשיעיות: הפינות
+   שומרות על היחס שלהן והצדדים נמתחים בלבד. כך היא נראית נכון בכל
+   גודל מסך, ולא מתעוותת כמו תמונת רקע נמתחת.
+
+   הפרוסות נמדדו מגבולות הלוח הפנימי בקובץ המקורי:
+     עליון 278 · ימני 248 · תחתון 112 · שמאלי 246   (מתוך 1131x1600)
+
+   הקבצים יושבים בריפו ולא מוטמעים כאן: עותק אחד, נשמר במטמון
+   הדפדפן, וכשיגיע קובץ חד יותר מהמעצב מחליפים קובץ ולא קוד.
+   ===================================================================== */
+body.merkaz{
+  --mkf: url("https://nati-safe-systems.github.io/screen/frame-merkaz-alpha.png");
+  --mk-ink:#2a1d06; --mk-gold:#c9a227; --mk-goldd:#8a6a12;
+  background:#07090e;
+}
+body.merkaz .main{gap:1.1vw;padding:1.2vh 1vw}
+
+/* המסגרת עצמה */
+body.merkaz .col.r,
+body.merkaz .col.l,
+body.merkaz .center{
+  border-style:solid;
+  border-image:var(--mkf) 278 248 112 246 fill stretch;
+  background:none;
+  box-shadow:none;
+  position:relative;
+}
+body.merkaz .col.r, body.merkaz .col.l{
+  border-width:7.2vh 4.6vw 2.9vh 4.6vw;
+}
+body.merkaz .center{
+  border-width:8.4vh 4.2vw 3.4vh 4.2vw;
+}
+
+/* הלוגו יושב על המסגרת המרכזית בלבד. שלושה לוגואים זהים זה ליד
+   זה היו נראים כטעות, ולכן הוא מופיע פעם אחת. */
+body.merkaz .center::before{
+  content:"";position:absolute;top:0;left:50%;
+  transform:translate(-50%,-58%);
+  width:15vw;height:13.8vw;z-index:9;pointer-events:none;
+  background:url("https://nati-safe-systems.github.io/screen/logo-merkaz.png") center/contain no-repeat;
+  filter:drop-shadow(0 .5vh 1.2vh rgba(0,0,0,.55));
+}
+
+/* התוכן על רקע הלוח הקרמי — לכן דיו כהה ולא טקסט בהיר */
+body.merkaz .col.r *, body.merkaz .col.l *,
+body.merkaz .center .ann, body.merkaz .center .ann *{color:var(--mk-ink)}
+body.merkaz .bt{
+  color:var(--mk-goldd);font-family:"Frank Ruhl Libre",serif;font-weight:900;
+  background:none;border:0;border-bottom:.22vh solid rgba(138,106,18,.3);
+  text-shadow:none;letter-spacing:.02em;
+}
+body.merkaz .zr{border-bottom:.12vh dotted rgba(138,106,18,.24)}
+body.merkaz .zr span{color:#4a3a16}
+body.merkaz .zr b{color:#1b1204}
+body.merkaz .zr-soon,body.merkaz .zr-soon b{color:#9a5a12}
+body.merkaz .zr-hot,body.merkaz .zr-hot b{color:#a52216}
+body.merkaz #clock{color:#1b1204;text-shadow:0 .1vh 0 rgba(255,255,255,.4)}
+body.merkaz .dt,body.merkaz .dt2{color:#4a3a16}
+body.merkaz .par{color:var(--mk-goldd);background:none;border:0}
+body.merkaz .warn{color:#8a3a2a}
+
+/* קוביות המניינים */
+body.merkaz .room{background:none;border:0;border-bottom:.12vh solid rgba(138,106,18,.2)}
+body.merkaz .room .rt{color:var(--mk-goldd);font-weight:900}
+body.merkaz .prow i{
+  color:#2a1d06;background:rgba(180,140,40,.15);
+  border:.1vh solid rgba(138,106,18,.32);
+}
+body.merkaz .prow i.nx{
+  color:#f0d68a;background:linear-gradient(175deg,#2c1f0b,#191106);
+  border-color:#8a6a12;
+}
+body.merkaz .prow i.roll{color:#7a3d12;background:rgba(200,140,70,.16)}
+
+/* מרכז המסך — הרקע מוסתר, המסגרת היא הרקע */
+body.merkaz #bgimg,body.merkaz #bgveil{display:none}
+body.merkaz .center .ttl{color:var(--mk-goldd)}
+body.merkaz .center .ttl b{color:#1b1204}
+body.merkaz .center .ttl img{display:none}   /* הלוגו כבר על המסגרת */
+body.merkaz .bsd{color:#6b5424}
+body.merkaz .ft{background:#07090e}
 </style></head><body>
 
 
@@ -2475,12 +2561,21 @@ setTimeout(fetchParasha, 3000);
     setLogo();
     if(TH===last) return;                    /* בלי עבודה מיותרת */
     last=TH;
-    if(TH==="marble"){
+    /* merkaz — מסגרת מקובץ המעצב. כמו marble היא אינה ערכת NatiOrnate
+       אלא עיצוב מלא, ולכן ornate אינו נקרא ושאריותיו מוסרות. */
+    if(TH==="merkaz"){
+      document.body.classList.remove("marble");
+      document.body.classList.add("merkaz");
+      dropCorners();
+      stripOrnate();
+    }else if(TH==="marble"){
+      document.body.classList.remove("merkaz");
       document.body.classList.add("marble");
       stripOrnate();
       marbleDecorate();
       watchRooms();
     }else{
+      document.body.classList.remove("merkaz");
       document.body.classList.remove("marble");
       dropCorners();
       try{ NatiOrnate.apply({theme:TH,replace:true,outer:13,panel:5,
@@ -2493,5 +2588,5 @@ setTimeout(fetchParasha, 3000);
 })();
 /* האתחול רץ רק אחרי שהמסך עבר רישיון, טוקן ונעילת מכשיר */
 NatiGuard.check(function(){ load(); tick(); });
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 2.3 · 28.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 3.0 · 28.09.26</div>
 </body></html>

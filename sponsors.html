@@ -2463,6 +2463,20 @@ setInterval(function(){ZDAY="";load();},5*60*1000);
     var TH=(Q.get("theme"))||(SITE&&SITE.theme)||"marble";
     if(TH===last) return;
     last=TH;
+    /* merkaz — מסגרת מקובץ המעצב. אינה ערכת NatiOrnate אלא עיצוב
+       מלא, ולכן ornate אינו נקרא ושאריותיו מוסרות. */
+    if(TH==="merkaz"){
+      document.body.classList.add("merkaz");
+      ["nsf-orn-css","nsf-frame","nsf-tex","nsf-vig"].forEach(function(id){
+        var e=document.getElementById(id); if(e) e.remove();
+      });
+      var o=document.querySelectorAll(".orn");
+      for(var i=0;i<o.length;i++) o[i].classList.remove("orn");
+      var c=document.querySelectorAll(".oc");
+      for(var k=0;k<c.length;k++) c[k].remove();
+      return;
+    }
+    document.body.classList.remove("merkaz");
     try{ NatiOrnate.apply({theme:TH,replace:true,outer:13,panel:5.5,panels:[],watch:[]}); }catch(e){}
   }
   window.addEventListener("load", applyTheme);
@@ -2471,5 +2485,5 @@ setInterval(function(){ZDAY="";load();},5*60*1000);
 })();
 /* האתחול רץ רק אחרי שהמסך עבר רישיון, טוקן ונעילת מכשיר */
 NatiGuard.check(function(){ load(); tick(); });
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · פרנסים · גרסה 4.0 · 28.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · פרנסים · גרסה 4.1 · 28.09.26</div>
 </body></html>

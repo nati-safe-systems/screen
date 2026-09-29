@@ -184,6 +184,58 @@ body{font-family:var(--f-body)!important;-webkit-font-smoothing:antialiased}
 .mcard,.room,.sc,.ann{box-shadow:0 .6vh 2.2vh rgba(0,0,0,.45),inset 0 .1vh 0 rgba(255,255,255,.06)}
 
 #nsf-ver{position:fixed;bottom:3px;right:6px;z-index:9500;pointer-events:none;font:600 10px Heebo,Assistant,Arial,sans-serif;color:rgba(255,255,255,.35);direction:rtl}
+
+/* =====================================================================
+   ערכת "המרכז הרוחני חפציבה בית שמש"
+   ---------------------------------------------------------------------
+   מסגרת מקובץ המעצב כ-border-image בחיתוך תשיעיות — הפינות שומרות
+   על היחס והצדדים נמתחים, ולכן אין עיוות בשום גודל מסך.
+   הפרוסות: 278 עליון · 248 ימני · 112 תחתון · 246 שמאלי, מתוך 1131x1600.
+   ===================================================================== */
+body.merkaz{
+  --mkf: url("https://nati-safe-systems.github.io/screen/frame-merkaz-alpha.png");
+  --mk-ink:#2a1d06; --mk-goldd:#8a6a12;
+  background:#07090e;
+}
+
+body.merkaz .main{gap:1.1vw;padding:1.1vh 1vw}
+body.merkaz .mincol,body.merkaz .mid{
+  border-style:solid;
+  border-image:var(--mkf) 278 248 112 246 fill stretch;
+  background:none;position:relative;
+}
+body.merkaz .mincol{border-width:7vh 4.4vw 2.8vh 4.4vw}
+body.merkaz .mid{border-width:8.2vh 4vw 3.3vh 4vw}
+body.merkaz .mincol *,body.merkaz .mid *{color:var(--mk-ink)}
+body.merkaz .hdr{background:none;color:#c9a227}
+body.merkaz #clock{color:#f0d68a}
+
+/* הלוגו פעם אחת בלבד, על המסגרת הראשית */
+body.merkaz .mid::before{
+  content:"";position:absolute;top:0;left:50%;transform:translate(-50%,-58%);
+  width:14vw;height:calc(14vw * .92);z-index:9;pointer-events:none;
+  background:url("https://nati-safe-systems.github.io/screen/logo-merkaz.png") center/contain no-repeat;
+  filter:drop-shadow(0 .5vh 1.2vh rgba(0,0,0,.55));
+}
+
+/* התוכן יושב על הלוח הקרמי, ולכן דיו כהה */
+body.merkaz .secttl{color:var(--mk-goldd);font-family:"Frank Ruhl Libre",serif;
+  font-weight:900;background:none;border:0;text-shadow:none;
+  border-bottom:.22vh solid rgba(138,106,18,.3)}
+body.merkaz .zr,body.merkaz .zrow{border-bottom:.12vh dotted rgba(138,106,18,.24)}
+body.merkaz .zr span{color:#4a3a16}
+body.merkaz .zr b{color:#1b1204}
+body.merkaz .zr-soon,body.merkaz .zr-soon b{color:#9a5a12}
+body.merkaz .zr-hot,body.merkaz .zr-hot b{color:#a52216}
+body.merkaz .room{background:none;border:0;
+  border-bottom:.12vh solid rgba(138,106,18,.2)}
+body.merkaz .room .rt,body.merkaz .room h4{color:var(--mk-goldd);font-weight:900}
+body.merkaz .prow i{color:#2a1d06;background:rgba(180,140,40,.15);
+  border:.1vh solid rgba(138,106,18,.32)}
+body.merkaz .prow i.nx{color:#f0d68a;
+  background:linear-gradient(175deg,#2c1f0b,#191106);border-color:#8a6a12}
+body.merkaz #bgimg,body.merkaz #bgveil{display:none}
+body.merkaz .ft{background:#07090e}
 </style></head><body>
 
 <div class="hdr">בס"ד &nbsp;·&nbsp; <span id="siteName"></span></div>
@@ -2256,6 +2308,20 @@ setInterval(function(){ ZDAY=""; load(); }, 5*60*1000);   /* רענון נתונ
     var TH=(Q.get("theme"))||(SITE&&SITE.theme)||"marble";
     if(TH===last) return;
     last=TH;
+    /* merkaz — מסגרת מקובץ המעצב. אינה ערכת NatiOrnate אלא עיצוב
+       מלא, ולכן ornate אינו נקרא ושאריותיו מוסרות. */
+    if(TH==="merkaz"){
+      document.body.classList.add("merkaz");
+      ["nsf-orn-css","nsf-frame","nsf-tex","nsf-vig"].forEach(function(id){
+        var e=document.getElementById(id); if(e) e.remove();
+      });
+      var o=document.querySelectorAll(".orn");
+      for(var i=0;i<o.length;i++) o[i].classList.remove("orn");
+      var c=document.querySelectorAll(".oc");
+      for(var k=0;k<c.length;k++) c[k].remove();
+      return;
+    }
+    document.body.classList.remove("merkaz");
     try{ NatiOrnate.apply({theme:TH,replace:true,outer:13,panel:5.5,panels:[".mid"],titles:[".secttl"],watch:[".mcard"]}); }catch(e){}
   }
   window.addEventListener("load", applyTheme);
@@ -2264,5 +2330,5 @@ setInterval(function(){ ZDAY=""; load(); }, 5*60*1000);   /* רענון נתונ
 })();
 /* האתחול רץ רק אחרי שהמסך עבר רישיון, טוקן ונעילת מכשיר */
 NatiGuard.check(function(){ load(); tick(); });
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · חדר קפה · גרסה 2.0 · 28.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · חדר קפה · גרסה 2.1 · 28.09.26</div>
 </body></html>
