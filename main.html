@@ -230,90 +230,167 @@ body.marble .zr-hot,body.marble .zr-hot b{color:#a52216}
 @media (prefers-reduced-motion:reduce){ .zr-hot b{animation:none} }
 
 /* =====================================================================
-   ערכת "המרכז הרוחני חפציבה בית שמש"
+   נתי SAFE — ערכת "המרכז הרוחני חפציבה בית שמש"
    ---------------------------------------------------------------------
-   מסגרת מקובץ המעצב, מוחלת כ-border-image בחיתוך תשיעיות: הפינות
-   שומרות על היחס שלהן והצדדים נמתחים בלבד. כך היא נראית נכון בכל
-   גודל מסך, ולא מתעוותת כמו תמונת רקע נמתחת.
+   המסגרת מקובץ המעצב, מוחלת כ-border-image בחיתוך תשיעיות: הפינות
+   שומרות על היחס שלהן והצדדים נמתחים בלבד, ולכן אין עיוות בשום גודל.
+   הפרוסות נמדדו מגבולות הלוח הפנימי: 278 · 248 · 112 · 246 מתוך 1131x1600.
 
-   הפרוסות נמדדו מגבולות הלוח הפנימי בקובץ המקורי:
-     עליון 278 · ימני 248 · תחתון 112 · שמאלי 246   (מתוך 1131x1600)
+   שלושה דברים שנשברו בניסיון הראשון ותוקנו כאן:
 
-   הקבצים יושבים בריפו ולא מוטמעים כאן: עותק אחד, נשמר במטמון
-   הדפדפן, וכשיגיע קובץ חד יותר מהמעצב מחליפים קובץ ולא קוד.
+   1. הטקסט לא נראה. ה-fill מתח את הלוח הקרמי על כל השטח, אבל הרקעים
+      הכהים של העיצוב המקורי נשארו מעליו והטקסט אבד ביניהם. כאן כל
+      רקע שמתנגש מבוטל במפורש.
+
+   2. הלוגו נחתך. הוא ישב מאחורי הגבול. עכשיו הוא ב-z-index גבוה,
+      ומרחף מעל הקורה במקום להיות מכוסה בה.
+
+   3. הפרופורציות. border-width ב-vw נתן עובי שונה לכל אלמנט לפי
+      רוחבו. כאן העובי אחיד ונמדד ב-vh בשני הצירים.
+
+   ---------------------------------------------------------------------
+   וריאנטים: body.merkaz + one of
+     .mk-cream    לוח שנהב, דיו כהה          ברירת מחדל
+     .mk-navy     לוח כחול לילה, דיו בהיר
+     .mk-wine     לוח בורדו עמוק, דיו זהב
+     .mk-dark     לוח שחור-פחם, דיו זהב
    ===================================================================== */
+
 body.merkaz{
-  --mkf: url("https://nati-safe-systems.github.io/screen/frame-merkaz-alpha.png");
-  --mk-ink:#2a1d06; --mk-gold:#c9a227; --mk-goldd:#8a6a12;
-  background:#07090e;
+  --mkf:  url("https://nati-safe-systems.github.io/screen/frame-merkaz-alpha.png");
+  --mkl:  url("https://nati-safe-systems.github.io/screen/logo-merkaz.png");
+  --mk-bd: 6.4vh;            /* עובי אחיד — נמדד בגובה בשני הצירים */
+  --mk-bdb: 2.6vh;
+  background:#07090e !important;
 }
-body.merkaz .main{gap:1.1vw;padding:1.2vh 1vw}
 
-/* המסגרת עצמה */
-body.merkaz .col.r,
-body.merkaz .col.l,
-body.merkaz .center{
-  border-style:solid;
-  border-image:var(--mkf) 278 248 112 246 fill stretch;
-  background:none;
-  box-shadow:none;
+/* ---------- וריאנטים ---------- */
+body.merkaz.mk-cream{
+  --mk-pane:#f6f2e6; --mk-pane2:#ece5d2;
+  --mk-ink:#241a05; --mk-dim:#5c4a1e; --mk-ttl:#7d5f10;
+  --mk-line:rgba(125,95,16,.30); --mk-hot:#98200f; --mk-soon:#8a5510;
+  --mk-chip:rgba(180,140,40,.16); --mk-chipb:rgba(125,95,16,.34);
+  --mk-nx1:#2c1f0b; --mk-nx2:#191106; --mk-nxi:#f4dc96;
+}
+body.merkaz.mk-navy{
+  --mk-pane:#101c33; --mk-pane2:#0a1424;
+  --mk-ink:#eaf1fb; --mk-dim:#9fb6d4; --mk-ttl:#ffd769;
+  --mk-line:rgba(255,215,105,.26); --mk-hot:#ff8a7a; --mk-soon:#ffd769;
+  --mk-chip:rgba(255,215,105,.10); --mk-chipb:rgba(255,215,105,.3);
+  --mk-nx1:#ffd769; --mk-nx2:#d9a800; --mk-nxi:#17212f;
+}
+body.merkaz.mk-wine{
+  --mk-pane:#2b0d10; --mk-pane2:#1c0709;
+  --mk-ink:#f6e6c8; --mk-dim:#c9a98a; --mk-ttl:#f0c86a;
+  --mk-line:rgba(240,200,106,.26); --mk-hot:#ff9b86; --mk-soon:#f0c86a;
+  --mk-chip:rgba(240,200,106,.10); --mk-chipb:rgba(240,200,106,.3);
+  --mk-nx1:#f0c86a; --mk-nx2:#c9982e; --mk-nxi:#2b0d10;
+}
+body.merkaz.mk-dark{
+  --mk-pane:#14120d; --mk-pane2:#0b0a07;
+  --mk-ink:#f2e4c2; --mk-dim:#b8a479; --mk-ttl:#e8c76e;
+  --mk-line:rgba(232,199,110,.24); --mk-hot:#ff9b86; --mk-soon:#e8c76e;
+  --mk-chip:rgba(232,199,110,.09); --mk-chipb:rgba(232,199,110,.28);
+  --mk-nx1:#e8c76e; --mk-nx2:#b8912f; --mk-nxi:#14120d;
+}
+
+/* ---------- המסגרת ---------- */
+body.merkaz .mkf{
   position:relative;
-}
-body.merkaz .col.r, body.merkaz .col.l{
-  border-width:7.2vh 4.6vw 2.9vh 4.6vw;
-}
-body.merkaz .center{
-  border-width:8.4vh 4.2vw 3.4vh 4.2vw;
+  border-style:solid;
+  border-width:var(--mk-bd) var(--mk-bd) var(--mk-bdb) var(--mk-bd);
+  border-image:var(--mkf) 278 248 112 246 stretch;
+  background:linear-gradient(180deg,var(--mk-pane),var(--mk-pane2)) !important;
+  background-clip:padding-box !important;
+  box-shadow:none !important;
+  overflow:visible !important;
 }
 
-/* הלוגו יושב על המסגרת המרכזית בלבד. שלושה לוגואים זהים זה ליד
-   זה היו נראים כטעות, ולכן הוא מופיע פעם אחת. */
-body.merkaz .center::before{
+/* ---------- הלוגו ----------
+   z-index גבוה כדי שירחף מעל הקורה ולא ייחתך בה.
+   יושב מעל המסגרת ולא בתוכה, ולכן אינו מכסה תוכן. */
+body.merkaz .mkf-logo::before{
   content:"";position:absolute;top:0;left:50%;
-  transform:translate(-50%,-58%);
-  width:15vw;height:13.8vw;z-index:9;pointer-events:none;
-  background:url("https://nati-safe-systems.github.io/screen/logo-merkaz.png") center/contain no-repeat;
-  filter:drop-shadow(0 .5vh 1.2vh rgba(0,0,0,.55));
+  transform:translate(-50%,-56%);
+  width:auto;aspect-ratio:257/236;height:calc(var(--mk-bd) * 1.85);
+  z-index:40;pointer-events:none;
+  background:var(--mkl) center/contain no-repeat;
+  filter:drop-shadow(0 .6vh 1.4vh rgba(0,0,0,.6));
 }
 
-/* התוכן על רקע הלוח הקרמי — לכן דיו כהה ולא טקסט בהיר */
-body.merkaz .col.r *, body.merkaz .col.l *,
-body.merkaz .center .ann, body.merkaz .center .ann *{color:var(--mk-ink)}
-body.merkaz .bt{
-  color:var(--mk-goldd);font-family:"Frank Ruhl Libre",serif;font-weight:900;
-  background:none;border:0;border-bottom:.22vh solid rgba(138,106,18,.3);
-  text-shadow:none;letter-spacing:.02em;
-}
-body.merkaz .zr{border-bottom:.12vh dotted rgba(138,106,18,.24)}
-body.merkaz .zr span{color:#4a3a16}
-body.merkaz .zr b{color:#1b1204}
-body.merkaz .zr-soon,body.merkaz .zr-soon b{color:#9a5a12}
-body.merkaz .zr-hot,body.merkaz .zr-hot b{color:#a52216}
-body.merkaz #clock{color:#1b1204;text-shadow:0 .1vh 0 rgba(255,255,255,.4)}
-body.merkaz .dt,body.merkaz .dt2{color:#4a3a16}
-body.merkaz .par{color:var(--mk-goldd);background:none;border:0}
-body.merkaz .warn{color:#8a3a2a}
+/* ---------- ביטול רקעים שמתנגשים ----------
+   בלי זה הרקעים הכהים של העיצוב המקורי מכסים את הלוח והטקסט אובד. */
+body.merkaz .mkf > *{position:relative;z-index:2}
+body.merkaz .mkf #bgimg,
+body.merkaz .mkf #bgveil{display:none !important}
+body.merkaz .room,
+body.merkaz .mcard,
+body.merkaz .sc,
+body.merkaz .ann,
+body.merkaz .list,
+body.merkaz .mgrid,
+body.merkaz .inner{background:none !important;box-shadow:none !important}
 
-/* קוביות המניינים */
-body.merkaz .room{background:none;border:0;border-bottom:.12vh solid rgba(138,106,18,.2)}
-body.merkaz .room .rt{color:var(--mk-goldd);font-weight:900}
+/* ---------- טיפוגרפיה ---------- */
+body.merkaz .mkf,
+body.merkaz .mkf *{color:var(--mk-ink)}
+body.merkaz .bt,
+body.merkaz .secttl,
+body.merkaz .room .rt,
+body.merkaz .mcard .rt{
+  color:var(--mk-ttl) !important;
+  font-family:"Frank Ruhl Libre",serif;font-weight:900;
+  background:none !important;border:0 !important;text-shadow:none !important;
+  border-bottom:.2vh solid var(--mk-line) !important;
+}
+body.merkaz .zr,body.merkaz .zrow{border-bottom:.12vh dotted var(--mk-line) !important}
+body.merkaz .zr span{color:var(--mk-dim)}
+body.merkaz .zr b{color:var(--mk-ink)}
+body.merkaz .zr-soon,body.merkaz .zr-soon b{color:var(--mk-soon) !important}
+body.merkaz .zr-hot,body.merkaz .zr-hot b{color:var(--mk-hot) !important}
+body.merkaz .room{border:0 !important;border-bottom:.12vh solid var(--mk-line) !important}
 body.merkaz .prow i{
-  color:#2a1d06;background:rgba(180,140,40,.15);
-  border:.1vh solid rgba(138,106,18,.32);
+  color:var(--mk-ink) !important;background:var(--mk-chip) !important;
+  border:.1vh solid var(--mk-chipb) !important;
 }
 body.merkaz .prow i.nx{
-  color:#f0d68a;background:linear-gradient(175deg,#2c1f0b,#191106);
-  border-color:#8a6a12;
+  color:var(--mk-nxi) !important;
+  background:linear-gradient(175deg,var(--mk-nx1),var(--mk-nx2)) !important;
+  border-color:var(--mk-nx1) !important;
 }
-body.merkaz .prow i.roll{color:#7a3d12;background:rgba(200,140,70,.16)}
+body.merkaz .warn{color:var(--mk-hot) !important;opacity:.85}
+body.merkaz .none{color:var(--mk-dim) !important}
 
-/* מרכז המסך — הרקע מוסתר, המסגרת היא הרקע */
-body.merkaz #bgimg,body.merkaz #bgveil{display:none}
-body.merkaz .center .ttl{color:var(--mk-goldd)}
-body.merkaz .center .ttl b{color:#1b1204}
-body.merkaz .center .ttl img{display:none}   /* הלוגו כבר על המסגרת */
-body.merkaz .bsd{color:#6b5424}
-body.merkaz .ft{background:#07090e}
+/* ---------- אזורים מחוץ למסגרת ---------- */
+body.merkaz .hdr,
+body.merkaz .head,
+body.merkaz .topbar,
+body.merkaz .top{background:none !important;border-color:var(--mk-line) !important}
+body.merkaz .ft{background:#07090e !important}
+
+/* ---- אילו אלמנטים נושאים את המסגרת במסך הזה ---- */
+body.merkaz .col.r,
+body.merkaz .center,
+body.merkaz .col.l{
+  position:relative;
+  border-style:solid;
+  border-width:var(--mk-bd) var(--mk-bd) var(--mk-bdb) var(--mk-bd);
+  border-image:var(--mkf) 278 248 112 246 stretch;
+  background:linear-gradient(180deg,var(--mk-pane),var(--mk-pane2)) !important;
+  background-clip:padding-box !important;
+  box-shadow:none !important;
+  overflow:visible !important;
+}
+body.merkaz .col.r > *,
+body.merkaz .center > *,
+body.merkaz .col.l > *{position:relative;z-index:2}
+body.merkaz .center::before{
+  content:"";position:absolute;top:0;left:50%;transform:translate(-50%,-56%);
+  aspect-ratio:257/236;height:calc(var(--mk-bd) * 1.85);
+  z-index:40;pointer-events:none;
+  background:var(--mkl) center/contain no-repeat;
+  filter:drop-shadow(0 .6vh 1.4vh rgba(0,0,0,.6));
+}
 </style></head><body>
 
 
@@ -2561,21 +2638,33 @@ setTimeout(fetchParasha, 3000);
     setLogo();
     if(TH===last) return;                    /* בלי עבודה מיותרת */
     last=TH;
-    /* merkaz — מסגרת מקובץ המעצב. כמו marble היא אינה ערכת NatiOrnate
-       אלא עיצוב מלא, ולכן ornate אינו נקרא ושאריותיו מוסרות. */
-    if(TH==="merkaz"){
-      document.body.classList.remove("marble");
-      document.body.classList.add("merkaz");
-      dropCorners();
-      stripOrnate();
-    }else if(TH==="marble"){
+    /* merkaz — עיצוב מלא מקובץ המעצב, לא ערכת NatiOrnate.
+       הווריאנט נבחר מה-URL או מ-display_config, וברירת המחדל
+       היא לוח השנהב. */
+    if(TH==="merkaz" || TH.indexOf("merkaz-")===0){
+      var v = TH.indexOf("merkaz-")===0 ? TH.slice(7)
+            : ((typeof DC!=="undefined" && DC && DC.merkaz_variant) || "cream");
+      var B=document.body;
+      B.classList.add("merkaz");
+      ["cream","navy","wine","dark"].forEach(function(x){ B.classList.remove("mk-"+x); });
+      B.classList.add("mk-"+(["cream","navy","wine","dark"].indexOf(v)>-1?v:"cream"));
+      ["nsf-orn-css","nsf-frame","nsf-tex","nsf-vig"].forEach(function(id){
+        var e=document.getElementById(id); if(e) e.remove();
+      });
+      var oo=document.querySelectorAll(".orn");
+      for(var i=0;i<oo.length;i++) oo[i].classList.remove("orn");
+      var cc=document.querySelectorAll(".oc");
+      for(var k=0;k<cc.length;k++) cc[k].remove();
+      return;
+    }
+    document.body.classList.remove("merkaz");
+    if(TH==="marble"){
       document.body.classList.remove("merkaz");
       document.body.classList.add("marble");
       stripOrnate();
       marbleDecorate();
       watchRooms();
     }else{
-      document.body.classList.remove("merkaz");
       document.body.classList.remove("marble");
       dropCorners();
       try{ NatiOrnate.apply({theme:TH,replace:true,outer:13,panel:5,
@@ -2588,5 +2677,5 @@ setTimeout(fetchParasha, 3000);
 })();
 /* האתחול רץ רק אחרי שהמסך עבר רישיון, טוקן ונעילת מכשיר */
 NatiGuard.check(function(){ load(); tick(); });
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 3.0 · 28.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 3.1 · 28.09.26</div>
 </body></html>
