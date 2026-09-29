@@ -164,7 +164,20 @@ footer a{color:var(--gold-d);cursor:pointer;text-decoration:underline;margin:0 7
       <input id="f-email" type="email" autocomplete="email" inputmode="email"
              placeholder="name@example.com">
       <div class="fe" id="e-email" style="display:none"></div>
-      <div class="note">לכתובת זו יישלח אישור ההזמנה והקישור לתשלום. נא לוודא שהיא נכונה.</div>
+      <div id="mail-tip" style="display:none;background:rgba(240,136,62,.12);
+           border:1px solid rgba(240,136,62,.4);border-radius:9px;
+           padding:10px 12px;margin:-6px 0 12px;font-size:13px;color:#f0883e">
+      </div>
+
+      <label class="req" for="f-email2">אימות דוא״ל</label>
+      <input id="f-email2" type="email" inputmode="email" autocomplete="off"
+             placeholder="הקלידו שוב את הכתובת" onpaste="return false"
+             oncopy="return false" oncut="return false">
+      <div class="fe" id="e-email2" style="display:none"></div>
+      <div class="note">
+        זו הכתובת היחידה שדרכה נוכל ליצור קשר ולשלוח את קישור התשלום.
+        ההקלדה החוזרת נועדה לוודא שלא נפלה טעות — הדבקה חסומה בכוונה.
+      </div>
     </div>
 
     <div class="card">
@@ -713,10 +726,61 @@ function emailOk(v){
   if(/^[.@]|[.@]$/.test(v)) return false;
   return /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(v);
 }
+/* ---- זיהוי שגיאות כתיב נפוצות בדומיין ----
+   בדיקה מבנית עוברת גם על gmial.com ו-gmail.co, והטופס נשלח בלי
+   שיש דרך ליצור קשר. כאן מזהים את השגיאות הנפוצות ומציעים תיקון. */
+var COMMON=["gmail.com","walla.co.il","walla.com","hotmail.com","outlook.com",
+            "yahoo.com","icloud.com","bezeqint.net","012.net.il","013net.net",
+            "netvision.net.il","zahav.net.il","nana10.co.il","live.com"];
+
+function lev(a,b){
+  var m=a.length,n=b.length,d=[],i,j;
+  for(i=0;i<=m;i++){ d[i]=[i]; }
+  for(j=0;j<=n;j++){ d[0][j]=j; }
+  for(i=1;i<=m;i++) for(j=1;j<=n;j++)
+    d[i][j]=Math.min(d[i-1][j]+1, d[i][j-1]+1,
+                     d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+  return d[m][n];
+}
+function suggestDomain(v){
+  var at=v.lastIndexOf("@");
+  if(at<0) return null;
+  var dom=v.slice(at+1).toLowerCase();
+  if(!dom || COMMON.indexOf(dom)>-1) return null;
+  var best=null,bd=99;
+  COMMON.forEach(function(c){
+    var d=lev(dom,c);
+    if(d<bd){ bd=d; best=c; }
+  });
+  /* עד שני תווי הבדל — סביר שזו שגיאת הקלדה ולא דומיין אמיתי */
+  return (bd>0 && bd<=2) ? (v.slice(0,at+1)+best) : null;
+}
+function showTip(v){
+  var box=el("mail-tip");
+  var sug=v?suggestDomain(v):null;
+  if(!sug){ box.style.display="none"; return; }
+  box.innerHTML='האם התכוונתם ל־<b style="cursor:pointer;text-decoration:underline" '+
+    'onclick="useSuggest(\''+sug.replace(/'/g,"")+'\')">'+
+    sug.replace(/[<>&"]/g,"")+'</b>?';
+  box.style.display="block";
+}
+function useSuggest(v){
+  el("f-email").value=v; el("f-email2").value="";
+  el("mail-tip").style.display="none";
+  fieldErr("email",""); fieldErr("email2","");
+}
+
 el("f-email").addEventListener("blur",function(){
   var v=this.value.trim();
-  if(!v){ fieldErr("email",""); return; }
+  if(!v){ fieldErr("email",""); showTip(""); return; }
   fieldErr("email", emailOk(v) ? "" : "כתובת הדוא״ל אינה תקינה");
+  showTip(v);
+});
+el("f-email2").addEventListener("blur",function(){
+  var a=el("f-email").value.trim().toLowerCase();
+  var b=this.value.trim().toLowerCase();
+  if(!b){ fieldErr("email2",""); return; }
+  fieldErr("email2", a===b ? "" : "הכתובות אינן זהות");
 });
 el("f-phone2").addEventListener("input",function(){
   this.value=this.value.replace(/\D/g,"").slice(0,7);
@@ -826,7 +890,7 @@ function uploadFile(){
 
 /* ---- שליחה ---- */
 function submitOrder(){
-  say(""); ["contact","phone","email","screens","dates","file"].forEach(function(k){fieldErr(k,"");});
+  say(""); ["contact","phone","email","email2","screens","dates","file"].forEach(function(k){fieldErr(k,"");});
   var bad=false;
 
   var contact=el("f-contact").value.trim();
@@ -837,6 +901,10 @@ function submitOrder(){
 
   var email=el("f-email").value.trim();
   if(!emailOk(email)){ fieldErr("email","כתובת הדוא״ל אינה תקינה"); bad=true; }
+  var email2=el("f-email2").value.trim();
+  if(email2.toLowerCase()!==email.toLowerCase()){
+    fieldErr("email2","הכתובות אינן זהות — נא להקליד שוב"); bad=true;
+  }
 
   var ids=picked();
   if(!ids.length){ fieldErr("screens","נא לבחור לפחות בניין אחד"); bad=true; }
