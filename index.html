@@ -3559,9 +3559,36 @@ function gzm2(n){
   try{ zmShadowLog(H,E); }catch(e){}
   /* מקור פעיל: hebcal (ברירת מחדל) או engine — נקבע מ-display_config */
   if(window._zmSrc==="engine" && E) return E;
-  /* רשת ביטחון: אם Hebcal לא החזיר ערך, השלם מהמנוע במקום --:-- */
+  /* רשת ביטחון ראשונה: ערך חסר מושלם מהמנוע במקום --:-- */
   if(E && window._zmFallback!==false){
     for(var k in H){ if(isNaN(H[k]) && !isNaN(E[k])) H[k]=E[k]; }
+  }
+
+  /* ---- בדיקת סבירות ----
+     סדר הזמנים ביום קבוע ואינו משתנה: עלות, הנץ, סוף זמן קריאת שמע,
+     חצות, מנחה גדולה, שקיעה, צאת הכוכבים, רבינו תם. זמן שמפר את
+     הסדר הזה שגוי בוודאות, ולא משנה מאיזה מקור הגיע.
+
+     הבדיקה נוספה אחרי ש-Hebcal החזיר מנחה גדולה 12:00 בעוד חצות
+     12:30 — ערך בלתי אפשרי, שהוצג על המסך כאילו כלום.
+     כשערך נפסל, המנוע תופס את מקומו; הוא אומת מול הלוח המודפס. */
+  if(E){
+    var ORDER=["alot","sunrise","szM","szG","noon","mincha","sunset","tz","rt"];
+    var prev=NaN;
+    for(var i=0;i<ORDER.length;i++){
+      var k2=ORDER[i], v=H[k2];
+      if(isNaN(v)) { if(!isNaN(E[k2])) prev=E[k2]; continue; }
+      if(!isNaN(prev) && v < prev){
+        if(!isNaN(E[k2])){
+          try{ console.warn("זמן נפסל: "+k2+" = "+v.toFixed(2)+
+                            " מוקדם מקודמו; הוחלף בערך המנוע "+E[k2].toFixed(2)); }catch(e){}
+          H[k2]=E[k2];
+        }else{
+          H[k2]=NaN;
+        }
+      }
+      if(!isNaN(H[k2])) prev=H[k2];
+    }
   }
   return H;
 }
@@ -3866,6 +3893,6 @@ function start(){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 8.4</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 8.5</div>
 </body>
 </html>
