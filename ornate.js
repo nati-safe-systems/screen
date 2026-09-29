@@ -110,17 +110,35 @@
                 orn:2, shine:0, band:2.4, tex:.09, vig:.44, pad:3,
                 hi:'#f0e4cc', chip:'#dccba4', ink:'#f4ecdc', dim:'#b0a186' },
     /* שיש שחור חם וזהב — לפי השילוט של המרכז הרוחני, חפציבה */
-    /* ---- ערכת לקוח ----
-       merkaz אינה ערכת מסגרות מחושבת אלא עיצוב מלא מקובץ המעצב,
-       והמסכים מטפלים בה בעצמם. היא מופיעה כאן רק כדי שתופיע
-       ברשימת הבחירה; אם NatiOrnate יקבל אותה בטעות, band:0 ו-orn:0
-       יבטיחו שהוא לא יצייר דבר מעל העיצוב האמיתי. */
-    merkaz:   { name:'המרכז הרוחני חפציבה בית שמש', client:true,
+    /* ---- ערכות לקוח ----
+       ארבעה גוונים לאותה מסגרת מקובץ המעצב. הן אינן ערכות מסגרות
+       מחושבות — המסכים מזהים את התחילית merkaz- ומטפלים בעיצוב
+       בעצמם. הן רשומות כאן רק כדי להופיע ברשימת הבחירה, ו-band:0
+       מבטיח ש-NatiOrnate לא יצייר דבר אם יקבל אותן בטעות. */
+    'merkaz-dark': { name:'המרכז הרוחני — פחם וזהב',
                 c1:'#fff4c9', c2:'#c9a227', c3:'#6b4d16',
                 bg1:'rgba(0,0,0,0)', bg2:'rgba(0,0,0,0)',
                 orn:0, shine:0, band:0, tex:0, vig:0, pad:2.6,
-                hi:'#f0d68a', chip:'#f0d68a', ink:'#2a1d06', dim:'#5a4416',
-                bg:'#07090e', shape:'plain' },
+                hi:'#f0d68a', chip:'#f0d68a', ink:'#f2e4c2', dim:'#b8a479',
+                bg:'#07090e', shape:'plain', client:true },
+    'merkaz-cream': { name:'המרכז הרוחני — שנהב וזהב',
+                c1:'#fff4c9', c2:'#c9a227', c3:'#6b4d16',
+                bg1:'rgba(0,0,0,0)', bg2:'rgba(0,0,0,0)',
+                orn:0, shine:0, band:0, tex:0, vig:0, pad:2.6,
+                hi:'#f0d68a', chip:'#f0d68a', ink:'#f2e4c2', dim:'#b8a479',
+                bg:'#07090e', shape:'plain', client:true },
+    'merkaz-navy': { name:'המרכז הרוחני — כחול לילה',
+                c1:'#fff4c9', c2:'#c9a227', c3:'#6b4d16',
+                bg1:'rgba(0,0,0,0)', bg2:'rgba(0,0,0,0)',
+                orn:0, shine:0, band:0, tex:0, vig:0, pad:2.6,
+                hi:'#f0d68a', chip:'#f0d68a', ink:'#f2e4c2', dim:'#b8a479',
+                bg:'#07090e', shape:'plain', client:true },
+    'merkaz-wine': { name:'המרכז הרוחני — בורדו מלכותי',
+                c1:'#fff4c9', c2:'#c9a227', c3:'#6b4d16',
+                bg1:'rgba(0,0,0,0)', bg2:'rgba(0,0,0,0)',
+                orn:0, shine:0, band:0, tex:0, vig:0, pad:2.6,
+                hi:'#f0d68a', chip:'#f0d68a', ink:'#f2e4c2', dim:'#b8a479',
+                bg:'#07090e', shape:'plain', client:true },
 
     marble:   { name:'שיש וזהב', c1:'#fff4c9', c2:'#d4ab4a', c3:'#6b4d16',
                 bg1:'rgba(24,18,10,.82)', bg2:'rgba(10,8,6,.92)',
