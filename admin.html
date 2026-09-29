@@ -1641,16 +1641,48 @@ function loadQueue(){
   }).catch(function(){ box.innerHTML='<div style="color:#f85149;">שגיאה בטעינה</div>'; });
 }
 
+/* קריאה לפונקציית שרת */
+function edge(fn,body){
+  return fetch(SB+'/functions/v1/'+fn,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+SK,apikey:SK},
+    body:JSON.stringify(body||{})
+  }).then(function(r){ return r.json(); });
+}
+
 function decide(id,what){
   var q = what==='approve'
-    ? 'לאשר את ההזמנה? חלוקת ההכנסה תיכתב לפי האחוזים התקפים כעת.'
-    : 'לדחות את ההזמנה?';
+    ? 'לאשר את ההזמנה?\n\nחלוקת ההכנסה תיכתב לפי האחוזים התקפים כעת,\nויישלח ללקוח מייל עם קישור לתשלום.'
+    : 'לדחות את ההזמנה?\n\nיישלח ללקוח מייל שמסביר זאת.';
   if(!confirm(q)) return;
+
   rpc('nsf_ad_decide',{p_token:NSF_TOKEN,p_campaign:id,p_decision:what,p_note:''})
     .then(function(r){
       if(!r||!r.ok){ toast((r&&r.err)||'הפעולה נכשלה'); return; }
-      toast(what==='approve'?'ההזמנה אושרה':'ההזמנה נדחתה');
-      loadQueue();
+
+      if(what==='reject'){
+        toast('ההזמנה נדחתה · שולח מייל');
+        return edge('nsf-mail',{token:NSF_TOKEN,campaign_id:id,kind:'rejected'})
+          .then(function(){ toast('נדחה והלקוח עודכן'); loadQueue(); });
+      }
+
+      /* אישור: קודם נוצר קישור התשלום, ורק אז נשלח המייל שמכיל אותו.
+         סדר הפוך היה שולח מייל בלי קישור. */
+      toast('אושר · יוצר קישור תשלום');
+      return edge('nsf-pay-link',{token:NSF_TOKEN,campaign_id:id})
+        .then(function(p){
+          if(!p||!p.ok){
+            toast('אושר, אך יצירת הקישור נכשלה: '+((p&&p.err)||''));
+            loadQueue(); return;
+          }
+          toast('הקישור נוצר · שולח מייל ללקוח');
+          return edge('nsf-mail',{token:NSF_TOKEN,campaign_id:id,kind:'approved'})
+            .then(function(m){
+              toast((m&&m.ok) ? 'אושר והמייל נשלח ללקוח'
+                              : 'אושר, אך שליחת המייל נכשלה');
+              loadQueue();
+            });
+        });
     }).catch(function(){ toast('הפעולה נכשלה'); });
 }
 
@@ -1658,7 +1690,11 @@ function markCampPaid(id){
   var doc=prompt('מספר מסמך בסאמיט (אפשר להשאיר ריק):','');
   if(doc===null) return;
   rpc('nsf_ad_mark_campaign_paid',{p_token:NSF_TOKEN,p_campaign:id,p_doc:doc||''})
-    .then(function(){ toast('סומן כשולם'); loadQueue(); })
+    .then(function(){
+      toast('סומן כשולם · שולח אישור ללקוח');
+      return edge('nsf-mail',{token:NSF_TOKEN,campaign_id:id,kind:'paid'});
+    })
+    .then(function(){ toast('סומן והלקוח עודכן'); loadQueue(); })
     .catch(function(){ toast('נכשל'); });
 }
 
@@ -1666,12 +1702,7 @@ function payLink(id){
   /* הקישור נוצר בשרת. ה-APIKey של סאמית אינו נמצא בקובץ הזה
      ואינו יכול להימצא בו — הוא מאפשר להוציא חשבוניות ולחייב. */
   toast('יוצר קישור תשלום...');
-  fetch(SB+'/functions/v1/nsf-pay-link',{
-    method:'POST',
-    headers:{'Content-Type':'application/json',
-             'Authorization':'Bearer '+SK, apikey:SK},
-    body:JSON.stringify({token:NSF_TOKEN, campaign_id:id})
-  }).then(function(r){ return r.json(); }).then(function(r){
+  edge('nsf-pay-link',{token:NSF_TOKEN,campaign_id:id}).then(function(r){
     if(!r||!r.ok){
       /* סאמית מפרט את השדה הבעייתי ב-TechnicalErrorDetails.
          בלעדיו ההודעה גנרית ואי אפשר לדעת מה לתקן. */
