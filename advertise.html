@@ -138,6 +138,15 @@ footer a{color:var(--gold-d);cursor:pointer;text-decoration:underline;margin:0 7
       <input id="f-contact" autocomplete="name">
       <div class="fe" id="e-contact" style="display:none"></div>
 
+      <!-- לשון הפנייה במיילים. בעברית אין נוסח שמתאים לשני המינים
+           בלי להישמע מגושם, ולכן שואלים. ריק = לשון רבים ניטרלית. -->
+      <label for="f-gender">פנייה במיילים</label>
+      <select id="f-gender">
+        <option value="">לא לציין</option>
+        <option value="m">לשון זכר</option>
+        <option value="f">לשון נקבה</option>
+      </select>
+
       <label class="req" for="f-phone2">טלפון</label>
       <div class="phone">
         <input id="f-phone2" type="tel" inputmode="numeric" maxlength="7" placeholder="0000000">
@@ -851,6 +860,7 @@ function submitOrder(){
       phone:    el("f-phone1").value+"-"+ph,
       email:    email,
       tax_id:   el("f-tax").value.trim(),
+      gender:   el("f-gender").value,
       title:    el("f-title").value.trim(),
       screens:  ids,
       date_from:f, date_to:t,
