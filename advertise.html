@@ -941,6 +941,15 @@ function submitOrder(){
     }
     el("form").style.display="none"; el("done").style.display="block";
     window.scrollTo({top:0});
+    /* התראה לבעל העסק. נשלחת אחרי שההזמנה כבר נשמרה ומוצגת
+       ללקוח, ולכן כישלון כאן אינו משפיע עליו בכלל. */
+    try{
+      fetch(SB+"/functions/v1/nsf-mail",{
+        method:"POST",
+        headers:{apikey:SK,Authorization:"Bearer "+SK,"Content-Type":"application/json"},
+        body:JSON.stringify({campaign_id:r.campaign_id, kind:"new_order"})
+      }).catch(function(){});
+    }catch(e){}
   }).catch(function(err){
     say("שגיאה בשליחה. נא לנסות שוב.",1);
     b.disabled=false; b.textContent="שליחת ההזמנה לאישור";
