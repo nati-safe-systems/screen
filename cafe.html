@@ -2418,15 +2418,15 @@ setInterval(function(){ ZDAY=""; load(); }, 5*60*1000);   /* רענון נתונ
     if(TH===last) return;
     last=TH;
     /* merkaz — עיצוב מלא מקובץ המעצב, לא ערכת NatiOrnate.
-       הווריאנט נבחר מה-URL או מ-display_config, וברירת המחדל
-       היא לוח השנהב. */
+       הווריאנט נבחר מה-URL או מ-display_config. ברירת המחדל
+       היא פחם וזהב — הגוון שהלקוח בחר. */
     if(TH==="merkaz" || TH.indexOf("merkaz-")===0){
       var v = TH.indexOf("merkaz-")===0 ? TH.slice(7)
-            : ((typeof DC!=="undefined" && DC && DC.merkaz_variant) || "cream");
+            : ((typeof DC!=="undefined" && DC && DC.merkaz_variant) || "dark");
       var B=document.body;
       B.classList.add("merkaz");
       ["cream","navy","wine","dark"].forEach(function(x){ B.classList.remove("mk-"+x); });
-      B.classList.add("mk-"+(["cream","navy","wine","dark"].indexOf(v)>-1?v:"cream"));
+      B.classList.add("mk-"+(["cream","navy","wine","dark"].indexOf(v)>-1?v:"dark"));
       ["nsf-orn-css","nsf-frame","nsf-tex","nsf-vig"].forEach(function(id){
         var e=document.getElementById(id); if(e) e.remove();
       });
