@@ -2030,6 +2030,8 @@ function audioApply(){
 }
 
 function applyDisplayConfig(cfg){
+  /* נשמר כדי לבנות מחדש כשרשימת המודעות בתשלום משתנה */
+  CFG_LAST=cfg;
   DC=cfg;
   window._zmSrc = (cfg && cfg.zmanim_source==="engine") ? "engine" : "hebcal";
   var _newOr = (cfg && cfg.orientation) || "auto";
@@ -2221,9 +2223,43 @@ function drvImg(u){
   return u; // לא דרייב — קישור ישיר
 }
 /* בורר מודעות לפי צד: 'left' = רצועה שמאל, 'right' = סיידבר ימין. ברירת מחדל 'both' (תאימות לאחור) */
+/* ---- מודעות בתשלום ----
+   המודעות שנמכרו דרך מערכת הפרסום יושבות בטבלה נפרדת ולא ב-
+   display_config. הן נמשכות כאן ומתמזגות לרשימה הקיימת, במבנה
+   שמנוע התצוגה כבר יודע לקרוא — img, txt, dur, anim, side.
+   כך לא היה צריך לגעת בתצוגה עצמה.
+
+   הרשימה מתרעננת בנפרד מהקונפיג, ולכן מודעה ששולמה עולה תוך דקות
+   בלי להמתין לרענון מלא של המסך. */
+var PAID_ADS=[], CFG_LAST=null;
+
+function pullPaidAds(){
+  if(!SCREEN_ID) return;
+  fetch(SB+"/rest/v1/rpc/nsf_ad_live",{
+    method:"POST",
+    headers:{apikey:SK,Authorization:"Bearer "+SK,"Content-Type":"application/json"},
+    body:JSON.stringify({p_screen:SCREEN_ID})
+  }).then(function(r){ return r.ok ? r.json() : []; })
+  .then(function(list){
+    var arr=Array.isArray(list)?list:[];
+    var sig=JSON.stringify(arr.map(function(a){return a._id+a.img;}));
+    if(sig===PAID_ADS.__sig) return;      /* בלי שינוי — לא מאתחלים סבב */
+    PAID_ADS=arr; PAID_ADS.__sig=sig;
+    /* הרצועות נבנות מחדש עם הרשימה הממוזגת. startAds משווה חתימה
+       ואינו מאתחל סבב שלא השתנה, ולכן אין ריצוד. */
+    try{ if(CFG_LAST) applyDisplayConfig(CFG_LAST); }catch(e){}
+  }).catch(function(){});
+}
+
+/* מיזוג: המודעות בתשלום ראשונות, ואחריהן אלה שהוגדרו ידנית */
+function mergedAds(list){
+  var manual=Array.isArray(list)?list:[];
+  return PAID_ADS.concat(manual);
+}
+
 function adsForSide(list, sideKey){
-  if(!Array.isArray(list)) return [];
-  return list.filter(function(a){
+  var all=mergedAds(list);
+  return all.filter(function(a){
     var s=(a&&a.side)||"both";
     return s==="both" || s===sideKey;
   });
@@ -2825,13 +2861,20 @@ function GHD_MONTH_INDEX(name){
 
 /* קריאת התורה של שבת שחלה ביום טוב. מה שאינו כאן — נופל לשם החג בלבד. */
 function chagTorahReading(mi,d){
+  /* שם הקריאה בלבד, בלי הפניית פרקים — מי שעומד מול המסך אינו
+     זקוק לה, והיא מאריכה את השורה לשתיים.
+     מספור החודשים: ניסן=1, סיוון=3, תשרי=7. */
   if(mi===7){
-    /* בלי הפניית פרקים — מי שעומד מול המסך אינו זקוק לה,
-       והיא מאריכה את השורה לשתיים. */
+    if(d===1)  return "וַיהוָה פָּקַד אֶת שָׂרָה";
+    if(d===2)  return "וְהָאֱלֹהִים נִסָּה";
+    if(d===10) return "אַחֲרֵי מוֹת";
     if(d===22) return "וְזֹאת הַבְּרָכָה";
-    if(d===1||d===2) return "";      /* ראש השנה — לא נקבע כאן */
-    if(d===10) return "";            /* יום כיפור */
   }
+  if(mi===1){
+    if(d===15) return "מִשְׁכוּ וּקְחוּ";
+    if(d===21) return "וַיְהִי בְּשַׁלַּח";
+  }
+  if(mi===3 && d===6) return "בַּחֹדֶשׁ הַשְּׁלִישִׁי";
   return "";
 }
 
@@ -3722,6 +3765,19 @@ function start(){
         setInterval(function(){var t=tdy();if(t!==lad){fhcal(t,null);fparasha(t,function(){loadNextSat(null);});}},60000);
         setInterval(function(){if(Date.now()-llc>LCI)chkLic(null);},LCI);
         setInterval(pollMsg,15000);
+        /* מודעות בתשלום — נמשכות כל שתי דקות, כך שמודעה ששולמה
+           עולה תוך דקות בלי להמתין לרענון מלא של המסך.
+           nsf_ad_tick מעלה קמפיין ששולם כשתקופתו מגיעה ומסיים כזה
+           שתקופתו עברה; היא זולה ובטוחה לקריאה מכמה מסכים. */
+        setTimeout(pullPaidAds, 2500);
+        setInterval(pullPaidAds, 120000);
+        setInterval(function(){
+          fetch(SB+"/rest/v1/rpc/nsf_ad_tick",{
+            method:"POST",
+            headers:{apikey:SK,Authorization:"Bearer "+SK,"Content-Type":"application/json"},
+            body:"{}"
+          }).catch(function(){});
+        }, 600000);
         setInterval(paintCache,30000); paintCache();
       });
     });
@@ -3734,6 +3790,6 @@ function start(){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 8.1</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 8.3</div>
 </body>
 </html>
