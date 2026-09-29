@@ -284,6 +284,106 @@ body.marble .zr-hot,body.marble .zr-hot b{color:#a52216}
 
 <script>
 /* =====================================================================
+   נתי SAFE — עיצוב זמנים הלכתיים  ·  NatiZmanFmt v1.0
+   ---------------------------------------------------------------------
+   עד כה היו שני מימושים נפרדים: מסכי הבניינים קיבלו שעות עשרוניות,
+   מסכי בית הכנסת קיבלו דקות, ולכל אחד היה חישוב עיגול משלו. התוצאה
+   הייתה באג שהופיע באחד ולא בשני — 12:59:40 הוצג כ-"12:00", כי השעה
+   והדקות חושבו בנפרד והדקות התעגלו למעלה בלי להעלות את השעה.
+
+   כאן מימוש אחד לכל הפלטפורמה.
+
+   ---------------------------------------------------------------------
+   הכיוון נקבע לפי ההלכה, תמיד לצד המחמיר:
+
+     זמן שמותר עד אליו   ->  קיצוץ   שלא ייראה שנותרה דקה שאין
+     זמן שאסור לפניו     ->  עיגול   שלא ייראה שהגיע לפני שהגיע
+
+   מכאן:
+     קיצוץ    סוף זמן קריאת שמע, סוף זמן תפילה, הדלקת נרות, שקיעה
+     עיגול    עלות השחר, הנץ, מנחה גדולה, מנחה קטנה, פלג המנחה,
+              צאת הכוכבים, רבינו תם
+     עיגול    חצות — זמן אסטרונומי ולא הלכתי, אין בו מחמיר
+
+   ---------------------------------------------------------------------
+   שימוש:
+     NatiZmanFmt.show("szG", 9.4997)        -> "09:29"   מקצץ
+     NatiZmanFmt.show("tz",  19.0497)       -> "19:03"   מעגל
+     NatiZmanFmt.fromMinutes("shkia", 1111) -> "18:31"
+   ===================================================================== */
+(function (root) {
+  'use strict';
+
+  /* trunc = מקצץ · round = מעגל */
+  var DIR = {
+    /* מקצצים — זמן שמותר עד אליו */
+    szM:'trunc', szG:'trunc', szMGA:'trunc',
+    sofZmanShma:'trunc', sofZmanShmaGRA:'trunc', sofZmanShmaMGA:'trunc',
+    tfM:'trunc', tfG:'trunc',
+    sofZmanTfila:'trunc', sofZmanTfilaGRA:'trunc', sofZmanTfilaMGA:'trunc',
+    candle:'trunc', candleLighting:'trunc',
+    sunset:'trunc', shkia:'trunc', shkiaMishor:'trunc',
+
+    /* מעגלים — זמן שאסור לפניו */
+    alot:'round', alotHaShachar:'round', alotHashachar:'round',
+    sunrise:'round', netz:'round', netzMishor:'round',
+    mincha:'round', minchaGedola:'round', minchaKetana:'round',
+    plag:'round', plagHamincha:'round',
+    tz:'round', tzeit:'round', tzeitHakochavim:'round',
+    rt:'round', tzeitRT:'round',
+
+    /* אסטרונומי */
+    noon:'round', chatzot:'round'
+  };
+
+  function dirOf(key) {
+    if (!key) return 'round';
+    if (DIR[key]) return DIR[key];
+    /* שם שאינו ברשימה — נגזר לפי התחלית, כדי ששדה חדש לא יישבר */
+    var k = String(key).toLowerCase();
+    if (k.indexOf('sofzman') === 0 || k.indexOf('candle') > -1 ||
+        k.indexOf('shkia') > -1 || k.indexOf('sunset') > -1) return 'trunc';
+    return 'round';
+  }
+
+  /* הלב: שעה ודקות נגזרות תמיד מאותו מספר דקות.
+     חישוב נפרד של השעה ושל הדקות הוא מקור הבאג המקורי. */
+  function fromTotalMinutes(total, dir) {
+    if (total === null || total === undefined || isNaN(total)) return '--:--';
+    var t = (dir === 'trunc') ? Math.floor(total) : Math.round(total);
+    var h = Math.floor(t / 60) % 24; if (h < 0) h += 24;
+    var m = ((t % 60) + 60) % 60;
+    return (h < 10 ? '0' + h : h) + ':' + (m < 10 ? '0' + m : m);
+  }
+
+  /* מקבל שעות עשרוניות */
+  function show(key, hours) {
+    if (hours === null || hours === undefined || isNaN(hours)) return '--:--';
+    return fromTotalMinutes(hours * 60, dirOf(key));
+  }
+
+  /* מקבל דקות מחצות הלילה */
+  function fromMinutes(key, mins) {
+    if (mins === null || mins === undefined || isNaN(mins)) return '--:--';
+    return fromTotalMinutes(mins, dirOf(key));
+  }
+
+  /* בלי כיוון הלכתי — לשעון, לספירה לאחור וכדומה */
+  function plain(hours) {
+    return fromTotalMinutes(hours * 60, 'round');
+  }
+
+  root.NatiZmanFmt = {
+    show: show,
+    fromMinutes: fromMinutes,
+    plain: plain,
+    dirOf: dirOf,
+    VERSION: '1.0'
+  };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+
+/* =====================================================================
    נתי SAFE — מסכים מתחלפים  ·  v1.0
    ---------------------------------------------------------------------
    מדי כמה זמן המסך הרגיל מתחלף למסך הודעה, ואז חוזר.
@@ -1280,6 +1380,12 @@ body.marble .zr-hot,body.marble .zr-hot b{color:#a52216}
   function fmt(mins, opt) {
     if (mins === null || isNaN(mins)) return '--:--';
     opt = opt || {};
+    /* כיוון הלכתי: opt.key מעביר את שם הזמן, ו-NatiZmanFmt קובע
+       אם לקצץ או לעגל. בלי key ההתנהגות נשארת כשהייתה, כדי
+       שקריאות קיימות שאינן זמן הלכתי לא ישתנו. */
+    if (opt.key && !opt.seconds && !opt.hour12 && root.NatiZmanFmt) {
+      try { return root.NatiZmanFmt.fromMinutes(opt.key, mins); } catch (e) {}
+    }
     var total = opt.seconds ? Math.round(mins * 60) : Math.floor(mins) * 60;
     var h = Math.floor(total / 3600) % 24, r = total - Math.floor(total / 3600) * 3600;
     var mi = Math.floor(r / 60), se = r - mi * 60;
@@ -2261,10 +2367,14 @@ function tick(){
      תיתפס אליה בלי שהשורה תזוז ותטריד. השורות שמסביב שומרות
      על מקומן — רק השורה הבולטת משנה גודל. */
   var _zl=document.getElementById("zlist");
-  var _zHtml=[["עלות השחר",Z.alotHashachar],["נץ החמה",Z.netz],['סו"ז ק"ש מג"א',Z.sofZmanShmaMGA],
-     ['סו"ז ק"ש גר"א',Z.sofZmanShmaGRA],['סו"ז תפילה',Z.sofZmanTfilaGRA],["חצות",Z.chatzot],
-     ["מנחה גדולה",Z.minchaGedola],["פלג המנחה",Z.plagHamincha],["שקיעה",Z.shkia],
-     ["צאת הכוכבים",Z.tzeitHakochavim],["רבינו תם",Z.tzeitRT]]
+  /* המפתח השלישי קובע את כיוון העיגול: זמן שמותר עד אליו מקוצץ,
+     זמן שאסור לפניו מעוגל. ראו NatiZmanFmt. */
+  var _zHtml=[["עלות השחר",Z.alotHashachar,"alot"],["נץ החמה",Z.netz,"sunrise"],
+     ['סו"ז ק"ש מג"א',Z.sofZmanShmaMGA,"szM"],['סו"ז ק"ש גר"א',Z.sofZmanShmaGRA,"szG"],
+     ['סו"ז תפילה',Z.sofZmanTfilaGRA,"tfG"],["חצות",Z.chatzot,"noon"],
+     ["מנחה גדולה",Z.minchaGedola,"mincha"],["פלג המנחה",Z.plagHamincha,"plag"],
+     ["שקיעה",Z.shkia,"shkia"],["צאת הכוכבים",Z.tzeitHakochavim,"tz"],
+     ["רבינו תם",Z.tzeitRT,"rt"]]
     .map(function(x){
       var left = (typeof x[1]==="number") ? (x[1]-nowMin) : null;
       var cls  = "zr";
@@ -2272,7 +2382,8 @@ function tick(){
         if(left<=5)       cls+=" zr-hot";
         else if(left<=15) cls+=" zr-soon";
       }
-      return '<div class="'+cls+'"><span>'+x[0]+'</span><b>'+NatiMinyan.fmt(x[1])+'</b></div>';
+      return '<div class="'+cls+'"><span>'+x[0]+'</span><b>'+
+             NatiMinyan.fmt(x[1],{key:x[2]})+'</b></div>';
     }).join("");
   if(_zl.__lastHtml!==_zHtml){ _zl.__lastHtml=_zHtml; _zl.innerHTML=_zHtml; }
   drawMinyanim(now,nowMin);
@@ -2382,5 +2493,5 @@ setTimeout(fetchParasha, 3000);
 })();
 /* האתחול רץ רק אחרי שהמסך עבר רישיון, טוקן ונעילת מכשיר */
 NatiGuard.check(function(){ load(); tick(); });
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 2.2 · 28.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 2.3 · 28.09.26</div>
 </body></html>
