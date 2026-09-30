@@ -530,10 +530,80 @@ body.portrait #mus .bars i{width:0.35vw}
 body.has-ticker .adqr.solo{
   bottom:calc(60px + 1.2vh) !important;
 }
+
+/* =====================================================================
+   שלושה מצבי פרסום
+   ---------------------------------------------------------------------
+   נבחרים מ-display_config.ads_mode ומאפשרים להשוות בעין:
+
+     side     רצועה צדדית — ברירת המחדל, כמו שהיה
+     bottom   רצועה תחתונה ברוחב מלא, גובה 20%
+     full     המודעה תופסת את כל המסך למשך X שניות כל Y דקות
+
+   התחתונה נותנת שטח גדול פי כמה מהצדדית בלי לגזול מלוח המודעות.
+   המלאה היא החזקה מסחרית — היא מה שמצדיק מחיר גבוה.
+   ===================================================================== */
+
+/* ---- ב׳ · רצועה תחתונה ---- */
+body.ads-bottom .adbar{
+  position:fixed !important;left:0;right:0;bottom:0;top:auto !important;
+  width:100% !important;max-width:none !important;min-width:0 !important;
+  height:20vh;flex-direction:row !important;z-index:45;
+  border:0 !important;border-top:.35vh solid rgba(255,204,0,.45) !important;
+  box-shadow:0 -1vh 3vh rgba(0,0,0,.55);
+}
+body.ads-bottom .adbar-hdr{
+  writing-mode:vertical-rl;transform:rotate(180deg);
+  flex:0 0 auto;padding:0 .5vw !important;display:flex;
+  align-items:center;justify-content:center;font-size:1.8vh !important;
+}
+body.ads-bottom .adbar-body{flex:1;min-width:0}
+body.ads-bottom .adbar-foot{display:none}
+body.ads-bottom .ad-slide{flex-direction:row;gap:1.5vw;padding:0 1vw}
+body.ads-bottom .ad-slide img{max-height:17vh !important;width:auto !important}
+body.ads-bottom .ad-txt{font-size:3.2vh !important;text-align:right}
+body.ads-bottom .sidebar,
+body.ads-bottom .bb,
+body.ads-bottom .main-area{margin-bottom:20vh}
+body.ads-bottom.has-ticker .adbar{bottom:60px}
+body.ads-bottom.has-ticker .sidebar,
+body.ads-bottom.has-ticker .bb,
+body.ads-bottom.has-ticker .main-area{margin-bottom:calc(20vh + 60px)}
+body.ads-bottom .adqr.solo{bottom:calc(20vh + 1.2vh) !important}
+body.ads-bottom.has-ticker .adqr.solo{bottom:calc(20vh + 60px + 1.2vh) !important}
+
+/* ---- ג׳ · מסך מלא ---- */
+#ads-full{
+  display:none;position:fixed;inset:0;z-index:9500;
+  background:#05070c;align-items:center;justify-content:center;
+  flex-direction:column;gap:2vh;padding:3vh 3vw;
+}
+#ads-full.on{display:flex}
+#ads-full img{max-width:96%;max-height:84vh;object-fit:contain;
+  border-radius:1vh;box-shadow:0 2vh 6vh rgba(0,0,0,.7)}
+#ads-full .af-txt{
+  color:#ffe9a8;font-family:"Frank Ruhl Libre",serif;font-weight:900;
+  font-size:5.5vh;line-height:1.25;text-align:center;max-width:88%;
+}
+#ads-full .af-tag{
+  position:absolute;top:2vh;left:2vw;
+  color:rgba(255,255,255,.35);font-size:1.5vh;letter-spacing:.1em;
+}
+#ads-full .af-bar{
+  position:absolute;bottom:0;left:0;height:.5vh;background:#ffcc00;
+  width:0;transition:width .25s linear;
+}
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;800;900&family=Heebo:wght@300;400;500;700;800;900&family=Rubik:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,900&family=Suez+One&display=swap" rel="stylesheet">
 </head>
 <body>
+<!-- מודעה על כל המסך — מצב ads_mode="full" -->
+<div id="ads-full">
+  <div class="af-tag">פרסומת</div>
+  <div id="ads-full-in"></div>
+  <div class="af-bar" id="ads-full-bar"></div>
+</div>
+
 
 <div id="top-band"></div>
 <div id="mus"><span class="bars"><i></i><i></i><i></i><i></i></span><span id="musTxt"></span></div>
@@ -2296,6 +2366,7 @@ function applyDisplayConfig(cfg){
        שונות: ads_enabled פותח למכירה, cfg.ads מפעיל את הרצועה.
        הכרטיס מוצג עכשיו לפי ads_enabled בלבד. */
     try{ showAdQR(SCREEN_ADS_ON && (cfg.ads_qr!==false), cfg.ads_email); }catch(e){}
+    try{ applyAdsMode(cfg); }catch(e){}
   }
 
   // --- פרסומות בסיידבר במקום הזמנים (כשהזמנים כבויים והפרסומות פעילות) ---
@@ -4083,10 +4154,61 @@ function start(){
 
 (function(){chkLic(function(){if(ok)start();});})();
 
+
+/* ---- שלושת מצבי הפרסום ----
+   המצב נקבע ב-display_config.ads_mode. ברירת המחדל side, כמו שהיה,
+   כדי שמסך קיים לא ישתנה בלי שביקשו. */
+var _adsFullTimer=null, _adsFullIdx=0;
+
+function applyAdsMode(cfg){
+  var mode=(cfg && cfg.ads_mode) || "side";
+  var B=document.body;
+  B.classList.remove("ads-bottom");
+  if(_adsFullTimer){ clearInterval(_adsFullTimer); _adsFullTimer=null; }
+  var full=document.getElementById("ads-full");
+  if(full) full.classList.remove("on");
+
+  if(mode==="bottom"){ B.classList.add("ads-bottom"); return; }
+  if(mode!=="full") return;
+
+  /* מצב מסך מלא: המודעה משתלטת על המסך למשך showSec שניות,
+     כל everyMin דקות. בין לבין המסך מתנהג כרגיל. */
+  var showSec=Math.max(5, +(cfg.ads_full_sec||25));
+  var everyMin=Math.max(1, +(cfg.ads_full_every||5));
+  _adsFullTimer=setInterval(function(){ adsFullShow(showSec); }, everyMin*60000);
+  setTimeout(function(){ adsFullShow(showSec); }, 8000);
+}
+
+function adsFullShow(sec){
+  var list=mergedAds(CFG_LAST && CFG_LAST.ads_list);
+  if(!list || !list.length) return;
+  var a=list[_adsFullIdx % list.length]; _adsFullIdx++;
+  var box=document.getElementById("ads-full-in");
+  var wrap=document.getElementById("ads-full");
+  var bar=document.getElementById("ads-full-bar");
+  if(!box||!wrap) return;
+
+  var h="";
+  if(a.img) h+='<img src="'+String(a.img).replace(/"/g,"&quot;")+'" alt="">';
+  if(a.txt) h+='<div class="af-txt">'+String(a.txt)
+                 .replace(/</g,"&lt;").replace(/>/g,"&gt;")+'</div>';
+  if(!h) return;
+  box.innerHTML=h;
+  wrap.classList.add("on");
+
+  if(bar){
+    bar.style.transition="none"; bar.style.width="0";
+    setTimeout(function(){
+      bar.style.transition="width "+sec+"s linear";
+      bar.style.width="100%";
+    },50);
+  }
+  setTimeout(function(){ wrap.classList.remove("on"); }, sec*1000);
+}
 </script>
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 9.5</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 9.6</div>
 </body>
 </html>

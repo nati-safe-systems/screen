@@ -735,8 +735,42 @@ input:focus,select:focus{border-color:#58a6ff;}
             </div>
 
             <div class="field" id="sf-pdf-sec" style="display:none;">
-              <label>קישור PDF מ-Google Drive</label>
-              <input type="url" id="sf-pdf-url" placeholder="https://drive.google.com/file/d/...">
+              <label>הקובץ להצגה</label>
+
+              <!-- העלאה ישירה, כמו בהודעה הקבועה. מסלול Drive
+                   דרש שינוי הרשאות שיתוף שלרוב נשכח, והמסך הציג ריק. -->
+              <div id="sf-pdf-drop" class="pdf-drop"
+                   onclick="document.getElementById('sf-pdf-file').click()">
+                <div class="pd-ic">&#128206;</div>
+                <div class="pd-t">לחצו להעלאת קובץ</div>
+                <div class="pd-s">PDF · JPG · PNG &nbsp;·&nbsp; עד 20 מגה</div>
+              </div>
+              <input type="file" id="sf-pdf-file"
+                     accept="application/pdf,image/jpeg,image/png,image/webp"
+                     style="display:none" onchange="pdfPick(this,'sf-')">
+
+              <div id="sf-pdf-have" style="display:none;align-items:center;gap:10px;
+                   background:#0d1117;border:1px solid #30363d;border-radius:9px;
+                   padding:10px 12px;margin-top:9px;">
+                <span id="sf-pdf-have-n" style="flex:1;font-size:13px;overflow:hidden;
+                      text-overflow:ellipsis;white-space:nowrap"></span>
+                <button type="button" onclick="pdfClear('sf-')"
+                        style="background:none;border:0;color:#f85149;font-size:19px;
+                               cursor:pointer;padding:0 4px">&times;</button>
+              </div>
+              <div id="sf-pdf-bar" style="display:none;height:4px;background:#21262d;
+                   border-radius:3px;overflow:hidden;margin-top:8px">
+                <i id="sf-pdf-bar-i" style="display:block;height:100%;width:0;
+                   background:#ffcc00;transition:width .25s"></i>
+              </div>
+              <div id="sf-pdf-err" style="display:none;color:#f85149;
+                   font-size:12.5px;margin-top:7px"></div>
+
+              <details style="margin-top:10px">
+                <summary style="cursor:pointer;color:#8b949e;font-size:12.5px">
+                  או הדבקת קישור חיצוני</summary>
+                <input type="url" id="sf-pdf-url" placeholder="https://" style="margin-top:7px">
+              </details>
             </div>
 
             <div class="field" id="sf-pdf-anim-sec" style="display:none;">
@@ -2882,32 +2916,34 @@ var _pdfUp=null;
 var PDF_MAX=20*1024*1024;
 var PDF_OK=["application/pdf","image/jpeg","image/png","image/webp"];
 
-function pdfErr(t){
-  var e=document.getElementById("pdf-err");
+function pdfErr(t,p){
+  var e=document.getElementById((p||"")+"pdf-err");
   if(e){ e.textContent=t||""; e.style.display=t?"block":"none"; }
 }
-function pdfClear(){
+function pdfClear(p){
+  p=p||"";
   _pdfUp=null;
-  var f=document.getElementById("pdf-file"); if(f) f.value="";
-  var h=document.getElementById("pdf-have"); if(h) h.style.display="none";
-  var b=document.getElementById("pdf-bar"); if(b) b.style.display="none";
-  var u=document.getElementById("pdf-url"); if(u) u.value="";
-  pdfErr("");
+  var f=document.getElementById(p+"pdf-file"); if(f) f.value="";
+  var h=document.getElementById(p+"pdf-have"); if(h) h.style.display="none";
+  var b=document.getElementById(p+"pdf-bar"); if(b) b.style.display="none";
+  var u=document.getElementById(p+"pdf-url"); if(u) u.value="";
+  pdfErr("",p);
 }
-function pdfPick(inp){
+function pdfPick(inp,p){
+  p=p||"";
   var f=inp.files && inp.files[0];
   if(!f) return;
-  pdfErr("");
-  if(PDF_OK.indexOf(f.type)===-1){ pdfErr("סוג קובץ לא נתמך. PDF, JPG או PNG."); pdfClear(); return; }
-  if(f.size>PDF_MAX){ pdfErr("הקובץ גדול מ-20 מגה."); pdfClear(); return; }
+  pdfErr("",p);
+  if(PDF_OK.indexOf(f.type)===-1){ pdfErr("סוג קובץ לא נתמך. PDF, JPG או PNG.",p); pdfClear(p); return; }
+  if(f.size>PDF_MAX){ pdfErr("הקובץ גדול מ-20 מגה.",p); pdfClear(p); return; }
 
-  var have=document.getElementById("pdf-have");
-  document.getElementById("pdf-have-n").textContent =
+  var have=document.getElementById(p+"pdf-have");
+  document.getElementById(p+"pdf-have-n").textContent =
     f.name+"  ("+Math.round(f.size/1024)+" KB)";
   have.style.display="flex";
 
-  var bar=document.getElementById("pdf-bar");
-  var bi=document.getElementById("pdf-bar-i");
+  var bar=document.getElementById(p+"pdf-bar");
+  var bi=document.getElementById(p+"pdf-bar-i");
   bar.style.display="block"; bi.style.width="30%";
 
   var ext=(f.name.split(".").pop()||"bin").toLowerCase().replace(/[^a-z0-9]/g,"");
@@ -2923,11 +2959,11 @@ function pdfPick(inp){
     if(!r.ok) throw new Error("upload "+r.status);
     bi.style.width="100%";
     _pdfUp = SUPA_BASE+"/storage/v1/object/public/screen-media/"+key;
-    var u=document.getElementById("pdf-url");
+    var u=document.getElementById(p+"pdf-url");
     if(u) u.value=_pdfUp;     /* אותו שדה ממשיך לשמש את השמירה */
     toast("הקובץ הועלה");
   }).catch(function(){
-    pdfErr("ההעלאה נכשלה. נסה שוב.");
+    pdfErr("ההעלאה נכשלה. נסה שוב.",p);
     bar.style.display="none";
   });
 }
@@ -2935,7 +2971,10 @@ function pdfPick(inp){
 /* גרירה לאזור ההעלאה */
 (function(){
   function bind(){
-    var d=document.getElementById("pdf-drop");
+    ["","sf-"].forEach(function(p){ bindOne(p); });
+  }
+  function bindOne(p){
+    var d=document.getElementById(p+"pdf-drop");
     if(!d || d.__b) return;
     d.__b=1;
     ["dragenter","dragover"].forEach(function(e){
@@ -2946,9 +2985,9 @@ function pdfPick(inp){
     });
     d.addEventListener("drop",function(ev){
       if(ev.dataTransfer.files && ev.dataTransfer.files[0]){
-        var inp=document.getElementById("pdf-file");
+        var inp=document.getElementById(p+"pdf-file");
         inp.files=ev.dataTransfer.files;
-        pdfPick(inp);
+        pdfPick(inp,p);
       }
     });
   }

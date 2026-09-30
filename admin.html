@@ -895,7 +895,29 @@ tr:hover td{background:rgba(128,0,0,0.05);}
             <span>המסך פתוח למכירת פרסום</span>
           </label>
 
-          <div style="margin-top:12px;">
+          <div style="margin-top:14px;padding-top:12px;
+             border-top:1px solid rgba(255,255,255,.1)">
+          <label>מצב הצגת הפרסום</label>
+          <select id="edit-sc-adsmode">
+            <option value="side">רצועה צדדית — כמו היום</option>
+            <option value="bottom">רצועה תחתונה — רוחב מלא, גובה 20%</option>
+            <option value="full">מסך מלא — המודעה משתלטת לזמן קצוב</option>
+          </select>
+          <div style="font-size:11px;color:#8b949e;margin-top:6px;line-height:1.55">
+            התחתונה נותנת שטח גדול בהרבה בלי לגזול מלוח המודעות.
+            המלאה היא החזקה מסחרית — היא מה שמצדיק מחיר גבוה.
+          </div>
+        </div>
+        <div id="adsfull-opts" style="margin-top:10px;display:none">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div><label>משך ההצגה, שניות</label>
+              <input type="number" id="edit-sc-adsfullsec" min="5" value="25"></div>
+            <div><label>כל כמה דקות</label>
+              <input type="number" id="edit-sc-adsfullevery" min="1" value="5"></div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;">
             <label>אחוז לחברת הניהול</label>
             <div style="display:flex;align-items:center;gap:8px;">
               <input type="number" id="edit-sc-adpct" min="0" max="100" step="0.5"
@@ -2654,6 +2676,18 @@ function openEditScreen(sid){
   if(_ao) _ao.checked = (s.ads_enabled===true);
   var _ap=document.getElementById('edit-sc-adpct');
   if(_ap) _ap.value = (s.ad_owner_pct!=null) ? s.ad_owner_pct : '';
+  try{
+    var dc = (typeof s.display_config==="string")
+             ? JSON.parse(s.display_config||"{}") : (s.display_config||{});
+    var am=document.getElementById('edit-sc-adsmode');
+    if(am){ am.value = dc.ads_mode || "side";
+            var o=document.getElementById("adsfull-opts");
+            if(o) o.style.display=(am.value==="full")?"block":"none"; }
+    var fs=document.getElementById('edit-sc-adsfullsec');
+    if(fs) fs.value = dc.ads_full_sec || 25;
+    var fe=document.getElementById('edit-sc-adsfullevery');
+    if(fe) fe.value = dc.ads_full_every || 5;
+  }catch(e){}
   var _ah=document.getElementById('adpct-hint');
   if(_ah) _ah.textContent = (s.ad_owner_pct==null) ? 'כרגע לפי ברירת המחדל' : '';
   var _pp=document.getElementById('edit-sc-purpose');
@@ -2813,6 +2847,20 @@ function saveScreen(){
   body.ads_enabled = _ao ? !!_ao.checked : false;
   var _ap=document.getElementById('edit-sc-adpct');
   body.ad_owner_pct = (_ap && _ap.value!=='') ? parseFloat(_ap.value) : null;
+  /* מצב הפרסום נשמר בתוך display_config, ליד שאר הגדרות התצוגה */
+  try{
+    var cur = {};
+    try{ cur = (typeof body.display_config==="string")
+                ? JSON.parse(body.display_config||"{}")
+                : (body.display_config||{}); }catch(e){}
+    var am=document.getElementById('edit-sc-adsmode');
+    if(am) cur.ads_mode = am.value || "side";
+    var fs=document.getElementById('edit-sc-adsfullsec');
+    if(fs) cur.ads_full_sec = parseInt(fs.value,10)||25;
+    var fe=document.getElementById('edit-sc-adsfullevery');
+    if(fe) cur.ads_full_every = parseInt(fe.value,10)||5;
+    body.display_config = cur;
+  }catch(e){}
   if(!orig){
     body.message='';body.message_type='scroll';
     // צור טוקן אוטומטי
@@ -3234,6 +3282,24 @@ document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener(
       window.__nhpT=setTimeout(go,150);
     }).observe(document.body,{childList:true,subtree:true});
   }catch(e){}
+})();
+
+/* ---- מצב הצגת הפרסום ----
+   נשמר ב-display_config ולא על הטבלה, כי הוא עניין תצוגה
+   ולא עניין מסחרי. */
+(function(){
+  function bind(){
+    var sel=document.getElementById("edit-sc-adsmode");
+    if(!sel || sel.__b) return;
+    sel.__b=1;
+    sel.addEventListener("change",function(){
+      var o=document.getElementById("adsfull-opts");
+      if(o) o.style.display = (sel.value==="full") ? "block" : "none";
+    });
+  }
+  setInterval(bind,1500);
+  if(document.readyState!=="loading") bind();
+  else document.addEventListener("DOMContentLoaded",bind);
 })();
 </script>
 </body>
