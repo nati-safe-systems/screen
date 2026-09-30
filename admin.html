@@ -944,12 +944,12 @@ tr:hover td{background:rgba(128,0,0,0.05);}
             <div id="adimg-drop" class="adimg-drop"
                  onclick="document.getElementById('adimg-file').click()">
               <div style="font-size:24px">&#128247;</div>
-              <div style="font-weight:700;font-size:13.5px">לחצו להעלאת תמונת המודעה</div>
+              <div style="font-weight:700;font-size:13.5px">לחצו להעלאת קובץ המודעה</div>
               <div style="color:#8b949e;font-size:11.5px;margin-top:3px">
-                JPG · PNG · WEBP &nbsp;·&nbsp; עד 20 מגה</div>
+                JPG · PNG · WEBP · PDF &nbsp;·&nbsp; עד 20 מגה</div>
             </div>
             <input type="file" id="adimg-file"
-                   accept="image/jpeg,image/png,image/webp"
+                   accept="image/jpeg,image/png,image/webp,application/pdf"
                    style="display:none" onchange="adImgPick(this)">
             <div id="adimg-have" style="display:none;align-items:center;gap:9px;
                  background:#0d1117;border:1px solid #30363d;border-radius:8px;
@@ -3344,7 +3344,7 @@ document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener(
    עולה לאותו דלי screen-media שמשמש את שאר המדיה, והכתובת
    נכתבת לשדה ad-img — כך שאר הקוד אינו משתנה כלל. */
 var AD_IMG_MAX=20*1024*1024;
-var AD_IMG_OK=["image/jpeg","image/png","image/webp"];
+var AD_IMG_OK=["image/jpeg","image/png","image/webp","application/pdf"];
 
 function adImgErr(t){
   var e=document.getElementById("adimg-err");
@@ -3367,7 +3367,16 @@ function adImgPick(inp){
   var have=document.getElementById("adimg-have");
   document.getElementById("adimg-name").textContent=
     f.name+"  ("+Math.round(f.size/1024)+" KB)";
-  try{ document.getElementById("adimg-thumb").src=URL.createObjectURL(f); }catch(e){}
+  try{
+    var th=document.getElementById("adimg-thumb");
+    if(f.type==="application/pdf"){
+      th.style.display="none";
+      var n=document.getElementById("adimg-name");
+      if(n) n.textContent="\uD83D\uDCC4  "+n.textContent;
+    }else{
+      th.style.display=""; th.src=URL.createObjectURL(f);
+    }
+  }catch(e){}
   have.style.display="flex";
 
   var bar=document.getElementById("adimg-bar"), bi=document.getElementById("adimg-bar-i");

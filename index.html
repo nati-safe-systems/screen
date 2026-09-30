@@ -593,6 +593,35 @@ body.ads-bottom.has-ticker .adqr.solo{bottom:calc(20vh + 60px + 1.2vh) !importan
   position:absolute;bottom:0;left:0;height:.5vh;background:#ffcc00;
   width:0;transition:width .25s linear;
 }
+
+/* ---- PDF בתוך מודעה ---- */
+.ad-pdf{width:100%;height:100%;border:0;display:block;background:#fff}
+body.ads-bottom .ad-pdf{height:17vh}
+#ads-full .ad-pdf,#ads-full embed{width:94vw;height:84vh;border-radius:1vh}
+
+/* ---- מיקסום הרצועה הצדדית ----
+   המודעה צריכה למלא את כל השטח שהוקצה לה. קודם נשארו שוליים
+   וכותרת שגזלו גובה, והתמונה הוצגה קטנה בתוך מסגרת גדולה. */
+.adbar{width:28% !important;min-width:330px;max-width:560px}
+.adbar-hdr{padding:.7vh .4vw !important;font-size:1.7vh !important;
+  flex:0 0 auto}
+.adbar-foot{flex:0 0 auto;padding:.4vh 0 !important}
+.adbar-body{flex:1 1 auto;min-height:0;padding:0 !important}
+.ad-slide{padding:0 !important;inset:0}
+.ad-slide img{
+  width:100% !important;height:100% !important;
+  max-width:none !important;max-height:none !important;
+  object-fit:cover !important;                 /* ממלא את כל השטח */
+  border-radius:0 !important;
+}
+.ad-slide .ad-txt{
+  position:absolute;left:0;right:0;bottom:0;
+  background:linear-gradient(0deg,rgba(0,0,0,.85),transparent);
+  padding:1.6vh .8vw .9vh !important;margin:0 !important;
+  font-size:2.3vh !important;
+}
+/* לוח המודעות מצטמצם בהתאם */
+.main-area,.board{min-width:0}
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;800;900&family=Heebo:wght@300;400;500;700;800;900&family=Rubik:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,900&family=Suez+One&display=swap" rel="stylesheet">
 </head>
@@ -2624,7 +2653,14 @@ function startAds(list, bodyId, tkey){
   for(var i=0;i<list.length;i++){
     var a=list[i]||{};
     var src=drvImg(a.img);
-    var img=src?'<img src="'+src.replace(/"/g,"")+'" alt="">':'';
+    /* PDF מוצג ב-embed ולא ב-img. קודם כל מודעה נבנתה כתמונה,
+       ולכן קובץ PDF הופיע כמסגרת שבורה. */
+    var isPdf = src && /\.pdf(\?|#|$)/i.test(src);
+    var img = !src ? '' :
+      (isPdf
+        ? '<embed class="ad-pdf" src="'+src.replace(/"/g,"")+
+          '#toolbar=0&navpanes=0&scrollbar=0&view=FitH" type="application/pdf">'
+        : '<img src="'+src.replace(/"/g,"")+'" alt="">');
     var txt=a.txt?'<div class="ad-txt">'+(a.txt.replace(/</g,"&lt;").replace(/>/g,"&gt;"))+'</div>':'';
     var anim=(a.anim||"fade");
     html+='<div class="ad-slide'+(i===0?' active':'')+'" data-anim="'+anim+'">'+img+txt+'</div>';
@@ -4237,6 +4273,6 @@ function adsFullShow(sec){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 9.7</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 9.8</div>
 </body>
 </html>
