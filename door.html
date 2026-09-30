@@ -374,6 +374,44 @@ body.merkaz .mk-crown{
    דרך מיכל פנימי, ולכן הלוגו חופשי לחרוג מעל הקורה. */
 body.merkaz .mk-host{overflow:visible !important}
 body.merkaz .body{--mk-crown-h:14vh;overflow:visible !important}
+
+/* ---------- סימן מים עדין ----------
+   בגודל 62% ובשקיפות 7% הוא נקרא כתמונה שניה ולא כרמז.
+   קטן יותר ועמום יותר. */
+body.merkaz .col.r::after,body.merkaz .col.l::after,
+body.merkaz .center::after,body.merkaz .mincol::after,
+body.merkaz .mid::after,body.merkaz .body::after,
+body.merkaz .mkwrap::after{
+  background-size:34% auto !important;
+  background-position:center 52% !important;
+  opacity:.035 !important;
+}
+
+/* ---------- התוכן חייב להיכנס בגובה הלוח ----------
+   רשימת הזמנים גלשה מתחת לקורה התחתונה. הלוח הוא flex,
+   ולכן די לתת לרשימה להתכווץ ולמנוע ממנה לחרוג. */
+body.merkaz .col.r,body.merkaz .col.l,body.merkaz .center{
+  overflow:hidden !important;
+}
+body.merkaz .list,body.merkaz #zlist,body.merkaz #mlist{
+  flex:1 1 0 !important;min-height:0 !important;overflow:hidden !important;
+}
+body.merkaz .zr{padding:.12vh 0 !important;font-size:1.85vh !important}
+body.merkaz .zr b{font-size:1.95vh !important}
+body.merkaz .warn{font-size:1.15vh !important;margin:.2vh 0 0 !important;
+  flex:0 0 auto}
+body.merkaz #clock{font-size:5.8vh !important}
+body.merkaz .dt{font-size:2vh !important}
+body.merkaz .dt2{font-size:1.4vh !important}
+body.merkaz .par{font-size:1.7vh !important;padding:.4vh .3vw !important}
+body.merkaz .bt{font-size:2vh !important}
+
+/* הלוח שנושא את הלוגו אינו חותך, אחרת הלוגו נחתך בקורה.
+   החיתוך מוחל על מיכל התוכן שבתוכו. */
+body.merkaz .body{overflow:visible !important}
+body.merkaz .body > .ann,
+body.merkaz .body > .mgrid,
+body.merkaz .body > .main{overflow:hidden}
 </style></head><body>
 <div id="mk-sweep"></div>
 
@@ -2435,5 +2473,35 @@ try{ NatiAlerts.init({supa:SB,key:SK,areas:[]}); }catch(e){}
 })();
 /* האתחול רץ רק אחרי שהמסך עבר רישיון, טוקן ונעילת מכשיר */
 NatiGuard.check(function(){ load(); tick(); });
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך כניסה · גרסה 2.6 · 28.09.26</div>
+
+/* ---- משמר הקישוטים ----
+   הקישוטים נוצרים בזמן ריצה, לא ב-HTML: המסך נטען עם ערכת
+   ברירת מחדל, יוצר אותם, ורק אחר כך עובר ל-merkaz. ניקוי חד-פעמי
+   רץ לפניהם ולכן פספס. כאן משמר שמסיר אותם ברגע שהם מופיעים,
+   ולא משנה מי יצר אותם ומתי. */
+(function(){
+  var SEL=".oc,.oc-tl,.oc-tr,.oc-bl,.oc-br,.nsf-corner,.nsf-frame,"+
+          ".orn-deco,.marble-deco";
+  function sweep(){
+    if(!document.body || !document.body.classList.contains("merkaz")) return;
+    var el=document.querySelectorAll(SEL);
+    for(var i=0;i<el.length;i++) el[i].remove();
+    var o=document.querySelectorAll(".orn");
+    for(var k=0;k<o.length;k++) o[k].classList.remove("orn");
+  }
+  function boot(){
+    sweep();
+    try{
+      new MutationObserver(function(muts){
+        for(var i=0;i<muts.length;i++){
+          if(muts[i].addedNodes && muts[i].addedNodes.length){ sweep(); return; }
+        }
+      }).observe(document.body,{childList:true,subtree:true});
+    }catch(e){}
+    setInterval(sweep, 1500);
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot);
+  else boot();
+})();
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך כניסה · גרסה 2.7 · 28.09.26</div>
 </body></html>
