@@ -2636,9 +2636,18 @@ function toggleAdminMsgType(){
    ===================================================================== */
 var _accBuilt=false;
 function buildAccordions(){
-  if(_accBuilt) return;
+  /* _accBuilt הוגדר פעם אחת לכל חיי הדף. אם הבנייה נכשלה
+     באמצע — למשל כשהמודאל עוד לא היה בעץ — הדגל נשאר דלוק
+     והמגירות לא נבנו שוב לעולם. התוצאה: שדות שמופיעים כקווים
+     ריקים בלי כותרת ובלי תוכן.
+
+     עכשיו הדגל נבדק מול המצב בפועל, לא מול זיכרון. */
   var body=document.querySelector('#modal-sc .modal-body');
   if(!body) return;
+  var built=body.querySelectorAll('.accsec').length;
+  if(_accBuilt && built) return;
+  if(built){ _accBuilt=true; return; }
+  _accBuilt=false;
 
   /* רשימה שטוחה: ילדי הגוף, כשהעוטף הישן מפורק פנימה */
   var flat=[], wrap=document.getElementById('sc-wrap');
@@ -2680,6 +2689,23 @@ function buildAccordions(){
 /* הצגה או הסתרה של מגירות לפי סוג המסך */
 function kindChanged(){
   buildAccordions();
+  /* אם הבנייה לא הצליחה, לפחות נציג את הטופס במלואו במקום
+     קווים ריקים — עדיף מסך לא מסודר על מסך לא שמיש. */
+  try{
+    var b=document.querySelector('#modal-sc .modal-body');
+    if(b && !b.querySelectorAll('.accsec').length){
+      var w=document.getElementById('sc-wrap');
+      if(w) w.style.display='';
+      Array.prototype.forEach.call(
+        document.querySelectorAll('#modal-sc .accm'), function(m){
+          m.style.display='block';
+          m.style.cssText+=';color:#ffcc00;font-weight:800;font-size:14px;'+
+            'margin:14px 0 6px;padding-bottom:5px;'+
+            'border-bottom:1px solid rgba(255,204,0,.3)';
+          if(!m.textContent) m.textContent=m.dataset.t||'';
+        });
+    }
+  }catch(e){}
   var k=(document.getElementById('edit-sc-kind')||{}).value||'building';
   Array.prototype.forEach.call(document.querySelectorAll('#modal-sc .accsec'), function(d){
     var need=d.dataset.kind;
