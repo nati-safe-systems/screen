@@ -2056,15 +2056,23 @@ function musIndicator(){
      הבדיקה הקודמת רק ראתה שנגן היוטיוב קיים, לא שהוא מנגן —
      ולכן הוצג "מושתק" בזמן שהמוזיקה נשמעה. getPlayerState
      מחזיר 1 כשמנגן ו-3 בזמן טעינה. */
+  /* שלושה מקורות, לפי אמינות:
+     1. נגן HTML — מצב מדויק
+     2. נגן יוטיוב — getPlayerState, אך הוא מוחזר רק אחרי onReady
+     3. _auState — מה שהקוד עצמו רשם כשהפעיל את הנגן
+
+     הבדיקה הקודמת נשענה רק על השניים הראשונים. getPlayerState
+     מחזיר -1 או undefined בזמן האתחול, והחיווי נפל ל"מושתק"
+     בזמן שהמוזיקה כבר נשמעה. */
   var playing = !!(_au && !_au.paused && !_au.ended);
   if(!playing && window._ytPlayer){
-    try{
-      var st = window._ytPlayer.getPlayerState && window._ytPlayer.getPlayerState();
-      playing = (st===1 || st===3);
-    }catch(e){
-      playing = true;   /* הנגן קיים אך אינו מגיב — עדיף להניח שמנגן */
-    }
+    var st=null;
+    try{ st = window._ytPlayer.getPlayerState && window._ytPlayer.getPlayerState(); }catch(e){}
+    if(st===1 || st===3) playing=true;
+    else if(st===2 || st===0) playing=false;
+    else playing = /מנגן/.test(_auState||"");   /* הנגן עוד לא מגיב */
   }
+  if(!playing && /מנגן/.test(_auState||"")) playing=true;
   if(playing){
     e.className="on";
     if(t) t.textContent = (_auList.length>1) ? ("מוזיקה "+(_auIdx+1)+"/"+_auList.length) : "מוזיקה";
@@ -2437,60 +2445,26 @@ var ADS_URL="https://nati-safe-systems.github.io/screen/advertise.html";
 var ADS_MAIL="";
 var _qrDone=false;
 
-function drawQR(){
-  /* ---- יצירת ה-QR ----
-     הבעיה הקודמת: הגיבוי רץ ראשון, סימן שהסתיים, ונעל את
-     הספרייה מלהחליף אותו גם אחרי שנטענה. עכשיו הספרייה מקבלת
-     עדיפות מוחלטת, והגיבוי אינו נועל דבר.
+/* ---- קוד ה-QR ----
+   הקוד מוטמע בקובץ כתמונה קבועה, ולא נוצר בזמן ריצה.
 
-     שני מקורות ל-CDN: אם הראשון חסום ברשת, השני מנסה. */
+   שתי דרכים נוסו קודם וכשלו: ספרייה מ-CDN, שאינה נטענת ברשת
+   המסוננת שבה המסכים עובדים; ומקודד שכתבתי בעצמי, שייצר קוד
+   שאינו נסרק. הקוד כאן נוצר מראש ואומת בפענוח — הוא מחזיר
+   בדיוק את כתובת דף ההזמנה.
+
+   הוא מצביע לכתובת קבועה, ולכן אין סיבה לייצר אותו מחדש בכל
+   טעינה. אם הכתובת תשתנה יום אחד, מחליפים את התמונה. */
+var ADS_QR_PNG = "data:image/png;base64,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";
+
+
+function drawQR(){
+  if(_qrDone) return;
   var box=document.getElementById("adqr-img");
   if(!box) return;
-
-  function withLib(){
-    if(_qrDone) return true;
-    if(!(window.QRCode && QRCode.toString)) return false;
-    try{
-      QRCode.toString(ADS_URL,{type:"svg",margin:1,width:340,
-        errorCorrectionLevel:"M"},function(e,str){
-        if(!e && str){ box.innerHTML=str; _qrDone=true; }
-      });
-      return true;
-    }catch(e){ return false; }
-  }
-
-  if(withLib()) return;
-
-  /* הספרייה עדיין לא כאן — מנסים מקור חלופי פעם אחת */
-  if(!window.__qrAlt){
-    window.__qrAlt=1;
-    var sc=document.createElement("script");
-    sc.src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js";
-    sc.onload=function(){ withLib(); };
-    document.head.appendChild(sc);
-  }
-
-  /* בינתיים מוצגת הכתובת, והיא תוחלף ברגע שהספרייה תגיע.
-     _qrDone אינו מסומן כאן, ולכן אין נעילה. */
-  if(!box.innerHTML) fallbackQR(box);
-
-  /* ניסיונות חוזרים למשך 20 שניות */
-  var tries=0;
-  var iv=setInterval(function(){
-    tries++;
-    if(withLib() || tries>20) clearInterval(iv);
-  }, 1000);
-}
-
-function fallbackQR(box){
-  /* מקודד שכתבתי בעצמי ייצר קוד שלא נסרק, ולכן אינו בשימוש.
-     עד שהספרייה נטענת מוצגת הכתובת כטקסט — היא תוחלף
-     אוטומטית ברגע שיהיה QR אמיתי. */
-  box.innerHTML =
-    '<div style="background:#fff;color:#111;border-radius:.6vh;'+
-    'padding:.9vh .5vw;font:700 1.05vh/1.4 Heebo,Arial;direction:ltr;'+
-    'word-break:break-all;text-align:center">'+
-    ADS_URL.replace(/^https?:\/\//,'') + '</div>';
+  box.innerHTML='<img src="'+ADS_QR_PNG+'" alt="קוד סריקה" '+
+    'style="width:100%;height:auto;display:block;border-radius:.4vh">';
+  _qrDone=true;
 }
 
 function showAdQR(on, mail){
@@ -4105,6 +4079,6 @@ function start(){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 9.2</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 9.4</div>
 </body>
 </html>
