@@ -1096,7 +1096,22 @@ var SB="https://cxtrrejclkhqhkqbicmz.supabase.co", SK="eyJhbGciOiJIUzI1NiIsInR5c
 
    קריאה נשארת ישירה — היא לא נותקה.
    ===================================================================== */
-var NSF_TOKEN = sessionStorage.getItem('nati_mny_token') || '';
+/* טוקן מהכתובת גובר — כך פאנל הלקוח פותח את המסך בהפעלה
+   הקיימת שלו, בלי התחברות נוספת. הוא מוסר מיד מהכתובת
+   ונשמר מקומית, שלא יישאר בהיסטוריה. */
+var NSF_TOKEN = (function(){
+  try{
+    var q=new URLSearchParams(location.search), t=q.get("t");
+    if(t){
+      sessionStorage.setItem('nati_mny_token', t);
+      q.delete("t");
+      history.replaceState(null,"",
+        location.pathname+(q.toString()?("?"+q.toString()):"")+location.hash);
+      return t;
+    }
+  }catch(e){}
+  return sessionStorage.getItem('nati_mny_token') || '';
+})();
 
 function rpc(fn,args){
   return fetch(SB+"/rest/v1/rpc/"+fn,{

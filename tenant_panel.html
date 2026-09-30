@@ -2807,23 +2807,31 @@ window.addEventListener("load",function(){
 
    הפרמטר co מגביל את המסך לאתרים של החברה הזו בלבד. */
 function openShul(){
-  var co = (typeof CO_ID!=="undefined" && CO_ID) ? CO_ID : (savedCo||"");
-  if(!co){ alert("לא זוהתה חברה"); return; }
-  var url = "https://nati-safe-systems.github.io/screen/minyanim.html"
-          + "?co=" + encodeURIComponent(co)
-          + "&back=1&_=" + Date.now();
-  location.href = url;
+  /* co הוא המשתנה הגלובלי שמחזיק את החברה המחוברת. בגרסה
+     הקודמת הגדרתי כאן var co מקומי שהאפיל עליו, והוא יצא ריק —
+     הפונקציה נעצרה בשקט ולא קרה דבר. */
+  var cid = (co && co.company_id) ? co.company_id : "";
+  if(!cid){
+    try{ cid = localStorage.getItem("nsf_co") || ""; }catch(e){}
+  }
+  if(!cid){ toast("לא זוהתה חברה. התחבר מחדש."); return; }
+  if(!NSF_TOKEN){ toast("ההפעלה פגה. התחבר מחדש."); return; }
+  /* הטוקן עובר בכתובת כי שני המסכים שומרים אותו במפתח אחר
+     ב-sessionStorage. פונקציות השמירה בשרת מוודאות שהחברה
+     שבהפעלה היא בעלת האתר, ולכן טוקן של לקוח מספיק ובטוח. */
+  location.href = "https://nati-safe-systems.github.io/screen/minyanim.html"
+    + "?co=" + encodeURIComponent(cid)
+    + "&t="  + encodeURIComponent(NSF_TOKEN)
+    + "&back=1&_=" + Date.now();
 }
 
 /* הכפתור מוצג רק לחברה שיש לה אתר בית כנסת */
-function maybeShowShul(co){
+function maybeShowShul(cid){
+  /* מוצג לכל לקוח. הבדיקה מול sites נכשלה בשקט כשהטבלה נעולה,
+     והכפתור פשוט לא הופיע. אם אין אתר, המסך עצמו יאמר זאת. */
   var b=document.getElementById("btn-shul");
-  if(!b || !co) return;
-  fetch(SB+"/rest/v1/sites?company_id=eq."+encodeURIComponent(co)+"&select=id&limit=1",{
-    headers:{apikey:SK,Authorization:"Bearer "+SK}
-  }).then(function(r){ return r.ok ? r.json() : []; })
-   .then(function(a){ if(Array.isArray(a)&&a.length) b.style.display=""; })
-   .catch(function(){});
+  if(b) b.style.display="";
+  if(cid){ try{ localStorage.setItem("nsf_co", cid); }catch(e){} }
 }
 </script>
 </body>
