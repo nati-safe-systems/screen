@@ -2571,11 +2571,13 @@ function showAdQR(on, mail){
 var PAID_ADS=[], CFG_LAST=null, SCREEN_ADS_ON=false;
 
 function pullPaidAds(){
-  if(!SCREEN_ID) return;
+  /* המשתנה הנכון הוא SID. SCREEN_ID לא הוגדר מעולם, ולכן
+     הפונקציה יצאה בשורה הראשונה ומודעות בתשלום לא נמשכו כלל. */
+  if(!SID || SID==="DEFAULT") return;
   fetch(SB+"/rest/v1/rpc/nsf_ad_live",{
     method:"POST",
     headers:{apikey:SK,Authorization:"Bearer "+SK,"Content-Type":"application/json"},
-    body:JSON.stringify({p_screen:SCREEN_ID})
+    body:JSON.stringify({p_screen:SID})
   }).then(function(r){ return r.ok ? r.json() : []; })
   .then(function(list){
     var arr=Array.isArray(list)?list:[];
@@ -4137,15 +4139,8 @@ function start(){
            עולה תוך דקות בלי להמתין לרענון מלא של המסך.
            nsf_ad_tick מעלה קמפיין ששולם כשתקופתו מגיעה ומסיים כזה
            שתקופתו עברה; היא זולה ובטוחה לקריאה מכמה מסכים. */
-        setTimeout(pullPaidAds, 2500);
-        setInterval(pullPaidAds, 120000);
-        setInterval(function(){
-          fetch(SB+"/rest/v1/rpc/nsf_ad_tick",{
-            method:"POST",
-            headers:{apikey:SK,Authorization:"Bearer "+SK,"Content-Type":"application/json"},
-            body:"{}"
-          }).catch(function(){});
-        }, 600000);
+        /* הטיימרים הועברו לאתחול עצמאי, כדי שירוצו גם בתצוגה
+           מקדימה. ראו __paidAdsBooted בתחתית הקובץ. */
         setInterval(paintCache,30000); paintCache();
       });
     });
@@ -4205,10 +4200,43 @@ function adsFullShow(sec){
   }
   setTimeout(function(){ wrap.classList.remove("on"); }, sec*1000);
 }
+
+/* ---- מודעות בתשלום — אתחול עצמאי ----
+   הטיימרים הותקנו רק בתוך NatiGuard.check, שאינו רץ בתצוגה
+   מקדימה — וזה בדיוק המצב שבו בודקים. כאן הם רצים תמיד,
+   וההגנה מפני כפילות היא הדגל.
+
+   nsf_ad_tick מעלה קמפיין ששולם כשתקופתו מגיעה ומסיים כזה
+   שתקופתו עברה. היא זולה ובטוחה לקריאה מכמה מסכים. */
+(function(){
+  if(window.__paidAdsBooted) return;
+  window.__paidAdsBooted=true;
+  function boot(){
+    try{ pullPaidAds(); }catch(e){}
+    setInterval(function(){ try{ pullPaidAds(); }catch(e){} }, 120000);
+    setInterval(function(){
+      fetch(SB+"/rest/v1/rpc/nsf_ad_tick",{
+        method:"POST",
+        headers:{apikey:SK,Authorization:"Bearer "+SK,"Content-Type":"application/json"},
+        body:"{}"
+      }).catch(function(){});
+    }, 600000);
+    /* tick מיידי — מעלה קמפיין ששולם זה עתה בלי להמתין עשר דקות */
+    setTimeout(function(){
+      fetch(SB+"/rest/v1/rpc/nsf_ad_tick",{
+        method:"POST",
+        headers:{apikey:SK,Authorization:"Bearer "+SK,"Content-Type":"application/json"},
+        body:"{}"
+      }).then(function(){ try{ pullPaidAds(); }catch(e){} }).catch(function(){});
+    }, 3500);
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot);
+  else setTimeout(boot,500);
+})();
 </script>
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 9.6</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 9.7</div>
 </body>
 </html>
