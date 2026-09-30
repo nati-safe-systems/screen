@@ -2380,6 +2380,247 @@ function drvImg(u){
 
    הרשימה מתרעננת בנפרד מהקונפיג, ולכן מודעה ששולמה עולה תוך דקות
    בלי להמתין לרענון מלא של המסך. */
+/* =====================================================================
+   נתי SAFE — יצירת QR  ·  NatiQR v1.0
+   ---------------------------------------------------------------------
+   מייצר קוד QR כ-SVG בתוך הדפדפן, בלי שירות חיצוני ובלי ספרייה.
+
+   למה לא להשתמש בשירות כמו api.qrserver.com: המסכים תלויים בו,
+   והוא עלול להיעלם, להאט או להתחיל לגבות. מסך בבית כנסת לא אמור
+   להפסיק להציג QR כי שירות חינמי כלשהו נפל.
+
+   תומך ברמת תיקון שגיאות M ובגרסאות 1 עד 10, שמספיקות לכתובת
+   באורך של עד כ-150 תווים.
+   ===================================================================== */
+(function (root) {
+  'use strict';
+
+  /* ---- טבלאות גלואה ---- */
+  var EXP = [], LOG = [];
+  (function () {
+    var x = 1;
+    for (var i = 0; i < 256; i++) {
+      EXP[i] = x;
+      LOG[x] = i;
+      x <<= 1;
+      if (x & 0x100) x ^= 0x11d;
+    }
+  })();
+  function gmul(a, b) {
+    if (!a || !b) return 0;
+    return EXP[(LOG[a] + LOG[b]) % 255];
+  }
+
+  /* ---- תיקון שגיאות ---- */
+  function rsPoly(n) {
+    var p = [1];
+    for (var i = 0; i < n; i++) {
+      var q = p.concat([0]);
+      for (var j = 0; j < p.length; j++) {
+        q[j + 1] ^= gmul(p[j], EXP[i]);
+      }
+      p = q;
+    }
+    return p;
+  }
+  function rsEncode(data, n) {
+    var gen = rsPoly(n);
+    var res = data.concat(new Array(n).fill(0));
+    for (var i = 0; i < data.length; i++) {
+      var c = res[i];
+      if (!c) continue;
+      for (var j = 0; j < gen.length; j++) res[i + j] ^= gmul(gen[j], c);
+    }
+    return res.slice(data.length);
+  }
+
+  /* ---- קיבולת לפי גרסה, רמת תיקון M ---- */
+  var CAP = {
+    1:{t:26,d:16,e:10,b:1}, 2:{t:44,d:28,e:16,b:1},
+    3:{t:70,d:44,e:26,b:1}, 4:{t:100,d:64,e:18,b:2},
+    5:{t:134,d:86,e:24,b:2}, 6:{t:172,d:108,e:16,b:4},
+    7:{t:196,d:124,e:18,b:4}, 8:{t:242,d:154,e:22,b:4},
+    9:{t:292,d:182,e:22,b:5}, 10:{t:346,d:216,e:26,b:5}
+  };
+  var ALIGN = {
+    1:[], 2:[6,18], 3:[6,22], 4:[6,26], 5:[6,30],
+    6:[6,34], 7:[6,22,38], 8:[6,24,42], 9:[6,26,46], 10:[6,28,50]
+  };
+
+  function pickVersion(len) {
+    for (var v = 1; v <= 10; v++) {
+      var hdr = 4 + (v < 10 ? 8 : 16);
+      if (CAP[v].d * 8 >= hdr + len * 8) return v;
+    }
+    return null;
+  }
+
+  function size(v) { return 17 + v * 4; }
+
+  /* ---- בניית מטריצה ---- */
+  function make(text) {
+    var bytes = [];
+    for (var i = 0; i < text.length; i++) {
+      var c = text.charCodeAt(i);
+      if (c < 128) bytes.push(c);
+      else if (c < 2048) { bytes.push(192 | (c >> 6), 128 | (c & 63)); }
+      else { bytes.push(224 | (c >> 12), 128 | ((c >> 6) & 63), 128 | (c & 63)); }
+    }
+    var v = pickVersion(bytes.length);
+    if (!v) return null;
+    var cap = CAP[v], n = size(v);
+
+    /* זרם ביטים */
+    var bits = [];
+    var put = function (val, len) {
+      for (var k = len - 1; k >= 0; k--) bits.push((val >> k) & 1);
+    };
+    put(4, 4);                              /* מצב בייטים */
+    put(bytes.length, v < 10 ? 8 : 16);
+    bytes.forEach(function (b) { put(b, 8); });
+
+    var total = cap.d * 8;
+    for (var t = 0; t < 4 && bits.length < total; t++) bits.push(0);
+    while (bits.length % 8) bits.push(0);
+    var pad = [0xEC, 0x11], pi = 0;
+    while (bits.length < total) { put(pad[pi++ % 2], 8); }
+
+    var dw = [];
+    for (var i2 = 0; i2 < bits.length; i2 += 8) {
+      var by = 0;
+      for (var j2 = 0; j2 < 8; j2++) by = (by << 1) | bits[i2 + j2];
+      dw.push(by);
+    }
+
+    /* חלוקה לבלוקים ושזירה */
+    var nb = cap.b;
+    var per = Math.floor(cap.d / nb), extra = cap.d % nb;
+    var blocks = [], ecs = [], off = 0;
+    for (var b2 = 0; b2 < nb; b2++) {
+      var ln = per + (b2 >= nb - extra ? 1 : 0);
+      var blk = dw.slice(off, off + ln); off += ln;
+      blocks.push(blk);
+      ecs.push(rsEncode(blk, cap.e));
+    }
+    var out = [], maxD = Math.max.apply(null, blocks.map(function (x) { return x.length; }));
+    for (var c2 = 0; c2 < maxD; c2++)
+      for (var b3 = 0; b3 < nb; b3++)
+        if (c2 < blocks[b3].length) out.push(blocks[b3][c2]);
+    for (var c3 = 0; c3 < cap.e; c3++)
+      for (var b4 = 0; b4 < nb; b4++) out.push(ecs[b4][c3]);
+
+    /* מטריצה */
+    var m = [], res = [];
+    for (var y = 0; y < n; y++) { m.push(new Array(n).fill(0)); res.push(new Array(n).fill(0)); }
+
+    var finder = function (r, c) {
+      for (var dy = -1; dy <= 7; dy++) for (var dx = -1; dx <= 7; dx++) {
+        var yy = r + dy, xx = c + dx;
+        if (yy < 0 || yy >= n || xx < 0 || xx >= n) continue;
+        var on = (dy >= 0 && dy <= 6 && (dx === 0 || dx === 6)) ||
+                 (dx >= 0 && dx <= 6 && (dy === 0 || dy === 6)) ||
+                 (dy >= 2 && dy <= 4 && dx >= 2 && dx <= 4);
+        m[yy][xx] = on ? 1 : 0; res[yy][xx] = 1;
+      }
+    };
+    finder(0, 0); finder(0, n - 7); finder(n - 7, 0);
+
+    for (var i3 = 8; i3 < n - 8; i3++) {
+      var bit = (i3 % 2) ? 0 : 1;
+      if (!res[6][i3]) { m[6][i3] = bit; res[6][i3] = 1; }
+      if (!res[i3][6]) { m[i3][6] = bit; res[i3][6] = 1; }
+    }
+
+    var al = ALIGN[v];
+    al.forEach(function (ar) {
+      al.forEach(function (ac) {
+        if (res[ar] && res[ar][ac]) return;
+        for (var dy = -2; dy <= 2; dy++) for (var dx = -2; dx <= 2; dx++) {
+          var yy = ar + dy, xx = ac + dx;
+          if (yy < 0 || yy >= n || xx < 0 || xx >= n) continue;
+          var on = Math.max(Math.abs(dy), Math.abs(dx)) !== 1;
+          m[yy][xx] = on ? 1 : 0; res[yy][xx] = 1;
+        }
+      });
+    });
+
+    m[n - 8][8] = 1; res[n - 8][8] = 1;   /* מודול קבוע */
+
+    /* שמירת מקום לפורמט */
+    for (var k2 = 0; k2 < 9; k2++) {
+      if (!res[8][k2]) res[8][k2] = 2;
+      if (!res[k2][8]) res[k2][8] = 2;
+    }
+    for (var k3 = 0; k3 < 8; k3++) {
+      if (!res[8][n - 1 - k3]) res[8][n - 1 - k3] = 2;
+      if (!res[n - 1 - k3][8]) res[n - 1 - k3][8] = 2;
+    }
+
+    /* מילוי הנתונים בזיגזג */
+    var mask = function (y, x) { return ((y + x) % 2) === 0; };   /* תבנית 0 */
+    var bi = 0, up = true;
+    for (var col = n - 1; col > 0; col -= 2) {
+      if (col === 6) col--;
+      for (var r2 = 0; r2 < n; r2++) {
+        var row = up ? n - 1 - r2 : r2;
+        for (var s2 = 0; s2 < 2; s2++) {
+          var cc = col - s2;
+          if (res[row][cc]) continue;
+          var dbit = 0;
+          if (bi < out.length * 8) {
+            dbit = (out[bi >> 3] >> (7 - (bi & 7))) & 1;
+          }
+          bi++;
+          m[row][cc] = mask(row, cc) ? (dbit ^ 1) : dbit;
+          res[row][cc] = 1;
+        }
+      }
+      up = !up;
+    }
+
+    /* מידע הפורמט — רמה M, תבנית 0 */
+    var fmt = 0x5412 ^ (0 | (0 << 3));
+    var fb = [];
+    var d2 = (0x05 << 3) | 0;   /* M = 00, mask 0 */
+    var rem = d2;
+    for (var i5 = 0; i5 < 10; i5++) rem = (rem << 1) ^ (0x537 * ((rem >> 9) & 1));
+    var fv = ((d2 << 10) | rem) ^ 0x5412;
+    for (var i6 = 14; i6 >= 0; i6--) fb.push((fv >> i6) & 1);
+
+    var fpos = [[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[8,7],[8,8],
+                [7,8],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8]];
+    fpos.forEach(function (p, i7) { m[p[0]][p[1]] = fb[14 - i7]; });
+    var fpos2 = [];
+    for (var i8 = 0; i8 < 7; i8++) fpos2.push([n - 1 - i8, 8]);
+    for (var i9 = 0; i9 < 8; i9++) fpos2.push([8, n - 8 + i9]);
+    fpos2.forEach(function (p, i10) { m[p[0]][p[1]] = fb[14 - i10]; });
+
+    return { m: m, n: n };
+  }
+
+  /* ---- SVG ---- */
+  function svg(text, opts) {
+    var o = opts || {};
+    var q = make(text);
+    if (!q) return '';
+    var quiet = o.quiet == null ? 2 : o.quiet;
+    var dim = q.n + quiet * 2;
+    var fg = o.fg || '#000', bg = o.bg || '#fff';
+    var d = '';
+    for (var y = 0; y < q.n; y++) {
+      for (var x = 0; x < q.n; x++) {
+        if (q.m[y][x]) d += 'M' + (x + quiet) + ' ' + (y + quiet) + 'h1v1h-1z';
+      }
+    }
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + dim + ' ' + dim +
+           '" shape-rendering="crispEdges" style="width:100%;height:auto;display:block">' +
+           '<rect width="' + dim + '" height="' + dim + '" fill="' + bg + '"/>' +
+           '<path d="' + d + '" fill="' + fg + '"/></svg>';
+  }
+
+  root.NatiQR = { svg: svg, VERSION: '1.0' };
+})(typeof window !== 'undefined' ? window : globalThis);
+
 /* ---- כרטיס הזמנת פרסום ----
    מוצג רק על מסך שנפתח למכירת פרסום. הקוד נוצר פעם אחת: אין סיבה
    לייצר אותו מחדש, הכתובת קבועה.
@@ -2391,8 +2632,15 @@ var ADS_URL="https://nati-safe-systems.github.io/screen/advertise.html";
 var ADS_MAIL="";
 var _qrDone=false;
 
-function drawQR(){
+function drawQR(retry){
+  /* ספריית ה-QR נטענת מ-CDN ועשויה לאחר. אם היא עדיין לא כאן,
+     מנסים שוב פעמיים, ורק אז עוברים למקודד המקומי — אחרת היינו
+     מייצרים בגיבוי גם כשהספרייה הייתה מגיעה רגע אחר כך. */
   if(_qrDone) return;
+  if(!window.QRCode && (retry||0) < 2){
+    setTimeout(function(){ drawQR((retry||0)+1); }, 900);
+    return;
+  }
   var box=document.getElementById("adqr-img");
   if(!box) return;
   try{
@@ -4028,6 +4276,6 @@ function start(){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 8.8</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 8.9</div>
 </body>
 </html>
