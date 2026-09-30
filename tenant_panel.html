@@ -209,6 +209,14 @@ input:focus,select:focus{border-color:#58a6ff;}
 .dt-pop-foot{display:flex;justify-content:space-between;gap:8px;margin-top:12px;}
 .dt-ok{flex:1;background:linear-gradient(135deg,#238636,#2ea043);color:#fff;border:none;border-radius:7px;padding:9px;font-family:Assistant,sans-serif;font-size:13px;font-weight:800;cursor:pointer;}
 .dt-now{background:rgba(255,255,255,0.06);border:1px solid #30363d;color:#e6edf3;border-radius:7px;padding:9px 12px;font-family:Assistant,sans-serif;font-size:13px;font-weight:700;cursor:pointer;}
+
+/* אזור העלאת קובץ */
+.pdf-drop{border:2px dashed #30363d;border-radius:11px;padding:20px 12px;
+  text-align:center;cursor:pointer;transition:.18s;background:#0d1117}
+.pdf-drop:hover,.pdf-drop.over{border-color:#8a6a12;background:#131a24}
+.pdf-drop .pd-ic{font-size:28px;margin-bottom:6px}
+.pdf-drop .pd-t{font-weight:700;font-size:14px}
+.pdf-drop .pd-s{color:#8b949e;font-size:12px;margin-top:4px}
 </style>
 </head>
 <body>
@@ -597,9 +605,41 @@ input:focus,select:focus{border-color:#58a6ff;}
 
       <!-- PDF -->
       <div id="pdf-sec" class="field" style="display:none;">
-        <label>קישור PDF מ-Google Drive</label>
-        <input type="url" id="pdf-url" placeholder="https://drive.google.com/file/d/...">
-        <div class="hint">לחץ ימני על הקובץ - שתף - כל מי שיש לו קישור - העתק קישור</div>
+        <label>הקובץ להצגה</label>
+
+        <!-- העלאה ישירה. מסלול Drive דרש מהלקוח להעלות, לשנות
+             הרשאות שיתוף ולהעתיק קישור — שלושה שלבים שכל אחד
+             מהם נשבר, ולרוב ההרשאות נשכחו והמסך הציג ריק. -->
+        <div id="pdf-drop" class="pdf-drop" onclick="document.getElementById('pdf-file').click()">
+          <div class="pd-ic">&#128206;</div>
+          <div class="pd-t">לחצו להעלאת קובץ</div>
+          <div class="pd-s">PDF · JPG · PNG &nbsp;·&nbsp; עד 20 מגה</div>
+        </div>
+        <input type="file" id="pdf-file" accept="application/pdf,image/jpeg,image/png,image/webp"
+               style="display:none" onchange="pdfPick(this)">
+
+        <div id="pdf-have" style="display:none;align-items:center;gap:10px;
+             background:#0d1117;border:1px solid #30363d;border-radius:9px;
+             padding:10px 12px;margin-top:9px;">
+          <span id="pdf-have-n" style="flex:1;font-size:13px;overflow:hidden;
+                text-overflow:ellipsis;white-space:nowrap"></span>
+          <button type="button" onclick="pdfClear()"
+                  style="background:none;border:0;color:#f85149;font-size:19px;
+                         cursor:pointer;padding:0 4px">&times;</button>
+        </div>
+        <div id="pdf-bar" style="display:none;height:4px;background:#21262d;
+             border-radius:3px;overflow:hidden;margin-top:8px">
+          <i id="pdf-bar-i" style="display:block;height:100%;width:0;
+             background:#ffcc00;transition:width .25s"></i>
+        </div>
+        <div id="pdf-err" style="display:none;color:#f85149;font-size:12.5px;margin-top:7px"></div>
+
+        <details style="margin-top:10px">
+          <summary style="cursor:pointer;color:#8b949e;font-size:12.5px">
+            או הדבקת קישור חיצוני</summary>
+          <input type="url" id="pdf-url" placeholder="https://..." style="margin-top:7px">
+          <div class="hint">קישור חייב להיות ציבורי. העלאה ישירה מומלצת.</div>
+        </details>
       </div>
 
       <!-- הנפשת PDF (רק ל-PDF) -->
@@ -2833,6 +2873,89 @@ function maybeShowShul(cid){
   if(b) b.style.display="";
   if(cid){ try{ localStorage.setItem("nsf_co", cid); }catch(e){} }
 }
+
+/* ---- העלאת קובץ להודעה ----
+   הקובץ עולה ישירות ל-Supabase Storage, לאותו דלי שכבר משמש
+   את שאר המדיה. מסלול Drive נשאר כאפשרות משנית למי שכבר
+   מחזיק קישור, אבל הוא אינו הדרך המומלצת. */
+var _pdfUp=null;
+var PDF_MAX=20*1024*1024;
+var PDF_OK=["application/pdf","image/jpeg","image/png","image/webp"];
+
+function pdfErr(t){
+  var e=document.getElementById("pdf-err");
+  if(e){ e.textContent=t||""; e.style.display=t?"block":"none"; }
+}
+function pdfClear(){
+  _pdfUp=null;
+  var f=document.getElementById("pdf-file"); if(f) f.value="";
+  var h=document.getElementById("pdf-have"); if(h) h.style.display="none";
+  var b=document.getElementById("pdf-bar"); if(b) b.style.display="none";
+  var u=document.getElementById("pdf-url"); if(u) u.value="";
+  pdfErr("");
+}
+function pdfPick(inp){
+  var f=inp.files && inp.files[0];
+  if(!f) return;
+  pdfErr("");
+  if(PDF_OK.indexOf(f.type)===-1){ pdfErr("סוג קובץ לא נתמך. PDF, JPG או PNG."); pdfClear(); return; }
+  if(f.size>PDF_MAX){ pdfErr("הקובץ גדול מ-20 מגה."); pdfClear(); return; }
+
+  var have=document.getElementById("pdf-have");
+  document.getElementById("pdf-have-n").textContent =
+    f.name+"  ("+Math.round(f.size/1024)+" KB)";
+  have.style.display="flex";
+
+  var bar=document.getElementById("pdf-bar");
+  var bi=document.getElementById("pdf-bar-i");
+  bar.style.display="block"; bi.style.width="30%";
+
+  var ext=(f.name.split(".").pop()||"bin").toLowerCase().replace(/[^a-z0-9]/g,"");
+  var key=(sid||"screen")+"/"+Date.now().toString(36)+"-"+
+          Math.random().toString(36).slice(2,8)+"."+ext;
+
+  fetch(SUPA_BASE+"/storage/v1/object/screen-media/"+key,{
+    method:"POST",
+    headers:{apikey:SUPA_KEY,Authorization:"Bearer "+SUPA_KEY,
+             "Content-Type":f.type,"x-upsert":"false"},
+    body:f
+  }).then(function(r){
+    if(!r.ok) throw new Error("upload "+r.status);
+    bi.style.width="100%";
+    _pdfUp = SUPA_BASE+"/storage/v1/object/public/screen-media/"+key;
+    var u=document.getElementById("pdf-url");
+    if(u) u.value=_pdfUp;     /* אותו שדה ממשיך לשמש את השמירה */
+    toast("הקובץ הועלה");
+  }).catch(function(){
+    pdfErr("ההעלאה נכשלה. נסה שוב.");
+    bar.style.display="none";
+  });
+}
+
+/* גרירה לאזור ההעלאה */
+(function(){
+  function bind(){
+    var d=document.getElementById("pdf-drop");
+    if(!d || d.__b) return;
+    d.__b=1;
+    ["dragenter","dragover"].forEach(function(e){
+      d.addEventListener(e,function(ev){ ev.preventDefault(); d.classList.add("over"); });
+    });
+    ["dragleave","drop"].forEach(function(e){
+      d.addEventListener(e,function(ev){ ev.preventDefault(); d.classList.remove("over"); });
+    });
+    d.addEventListener("drop",function(ev){
+      if(ev.dataTransfer.files && ev.dataTransfer.files[0]){
+        var inp=document.getElementById("pdf-file");
+        inp.files=ev.dataTransfer.files;
+        pdfPick(inp);
+      }
+    });
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",bind);
+  else bind();
+  setInterval(bind,2000);
+})();
 </script>
 </body>
 </html>
