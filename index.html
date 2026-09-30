@@ -2425,42 +2425,60 @@ var ADS_URL="https://nati-safe-systems.github.io/screen/advertise.html";
 var ADS_MAIL="";
 var _qrDone=false;
 
-function drawQR(retry){
-  /* ספריית ה-QR נטענת מ-CDN ועשויה לאחר. אם היא עדיין לא כאן,
-     מנסים שוב פעמיים, ורק אז עוברים למקודד המקומי — אחרת היינו
-     מייצרים בגיבוי גם כשהספרייה הייתה מגיעה רגע אחר כך. */
-  if(_qrDone) return;
-  if(!window.QRCode && (retry||0) < 2){
-    setTimeout(function(){ drawQR((retry||0)+1); }, 900);
-    return;
-  }
+function drawQR(){
+  /* ---- יצירת ה-QR ----
+     הבעיה הקודמת: הגיבוי רץ ראשון, סימן שהסתיים, ונעל את
+     הספרייה מלהחליף אותו גם אחרי שנטענה. עכשיו הספרייה מקבלת
+     עדיפות מוחלטת, והגיבוי אינו נועל דבר.
+
+     שני מקורות ל-CDN: אם הראשון חסום ברשת, השני מנסה. */
   var box=document.getElementById("adqr-img");
   if(!box) return;
-  try{
-    if(window.QRCode && QRCode.toString){
-      QRCode.toString(ADS_URL,{type:"svg",margin:1,width:300,
+
+  function withLib(){
+    if(_qrDone) return true;
+    if(!(window.QRCode && QRCode.toString)) return false;
+    try{
+      QRCode.toString(ADS_URL,{type:"svg",margin:1,width:340,
         errorCorrectionLevel:"M"},function(e,str){
         if(!e && str){ box.innerHTML=str; _qrDone=true; }
-        else fallbackQR(box);
       });
-      return;
-    }
-  }catch(e){}
-  fallbackQR(box);
-}
-function fallbackQR(box){
-  /* מקודד שכתבתי בעצמי ייצר קוד שלא נסרק. אין דרך לאמת מקודד
-     QR בלי לסרוק אותו בפועל, ולכן הוא הוסר לגמרי.
+      return true;
+    }catch(e){ return false; }
+  }
 
-     כשהספרייה אינה נטענת — רשת מסוננת, CDN חסום — מוצגת
-     הכתובת כטקסט. עדיף שהמפרסם יקליד כתובת מאשר יסרוק קוד
-     שמחזיר שגיאה. */
+  if(withLib()) return;
+
+  /* הספרייה עדיין לא כאן — מנסים מקור חלופי פעם אחת */
+  if(!window.__qrAlt){
+    window.__qrAlt=1;
+    var sc=document.createElement("script");
+    sc.src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js";
+    sc.onload=function(){ withLib(); };
+    document.head.appendChild(sc);
+  }
+
+  /* בינתיים מוצגת הכתובת, והיא תוחלף ברגע שהספרייה תגיע.
+     _qrDone אינו מסומן כאן, ולכן אין נעילה. */
+  if(!box.innerHTML) fallbackQR(box);
+
+  /* ניסיונות חוזרים למשך 20 שניות */
+  var tries=0;
+  var iv=setInterval(function(){
+    tries++;
+    if(withLib() || tries>20) clearInterval(iv);
+  }, 1000);
+}
+
+function fallbackQR(box){
+  /* מקודד שכתבתי בעצמי ייצר קוד שלא נסרק, ולכן אינו בשימוש.
+     עד שהספרייה נטענת מוצגת הכתובת כטקסט — היא תוחלף
+     אוטומטית ברגע שיהיה QR אמיתי. */
   box.innerHTML =
     '<div style="background:#fff;color:#111;border-radius:.6vh;'+
-    'padding:1vh .6vw;font:700 1.15vh/1.45 Heebo,Arial;direction:ltr;'+
+    'padding:.9vh .5vw;font:700 1.05vh/1.4 Heebo,Arial;direction:ltr;'+
     'word-break:break-all;text-align:center">'+
     ADS_URL.replace(/^https?:\/\//,'') + '</div>';
-  _qrDone = true;
 }
 
 function showAdQR(on, mail){
@@ -4075,6 +4093,6 @@ function start(){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 9.0</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 9.1</div>
 </body>
 </html>
