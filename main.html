@@ -313,20 +313,37 @@ body.merkaz .center::after{
 }
 
 /* ---------- פס זוהר ----------
-   רחב ואיטי. צר ומהיר נראה כקו שחולף ולא כזוהר. */
-body.merkaz .col.r::before,body.merkaz .col.l::before,
-body.merkaz .center::before{
-  content:"";position:absolute;top:-45%;left:-40%;
-  width:28%;height:200%;z-index:1;pointer-events:none;
-  background:linear-gradient(90deg,transparent,
-    rgba(255,238,192,.09) 28%,rgba(255,248,222,.20) 50%,
-    rgba(255,238,192,.09) 72%,transparent);
-  transform:rotate(15deg);
-  animation:mkShine 18s linear infinite;
+   שלושה דברים תוקנו מהגרסה הקודמת:
+
+   1. התנועה הייתה ב-left, שמחייב חישוב פריסה מחדש בכל פריים.
+      עכשיו transform, שמחושב בכרטיס המסך ונע חלק.
+
+   2. המחזור נע רק במחציתו ואז עמד מחוץ למסך — משם הקרטוע
+      וההיעלמות באמצע. עכשיו התנועה רציפה לאורך כל המחזור,
+      והאיפוס קורה כשהפס כבר מחוץ ללוח ולכן אינו נראה.
+
+   3. overflow:visible על הלוח גרם לפס להיראות גם מחוצה לו.
+      עכשיו הוא יושב בעטיפה עם overflow:hidden משלה, והלוגו
+      שמעל הקורה ממשיך לחרוג בחופשיות. */
+body.merkaz .mk-shine{
+  position:absolute;inset:0;overflow:hidden;
+  z-index:1;pointer-events:none;
 }
-body.merkaz .center::before{animation-delay:-6s}
-body.merkaz .col.l::before{animation-delay:-12s}
-@keyframes mkShine{0%{left:-40%}50%{left:130%}100%{left:130%}}
+body.merkaz .mk-shine::before{
+  content:"";position:absolute;top:-50%;left:0;
+  width:26%;height:200%;
+  background:linear-gradient(90deg,transparent,
+    rgba(255,238,192,.07) 25%,rgba(255,248,224,.19) 50%,
+    rgba(255,238,192,.07) 75%,transparent);
+  will-change:transform;
+  animation:mkShine 14s linear infinite;
+}
+body.merkaz .center .mk-shine::before{animation-delay:-4.7s}
+body.merkaz .col.l .mk-shine::before{animation-delay:-9.4s}
+@keyframes mkShine{
+  from{transform:translateX(-160%) rotate(15deg)}
+  to  {transform:translateX(480%)  rotate(15deg)}
+}
 
 /* ---------- הלוגו על הקורה ---------- */
 body.merkaz .mk-crown{
@@ -414,10 +431,12 @@ body.merkaz #mk-next .sub{color:var(--ink);font-size:2.1vh;font-weight:800}
 body.merkaz #mk-next.empty{display:none}
 
 /* המרכז */
-body.merkaz .center .ttl{padding-top:.3vh;text-align:center}
+body.merkaz .center .ttl{padding-top:0 !important;margin-top:-.8vh !important;text-align:center}
 body.merkaz .center .ttl img{display:none !important}
-body.merkaz .center .ttl small{color:var(--dim);font-size:1.95vh;display:block}
-body.merkaz .center .ttl b{color:var(--ttl);font-size:3.9vh;display:block}
+body.merkaz .center .ttl small{color:var(--dim);font-size:1.95vh;display:block;
+  margin:0 !important;line-height:1.2}
+body.merkaz .center .ttl b{color:var(--ttl);font-size:3.9vh;display:block;
+  margin:0 !important;line-height:1.25}
 body.merkaz .bsd{color:var(--dim);opacity:.7}
 body.merkaz .ann{flex:1;background:none !important}
 body.merkaz .none{color:var(--dim) !important}
@@ -452,6 +471,7 @@ body.merkaz .ft{background:#07090e !important}
 
 <div class="main">
   <div class="col r">
+    <div class="mk-shine"></div>
     <div id="clock">--:--</div>
     <div class="dt" id="heb"></div>
     <div class="dt2" id="greg"></div>
@@ -463,6 +483,7 @@ body.merkaz .ft{background:#07090e !important}
 
   <div class="center">
     <div class="mk-crown"></div>
+    <div class="mk-shine"></div>
     <div id="bgimg"></div><div id="bgveil"></div>
     <div class="ttl"><img id="siteLogo" alt=""><small>לוח המודעות של</small><b id="ttlName">—</b></div>
     <div class="bsd">בס"ד</div>
@@ -470,6 +491,7 @@ body.merkaz .ft{background:#07090e !important}
   </div>
 
   <div class="col l">
+    <div class="mk-shine"></div>
     <!-- המניין הבא — מה שמישהו שעובר בלובי צריך לראות בשנייה אחת.
          מתמלא מתוך אותם נתונים שבונים את רשימת השטיבלך. -->
     <div id="mk-next" class="empty"></div>
@@ -2759,5 +2781,5 @@ function mkNextMinyan(){
     '<div class="sub">'+escH(best.time)+' · '+inTxt+'</div>';
 }
 setInterval(mkNextMinyan, 20000);
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 3.5 · 28.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 3.6 · 28.09.26</div>
 </body></html>
