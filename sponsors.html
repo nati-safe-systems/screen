@@ -304,9 +304,6 @@ body.merkaz .mkwrap{
   overflow:visible;
 }
 body.merkaz .mkwrap{border-width:7vh 3vw 5.6vh 3vw !important}
-body.merkaz .mkwrap::after{content:"";position:absolute;inset:0;z-index:0;
-  pointer-events:none;background:var(--mkl) center 48%/62% auto no-repeat;
-  opacity:.07}
 body.merkaz .mkwrap > *:not(.mk-crown):not(.bsd){position:relative;z-index:3;min-width:0}
 body.merkaz .mkwrap > .mk-crown{height:13vh}
 /* העטיפה יורשת את הגובה ש-.main החזיק קודם. בלי זה היא קיבלה
@@ -435,6 +432,102 @@ body.merkaz #nsf-slide-t{color:var(--ttl) !important;
   margin-bottom:1.6vh !important}
 body.merkaz #nsf-slide-s{color:var(--ink) !important;
   font-size:clamp(2.2vh,3.4vw,5.5vh) !important;line-height:1.45}
+
+/* =====================================================================
+   המרכז הרוחני — שכבת ליטוש
+   ---------------------------------------------------------------------
+   ארבעה דברים שתוקנו כאן:
+
+   1. הלוגו נחתך בראש הדף. הוא חורג מעל המסגרת, אבל למסגרת היה
+      שוליים של 1vh בלבד — פחות ממה שהחריגה דורשת. השוליים גדלו
+      ל-5.5vh בכל מקום שבו הלוגו יושב, וכך יש לו מקום.
+
+   2. מסגרת ההודעות הייתה בגודל אחר מהמסגרת הרגילה. שתיהן חולקות
+      עכשיו את אותם משתנים, ולכן אין הבדל.
+
+   3. סימן המים היה עמום מדי ולא נראה. הוא הובהר, ופס הזוהר
+      מדליק אותו בזהב כשהוא עובר מעליו.
+
+   4. הטיפוגרפיה בהודעות — גופן שרשרת יוקרתי, גדלים שנגזרים
+      מרוחב המסך, ומרווח נשימה.
+   ===================================================================== */
+
+body.merkaz{
+  --mk-gap: 5.5vh;          /* מקום ללוגו שחורג מעל המסגרת */
+  --mk-gapx: 1.2vw;
+}
+
+/* ---------- סימן מים שמגיב לזוהר ----------
+   הלוגו ברקע כל לוח. פס הזוהר מדליק אותו בזהב כשהוא חולף,
+   וזה מה שנותן את התחושה שהמסך חי ולא תמונה סטטית. */
+body.merkaz .mk-mark{
+  position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;
+}
+body.merkaz .mk-mark::before{
+  content:"";position:absolute;inset:8%;
+  background:var(--mkl) center/contain no-repeat;
+  opacity:.055;
+  filter:brightness(1.6) sepia(.35) saturate(2.4) hue-rotate(-8deg);
+  animation:mkMarkGlow 13s linear infinite;
+}
+@keyframes mkMarkGlow{
+  0%,34%   {opacity:.045}
+  42%      {opacity:.14}
+  48%      {opacity:.19}
+  56%      {opacity:.12}
+  64%,100% {opacity:.045}
+}
+
+/* ---------- כותרת מעוצבת ----------
+   קו תחתון עם עיטור מרכזי, במקום קו ישר. */
+body.merkaz .mk-head{
+  text-align:center;position:relative;
+  padding:0 0 1.5vh;margin:0 0 1.2vh;
+}
+body.merkaz .mk-head small{
+  display:block;color:var(--dim);letter-spacing:.14em;
+  font-size:clamp(1.2vh,1.5vw,2vh);margin:0 0 .25vh;
+}
+body.merkaz .mk-head b{
+  display:block;font-family:"Frank Ruhl Libre",serif;font-weight:900;
+  color:var(--ttl);line-height:1.2;
+  font-size:clamp(2.2vh,2.9vw,4.2vh);
+  text-shadow:0 .2vh .5vh rgba(0,0,0,.5);
+}
+body.merkaz .mk-head::after{
+  content:"";position:absolute;left:12%;right:12%;bottom:.5vh;height:.9vh;
+  background:
+    radial-gradient(closest-side,var(--ttl),transparent) center/1.6vh .9vh no-repeat,
+    linear-gradient(90deg,transparent,var(--line) 18%,var(--line) 82%,transparent);
+  opacity:.85;
+}
+
+/* ---------- טיפוגרפיה בהודעות ---------- */
+body.merkaz #nsf-slide-t{
+  font-family:"Frank Ruhl Libre",serif !important;font-weight:900 !important;
+  color:var(--ttl) !important;line-height:1.28 !important;
+  font-size:clamp(3.2vh,4.6vw,7.5vh) !important;
+  letter-spacing:.005em;margin:0 0 2.2vh !important;
+  text-shadow:0 .25vh .7vh rgba(0,0,0,.55);
+}
+body.merkaz #nsf-slide-s{
+  font-family:Heebo,Arial,sans-serif !important;font-weight:400 !important;
+  color:var(--ink) !important;line-height:1.55 !important;
+  font-size:clamp(2vh,2.9vw,4.4vh) !important;
+  opacity:.94;
+}
+/* קו מפריד עדין בין הכותרת למשנה */
+body.merkaz #nsf-slide-t::after{
+  content:"";display:block;width:34%;height:.22vh;margin:1.4vh auto 0;
+  background:linear-gradient(90deg,transparent,var(--ttl),transparent);
+  opacity:.5;
+}
+
+body.merkaz .mkwrap{margin:var(--mk-gap) var(--mk-gapx) 1vh !important}
+body.merkaz #nsf-slide::before{
+  inset:var(--mk-gap) var(--mk-gapx) 1vh !important;
+}
+body.merkaz #nsf-slide::after{top:var(--mk-gap) !important}
 </style></head><body>
 <div id="mk-sweep"></div>
 
@@ -448,6 +541,7 @@ body.merkaz #nsf-slide-s{color:var(--ink) !important;
 <!-- הפרנסים יושבים בתוך המסגרת. העטיפה נחוצה כי sgrid מתמלא
      דינמית, והלוגו חייב להישאר מחוץ לתוכן שמתחלף. -->
 <div class="mkwrap">
+  <div class="mk-mark"></div>
   <div class="mk-crown"></div>
   <div class="main" id="sgrid"></div>
 </div>
@@ -2818,5 +2912,5 @@ NatiGuard.check(function(){ load(); tick(); });
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot);
   else boot();
 })();
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · פרנסים · גרסה 5.0 · 28.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · פרנסים · גרסה 5.1 · 28.09.26</div>
 </body></html>
