@@ -2052,7 +2052,19 @@ function musIndicator(){
   var t=document.getElementById("musTxt");
   var on = !!(DC && DC.audio_enabled);
   if(!on){ e.className=""; return; }
-  var playing = !!(_au && !_au.paused && !_au.ended) || !!window._ytPlayer;
+  /* שתי דרכי ניגון: נגן HTML רגיל, ונגן יוטיוב מוטמע.
+     הבדיקה הקודמת רק ראתה שנגן היוטיוב קיים, לא שהוא מנגן —
+     ולכן הוצג "מושתק" בזמן שהמוזיקה נשמעה. getPlayerState
+     מחזיר 1 כשמנגן ו-3 בזמן טעינה. */
+  var playing = !!(_au && !_au.paused && !_au.ended);
+  if(!playing && window._ytPlayer){
+    try{
+      var st = window._ytPlayer.getPlayerState && window._ytPlayer.getPlayerState();
+      playing = (st===1 || st===3);
+    }catch(e){
+      playing = true;   /* הנגן קיים אך אינו מגיב — עדיף להניח שמנגן */
+    }
+  }
   if(playing){
     e.className="on";
     if(t) t.textContent = (_auList.length>1) ? ("מוזיקה "+(_auIdx+1)+"/"+_auList.length) : "מוזיקה";
@@ -4093,6 +4105,6 @@ function start(){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 9.1</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 9.2</div>
 </body>
 </html>
