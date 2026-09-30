@@ -901,6 +901,18 @@ tr:hover td{background:rgba(128,0,0,0.05);}
 
           <div style="margin-top:14px;padding-top:12px;
              border-top:1px solid rgba(255,255,255,.1)">
+          <label style="display:flex;align-items:center;gap:9px;cursor:pointer">
+            <input type="checkbox" id="edit-sc-adspromo"
+                   style="width:17px;height:17px;flex:0 0 auto">
+            <span>הצג כרטיס "שטח פרסום פנוי" בין המודעות</span>
+          </label>
+          <div style="font-size:11px;color:#8b949e;margin-top:5px;line-height:1.55">
+            מפרסם פוטנציאלי שעובר בלובי רואה שהמקום נמכר ואיך לקנות אותו.
+            כשאין מודעות כלל הכרטיס מוצג בכל מקרה.
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
           <label>מצב הצגת הפרסום</label>
           <select id="edit-sc-adsmode">
             <option value="side">רצועה צדדית — כמו היום</option>
@@ -1736,7 +1748,9 @@ function loadQueue(){
              '<button class="btn-sm green" onclick="markCampPaid(\''+c.id+'\')">סמן כשולם</button>';
       }
 
-      return '<div style="background:#0d1117;border:1px solid #30363d;border-radius:10px;'+
+      /* data-camp מאפשר לפוש מה-CRM לגלול ישר לקמפיין הנכון */
+      return '<div data-camp="'+escH(c.id)+'" '+
+        'style="background:#0d1117;border:1px solid #30363d;border-radius:10px;'+
         'padding:13px;margin-bottom:10px;">'+
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">'+
           '<div style="flex:1;min-width:190px;">'+
@@ -2725,6 +2739,8 @@ function openEditScreen(sid){
     if(fs) fs.value = dc.ads_full_sec || 25;
     var fe=document.getElementById('edit-sc-adsfullevery');
     if(fe) fe.value = dc.ads_full_every || 5;
+    var ap=document.getElementById('edit-sc-adspromo');
+    if(ap) ap.checked = (dc.ads_promo === true);
   }catch(e){}
   var _ah=document.getElementById('adpct-hint');
   if(_ah) _ah.textContent = (s.ad_owner_pct==null) ? 'כרגע לפי ברירת המחדל' : '';
@@ -2897,6 +2913,8 @@ function saveScreen(){
     if(fs) cur.ads_full_sec = parseInt(fs.value,10)||25;
     var fe=document.getElementById('edit-sc-adsfullevery');
     if(fe) cur.ads_full_every = parseInt(fe.value,10)||5;
+    var ap=document.getElementById('edit-sc-adspromo');
+    if(ap) cur.ads_promo = !!ap.checked;
     body.display_config = cur;
   }catch(e){}
   if(!orig){
@@ -3426,6 +3444,52 @@ function adImgPick(inp){
   setInterval(bind,1500);
   if(document.readyState!=="loading") bind();
   else document.addEventListener("DOMContentLoaded",bind);
+})();
+
+/* ---- פתיחה ישירה על קמפיין ----
+   הפוש מה-CRM מוביל לכתובת עם #ad=<id>. האדמין נפתח, עובר
+   ללשונית הפרסומות, וגולל אל הקמפיין תוך הבלטתו.
+
+   כך לחיצה על ההתראה מגיעה ישר למקום שבו מאשרים, במקום
+   להשאיר את המשתמש לחפש ברשימה. */
+(function(){
+  function targetId(){
+    var h=(location.hash||"").replace(/^#/,"");
+    var m=/(?:^|&)ad=([0-9a-fA-F-]{8,})/.exec(h);
+    if(m) return m[1];
+    var q=new URLSearchParams(location.search).get("ad");
+    return q||"";
+  }
+  function focusAd(id, tries){
+    tries=tries||0;
+    var row=document.querySelector('[data-camp="'+id+'"]');
+    if(!row){
+      if(tries<25) setTimeout(function(){ focusAd(id,tries+1); }, 600);
+      return;
+    }
+    try{ row.scrollIntoView({behavior:"smooth",block:"center"}); }catch(e){}
+    row.style.transition="box-shadow .3s, background .3s";
+    row.style.boxShadow="0 0 0 2px #ffcc00";
+    row.style.background="rgba(255,204,0,.08)";
+    setTimeout(function(){
+      row.style.boxShadow=""; row.style.background="";
+    }, 6000);
+  }
+  function boot(){
+    var id=targetId();
+    if(!id) return;
+    /* מעבר ללשונית הפרסומות */
+    try{
+      var t=document.querySelector('[onclick*="ads"][class*="tab"], #tab-ads');
+      if(t && t.click) t.click();
+    }catch(e){}
+    try{ loadQueue(); }catch(e){}
+    focusAd(id);
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",
+    function(){ setTimeout(boot,1200); });
+  else setTimeout(boot,1200);
+  window.addEventListener("hashchange", boot);
 })();
 </script>
 </body>

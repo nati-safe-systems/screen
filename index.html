@@ -625,6 +625,71 @@ body.ads-bottom .ad-pdf{height:17vh}
 }
 /* לוח המודעות מצטמצם בהתאם */
 .main-area,.board{min-width:0}
+
+/* =====================================================================
+   כרטיס "שטח פרסום פנוי"
+   ---------------------------------------------------------------------
+   מוצג בין המודעות האמיתיות ולא רק כשאין אף אחת: מפרסם פוטנציאלי
+   שעובר בלובי רואה שהמקום נמכר, ושאפשר לקנות אותו.
+
+   נשלט מהאדמין בצ'ק בוקס. כשהוא כבוי המערכת מתנהגת כשהיה.
+   ===================================================================== */
+.ad-promo{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:1.4vh;
+  padding:2vh 1.2vw;text-align:center;overflow:hidden;
+  background:
+    radial-gradient(120% 80% at 50% 0%,rgba(255,204,0,.10),transparent 60%),
+    linear-gradient(165deg,#12161f,#0a0d14);
+}
+.ad-promo::before{
+  content:"";position:absolute;inset:1.1vh .6vw;
+  border:.22vh solid rgba(255,204,0,.30);border-radius:1.2vh;
+  pointer-events:none;
+}
+.ad-promo::after{
+  content:"";position:absolute;top:-45%;left:-40%;
+  width:26%;height:200%;pointer-events:none;
+  background:linear-gradient(90deg,transparent,
+    rgba(255,232,170,.13) 45%,rgba(255,244,210,.22) 50%,
+    rgba(255,232,170,.13) 55%,transparent);
+  transform:rotate(16deg);
+  animation:adPromoShine 9s linear infinite;
+}
+@keyframes adPromoShine{
+  from{transform:translateX(-160%) rotate(16deg)}
+  to  {transform:translateX(520%)  rotate(16deg)}
+}
+.ad-promo .ap-k{
+  position:relative;z-index:2;
+  color:rgba(255,204,0,.75);font-size:1.5vh;font-weight:800;
+  letter-spacing:.22em;
+}
+.ad-promo .ap-h{
+  position:relative;z-index:2;
+  font-family:"Frank Ruhl Libre",serif;font-weight:900;
+  color:#ffd769;line-height:1.18;
+  font-size:clamp(2.4vh,3.1vw,5vh);
+  text-shadow:0 .3vh .8vh rgba(0,0,0,.6);
+}
+.ad-promo .ap-s{
+  position:relative;z-index:2;
+  color:#d6dde8;font-size:clamp(1.4vh,1.7vw,2.4vh);line-height:1.5;
+  max-width:90%;
+}
+.ad-promo .ap-qr{
+  position:relative;z-index:2;
+  background:#fff;padding:.7vh;border-radius:.7vh;
+  width:36%;max-width:130px;
+}
+.ad-promo .ap-qr img{width:100%;height:auto;display:block}
+.ad-promo .ap-c{
+  position:relative;z-index:2;
+  color:#8fa0b5;font-size:1.3vh;direction:ltr;
+}
+body.ads-bottom .ad-promo{flex-direction:row;gap:2vw;justify-content:center}
+body.ads-bottom .ad-promo .ap-qr{width:auto;height:13vh;max-width:none}
+body.ads-bottom .ad-promo .ap-qr img{height:100%;width:auto}
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;800;900&family=Heebo:wght@300;400;500;700;800;900&family=Rubik:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,900&family=Suez+One&display=swap" rel="stylesheet">
 </head>
@@ -2663,11 +2728,18 @@ function startAds(list, bodyId, tkey){
   _adsSig[tkey]=sig;
   stopAds(tkey);
   // אם אין רשימת פרסומות מוגדרת — הצג הודעת מקום
+  /* הכרטיס מוצג תמיד כשאין מודעות, ובנוסף משולב בין מודעות
+     אמיתיות כשהאפשרות מסומנת באדמין. */
+  var promoOn = !!(CFG_LAST && CFG_LAST.ads_promo);
   if(!list||!list.length){
-    body.innerHTML='<div class="ad-slide active"><div class="ad-txt" style="opacity:0.6;">מקום לפרסום<br><span style="font-size:0.9vw;">להצבת מודעות פנה לנתי SAFE</span></div></div>';
+    body.innerHTML='<div class="ad-slide active">'+adPromoHTML()+'</div>';
     return;
   }
   var html="";
+  if(promoOn){
+    html+='<div class="ad-slide" data-anim="fade" data-promo="1">'+
+          adPromoHTML()+'</div>';
+  }
   for(var i=0;i<list.length;i++){
     var a=list[i]||{};
     var src=drvImg(a.img);
@@ -2695,6 +2767,9 @@ function startAds(list, bodyId, tkey){
   if(list.length>1){
     var slides=body.querySelectorAll(".ad-slide"),idx=0;
     var durOf=function(n){
+      /* כרטיס הפרסום אינו ברשימה, ולכן מקבל משך קבוע */
+      var sl=slides[n];
+      if(sl && sl.getAttribute("data-promo")==="1") return 10000;
       var d=parseFloat((list[n]||{}).dur);
       if(!d||d<1)d=8;            // ברירת מחדל 8 שניות, מינימום 1
       return d*1000;
@@ -4359,10 +4434,26 @@ function renderAdPdfs(root){
     });
   });
 }
+
+/* ---- כרטיס שטח פרסום פנוי ----
+   נבנה כאן במקום להיות מוטמע ב-HTML, כדי שיוכל להופיע גם בין
+   מודעות אמיתיות וגם לבד כשאין אף אחת. */
+function adPromoHTML(){
+  var qr = (typeof ADS_QR_PNG!=="undefined" && ADS_QR_PNG)
+    ? '<div class="ap-qr"><img src="'+ADS_QR_PNG+'" alt="קוד סריקה"></div>' : '';
+  return '<div class="ad-promo">'+
+    '<div class="ap-k">שטח פרסום</div>'+
+    '<div class="ap-h">המקום הזה<br>יכול להיות שלך</div>'+
+    '<div class="ap-s">אלפי עוברים ושבים מדי יום.<br>'+
+    'סרקו והזמינו בכמה דקות.</div>'+
+    qr+
+    '<div class="ap-c">נתי SAFE · 052-717-1280</div>'+
+  '</div>';
+}
 </script>
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 10.1</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 10.2</div>
 </body>
 </html>
