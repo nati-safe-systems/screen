@@ -64,6 +64,7 @@ input:focus,select:focus{border-color:#58a6ff;}
 .topbar-title{font-size:16px;font-weight:800;color:#fff;}
 .topbar-co{font-size:12px;color:#8b949e;}
 .topbar-btns{display:flex;gap:8px;}
+.btn-top.gold{background:#3a2f0c;border-color:#8a6a12;color:#ffcc00}
 .btn-top{background:rgba(255,255,255,0.06);color:#e6edf3;border:1px solid #30363d;border-radius:6px;padding:7px 14px;font-family:Assistant,sans-serif;font-size:13px;font-weight:700;cursor:pointer;}
 .btn-top:hover{background:rgba(255,255,255,0.12);}
 .btn-top.red{background:rgba(248,81,73,0.1);color:#f85149;border-color:rgba(248,81,73,0.3);}
@@ -276,6 +277,8 @@ input:focus,select:focus{border-color:#58a6ff;}
     <div class="topbar-btns">
       <button class="btn-top" onclick="showChPass(false)">החלף סיסמה</button>
       <button class="btn-top" id="btn-manage-users" onclick="openUsersModal()" style="display:none;">ניהול משתמשים</button>
+      <button class="btn-top gold" id="btn-shul" onclick="openShul()"
+              style="display:none;">ניהול בית הכנסת</button>
       <button class="btn-top red" onclick="logout()">יציאה</button>
     </div>
   </div>
@@ -1633,6 +1636,8 @@ function enterApp(){
     muBtn.style.display=canManage?"":"none";
   }
   fillCoBg(co.logo_b64||'');
+  /* הכפתור מוצג רק אם לחברה יש אתר בית כנסת */
+  try{ maybeShowShul(co.company_id); }catch(e){}
   // הצג לוגו לקוח בתחתית
   var footer=document.getElementById("co-footer");
   var footerName=document.getElementById("co-footer-name");
@@ -2794,6 +2799,32 @@ window.addEventListener("load",function(){
     }).observe(document.body,{childList:true,subtree:true});
   }catch(e){}
 })();
+
+/* ---- ניהול בית הכנסת ----
+   נפתח באותה לשונית ולא בחלון חדש: האפליקציה מריצה WebView,
+   ופתיחה חיצונית הייתה מנסה לפתוח דפדפן — שחסום במכשירים
+   המסוננים שהמערכת משרתת.
+
+   הפרמטר co מגביל את המסך לאתרים של החברה הזו בלבד. */
+function openShul(){
+  var co = (typeof CO_ID!=="undefined" && CO_ID) ? CO_ID : (savedCo||"");
+  if(!co){ alert("לא זוהתה חברה"); return; }
+  var url = "https://nati-safe-systems.github.io/screen/minyanim.html"
+          + "?co=" + encodeURIComponent(co)
+          + "&back=1&_=" + Date.now();
+  location.href = url;
+}
+
+/* הכפתור מוצג רק לחברה שיש לה אתר בית כנסת */
+function maybeShowShul(co){
+  var b=document.getElementById("btn-shul");
+  if(!b || !co) return;
+  fetch(SB+"/rest/v1/sites?company_id=eq."+encodeURIComponent(co)+"&select=id&limit=1",{
+    headers:{apikey:SK,Authorization:"Bearer "+SK}
+  }).then(function(r){ return r.ok ? r.json() : []; })
+   .then(function(a){ if(Array.isArray(a)&&a.length) b.style.display=""; })
+   .catch(function(){});
+}
 </script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>נתי SAFE — ניהול אתר</title>
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -53,7 +53,79 @@ button.dz:hover{color:#ff6b6b}
 #saved.on{opacity:1;transform:translateY(0)}
 .autos{font-size:11.5px;color:#3fb950;background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);
   border-radius:6px;padding:6px 10px;margin-bottom:12px;line-height:1.5}
+
+/* =====================================================================
+   התאמה לסמארטפון
+   ---------------------------------------------------------------------
+   המסך הזה נפתח בתוך אפליקציית הלקוח, על מכשירים מסוננים שאין בהם
+   דפדפן חיצוני. הוא חייב להיות שמיש באצבע ולא בעכבר:
+
+     · שדות וכפתורים בגובה 44 פיקסל לפחות — מתחת לזה קשה לפגוע
+     · גופן 16 פיקסל בשדות קלט, אחרת iOS מזנק זום בכל הקלדה
+     · שורות שנשברות לעמודה אחת במקום להידחס
+     · טבלאות רחבות שנגללות לרוחב במקום לשבור את הפריסה
+     · אזור בטוח בתחתית, מעל סרגל הניווט של המערכת
+   ===================================================================== */
+@media (max-width:760px){
+  body{padding:10px 8px calc(18px + env(safe-area-inset-bottom,0px));font-size:15px}
+  .wrap,.container{max-width:100%;padding:0}
+  .card{padding:12px 11px;margin-bottom:10px;border-radius:12px}
+
+  /* שורות נשברות לעמודה */
+  .row{flex-direction:column;align-items:stretch;gap:10px}
+  .row > *{width:100%;min-width:0}
+  .grid,.grid2,.g2{grid-template-columns:1fr !important;gap:10px}
+  .dt-grid{grid-template-columns:repeat(4,1fr) !important;gap:5px}
+
+  /* מגע */
+  input,select,textarea{
+    font-size:16px !important;      /* מתחת ל-16 iOS מזנק זום */
+    min-height:44px;padding:10px 12px;border-radius:9px;
+  }
+  textarea{min-height:96px}
+  button,.btn,.btn-sm{
+    min-height:44px;padding:11px 16px;font-size:15px;border-radius:9px;
+  }
+  .btn-sm{min-height:40px;padding:9px 13px;font-size:14px}
+
+  /* כפתורים צמודים נפרשים לרוחב מלא */
+  .btns,.actions{display:flex;flex-direction:column;gap:8px}
+  .btns > button,.actions > button{width:100%}
+
+  /* טבלה רחבה נגללת לרוחב ואינה שוברת את הדף */
+  .tblwrap,.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:520px}
+
+  /* כותרות ומגירות */
+  h1{font-size:19px}
+  h2,.settings-title{font-size:16px}
+  .grphd{padding:13px 12px}
+  .grphd b{font-size:15px}
+  .hint,.note{font-size:12.5px;line-height:1.6}
+
+  /* חלונות קופצים ממלאים את המסך */
+  .modal .box,.modal-box{
+    max-width:100%;width:100%;max-height:92vh;
+    border-radius:14px 14px 0 0;margin:0;
+  }
+  .modal{align-items:flex-end;padding:0}
+}
+
+/* מסך צר במיוחד */
+@media (max-width:380px){
+  .dt-grid{grid-template-columns:repeat(3,1fr) !important}
+  body{font-size:14.5px}
+}
+
+/* כפתור חזרה — מוצג רק כשהמסך נפתח מתוך פאנל הלקוח */
+#mn-back{display:none;position:sticky;top:0;z-index:50;
+  background:#0d1117;border-bottom:1px solid #30363d;
+  padding:10px 12px calc(10px);margin:-10px -8px 12px}
+#mn-back button{background:#21262d;border:1px solid #30363d;color:#ffcc00;
+  border-radius:9px;padding:11px 16px;font:700 15px Heebo,Arial;
+  cursor:pointer;width:100%;min-height:44px}
 </style></head><body>
+<div id="mn-back"><button onclick="goBackPanel()">‹ חזרה ללוח המודעות</button></div>
 <!-- ===== מסך כניסה =====
      עד כה הדף היה פתוח לחלוטין: מי שהחזיק את הכתובת ערך מניינים
      של כל בית כנסת, בלי סיסמה ובלי זיהוי. -->
@@ -1194,7 +1266,19 @@ function mnyLogin(){
   }).catch(function(){ setMnyToken(''); });
 })();
 
-function boot(){ sf("sites?select=*&order=name").then(function(r){SITES=Array.isArray(r)?r:[];
+/* ---- הגבלה לחברה ----
+   כשהמסך נפתח מתוך פאנל הלקוח, הכתובת נושאת ?co=COMP-XXX והוא
+   מציג רק את האתרים של אותה חברה. בלי הפרמטר — ללא הגבלה, כפי
+   שהיה, כדי שניהול המערכת ימשיך לראות הכל.
+
+   זו הגבלת תצוגה בלבד. ההרשאה האמיתית נאכפת בשרת. */
+var ONLY_CO = (new URLSearchParams(location.search)).get("co") || "";
+
+function boot(){ sf("sites?select=*&order=name").then(function(r){
+  SITES=Array.isArray(r)?r:[];
+  if(ONLY_CO){
+    SITES=SITES.filter(function(s){ return s.company_id===ONLY_CO; });
+  }
   document.getElementById("siteSel").innerHTML=
     (SITES.length?"":"<option value=''>— אין אתרים, צור אחד —</option>")+
     SITES.map(function(s){return "<option value='"+s.id+"'>"+s.name+"</option>";}).join("");
@@ -1523,4 +1607,20 @@ function preview(){
     }).observe(document.body,{childList:true,subtree:true});
   }catch(e){}
 })();
+
+/* ---- חזרה לפאנל ----
+   ?back=1 מגיע מהפאנל. history.back עלול לצאת מהאפליקציה אם
+   אין היסטוריה, ולכן ניווט מפורש. */
+(function(){
+  var q=new URLSearchParams(location.search);
+  if(q.get("back")==="1"){
+    var b=document.getElementById("mn-back");
+    if(b) b.style.display="block";
+  }
+})();
+function goBackPanel(){
+  var co=(new URLSearchParams(location.search)).get("co")||"";
+  location.href="https://nati-safe-systems.github.io/screen/tenant_panel.html"
+    + (co?("?co="+encodeURIComponent(co)):"");
+}
 </script></body></html>
