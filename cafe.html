@@ -442,6 +442,27 @@ body.merkaz .mgrid > div{
   font-family:"Frank Ruhl Libre",serif;font-weight:900;
   color:var(--ink) !important;line-height:1.25;
 }
+
+/* ---------- שתי מסגרות ----------
+   --mkf   מסגרת רגילה, בלי לוגו
+   --mkfl  מסגרת שהלוגו יצוק בתוכה, יושב על הקורה
+
+   הלוגו כאלמנט מרחף נחתך בכל פעם מחדש, כי הוא היה תלוי ב-overflow
+   ובסדר השכבות של הלוח. כאן הוא חלק מהתמונה, ולכן תמיד במקומו.
+   במסך עם כמה מסגרות, רק המרכזית נושאת לוגו. */
+body.merkaz{
+  --mkfl: url("https://nati-safe-systems.github.io/screen/frame-merkaz-logo.png");
+}
+/* הפרוסות שונות בין השתיים: במסגרת עם הלוגו הקורה גבוהה יותר. */
+body.merkaz .mk-logo-frame{
+  border-image:var(--mkfl) 129 116 67 115 stretch !important;
+}
+/* הלוגו המרחף כבר אינו נחוץ */
+body.merkaz .mk-crown{display:none !important}
+
+/* הקורה במסגרת שנושאת את הלוגו גבוהה יותר, ולכן הגבול
+   העליון גדול בהתאם — אחרת הלוגו נמעך. */
+body.merkaz .mid.mk-logo-frame{border-width:9vh 2.6vw 5.4vh 2.6vw !important}
 </style></head><body>
 <div id="mk-sweep"></div>
 
@@ -458,7 +479,7 @@ body.merkaz .mgrid > div{
 
 <div class="main">
   <div class="mincol" id="minR"></div>
-  <div class="mid">
+  <div class="mid mk-logo-frame">
   <div class="mk-crown"></div>
     <div id="bgimg"></div><div id="bgveil"></div>
     <div class="secttl" id="sponTtl">פרנסי היום</div>
@@ -2547,5 +2568,5 @@ setInterval(function(){ ZDAY=""; load(); }, 5*60*1000);   /* רענון נתונ
 })();
 /* האתחול רץ רק אחרי שהמסך עבר רישיון, טוקן ונעילת מכשיר */
 NatiGuard.check(function(){ load(); tick(); });
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · חדר קפה · גרסה 2.5 · 28.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · חדר קפה · גרסה 2.6 · 28.09.26</div>
 </body></html>
