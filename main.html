@@ -372,13 +372,27 @@ body.merkaz .oc-bl,body.merkaz .oc-br,
 body.merkaz .nsf-corner,body.merkaz .nsf-frame,
 body.merkaz .orn-deco,body.merkaz .marble-deco,
 body.merkaz .room::before,body.merkaz .room::after,
-body.merkaz .col.r > span:empty,
-body.merkaz .col.l > span:empty,
-body.merkaz .center > span:empty,
-body.merkaz .room > span:empty,
-body.merkaz .ann > span:empty,
 body.merkaz .col.r > svg,body.merkaz .col.l > svg,
 body.merkaz .ann > svg{display:none !important;content:none !important}
+
+/* כל אלמנט ריק בתוך הלוח מוסתר, בלי קשר לסוג או למחלקה.
+   הקישוטים מהעיצובים הקודמים נוצרו בצורות שונות — ספאן, div,
+   i — וכל ניסיון למנות אותם לפי שם פספס חלק. אלמנט ריק אינו
+   מציג דבר וממילא אין סיבה שיתפוס מקום. התוכן האמיתי מוחרג
+   במפורש, כדי שמיכל שמתמלא בהמשך לא ייעלם. */
+body.merkaz .col.r > *:empty,
+body.merkaz .col.l > *:empty,
+body.merkaz .center > *:empty,
+body.merkaz .room > *:empty,
+body.merkaz .ann > *:empty{display:none !important}
+body.merkaz #mlist:empty,
+body.merkaz .list:empty,
+body.merkaz .ann:empty,
+body.merkaz #zlist:empty,
+body.merkaz #mk-next:empty,
+body.merkaz .mk-crown,
+body.merkaz #mk-sweep{display:block !important}
+body.merkaz #mk-next.empty{display:none !important}
 body.merkaz .orn{border:0 !important;background:none !important;
   box-shadow:none !important;padding:0 !important}
 
@@ -444,10 +458,13 @@ body.merkaz #mk-next .sub{color:var(--ink);font-size:2.1vh;font-weight:800}
 body.merkaz #mk-next.empty{display:none}
 
 /* המרכז */
+/* הכותרת צמודה לראש הלוח, מתחת ללוגו. כל החלל שמתחתיה נשאר
+   פנוי להודעות. */
+body.merkaz .center{justify-content:flex-start}
 body.merkaz .center .ttl{
-  padding:0 !important;margin:-1.2vh 0 .5vh !important;text-align:center;
-  border:0 !important;background:none !important;
-  display:flex;flex-direction:column;justify-content:flex-start;
+  padding:0 !important;margin:0 0 .6vh !important;text-align:center;
+  border:0 !important;background:none !important;flex:0 0 auto;
+  order:-1;
 }
 body.merkaz .center .ttl img{display:none !important}
 body.merkaz .center .ttl small{color:var(--dim);font-size:1.95vh;display:block;
@@ -2737,9 +2754,16 @@ setTimeout(fetchParasha, 3000);
       });
       /* ספאנים ריקים שנשארו מעיצובים קודמים — הם אינם מציגים דבר
          אך תופסים מקום בזרימה ודוחפים את התוכן. */
-      var sp=document.querySelectorAll(".col span:empty, .center > span:empty, .room > span:empty");
-      for(var q=0;q<sp.length;q++){
-        if(!sp[q].className || /oc|orn|deco|corner/.test(sp[q].className)) sp[q].remove();
+      /* כל אלמנט ריק שאינו מיכל תוכן מוסר מה-DOM. הסתרה ב-CSS
+         אינה מספיקה כשהמיכל עצמו נטען מאוחר יותר. */
+      var KEEP=/^(mlist|zlist|mk-next|mk-sweep|adbar-body|side-ads)$/;
+      var KEEPC=/(list|ann|mk-crown|mk-sweep|mk-next)/;
+      var all=document.querySelectorAll(".col > *, .center > *, .room > *, .ann > *");
+      for(var q=0;q<all.length;q++){
+        var e=all[q];
+        if(e.children.length || (e.textContent||"").trim()) continue;
+        if(KEEP.test(e.id||"") || KEEPC.test(e.className||"")) continue;
+        e.remove();
       }
       return;
     }
@@ -2802,5 +2826,5 @@ function mkNextMinyan(){
     '<div class="sub">'+escH(best.time)+' · '+inTxt+'</div>';
 }
 setInterval(mkNextMinyan, 20000);
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 3.7 · 28.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 3.8 · 28.09.26</div>
 </body></html>
