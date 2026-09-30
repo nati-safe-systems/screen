@@ -315,7 +315,17 @@ body.merkaz .mkwrap::after{content:"";position:absolute;inset:0;z-index:0;
   opacity:.07}
 body.merkaz .mkwrap > *:not(.mk-crown):not(.bsd){position:relative;z-index:3;min-width:0}
 body.merkaz .mkwrap > .mk-crown{height:13vh}
-body.merkaz .mkwrap{display:flex;flex-direction:column;position:relative}
+/* העטיפה יורשת את הגובה ש-.main החזיק קודם. בלי זה היא קיבלה
+   את גובה תוכנה בלבד — sgrid ריק בטעינה — והמסגרת נמעכה לפס.
+   .main נשאר רשת כפי שהיה, רק בתוך המסגרת. */
+body.merkaz .mkwrap{
+  display:flex;flex-direction:column;position:relative;
+  flex:1;min-height:0;margin:1vh 1vw;
+}
+body.merkaz .mkwrap > .main{
+  flex:1;min-height:0;padding:0 !important;
+  background:none !important;
+}
 
 /* ---------- מסגרת להודעות המתחלפות ----------
    NatiRotate מכסה את המסך ב-#nsf-slide בזמן הודעה. בלי מסגרת
@@ -2697,5 +2707,5 @@ setInterval(function(){ZDAY="";load();},5*60*1000);
 })();
 /* האתחול רץ רק אחרי שהמסך עבר רישיון, טוקן ונעילת מכשיר */
 NatiGuard.check(function(){ load(); tick(); });
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · פרנסים · גרסה 4.3 · 28.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · פרנסים · גרסה 4.4 · 28.09.26</div>
 </body></html>
