@@ -595,9 +595,12 @@ body.ads-bottom.has-ticker .adqr.solo{bottom:calc(20vh + 60px + 1.2vh) !importan
 }
 
 /* ---- PDF בתוך מודעה ---- */
-.ad-pdf{width:100%;height:100%;border:0;display:block;background:#fff}
+/* ה-PDF מרונדר ל-canvas, ולכן מתנהג כמו תמונה לכל דבר */
+.ad-pdf{width:100%;height:100%;display:block;background:#fff;
+  object-fit:cover;border:0}
 body.ads-bottom .ad-pdf{height:17vh}
-#ads-full .ad-pdf,#ads-full embed{width:94vw;height:84vh;border-radius:1vh}
+#ads-full .ad-pdf{width:auto;max-width:94vw;height:auto;max-height:84vh;
+  object-fit:contain;border-radius:1vh}
 
 /* ---- מיקסום הרצועה הצדדית ----
    המודעה צריכה למלא את כל השטח שהוקצה לה. קודם נשארו שוליים
@@ -2656,16 +2659,24 @@ function startAds(list, bodyId, tkey){
     /* PDF מוצג ב-embed ולא ב-img. קודם כל מודעה נבנתה כתמונה,
        ולכן קובץ PDF הופיע כמסגרת שבורה. */
     var isPdf = src && /\.pdf(\?|#|$)/i.test(src);
+    /* PDF מרונדר ב-PDF.js ולא ב-embed.
+       embed מוסר את ההצגה למציג של הדפדפן, שמתנהג אחרת בכל
+       מערכת: עברית עלולה להתהפך, גופן לא מוטמע מוחלף, וקידוד
+       לא סטנדרטי יוצא ג׳יבריש.
+
+       PDF.js מרנדר ל-canvas עם טבלאות הקידוד והגופנים של המסמך,
+       ולכן התוצאה זהה בכל מכשיר. זה אותו מנוע שכבר מציג את
+       הודעות מרכז המסך. */
     var img = !src ? '' :
       (isPdf
-        ? '<embed class="ad-pdf" src="'+src.replace(/"/g,"")+
-          '#toolbar=0&navpanes=0&scrollbar=0&view=FitH" type="application/pdf">'
+        ? '<canvas class="ad-pdf" data-pdf="'+src.replace(/"/g,"&quot;")+'"></canvas>'
         : '<img src="'+src.replace(/"/g,"")+'" alt="">');
     var txt=a.txt?'<div class="ad-txt">'+(a.txt.replace(/</g,"&lt;").replace(/>/g,"&gt;"))+'</div>':'';
     var anim=(a.anim||"fade");
     html+='<div class="ad-slide'+(i===0?' active':'')+'" data-anim="'+anim+'">'+img+txt+'</div>';
   }
   body.innerHTML=html;
+  try{ renderAdPdfs(body); }catch(e){}
   if(list.length>1){
     var slides=body.querySelectorAll(".ad-slide"),idx=0;
     var durOf=function(n){
@@ -4220,11 +4231,17 @@ function adsFullShow(sec){
   if(!box||!wrap) return;
 
   var h="";
-  if(a.img) h+='<img src="'+String(a.img).replace(/"/g,"&quot;")+'" alt="">';
+  if(a.img){
+    var _s=String(a.img);
+    h += /\.pdf(\?|#|$)/i.test(_s)
+       ? '<canvas class="ad-pdf" data-pdf="'+_s.replace(/"/g,"&quot;")+'"></canvas>'
+       : '<img src="'+_s.replace(/"/g,"&quot;")+'" alt="">';
+  }
   if(a.txt) h+='<div class="af-txt">'+String(a.txt)
                  .replace(/</g,"&lt;").replace(/>/g,"&gt;")+'</div>';
   if(!h) return;
   box.innerHTML=h;
+  try{ renderAdPdfs(box); }catch(e){}
   wrap.classList.add("on");
 
   if(bar){
@@ -4269,10 +4286,68 @@ function adsFullShow(sec){
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot);
   else setTimeout(boot,500);
 })();
+
+/* ---- רינדור PDF בתוך מודעה ----
+   כל canvas עם data-pdf מרונדר פעם אחת. העמוד הראשון בלבד —
+   מודעה היא דף אחד, ואם יש יותר, השאר אינם רלוונטיים.
+
+   ההגדרות זהות לאלו של הודעות המרכז:
+     cMapUrl              טבלאות קידוד לגופנים לא לטיניים
+     standardFontDataUrl  גופן חלופי כשהמסמך אינו מטמיע
+     disableFontFace      רינדור בתוך ה-canvas, בלי תלות במערכת
+
+   שלושתן יחד הן מה שמונע עברית הפוכה וג׳יבריש. */
+function renderAdPdfs(root){
+  var list=(root||document).querySelectorAll("canvas.ad-pdf[data-pdf]");
+  if(!list.length) return;
+  if(typeof pdfjsLib==="undefined"){
+    setTimeout(function(){ renderAdPdfs(root); }, 1500);
+    return;
+  }
+  pdfjsLib.GlobalWorkerOptions.workerSrc=
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+  Array.prototype.forEach.call(list, function(cv){
+    if(cv.__done) return;
+    cv.__done=1;
+    var url=cv.getAttribute("data-pdf");
+    pdfjsLib.getDocument({
+      url:url,
+      cMapUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/",
+      cMapPacked:true,
+      standardFontDataUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/",
+      disableFontFace:true,
+      isEvalSupported:false
+    }).promise.then(function(doc){
+      return doc.getPage(1);
+    }).then(function(page){
+      var host=cv.parentNode;
+      var w=(host&&host.clientWidth)||600, h=(host&&host.clientHeight)||800;
+      var vp0=page.getViewport({scale:1});
+      /* cover — ממלא את השטח, כמו התמונות */
+      var scale=Math.max(w/vp0.width, h/vp0.height);
+      var dpr=Math.min(window.devicePixelRatio||1, 2);
+      var vp=page.getViewport({scale:scale*dpr});
+      cv.width=Math.round(vp.width); cv.height=Math.round(vp.height);
+      cv.style.width="100%"; cv.style.height="100%";
+      cv.style.objectFit="cover";
+      return page.render({canvasContext:cv.getContext("2d"), viewport:vp}).promise;
+    }).catch(function(){
+      /* נכשל — לא משאירים ריבוע ריק */
+      cv.__done=0;
+      var d=document.createElement("div");
+      d.className="ad-txt";
+      d.style.cssText="position:absolute;inset:0;display:flex;align-items:center;"+
+        "justify-content:center;text-align:center;opacity:.65";
+      d.textContent="לא ניתן להציג את הקובץ";
+      if(cv.parentNode){ cv.parentNode.replaceChild(d, cv); }
+    });
+  });
+}
 </script>
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 9.8</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 9.9</div>
 </body>
 </html>
