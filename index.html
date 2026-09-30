@@ -474,6 +474,21 @@ body.portrait #mus .bars i{width:0.35vw}
 .adqr-img svg,.adqr-img img{width:100%;height:auto;display:block}
 .adqr-s{color:#cfe0ff;font-size:1.25vh;margin-top:.8vh;font-weight:600}
 .adqr-m{color:#8fa8c8;font-size:1.1vh;margin-top:.5vh;direction:ltr}
+
+/* ---- כרטיס הזמנת פרסום ללא רצועה ----
+   כשרצועת הפרסום כבויה, הכרטיס עובר לפינה השמאלית התחתונה
+   של המסך ומוצג כלוח עצמאי. */
+.adqr.solo{
+  position:fixed;left:1.2vw;bottom:1.2vh;z-index:40;
+  width:16vw;max-width:220px;
+  background:linear-gradient(170deg,rgba(14,20,34,.94),rgba(7,11,20,.96));
+  border:.18vh solid rgba(255,204,0,.35);border-radius:1.2vh;
+  padding:1.1vh .8vw;box-shadow:0 .6vh 2vh rgba(0,0,0,.55);
+}
+.adqr.solo .adqr-t{font-size:1.5vh;margin-bottom:.7vh}
+.adqr.solo .adqr-img{width:74%;max-width:150px}
+.adqr.solo .adqr-s{font-size:1.15vh}
+.adqr.solo .adqr-m{font-size:1.05vh;margin-top:.4vh;word-break:break-all}
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;800;900&family=Heebo:wght@300;400;500;700;800;900&family=Rubik:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,900&family=Suez+One&display=swap" rel="stylesheet">
 </head>
@@ -2215,7 +2230,11 @@ function applyDisplayConfig(cfg){
     else{ adbar.style.display="none"; stopAds("main"); _adsSig["main"]=null; }
     /* הכרטיס מוצג רק כשהמסך נפתח למכירת פרסום באדמין.
        מחוץ ל-if/else, אחרת הוא היה שובר את הצירוף ביניהם. */
-    try{ showAdQR(!!cfg.ads && (cfg.ads_qr!==false) && SCREEN_ADS_ON, cfg.ads_email); }catch(e){}
+    /* ה-QR היה תלוי ברצועת הפרסום, שברירת המחדל שלה כבויה —
+       ולכן הוא לא הופיע גם כשהמסך נפתח למכירה. אלה שתי הגדרות
+       שונות: ads_enabled פותח למכירה, cfg.ads מפעיל את הרצועה.
+       הכרטיס מוצג עכשיו לפי ads_enabled בלבד. */
+    try{ showAdQR(SCREEN_ADS_ON && (cfg.ads_qr!==false), cfg.ads_email); }catch(e){}
   }
 
   // --- פרסומות בסיידבר במקום הזמנים (כשהזמנים כבויים והפרסומות פעילות) ---
@@ -2401,6 +2420,18 @@ function showAdQR(on, mail){
   var el=document.getElementById("adqr");
   if(!el) return;
   el.style.display = on ? "block" : "none";
+  /* אם רצועת הפרסום כבויה, הכרטיס יוצא ממנה ועומד בפני עצמו
+     בפינה השמאלית התחתונה. */
+  try{
+    var bar=document.getElementById("adbar");
+    var barOn = bar && bar.style.display && bar.style.display!=="none";
+    if(on && !barOn){
+      el.classList.add("solo");
+      if(el.parentNode!==document.body) document.body.appendChild(el);
+    }else{
+      el.classList.remove("solo");
+    }
+  }catch(e){}
   if(!on) return;
   var m=document.getElementById("adqr-mail");
   if(m) m.textContent = mail || ADS_MAIL || "";
@@ -3997,6 +4028,6 @@ function start(){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 8.7</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 8.8</div>
 </body>
 </html>
