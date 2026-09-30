@@ -522,6 +522,14 @@ body.portrait #mus .bars i{width:0.35vw}
 .adqr-m{font-size:1vh !important}
 .adqr.solo{width:12vw !important;max-width:170px !important}
 .adqr.solo .adqr-img{width:64% !important;max-width:110px !important}
+
+/* ---- כרטיס ה-QR מעל רצועת החדשות ----
+   הכרטיס ממוקם fixed ביחס לחלון, ולכן הוא לא ידע על רצועת
+   החדשות שנפתחה מתחתיו והיא כיסתה אותו. has-ticker כבר קיימת
+   על ה-body ומסמנת שהרצועה פעילה — די להוסיף לה את הכרטיס. */
+body.has-ticker .adqr.solo{
+  bottom:calc(60px + 1.2vh) !important;
+}
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;800;900&family=Heebo:wght@300;400;500;700;800;900&family=Rubik:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,900&family=Suez+One&display=swap" rel="stylesheet">
 </head>
@@ -4079,6 +4087,6 @@ function start(){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 9.4</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 9.5</div>
 </body>
 </html>
