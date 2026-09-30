@@ -242,7 +242,7 @@ body.merkaz #mk-sweep{display:block}
    אלמנט ריק אינו מציג דבר, אך נשאר בזרימה ודוחף תוכן. כך נוצרו
    הקישוטים בכל הניסיונות הקודמים, בצורות שונות, ולכן הכלל כאן
    לפי מצב ולא לפי שם. */
-body.merkaz .oc,body.merkaz .nsf-corner,body.merkaz .nsf-frame,
+body.merkaz .ocn,body.merkaz .oc,body.merkaz .nsf-corner,body.merkaz .nsf-frame,
 body.merkaz .orn-deco,body.merkaz .marble-deco{display:none !important}
 body.merkaz .mkp > *:empty:not([id]){display:none !important}
 body.merkaz .orn{border:0 !important;background:none !important;
@@ -2532,14 +2532,16 @@ NatiGuard.check(function(){ load(); tick(); });
    רץ לפניהם ולכן פספס. כאן משמר שמסיר אותם ברגע שהם מופיעים,
    ולא משנה מי יצר אותם ומתי. */
 (function(){
-  var SEL=".oc,.oc-tl,.oc-tr,.oc-bl,.oc-br,.nsf-corner,.nsf-frame,"+
-          ".orn-deco,.marble-deco";
+  var SEL=".ocn,.oc,.oc-tl,.oc-tr,.oc-bl,.oc-br,.nsf-corner,"+
+          ".nsf-frame,.orn-deco,.marble-deco";
   function sweep(){
     if(!document.body || !document.body.classList.contains("merkaz")) return;
     var el=document.querySelectorAll(SEL);
     for(var i=0;i<el.length;i++) el[i].remove();
     var o=document.querySelectorAll(".orn");
     for(var k=0;k<o.length;k++) o[k].classList.remove("orn");
+    var m=document.querySelectorAll("[data-mbcn]");
+    for(var q=0;q<m.length;q++) m[q].removeAttribute("data-mbcn");
   }
   function boot(){
     sweep();
@@ -2555,5 +2557,5 @@ NatiGuard.check(function(){ load(); tick(); });
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot);
   else boot();
 })();
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך כניסה · גרסה 2.8 · 28.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך כניסה · גרסה 2.9 · 28.09.26</div>
 </body></html>
