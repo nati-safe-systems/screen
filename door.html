@@ -298,7 +298,7 @@ body.merkaz .body{
   background-clip:padding-box !important;box-shadow:none !important;
   overflow:visible;
 }
-body.merkaz .body{border-width:9vh 7.4vw 7.6vh 7.4vw !important}
+body.merkaz .body{border-width:8vh 4.6vw 6.6vh 4.6vw !important}
 body.merkaz .body::after{content:"";position:absolute;inset:0;z-index:0;
   pointer-events:none;background:var(--mkl) center 48%/62% auto no-repeat;
   opacity:.07}
@@ -339,6 +339,16 @@ body.merkaz #nsf-slide-s{position:relative;z-index:4}
 body.merkaz #nsf-slide-t{color:var(--ttl) !important;
   font-family:"Frank Ruhl Libre",serif;font-weight:900}
 body.merkaz #nsf-slide-s{color:var(--ink) !important}
+
+/* ---------- פרופורציות דינמיות ----------
+   clamp גוזר את הגודל מרוחב הלוח, ולכן הטקסט גדל וקטן עם המסך
+   במקום להישאר קבוע ולהיחתך בלוח צר. */
+body.merkaz .mkp-txt,
+body.merkaz .big,body.merkaz .cd{
+  font-size:clamp(2.2vh,3.6vw,7vh) !important;line-height:1.1}
+body.merkaz .room .rt,body.merkaz .mcard .rt{
+  white-space:normal;overflow-wrap:anywhere}
+body.merkaz .prow i{min-width:0}
 </style></head><body>
 <div id="mk-sweep"></div>
 
@@ -2400,5 +2410,5 @@ try{ NatiAlerts.init({supa:SB,key:SK,areas:[]}); }catch(e){}
 })();
 /* האתחול רץ רק אחרי שהמסך עבר רישיון, טוקן ונעילת מכשיר */
 NatiGuard.check(function(){ load(); tick(); });
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך כניסה · גרסה 2.3 · 28.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך כניסה · גרסה 2.4 · 28.09.26</div>
 </body></html>

@@ -346,8 +346,15 @@ body.merkaz .mid{
   background-clip:padding-box !important;box-shadow:none !important;
   overflow:visible;
 }
-body.merkaz .mincol{border-width:7.4vh 6.4vw 6.4vh 6.4vw !important}
-body.merkaz .mid{border-width:8.6vh 4.4vw 7.2vh 4.4vw !important}
+/* העובי היה 6.4vw בעמודה שרוחבה 16.5% — כלומר המסגרת בלעה
+   יותר משני שלישים מהרוחב, והטקסט נחתך ל"שטי..." ול-"6:4".
+   העמודה הורחבה והעובי הוקטן, כך שנשאר מקום אמיתי לתוכן. */
+body.merkaz .mincol{
+  width:22% !important;
+  border-width:5.6vh 2.6vw 4.6vh 2.6vw !important;
+  padding:0 !important;gap:0 !important;
+}
+body.merkaz .mid{border-width:6.6vh 2.6vw 5.4vh 2.6vw !important}
 body.merkaz .mincol::after{content:"";position:absolute;inset:0;z-index:0;
   pointer-events:none;background:var(--mkl) center 48%/62% auto no-repeat;
   opacity:.07}
@@ -393,6 +400,48 @@ body.merkaz #nsf-slide-s{position:relative;z-index:4}
 body.merkaz #nsf-slide-t{color:var(--ttl) !important;
   font-family:"Frank Ruhl Libre",serif;font-weight:900}
 body.merkaz #nsf-slide-s{color:var(--ink) !important}
+
+/* ---------- פרופורציות דינמיות ----------
+   הגדלים נגזרים מ-clamp על רוחב הלוח, ולכן הטקסט גדל וקטן עם
+   המסך במקום להישאר קבוע ולהיחתך. */
+body.merkaz .mcard{
+  flex:1 1 0;min-height:0;overflow:hidden;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:.4vh .3vw !important;text-align:center;
+}
+body.merkaz .mcard .rt,
+body.merkaz .mcard .sname{
+  font-size:clamp(1.1vh, 1.5vw, 2.4vh) !important;
+  line-height:1.2;white-space:normal;overflow-wrap:anywhere;
+  margin:0 0 .3vh !important;padding:0 0 .25vh !important;
+}
+body.merkaz .mcard .kind,
+body.merkaz .mcard .lbl{font-size:clamp(1vh,1.2vw,1.9vh) !important;
+  color:var(--dim) !important;margin:0 !important}
+body.merkaz .mcard .stime,
+body.merkaz .mcard .big,
+body.merkaz .mcard b{
+  font-size:clamp(2vh, 4.2vw, 6vh) !important;
+  line-height:1.05;color:var(--ttl) !important;
+  white-space:nowrap;margin:.2vh 0 !important;
+}
+body.merkaz .mcard .cd,
+body.merkaz .mcard .sub{font-size:clamp(.9vh,1.3vw,1.8vh) !important;
+  color:var(--dim) !important;white-space:nowrap}
+
+/* המרכז — הפרנס גדול ובולט, לא טקסט זעיר בלוח ריק */
+body.merkaz .mid .secttl{
+  font-size:clamp(1.6vh,2vw,3vh) !important;text-align:center;
+  padding:0 0 .5vh !important;margin:0 0 .8vh !important;
+}
+body.merkaz .mgrid{flex:1;min-height:0;display:flex;
+  align-items:center;justify-content:center;text-align:center}
+body.merkaz .mgrid .sname,
+body.merkaz .mgrid > div{
+  font-size:clamp(2.4vh,3.4vw,6.5vh) !important;
+  font-family:"Frank Ruhl Libre",serif;font-weight:900;
+  color:var(--ink) !important;line-height:1.25;
+}
 </style></head><body>
 <div id="mk-sweep"></div>
 
@@ -2498,5 +2547,5 @@ setInterval(function(){ ZDAY=""; load(); }, 5*60*1000);   /* רענון נתונ
 })();
 /* האתחול רץ רק אחרי שהמסך עבר רישיון, טוקן ונעילת מכשיר */
 NatiGuard.check(function(){ load(); tick(); });
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · חדר קפה · גרסה 2.4 · 28.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · חדר קפה · גרסה 2.5 · 28.09.26</div>
 </body></html>

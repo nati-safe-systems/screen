@@ -309,7 +309,7 @@ body.merkaz .mkwrap{
   background-clip:padding-box !important;box-shadow:none !important;
   overflow:visible;
 }
-body.merkaz .mkwrap{border-width:8.6vh 5.4vw 7.2vh 5.4vw !important}
+body.merkaz .mkwrap{border-width:7vh 3vw 5.6vh 3vw !important}
 body.merkaz .mkwrap::after{content:"";position:absolute;inset:0;z-index:0;
   pointer-events:none;background:var(--mkl) center 48%/62% auto no-repeat;
   opacity:.07}
@@ -356,6 +356,16 @@ body.merkaz #nsf-slide-s{position:relative;z-index:4}
 body.merkaz #nsf-slide-t{color:var(--ttl) !important;
   font-family:"Frank Ruhl Libre",serif;font-weight:900}
 body.merkaz #nsf-slide-s{color:var(--ink) !important}
+
+/* ---------- פרופורציות דינמיות ----------
+   clamp גוזר את הגודל מרוחב הלוח, ולכן הטקסט גדל וקטן עם המסך
+   במקום להישאר קבוע ולהיחתך בלוח צר. */
+body.merkaz .mkp-txt,
+body.merkaz .big,body.merkaz .cd{
+  font-size:clamp(2.2vh,3.6vw,7vh) !important;line-height:1.1}
+body.merkaz .room .rt,body.merkaz .mcard .rt{
+  white-space:normal;overflow-wrap:anywhere}
+body.merkaz .prow i{min-width:0}
 </style></head><body>
 <div id="mk-sweep"></div>
 
@@ -2707,5 +2717,5 @@ setInterval(function(){ZDAY="";load();},5*60*1000);
 })();
 /* האתחול רץ רק אחרי שהמסך עבר רישיון, טוקן ונעילת מכשיר */
 NatiGuard.check(function(){ load(); tick(); });
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · פרנסים · גרסה 4.4 · 28.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · פרנסים · גרסה 4.5 · 28.09.26</div>
 </body></html>
