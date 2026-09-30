@@ -163,7 +163,9 @@ button.dz:hover{color:#ff6b6b}
 <div class="card">
   <h2>אתר</h2>
   <select id="siteSel" onchange="pickSite()"></select>
-  <div class="row" style="margin-top:9px">
+  <!-- יצירת אתר חדש שמורה לניהול המערכת. כשהמסך נפתח מתוך פאנל
+       הלקוח הוא מנהל את האתר הקיים שלו ואינו פותח חדשים. -->
+  <div class="row" id="newSiteRow" style="margin-top:9px">
     <div><label>שם אתר חדש</label><input id="newSite" placeholder="בית מדרש היכל יעקב"></div>
     <div style="flex:0"><button onclick="addSite()">הוסף</button></div>
   </div>
@@ -1631,6 +1633,21 @@ function preview(){
   if(q.get("back")==="1"){
     var b=document.getElementById("mn-back");
     if(b) b.style.display="block";
+  }
+  /* מצב לקוח: הסתרת פעולות שמורות לניהול המערכת */
+  if(q.get("co")){
+    ["newSiteRow"].forEach(function(id){
+      var e=document.getElementById(id); if(e) e.style.display="none";
+    });
+    /* בורר האתרים מיותר כשיש אתר אחד */
+    setTimeout(function(){
+      var sel=document.getElementById("siteSel");
+      if(sel && sel.options.length<=1){
+        var w=sel.closest(".card");
+        if(w){ var h=w.querySelector("h2"); if(h) h.style.display="none"; }
+        sel.style.display="none";
+      }
+    }, 1200);
   }
 })();
 function goBackPanel(){
