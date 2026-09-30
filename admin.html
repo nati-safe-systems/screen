@@ -949,7 +949,23 @@ tr:hover td{background:rgba(128,0,0,0.05);}
         </div>
 
         <div class="field" id="ads-mgmt" style="margin-top:12px;display:none;border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:14px;">
-          <label style="color:#ffcc00;font-weight:800;">ניהול פרסומות (רצועת צד)</label>
+          <label style="color:#ffcc00;font-weight:800;">ניהול פרסומות</label>
+          <!-- מה שרץ על המסך בפועל: מודעות ששולמו ומודעות ידניות
+               יחד, כפי שהמסך מקבל אותן מהשרת. -->
+          <div style="margin:9px 0 4px;display:flex;align-items:center;gap:9px">
+            <button type="button" class="btn-sm" onclick="loadLiveAds()">
+              רענן מה שרץ על המסך</button>
+            <span id="live-ads-n" style="font-size:12px;color:#8b949e"></span>
+          </div>
+          <div id="live-ads" style="margin-bottom:10px"></div>
+
+          <div id="ads-off-note" style="display:none;margin:8px 0 4px;
+               background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.4);
+               border-radius:8px;padding:9px 11px;font-size:12px;line-height:1.6">
+            רצועת הפרסום כבויה בהגדרות התצוגה של המסך.
+            אפשר להגדיר מודעות כאן, אך הן לא ייראו עד שתסמן
+            <b>פרסומות</b> למעלה — או תבחר מצב <b>מסך מלא</b>.
+          </div>
           <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
             <!-- העלאה ישירה. מסלול Drive דרש להעלות, לשנות הרשאות
                  שיתוף ולהעתיק קישור — ורוב הכשלים היו בהרשאות שנשכחו. -->
@@ -987,7 +1003,12 @@ tr:hover td{background:rgba(128,0,0,0.05);}
             </details>
             <input id="ad-txt" placeholder="טקסט / כותרת (אופציונלי)">
             <div style="display:flex;gap:8px;">
-              <input id="ad-dur" type="number" min="1" step="1" value="8" placeholder="זמן הצגה (שניות)" style="flex:1;">
+              <div style="flex:1">
+                <label style="font-size:11px;color:#8b949e;display:block;margin-bottom:3px">
+                  משך הצגה בשניות</label>
+                <input id="ad-dur" type="number" min="1" step="1" value="8"
+                       style="width:100%">
+              </div>
               <select id="ad-anim" style="flex:1;">
                 <option value="fade">מעבר: דהייה</option>
                 <option value="slide">מעבר: החלקה</option>
@@ -2202,8 +2223,15 @@ var subUsers=[];
 var ANIM_LABELS={fade:"דהייה",slide:"החלקה",zoom:"הגדלה",none:"ללא"};
 var SIDE_LABELS={both:"שני הצדדים",left:"שמאל בלבד",right:"ימין בלבד"};
 function toggleAdsMgmt(){
-  var on=document.getElementById('dc-ads').checked;
-  document.getElementById('ads-mgmt').style.display = on ? 'block' : 'none';
+  /* ניהול הפרסומות היה מוסתר עד שמסמנים "פרסומות" בהגדרות
+     התצוגה — ולכן מי שלא ידע על התלות הזו לא מצא את הלשונית
+     בכלל. עכשיו הוא מוצג תמיד; אם רצועת הפרסום כבויה, מופיעה
+     הערה שמסבירה למה המודעות לא ייראו. */
+  var on=(document.getElementById('dc-ads')||{}).checked;
+  var box=document.getElementById('ads-mgmt');
+  if(box) box.style.display='block';
+  var note=document.getElementById('ads-off-note');
+  if(note) note.style.display = on ? 'none' : 'block';
 }
 function renderAdsAdmin(){
   var wrap=document.getElementById('ads-list-admin');
@@ -3491,6 +3519,56 @@ function adImgPick(inp){
   else setTimeout(boot,1200);
   window.addEventListener("hashchange", boot);
 })();
+
+/* ---- מה שרץ על המסך ----
+   קורא לאותה פונקציה שהמסך עצמו קורא לה, ולכן מראה בדיוק את
+   מה שמוצג שם — כולל מודעות ששולמו, שאינן ברשימה הידנית. */
+function loadLiveAds(){
+  var sid=(document.getElementById('edit-sc-id')||{}).value||'';
+  var box=document.getElementById('live-ads');
+  var cnt=document.getElementById('live-ads-n');
+  if(!box) return;
+  if(!sid){ box.innerHTML=''; if(cnt) cnt.textContent='בחר מסך תחילה'; return; }
+  box.innerHTML='<div style="color:#8b949e;font-size:12px">טוען…</div>';
+
+  fetch(SB+'/rest/v1/rpc/nsf_ad_live',{
+    method:'POST',
+    headers:{apikey:SK,Authorization:'Bearer '+SK,'Content-Type':'application/json'},
+    body:JSON.stringify({p_screen:sid})
+  }).then(function(r){ return r.ok?r.json():[]; })
+  .then(function(list){
+    if(list && !Array.isArray(list) && typeof list==='object'){
+      var k=Object.keys(list);
+      if(k.length===1 && Array.isArray(list[k[0]])) list=list[k[0]];
+    }
+    var arr=Array.isArray(list)?list:[];
+    if(cnt) cnt.textContent = arr.length
+      ? (arr.length+' מודעות בתשלום · סבב של '+
+         arr.reduce(function(a,x){return a+(+x.dur||8);},0)+' שניות')
+      : 'אין כרגע מודעות בתשלום';
+    if(!arr.length){ box.innerHTML=''; return; }
+    box.innerHTML = arr.map(function(a){
+      var isPdf=/\.pdf(\?|#|$)/i.test(a.img||'');
+      var th = isPdf
+        ? '<div style="width:52px;height:52px;background:#21262d;border-radius:6px;'+
+          'display:flex;align-items:center;justify-content:center;font-size:22px;'+
+          'flex:0 0 auto">\uD83D\uDCC4</div>'
+        : '<img src="'+escH(a.img||'')+'" style="width:52px;height:52px;'+
+          'object-fit:cover;border-radius:6px;flex:0 0 auto" alt="">';
+      return '<div style="display:flex;align-items:center;gap:10px;'+
+        'background:#0d1117;border:1px solid #30363d;border-radius:8px;'+
+        'padding:8px 10px;margin-bottom:6px">'+th+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-size:12.5px;overflow:hidden;text-overflow:ellipsis;'+
+          'white-space:nowrap">'+escH(a.txt||'מודעה ללא כותרת')+'</div>'+
+          '<div style="font-size:11px;color:#8b949e">מוצגת '+(+a.dur||8)+
+          ' שניות · מתחילה '+escH(a._from||'')+'</div>'+
+        '</div></div>';
+    }).join('');
+  }).catch(function(){
+    box.innerHTML='<div style="color:#f85149;font-size:12px">הטעינה נכשלה</div>';
+  });
+}
 </script>
 </body>
 </html>

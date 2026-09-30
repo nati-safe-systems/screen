@@ -690,6 +690,27 @@ body.ads-bottom .ad-pdf{height:17vh}
 body.ads-bottom .ad-promo{flex-direction:row;gap:2vw;justify-content:center}
 body.ads-bottom .ad-promo .ap-qr{width:auto;height:13vh;max-width:none}
 body.ads-bottom .ad-promo .ap-qr img{height:100%;width:auto}
+
+/* ---- תחזית מזג האוויר בכותרת ----
+   במצב header התחזית מרחפת מעל הכותרת, וחלקה הימני נחתך
+   מתחת לטקסט "לוח המודעות של…". כאן היא מקבלת שכבה עליונה,
+   והכותרת מקבלת ריווח שמפנה לה מקום במקום להסתיר אותה. */
+.wx[data-pos="header"]{
+  z-index:30 !important;
+  box-shadow:0 .4vh 1.4vh rgba(0,0,0,.5);
+  border-radius:.8vh;
+}
+.board-hdr:has(.wx[data-pos="header"]) .ttl,
+.main-area:has(.wx[data-pos="header"]) .ttl{
+  padding-right:19vw;
+}
+/* גיבוי לדפדפן ללא has — ריווח קבוע כשהתחזית פעילה */
+body.wx-header .ttl,
+body.wx-header .board-hdr{padding-right:19vw}
+@media (max-width:1200px){
+  body.wx-header .ttl,
+  body.wx-header .board-hdr{padding-right:23vw}
+}
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;800;900&family=Heebo:wght@300;400;500;700;800;900&family=Rubik:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,900&family=Suez+One&display=swap" rel="stylesheet">
 </head>
@@ -1931,8 +1952,14 @@ function wxEnsureEl(){
   var old = document.getElementById("wx");
   var sb  = document.querySelector(".sidebar");
   if(!sb) return null;
-  if(pos==="off"){ sb.classList.remove("wx-on"); if(old) old.remove(); return null; }
+  if(pos==="off"){
+    sb.classList.remove("wx-on");
+    document.body.classList.remove("wx-header");
+    if(old) old.remove(); return null;
+  }
   if(pos==="header") sb.classList.remove("wx-on"); else sb.classList.add("wx-on");
+  /* סימון על ה-body, כדי שהכותרת תפנה מקום לתחזית */
+  document.body.classList.toggle("wx-header", pos==="header");
   if(old && old.getAttribute("data-pos")===pos) return old;
   if(old) old.remove();
   var el=document.createElement("div");
@@ -4454,6 +4481,6 @@ function adPromoHTML(){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 10.2</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 10.3</div>
 </body>
 </html>
