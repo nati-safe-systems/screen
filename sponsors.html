@@ -321,35 +321,6 @@ body.merkaz .mkwrap > .main{
   background:none !important;
 }
 
-/* ---------- מסגרת להודעות המתחלפות ----------
-   NatiRotate מכסה את המסך ב-#nsf-slide בזמן הודעה. בלי מסגרת
-   ההודעה הופיעה על רקע כהה חשוף, והשפה העיצובית נשברה בדיוק
-   ברגע שבו כולם מסתכלים. */
-body.merkaz #nsf-slide{
-  background:#07090e !important;
-  padding:2.2vh 2vw !important;
-}
-body.merkaz #nsf-slide::before{
-  content:"";position:absolute;inset:2.2vh 2vw;
-  z-index:0;pointer-events:none;
-  border-style:solid;border-color:transparent;
-  border-width:8.6vh 6.4vw 7.2vh 6.4vw;
-  border-image:var(--mkf) 361 159 305 159 stretch;
-  background:linear-gradient(170deg,var(--pane1),var(--pane2));
-  background-clip:padding-box;
-}
-body.merkaz #nsf-slide::after{
-  content:"";position:absolute;top:2.2vh;left:50%;
-  transform:translate(-50%,-46%);
-  aspect-ratio:1080/992;height:13vh;z-index:6;pointer-events:none;
-  background:var(--mkl) center/contain no-repeat;
-  filter:drop-shadow(0 .6vh 1.8vh rgba(0,0,0,.72));
-}
-body.merkaz #nsf-slide-t,
-body.merkaz #nsf-slide-s{position:relative;z-index:4}
-body.merkaz #nsf-slide-t{color:var(--ttl) !important;
-  font-family:"Frank Ruhl Libre",serif;font-weight:900}
-body.merkaz #nsf-slide-s{color:var(--ink) !important}
 
 /* ---------- פרופורציות דינמיות ----------
    clamp גוזר את הגודל מרוחב הלוח, ולכן הטקסט גדל וקטן עם המסך
@@ -429,6 +400,41 @@ body.merkaz .mkwrap{overflow:visible !important}
 body.merkaz .mkwrap > .ann,
 body.merkaz .mkwrap > .mgrid,
 body.merkaz .mkwrap > .main{overflow:hidden}
+
+/* ---------- מסגרת מלאה להודעות המתחלפות ----------
+   ההודעה הופיעה על רקע חשוף עם לוגו זעיר בראש. כאן היא מקבלת
+   את אותה מסגרת שעוטפת את המסך, ואת הלוגו בגודל מלא — כך
+   השפה העיצובית נשמרת גם ברגע שבו כולם מסתכלים. */
+body.merkaz #nsf-slide{
+  background:#07090e !important;
+  padding:0 !important;
+  display:flex !important;align-items:center;justify-content:center;
+}
+body.merkaz #nsf-slide::before{
+  content:"";position:absolute;inset:1vh 1vw;z-index:0;pointer-events:none;
+  border-style:solid;border-color:transparent;
+  border-width:9.5vh 4.6vw 7vh 4.6vw;
+  border-image:var(--mkf) 361 159 305 159 stretch;
+  background:linear-gradient(170deg,var(--pane1),var(--pane2));
+  background-clip:padding-box;
+}
+body.merkaz #nsf-slide::after{
+  content:"";position:absolute;top:1vh;left:50%;
+  transform:translate(-50%,-46%);
+  height:16vh;aspect-ratio:1080/992;width:auto;
+  z-index:6;pointer-events:none;
+  background-image:var(--mkl);background-position:center;
+  background-repeat:no-repeat;background-size:contain;
+  filter:drop-shadow(0 .5vh 1.6vh rgba(0,0,0,.75));
+}
+body.merkaz #nsf-slide > *{position:relative;z-index:4;
+  max-width:78%;text-align:center}
+body.merkaz #nsf-slide-t{color:var(--ttl) !important;
+  font-family:"Frank Ruhl Libre",serif;font-weight:900;
+  font-size:clamp(3vh,5vw,8vh) !important;line-height:1.2;
+  margin-bottom:1.6vh !important}
+body.merkaz #nsf-slide-s{color:var(--ink) !important;
+  font-size:clamp(2.2vh,3.4vw,5.5vh) !important;line-height:1.45}
 </style></head><body>
 <div id="mk-sweep"></div>
 
@@ -2810,5 +2816,5 @@ NatiGuard.check(function(){ load(); tick(); });
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot);
   else boot();
 })();
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · פרנסים · גרסה 4.8 · 28.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · פרנסים · גרסה 4.9 · 28.09.26</div>
 </body></html>
