@@ -337,6 +337,26 @@ body.merkaz .mk-crown{
 }
 
 /* ---------- טיפוגרפיה ---------- */
+/* ---------- ניקוי שאריות העיצובים הקודמים ----------
+   אלמנטי .oc ו-.orn נוצרו בניסיונות הקודמים. כשה-CSS שלהם הוסר
+   הם איבדו את המיקום המוחלט, הפכו לאלמנטים רגילים בזרימה, ודחפו
+   את השעון ואת לוח המודעות כלפי מטה. כאן הם מוסתרים בוודאות. */
+body.merkaz .oc,
+body.merkaz .oc-tl,body.merkaz .oc-tr,
+body.merkaz .oc-bl,body.merkaz .oc-br,
+body.merkaz .nsf-corner,body.merkaz .nsf-frame,
+body.merkaz .orn-deco,body.merkaz .marble-deco,
+body.merkaz .room::before,body.merkaz .room::after,
+body.merkaz .col.r > svg,body.merkaz .col.l > svg,
+body.merkaz .ann > svg{display:none !important;content:none !important}
+body.merkaz .orn{border:0 !important;background:none !important;
+  box-shadow:none !important;padding:0 !important}
+
+/* בס"ד בפינה הימנית העליונה, מחוץ לזרימה */
+body.merkaz .bsd{
+  position:absolute !important;top:.6vh;right:.8vw;z-index:8;
+  color:var(--dim) !important;opacity:.7;font-size:1.6vh;margin:0 !important}
+
 body.merkaz .col *,body.merkaz .center *{color:var(--ink)}
 body.merkaz #bgimg,body.merkaz #bgveil{display:none !important}
 body.merkaz #clock{color:var(--ttl) !important;font-size:6.6vh;line-height:1;
@@ -1013,6 +1033,9 @@ body.merkaz .ft{background:#07090e !important}
   }
 
   function addCorners(el, sizeVh) {
+    /* בערכת merkaz המסגרת מגיעה מקובץ המעצב, ואין צורך בפינות
+       המחושבות. אלמנט .oc שנשאר בזרימה תופס מקום ודוחף תוכן. */
+    if (document.body.classList.contains("merkaz")) return;
     if (!el || T.orn===0 || el.querySelector(':scope > .oc')) return;
     ['tl','tr','br','bl'].forEach(function (p) {
       var d = document.createElement('span');
@@ -2668,8 +2691,13 @@ setTimeout(fetchParasha, 3000);
       });
       var oo=document.querySelectorAll(".orn");
       for(var i=0;i<oo.length;i++) oo[i].classList.remove("orn");
-      var cc=document.querySelectorAll(".oc");
-      for(var k=0;k<cc.length;k++) cc[k].remove();
+      /* הסרה מלאה מה-DOM, לא רק הסתרה: אלמנט שנשאר בזרימה
+         תופס מקום גם כשאינו נראה. */
+      [".oc",".oc-tl",".oc-tr",".oc-bl",".oc-br",
+       ".nsf-corner",".nsf-frame",".orn-deco",".marble-deco"].forEach(function(sel){
+        var el=document.querySelectorAll(sel);
+        for(var k=0;k<el.length;k++) el[k].remove();
+      });
       return;
     }
     document.body.classList.remove("merkaz");
@@ -2731,5 +2759,5 @@ function mkNextMinyan(){
     '<div class="sub">'+escH(best.time)+' · '+inTxt+'</div>';
 }
 setInterval(mkNextMinyan, 20000);
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 3.4 · 28.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 3.5 · 28.09.26</div>
 </body></html>
