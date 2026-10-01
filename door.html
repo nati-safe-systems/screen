@@ -2408,6 +2408,12 @@ if(Q.get("slidetest")==="1"){
     setTimeout(function(){ try{ NatiRotate.show(); }catch(e){} },1500);
   });
 }
+/* ספרדי = ערבית, אשכנזי = מעריב — לפי הגדרת בית הכנסת (sites.nusach),
+   בלי קשר למה שנבחר במניין עצמו */
+function prName(k){
+  if(k==="arvit"||k==="maariv") return (SITE && SITE.nusach==="ashkenaz") ? "מעריב" : "ערבית";
+  return PR[k]||k;
+}
 var PR={selichot:"סליחות",shacharit:"שחרית",mussaf:"מוסף",mincha:"מנחה",arvit:"ערבית",maariv:"מעריב",unassigned:"טרם הוגדר",other:"תפילה"};
 
 function load(){
@@ -2514,7 +2520,7 @@ function render(now,nowMin){
            '<div class="big">כל '+(nx.step||15)+' דקות</div>'+
            '<div class="sub">מ-'+startT+' עד '+endT+'</div>';
     }
-    b.innerHTML='<div class="cdwrap"><div class="pray">'+(PR[nx.prayer]||nx.prayer)+'</div>'+
+    b.innerHTML='<div class="cdwrap"><div class="pray">'+prName(nx.prayer)+'</div>'+
       '<div class="deadline">'+head+
       (left>0?'<div class="roll">מניינים כל '+(nx.step||15)+' דקות · האחרון עד '+endT+'</div>':'')+
       '</div></div>';
@@ -2529,7 +2535,7 @@ function render(now,nowMin){
     var left=nx.minutes-nowMin;
     var cls = left<=3 ? "cd-now" : (left<=12 ? "cd-soon" : "cd-far");
     b.innerHTML='<div class="cdwrap">'+
-      '<div class="pray">'+(PR[nx.prayer]||nx.prayer)+(nx.label?" · "+esc(nx.label):"")+'</div>'+
+      '<div class="pray">'+prName(nx.prayer)+(nx.label?" · "+esc(nx.label):"")+'</div>'+
       '<div class="lbl">המניין הבא בעוד</div>'+
       '<div class="big '+cls+'">'+blink(cs.t)+'</div><div class="unit">'+cs.u+'</div>'+
       '<div class="at">בשעה '+nx.time+'</div></div>';
@@ -2538,7 +2544,7 @@ function render(now,nowMin){
 
   /* מצב רשימה — השעה הקרובה מוגדלת וזוהרת, מה שעבר מתעמעם */
   var cs2=cdSec(nx.minutes,now);
-  b.innerHTML='<div class="pname">'+(PR[nx.prayer]||nx.prayer)+'</div>'+
+  b.innerHTML='<div class="pname">'+prName(nx.prayer)+'</div>'+
     '<div class="list">'+grp.map(function(x){
       var cls = x.minutes<nowMin ? "past" : (x.minutes===nx.minutes ? "now" : "");
       return '<div class="li '+cls+'">'+x.time+'</div>';
@@ -2653,7 +2659,7 @@ NatiGuard.check(function(){ load(); tick(); });
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot);
   else boot();
 })();
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך כניסה · גרסה 3.1 · 02.10.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך כניסה · גרסה 3.2 · 02.10.26</div>
 <!-- "תפילת ___ מתחילה כאן עכשיו" — לחיצת גבאי בשלט / באפליקציה -->
 <script src="room-call.js"></script>
 </body></html>

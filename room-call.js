@@ -3,14 +3,14 @@
    ---------------------------------------------------------------------
    נטען במסך דלת של חדר (door.html). המסך בודק כל 3 שניות אם הגבאי
    לחץ על החדר שלו — בשלט או באפליקציה — ואם כן, מקפיץ הודעה ירוקה
-   בוהקת על כל המסך ל-45 שניות.
+   בוהקת על כל המסך ל-5 דקות מרגע הלחיצה.
 
    מסך שלא משויך לחדר (באדמין: אתר + חדר) — הסקריפט פשוט לא פועל.
    ===================================================================== */
 (function(){
   var SUPA="https://cxtrrejclkhqhkqbicmz.supabase.co";
   var KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dHJyZWpjbGtocWhrcWJpY216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTk3MDksImV4cCI6MjA5NTU3NTcwOX0._7wB4YwrYEnK6hWuR6YqcFxRb05OLnWvOelIC-ahIEQ";
-  var SHOW_SEC=45;
+  var SHOW_SEC=300;   // 5 דקות מרגע הלחיצה
 
   var qp; try{ qp=new URLSearchParams(location.search); }catch(e){ return; }
   var sid=qp.get("id"); if(!sid) return;
@@ -97,7 +97,10 @@ function nsfPrayerNow(d, lat, lon){
       if(!d || !d.id || d.id===lastId) return;
       lastId=d.id; try{ localStorage.setItem("nsf_rc_last_"+sid,String(d.id)); }catch(e){}
       var left=SHOW_SEC-(d.age||0);
-      if(left>3) show(d.prayer || nsfPrayerNow(new Date()), left);
+      /* ספרדי = ערבית, אשכנזי = מעריב — לפי הגדרת בית הכנסת */
+      var pr=d.prayer || nsfPrayerNow(new Date(), d.lat!=null?+d.lat:null, d.lng!=null?+d.lng:null);
+      if(pr==="ערבית" && d.nusach==="ashkenaz") pr="מעריב";
+      if(left>3) show(pr, left);
     }).catch(function(){});
   }
 

@@ -2181,15 +2181,20 @@ function loadRoomKeys(){
       var rooms=(x.rooms||[]).map(function(r){
         return '<div style="display:flex;gap:8px;align-items:center;padding:3px 0">'+
           '<b style="color:#ffcc00;min-width:22px">'+r.no+'</b><span style="color:#e6edf3">'+esc2(r.name)+'</span></div>';
-      }).join('') || '<div>לא הוגדרו חדרים</div>';
+      }).join('') || '<div>אין עדיין חדר עם מסך "מעל דלת חדר"</div>';
       return '<div style="border:1px solid #30363d;border-radius:10px;padding:12px;margin-bottom:10px;background:#0d1117">'+
         '<div style="font-weight:800;color:#e6edf3;font-size:15px;margin-bottom:8px">'+esc2(x.site||'')+'</div>'+
+        '<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">נוסח:'+
+          '<select onchange="rkNusach(\''+x.key+'\',this.value)" style="width:auto">'+
+            '<option value="sefard"'+(x.nusach!=='ashkenaz'?' selected':'')+'>ספרדי — "ערבית"</option>'+
+            '<option value="ashkenaz"'+(x.nusach==='ashkenaz'?' selected':'')+'>אשכנזי — "מעריב"</option>'+
+          '</select></div>'+
         '<div style="margin-bottom:8px">אפליקציית הגבאי:</div>'+
         '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'+
           '<input readonly value="'+esc2(app)+'" dir="ltr" style="flex:1;min-width:200px;font-size:12px">'+
           '<button class="btn-sm blue" onclick="rkCopy(this.previousElementSibling.value)">העתק</button>'+
           '<button class="btn-sm" onclick="window.open(\''+app+'\',\'_blank\')">פתח</button></div>'+
-        '<div style="margin-bottom:4px">חדרים (המספר = הכפתור בשלט):</div>'+rooms+
+        '<div style="margin-bottom:4px">חדרי תפילה (המספר = הכפתור בשלט). מופיע רק חדר שיש לו מסך "מעל דלת חדר":</div>'+rooms+
         '<div style="margin:10px 0 4px">כתובת ל-Shelly (במקום N — מספר החדר):</div>'+
         '<div style="display:flex;gap:6px;flex-wrap:wrap">'+
           '<input readonly value="'+esc2(RK_SHELLY+x.key+'&room=N')+'" dir="ltr" style="flex:1;min-width:200px;font-size:12px">'+
@@ -2199,6 +2204,11 @@ function loadRoomKeys(){
       '</div>';
     }).join('');
   }).catch(function(){ box.textContent='שגיאה בטעינה — הרצת את room_calls.sql?'; });
+}
+function rkNusach(key,v){
+  rpc('nsf_site_nusach_save',{p_token:NSF_TOKEN,p_key:key,p_nusach:v}).then(function(r){
+    toast(r&&r.ok?(v==='ashkenaz'?'נשמר — "מעריב" בכל המסכים של בית הכנסת':'נשמר — "ערבית" בכל המסכים של בית הכנסת'):'השמירה נכשלה — הרצת את room_calls_v2.sql?');
+  }).catch(function(){ toast('השמירה נכשלה'); });
 }
 function rkCopy(v){
   try{ navigator.clipboard.writeText(v); toast('הועתק'); }catch(e){ prompt('העתק:',v); }
@@ -3537,7 +3547,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 3.3</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 3.4</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){

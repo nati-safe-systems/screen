@@ -531,6 +531,28 @@ body.has-ticker .adqr.solo{
   bottom:calc(60px + 1.2vh) !important;
 }
 
+/* ---- כרטיס הזמנת פרסום: ברקוד מימין, מייל משמאל ----
+   המייל היה שורה קטנה ואפורה מתחת לברקוד — לא קריא מהמרחק.
+   עכשיו הוא חצי מהכרטיס: גדול, בזהב, עם הסבר למה לשלוח. */
+.adqr-row{display:flex;align-items:center;gap:.7vw;direction:rtl}
+.adqr-qc{flex:0 0 44%;text-align:center}
+.adqr-row .adqr-img{width:100% !important;max-width:170px !important;margin:0 auto}
+.adqr-mb{flex:1 1 auto;min-width:0;text-align:center;
+  border-right:.15vh solid rgba(255,204,0,.35);padding-right:.6vw}
+.adqr-or{color:#ffcc00;font-weight:900;font-size:1.9vh;line-height:1.2}
+.adqr-why{color:#e6edf3;font-weight:700;font-size:1.35vh;line-height:1.4;margin-top:.5vh}
+.adqr-mb .adqr-m{color:#ffe27a !important;font-weight:900;font-size:1.75vh !important;
+  margin-top:.8vh !important;direction:ltr;line-height:1.25;word-break:break-word;
+  text-shadow:0 0 1vh rgba(255,204,0,.35)}
+.adqr-mb .adqr-m span{display:block}
+.adqr.nomail .adqr-mb{display:none}
+.adqr.nomail .adqr-qc{flex:0 0 60%;margin:0 auto}
+.adqr-t{font-size:1.9vh !important;margin-bottom:.9vh !important}
+.adqr-s{font-size:1.3vh !important}
+/* בלי רצועת פרסום — הכרטיס בפינה, רחב מספיק לשני הטורים */
+.adqr.solo{width:24vw !important;max-width:430px !important}
+.adqr.solo .adqr-row .adqr-img{max-width:150px !important}
+
 /* =====================================================================
    שלושה מצבי פרסום
    ---------------------------------------------------------------------
@@ -864,9 +886,18 @@ body.ads-bottom .ad-slide video.ad-vid{width:auto;height:17vh;max-width:60%;obje
        נשאר קבוע ואינו משתתף בסבב המודעות. -->
   <div class="adqr" id="adqr" style="display:none">
     <div class="adqr-t">רוצים לפרסם כאן?</div>
-    <div class="adqr-img" id="adqr-img"></div>
-    <div class="adqr-s">סרקו את הקוד</div>
-    <div class="adqr-m" id="adqr-mail"></div>
+    <!-- ימין: הברקוד · שמאל: מייל לקבלת פרטים (מוסתר כשאין כתובת) -->
+    <div class="adqr-row">
+      <div class="adqr-qc">
+        <div class="adqr-img" id="adqr-img"></div>
+        <div class="adqr-s">סרקו את הקוד</div>
+      </div>
+      <div class="adqr-mb" id="adqr-mb">
+        <div class="adqr-or">או שלחו מייל</div>
+        <div class="adqr-why">לקבלת פרטים וקישור<br>להזמנת פרסום</div>
+        <div class="adqr-m" id="adqr-mail"></div>
+      </div>
+    </div>
   </div>
   <div class="adbar-foot"></div>
 </div>
@@ -2779,7 +2810,7 @@ function pullAdContact(){
     var e=String(d.email||"").trim();
     if(e===ADS_CONTACT) return;
     ADS_CONTACT=e;
-    try{ var m=document.getElementById("adqr-mail"); if(m) m.textContent=ADS_CONTACT||ADS_MAIL||""; }catch(x){}
+    try{ adqrSetMail(ADS_CONTACT||ADS_MAIL||""); }catch(x){}
     /* בונים מחדש את הרצועות, כדי שהכרטיס יציג את הכתובת החדשה */
     try{ if(CFG_LAST){ _adsSig={}; applyDisplayConfig(CFG_LAST); } }catch(x){}
   }).catch(function(){});
@@ -2808,6 +2839,17 @@ function drawQR(){
   _qrDone=true;
 }
 
+/* המייל בכרטיס: שם המשתמש בשורה אחת ו-@הדומיין בשורה שנייה —
+   כתובת ארוכה לא נחתכת ונשארת גדולה */
+function adqrSetMail(addr){
+  var el=document.getElementById("adqr"), m=document.getElementById("adqr-mail");
+  addr=String(addr||"").trim();
+  if(el) el.classList.toggle("nomail", !addr);
+  if(!m) return;
+  var i=addr.indexOf("@");
+  var e=function(t){ return t.replace(/[<>&"]/g,""); };
+  m.innerHTML = i>0 ? '<span>'+e(addr.slice(0,i))+'</span><span>'+e(addr.slice(i))+'</span>' : e(addr);
+}
 function showAdQR(on, mail){
   var el=document.getElementById("adqr");
   if(!el) return;
@@ -2825,8 +2867,7 @@ function showAdQR(on, mail){
     }
   }catch(e){}
   if(!on) return;
-  var m=document.getElementById("adqr-mail");
-  if(m) m.textContent = ADS_CONTACT || mail || ADS_MAIL || "";
+  adqrSetMail(ADS_CONTACT || mail || ADS_MAIL || "");
   drawQR();
 }
 
@@ -4784,6 +4825,6 @@ function adPromoNext(sl){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 11.4</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 11.5</div>
 </body>
 </html>
