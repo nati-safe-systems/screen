@@ -2866,10 +2866,8 @@ function startAds(list, bodyId, tkey){
   /* הכרטיס מוצג תמיד כשאין מודעות, ובנוסף משולב בין מודעות
      אמיתיות כשהאפשרות מסומנת באדמין. */
   var promoOn = !!(CFG_LAST && CFG_LAST.ads_promo);
-  if(!list||!list.length){
-    body.innerHTML='<div class="ad-slide active">'+adPromoHTML()+'</div>';
-    return;
-  }
+  /* אין מודעות: מציגים את כרטיסי שטח הפרסום — כל הנוסחים בסבב */
+  if(!list||!list.length){ list=[]; promoOn=true; }
   var html="";
   for(var i=0;i<list.length;i++){
     var a=list[i]||{};
@@ -2899,8 +2897,16 @@ function startAds(list, bodyId, tkey){
      הרשימה. קודם הוא נכנס ראשון: המשכים הוזזו במקום אחד, ועם
      מודעה אחת בלבד הסבב לא רץ כלל והכרטיס לא הופיע. */
   if(promoOn){
-    html+='<div class="ad-slide" data-anim="fade" data-promo="1">'+
-          adPromoHTML()+'</div>';
+    if(list.length){
+      html+='<div class="ad-slide" data-anim="fade" data-promo="1" data-dur="12">'+
+            adPromoHTML()+'</div>';
+    }else{
+      /* אין מודעות — כל הנוסחים בסבב, כל אחד בשקופית משלו */
+      for(var pv=0;pv<AD_PROMO_VARIANTS.length;pv++){
+        html+='<div class="ad-slide'+(pv===0?' active':'')+'" data-anim="fade" data-promo="1" data-pv="'+pv+'" data-dur="12">'+
+              adPromoHTML(pv)+'</div>';
+      }
+    }
   }
   try{ Array.prototype.forEach.call(body.querySelectorAll(".ad-slide"),function(x){ if(x.__pgT){ clearInterval(x.__pgT); x.__pgT=null; } }); }catch(e){}
   body.innerHTML=html;
@@ -2921,7 +2927,7 @@ function startAds(list, bodyId, tkey){
     var next=function(){
       slides[idx].classList.remove("active");
       idx=(idx+1)%slides.length;
-      try{ adPickFx(slides[idx]); }catch(e){}
+      try{ adPromoNext(slides[idx]); adPickFx(slides[idx]); }catch(e){}
       slides[idx].classList.add("active");
       try{ adSyncVideos(body); adPdfPages(body); }catch(e){}
       _adTimers[tkey]=setTimeout(next, durOf(idx));
@@ -4679,14 +4685,30 @@ function adSyncVideos(root){
 /* ---- כרטיס שטח פרסום פנוי ----
    נבנה כאן במקום להיות מוטמע ב-HTML, כדי שיוכל להופיע גם בין
    מודעות אמיתיות וגם לבד כשאין אף אחת. */
-function adPromoHTML(){
+/* כרטיסי "שטח פרסום פנוי" — שלושה נוסחים שמתחלפים בכל הופעה:
+   0 — בעלי עסקים (הנוסח המקורי)
+   1 — עסקים מהבית ונותנות שירות
+   2 — בעלי מקצוע ונותני שירותים
+   יש מקום אחד בסבב, והנוסח בו מתחלף בכל פעם שהוא עולה — כך המודעות
+   בתשלום לא מאבדות זמן מסך. כשאין מודעות כלל, שלושתם רצים בסבב. */
+var AD_PROMO_VARIANTS=[
+  {k:"שטח פרסום", h:"שטח הפרסום הזה<br>יכול להיות שלך",
+   s:"המודעה שלכם מול הדיירים והמבקרים בבניין.<br>סרקו את הקוד והזמינו בכמה דקות."},
+  {k:"עסק מהבית?", h:"כאן השכנות<br>יגלו אותך",
+   s:"פאנית · קונדיטורית · מאפרת · מעצבת אירועים<br>ריתמיקאית · אורגניסטית · תופרת · מורה פרטית"},
+  {k:"נותני שירות", h:"השכנים מחפשים<br>בדיוק אותך",
+   s:"צלם אירועים · אורגניסט · מורה פרטי · הובלות<br>שיפוצים · אינסטלציה · מזגנים · חשמלאי"}
+];
+var _adPromoVar=0;
+function adPromoHTML(v){
+  if(v==null) v=_adPromoVar;
+  var P=AD_PROMO_VARIANTS[v%AD_PROMO_VARIANTS.length];
   var qr = (typeof ADS_QR_PNG!=="undefined" && ADS_QR_PNG)
     ? '<div class="ap-qr"><img src="'+ADS_QR_PNG+'" alt="קוד סריקה"></div>' : '';
   return '<div class="ad-promo">'+
-    '<div class="ap-k">שטח פרסום</div>'+
-    '<div class="ap-h">שטח הפרסום הזה<br>יכול להיות שלך</div>'+
-    '<div class="ap-s">המודעה שלכם מול הדיירים והמבקרים בבניין.<br>'+
-    'סרקו את הקוד והזמינו בכמה דקות.</div>'+
+    '<div class="ap-k">'+P.k+'</div>'+
+    '<div class="ap-h">'+P.h+'</div>'+
+    '<div class="ap-s">'+P.s+'</div>'+
     qr+
     '<div class="ap-c">'+
       '<div class="ap-n">נתי Safe מערכות</div>'+
@@ -4696,10 +4718,16 @@ function adPromoHTML(){
     '</div>'+
   '</div>';
 }
+/* מחליף את הנוסח בכרטיס שעומד לעלות (רק כשיש בסבב מקום אחד) */
+function adPromoNext(sl){
+  if(!sl || sl.getAttribute("data-promo")!=="1" || sl.hasAttribute("data-pv")) return;
+  _adPromoVar=(_adPromoVar+1)%AD_PROMO_VARIANTS.length;
+  sl.innerHTML=adPromoHTML(_adPromoVar);
+}
 </script>
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 11.0</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 11.1</div>
 </body>
 </html>
