@@ -47,7 +47,7 @@ function nsfPrayerNow(d, lat, lon){
 
   var css=document.createElement("style");
   css.textContent=
-  "#nsf-rc{position:fixed;inset:0;z-index:2147483000;display:none;align-items:center;justify-content:center;"+
+  "#nsf-rc{position:fixed;inset:0;z-index:2147482500;display:none;align-items:center;justify-content:center;"+
   " background:radial-gradient(ellipse at center,rgba(0,60,25,.55),rgba(0,0,0,.82));direction:rtl;"+
   " font-family:Heebo,'Segoe UI',Arial,sans-serif;opacity:0;transition:opacity .5s}"+
   "#nsf-rc.on{display:flex;opacity:1}"+
