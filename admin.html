@@ -928,6 +928,14 @@ tr:hover td{background:rgba(128,0,0,0.05);}
             מפרסם פוטנציאלי שעובר בלובי רואה שהמקום נמכר ואיך לקנות אותו.
             כשאין מודעות כלל הכרטיס מוצג בכל מקרה.
           </div>
+          <label style="display:flex;align-items:center;gap:9px;cursor:pointer;margin-top:10px">
+            <input type="checkbox" id="edit-sc-adspromo-en"
+                   style="width:17px;height:17px;flex:0 0 auto">
+            <span>הוסף כרטיסים באנגלית</span>
+          </label>
+          <div style="font-size:11px;color:#8b949e;margin-top:5px;line-height:1.55">
+            לבניינים של דוברי אנגלית — הכרטיסים באנגלית נכנסים לסבב לצד העבריים.
+          </div>
         </div>
 
         <div style="margin-top:12px">
@@ -2816,6 +2824,8 @@ function openEditScreen(sid){
     if(fe) fe.value = dc.ads_full_every || 5;
     var ap=document.getElementById('edit-sc-adspromo');
     if(ap) ap.checked = (dc.ads_promo === true);
+    var apEn=document.getElementById('edit-sc-adspromo-en');
+    if(apEn) apEn.checked = (dc.ads_promo_en === true);
   }catch(e){}
   var _ah=document.getElementById('adpct-hint');
   if(_ah) _ah.textContent = (s.ad_owner_pct==null) ? 'כרגע לפי ברירת המחדל' : '';
@@ -2990,6 +3000,8 @@ function saveScreen(){
     if(fe) cur.ads_full_every = parseInt(fe.value,10)||5;
     var ap=document.getElementById('edit-sc-adspromo');
     if(ap) cur.ads_promo = !!ap.checked;
+    var apEn=document.getElementById('edit-sc-adspromo-en');
+    if(apEn) cur.ads_promo_en = !!apEn.checked;
     body.display_config = cur;
   }catch(e){}
   if(!orig){
@@ -3389,7 +3401,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 3.0</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 3.1</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){

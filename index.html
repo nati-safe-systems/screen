@@ -690,6 +690,8 @@ body.ads-bottom .ad-pdf{height:17vh}
 .ad-promo .ap-c .ap-n{color:#e8d48a;font-weight:800;}
 .ad-promo .ap-c .ap-m{margin-top:.3vh;color:#cfd8e3;}
 .ad-promo .ap-c bdi{unicode-bidi:isolate;direction:ltr;}
+.ad-promo[dir="ltr"]{font-family:Heebo,Arial,sans-serif;letter-spacing:.01em;}
+.ad-promo .ap-c[dir="ltr"]{direction:ltr;}
 body.ads-bottom .ad-promo{flex-direction:row;gap:2vw;justify-content:center}
 body.ads-bottom .ad-promo .ap-qr{width:auto;height:13vh;max-width:none}
 body.ads-bottom .ad-promo .ap-qr img{height:100%;width:auto}
@@ -1889,6 +1891,7 @@ function parseDisplayConfig(raw){
        ולכן ads_promo / ads_mode נשמרו באדמין אבל לא הגיעו למסך מעולם —
        זו הסיבה שכרטיס "שטח פרסום פנוי" ומצבי תחתון / מסך מלא לא עבדו. */
     ads_promo: c.ads_promo===true,
+    ads_promo_en: c.ads_promo_en===true,
     ads_mode: (c.ads_mode==="bottom"||c.ads_mode==="full") ? c.ads_mode : "side",
     ads_full_sec: (+c.ads_full_sec>=5) ? +c.ads_full_sec : 25,
     ads_full_every: (+c.ads_full_every>=1) ? +c.ads_full_every : 5,
@@ -2858,7 +2861,8 @@ function startAds(list, bodyId, tkey){
   var sig="";
   try{ sig=JSON.stringify(list||[]); }catch(e){ sig=String((list||[]).length); }
   /* גם הדלקה/כיבוי של כרטיס "שטח פרסום פנוי" משנה את הסבב */
-  sig += "|promo:" + ((CFG_LAST && CFG_LAST.ads_promo) ? 1 : 0) + "|mail:" + ADS_CONTACT;
+  sig += "|promo:" + ((CFG_LAST && CFG_LAST.ads_promo) ? 1 : 0) +
+         "|en:" + ((CFG_LAST && CFG_LAST.ads_promo_en) ? 1 : 0) + "|mail:" + ADS_CONTACT;
   if(_adsSig[tkey]===sig && body.querySelector(".ad-slide")) return;
   _adsSig[tkey]=sig;
   stopAds(tkey);
@@ -2902,7 +2906,7 @@ function startAds(list, bodyId, tkey){
             adPromoHTML()+'</div>';
     }else{
       /* אין מודעות — כל הנוסחים בסבב, כל אחד בשקופית משלו */
-      for(var pv=0;pv<AD_PROMO_VARIANTS.length;pv++){
+      for(var pv=0;pv<adPromoList().length;pv++){
         html+='<div class="ad-slide'+(pv===0?' active':'')+'" data-anim="fade" data-promo="1" data-pv="'+pv+'" data-dur="12">'+
               adPromoHTML(pv)+'</div>';
       }
@@ -4699,21 +4703,42 @@ var AD_PROMO_VARIANTS=[
   {k:"נותני שירות", h:"השכנים מחפשים<br>בדיוק אותך",
    s:"צלם אירועים · אורגניסט · מורה פרטי · הובלות<br>שיפוצים · אינסטלציה · מזגנים · חשמלאי"}
 ];
+/* נוסחים באנגלית — נכנסים לסבב רק במסך שסומן לו "הוסף כרטיסים באנגלית" */
+var AD_PROMO_EN=[
+  {en:1, k:"Advertise here", h:"This space<br>can be yours",
+   s:"Reach the residents and visitors of this building.<br>Scan the code and book in minutes."},
+  {en:1, k:"Home business?", h:"Your neighbors<br>are looking for you",
+   s:"Sheitel macher · Baker · Makeup artist · Event designer<br>Tutor · Music teacher · Seamstress · Birth support"},
+  {en:1, k:"Services", h:"Let the building<br>know you're here",
+   s:"Photographer · Movers · Handyman · Plumber<br>Electrician · A/C technician · Cleaning · Babysitting"}
+];
+/* הרשימה הפעילה למסך הזה: עברית, ואם סומן — עברית ואנגלית לסירוגין */
+function adPromoList(){
+  if(!(CFG_LAST && CFG_LAST.ads_promo_en)) return AD_PROMO_VARIANTS;
+  var out=[];
+  for(var i=0;i<Math.max(AD_PROMO_VARIANTS.length,AD_PROMO_EN.length);i++){
+    if(AD_PROMO_VARIANTS[i]) out.push(AD_PROMO_VARIANTS[i]);
+    if(AD_PROMO_EN[i]) out.push(AD_PROMO_EN[i]);
+  }
+  return out;
+}
 var _adPromoVar=0;
 function adPromoHTML(v){
   if(v==null) v=_adPromoVar;
-  var P=AD_PROMO_VARIANTS[v%AD_PROMO_VARIANTS.length];
+  var L=adPromoList();
+  var P=L[v%L.length];
+  var en=!!P.en;
   var qr = (typeof ADS_QR_PNG!=="undefined" && ADS_QR_PNG)
     ? '<div class="ap-qr"><img src="'+ADS_QR_PNG+'" alt="קוד סריקה"></div>' : '';
-  return '<div class="ad-promo">'+
+  return '<div class="ad-promo"'+(en?' dir="ltr" lang="en"':'')+'>'+
     '<div class="ap-k">'+P.k+'</div>'+
     '<div class="ap-h">'+P.h+'</div>'+
     '<div class="ap-s">'+P.s+'</div>'+
     qr+
-    '<div class="ap-c">'+
-      '<div class="ap-n">נתי Safe מערכות</div>'+
+    '<div class="ap-c"'+(en?' dir="ltr"':'')+'>'+
+      '<div class="ap-n">'+(en?'Nati Safe Systems':'נתי Safe מערכות')+'</div>'+
       '<div><bdi>052-7171280</bdi></div>'+
-      (ADS_CONTACT ? '<div class="ap-m">לפרטים שלחו מייל: <bdi>'+
+      (ADS_CONTACT ? '<div class="ap-m">'+(en?'For details email: ':'לפרטים שלחו מייל: ')+'<bdi>'+
         String(ADS_CONTACT).replace(/[<>&"]/g,"")+'</bdi></div>' : '')+
     '</div>'+
   '</div>';
@@ -4721,13 +4746,13 @@ function adPromoHTML(v){
 /* מחליף את הנוסח בכרטיס שעומד לעלות (רק כשיש בסבב מקום אחד) */
 function adPromoNext(sl){
   if(!sl || sl.getAttribute("data-promo")!=="1" || sl.hasAttribute("data-pv")) return;
-  _adPromoVar=(_adPromoVar+1)%AD_PROMO_VARIANTS.length;
+  _adPromoVar=(_adPromoVar+1)%adPromoList().length;
   sl.innerHTML=adPromoHTML(_adPromoVar);
 }
 </script>
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 11.1</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 11.2</div>
 </body>
 </html>
