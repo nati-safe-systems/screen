@@ -542,9 +542,8 @@ body.has-ticker .adqr.solo{
 .adqr-or{color:#ffcc00;font-weight:900;font-size:1.9vh;line-height:1.2}
 .adqr-why{color:#e6edf3;font-weight:700;font-size:1.35vh;line-height:1.4;margin-top:.5vh}
 .adqr-mb .adqr-m{color:#ffe27a !important;font-weight:900;font-size:1.75vh !important;
-  margin-top:.8vh !important;direction:ltr;line-height:1.25;word-break:break-word;
-  text-shadow:0 0 1vh rgba(255,204,0,.35)}
-.adqr-mb .adqr-m span{display:block}
+  margin-top:.8vh !important;direction:ltr;line-height:1.25;white-space:nowrap;
+  overflow:hidden;text-shadow:0 0 1vh rgba(255,204,0,.35)}
 .adqr.nomail .adqr-mb{display:none}
 .adqr.nomail .adqr-qc{flex:0 0 60%;margin:0 auto}
 .adqr-t{font-size:1.9vh !important;margin-bottom:.9vh !important}
@@ -2839,17 +2838,29 @@ function drawQR(){
   _qrDone=true;
 }
 
-/* המייל בכרטיס: שם המשתמש בשורה אחת ו-@הדומיין בשורה שנייה —
-   כתובת ארוכה לא נחתכת ונשארת גדולה */
+/* המייל בכרטיס — בשורה אחת. אם הכתובת ארוכה מהמקום, הגופן מוקטן
+   בדיוק עד שהיא נכנסת (לא פחות מ-60% מהגודל הרגיל). */
 function adqrSetMail(addr){
   var el=document.getElementById("adqr"), m=document.getElementById("adqr-mail");
   addr=String(addr||"").trim();
   if(el) el.classList.toggle("nomail", !addr);
   if(!m) return;
-  var i=addr.indexOf("@");
-  var e=function(t){ return t.replace(/[<>&"]/g,""); };
-  m.innerHTML = i>0 ? '<span>'+e(addr.slice(0,i))+'</span><span>'+e(addr.slice(i))+'</span>' : e(addr);
+  m.textContent=addr;
+  adqrFitMail();
 }
+function adqrFitMail(){
+  var m=document.getElementById("adqr-mail");
+  if(!m || !m.textContent) return;
+  requestAnimationFrame(function(){
+    /* הגודל ב-CSS מוגדר עם !important, ולכן גם ההקטנה חייבת אותו */
+    m.style.removeProperty("font-size");
+    var base=parseFloat(getComputedStyle(m).fontSize)||16, fs=base;
+    var box=m.parentNode, w=(box && box.clientWidth) || 0;
+    if(!w) return;
+    while(m.scrollWidth > w && fs > base*0.6){ fs-=0.5; m.style.setProperty("font-size", fs+"px", "important"); }
+  });
+}
+window.addEventListener("resize",function(){ try{ adqrFitMail(); }catch(e){} });
 function showAdQR(on, mail){
   var el=document.getElementById("adqr");
   if(!el) return;
@@ -2869,6 +2880,7 @@ function showAdQR(on, mail){
   if(!on) return;
   adqrSetMail(ADS_CONTACT || mail || ADS_MAIL || "");
   drawQR();
+  setTimeout(adqrFitMail, 400);
 }
 
 var PAID_ADS=[], CFG_LAST=null, SCREEN_ADS_ON=false;
@@ -4825,6 +4837,6 @@ function adPromoNext(sl){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 11.5</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 11.6</div>
 </body>
 </html>
