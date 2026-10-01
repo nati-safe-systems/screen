@@ -707,6 +707,20 @@ body.ads-bottom .ad-promo .ap-qr img{height:100%;width:auto}
 /* גיבוי לדפדפן ללא has — ריווח קבוע כשהתחזית פעילה */
 body.wx-header .ttl,
 body.wx-header .board-hdr{padding-right:19vw}
+/* מסך בניין (לרוחב): התחזית יושבת בתוך רצועת הכותרת, והכותרת
+   עצמה שכבה מעליה עם backdrop-filter — מה שטשטש את החלק של
+   התחזית שמתחתיה. z-index לא עוזר, כי הרצועה היא הקשר שכבות
+   נפרד. לכן מבטלים את הטשטוש ומגבילים את רוחב הכותרת למרכז,
+   כך שאינה עולה על התחזית בכלל. */
+body.wx-header:not(.portrait) #building-title{
+  backdrop-filter:none;-webkit-backdrop-filter:none;
+  padding-left:2vw;padding-right:2vw;
+  max-width:62%;box-sizing:border-box;overflow:hidden;
+}
+body.wx-header:not(.portrait) #building-title-name{
+  display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+}
+body.wx-header:not(.portrait) #building-title-bg > .wx{max-width:17%;}
 @media (max-width:1200px){
   body.wx-header .ttl,
   body.wx-header .board-hdr{padding-right:23vw}
@@ -2751,6 +2765,8 @@ function startAds(list, bodyId, tkey){
   // אם הרשימה זהה לזו שכבר רצה — לא נוגעים בסבב (אחרת ה-poll כל 15 שנ' מאפס אותו למודעה 1)
   var sig="";
   try{ sig=JSON.stringify(list||[]); }catch(e){ sig=String((list||[]).length); }
+  /* גם הדלקה/כיבוי של כרטיס "שטח פרסום פנוי" משנה את הסבב */
+  sig += "|promo:" + ((CFG_LAST && CFG_LAST.ads_promo) ? 1 : 0);
   if(_adsSig[tkey]===sig && body.querySelector(".ad-slide")) return;
   _adsSig[tkey]=sig;
   stopAds(tkey);
@@ -2763,10 +2779,6 @@ function startAds(list, bodyId, tkey){
     return;
   }
   var html="";
-  if(promoOn){
-    html+='<div class="ad-slide" data-anim="fade" data-promo="1">'+
-          adPromoHTML()+'</div>';
-  }
   for(var i=0;i<list.length;i++){
     var a=list[i]||{};
     var src=drvImg(a.img);
@@ -2789,10 +2801,17 @@ function startAds(list, bodyId, tkey){
     var anim=(a.anim||"fade");
     html+='<div class="ad-slide'+(i===0?' active':'')+'" data-anim="'+anim+'">'+img+txt+'</div>';
   }
+  /* הכרטיס נכנס אחרי המודעות, כך שמספור השקופיות זהה למספור
+     הרשימה. קודם הוא נכנס ראשון: המשכים הוזזו במקום אחד, ועם
+     מודעה אחת בלבד הסבב לא רץ כלל והכרטיס לא הופיע. */
+  if(promoOn){
+    html+='<div class="ad-slide" data-anim="fade" data-promo="1">'+
+          adPromoHTML()+'</div>';
+  }
   body.innerHTML=html;
   try{ renderAdPdfs(body); }catch(e){}
-  if(list.length>1){
-    var slides=body.querySelectorAll(".ad-slide"),idx=0;
+  var slides=body.querySelectorAll(".ad-slide"),idx=0;
+  if(slides.length>1){
     var durOf=function(n){
       /* כרטיס הפרסום אינו ברשימה, ולכן מקבל משך קבוע */
       var sl=slides[n];
@@ -4481,6 +4500,6 @@ function adPromoHTML(){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 10.3</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 10.4</div>
 </body>
 </html>

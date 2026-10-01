@@ -2758,6 +2758,9 @@ function openEditScreen(sid){
   var s=allScreens.find(function(x){return x.screen_id===sid;});if(!s)return;
   document.getElementById('edit-sc-orig').value=s.screen_id;
   document.getElementById('edit-sc-id').value=s.screen_id;
+  /* המודעות בתשלום שרצות על המסך נטענות מיד עם פתיחת החלון,
+     ולא רק בלחיצה על "רענן מה שרץ על המסך" */
+  setTimeout(function(){ try{ loadLiveAds(); }catch(e){} }, 50);
   document.getElementById('edit-sc-name').value=s.building_name||'';
   document.getElementById('edit-sc-expiry').value=s.license_expiry?s.license_expiry.substring(0,10):'';
   document.getElementById('edit-sc-token').value=s.screen_token||'';
@@ -2967,6 +2970,8 @@ function saveScreen(){
     body.screen_token=genToken();
     var offSel2=document.getElementById('edit-sc-offset');
     body.shabbat_offset=offSel2?parseInt(offSel2.value)||20:20;
+    if(body.display_config && typeof body.display_config==='object')
+      body.display_config = JSON.stringify(body.display_config);
     sf('screens',{method:'POST',body:JSON.stringify(body)}).then(function(){closeModal('modal-sc');toast('המסך נוסף!');loadAll();});
   }else{
     var tok=document.getElementById('edit-sc-token').value.trim();
@@ -2978,18 +2983,25 @@ function saveScreen(){
     if(mt==='pdf'){ body.pdf_url=document.getElementById('edit-sc-pdfurl').value.trim(); }
     else if(mt==='scrollpdf'){ body.pdf_url=document.getElementById('edit-sc-pdfurl').value.trim(); body.message=document.getElementById('edit-sc-msg').innerHTML.trim(); }
     else { body.message=document.getElementById('edit-sc-msg').innerHTML.trim(); body.pdf_url=''; }
-    /* מיזוג מול המצב העדכני בשרת — מונע דריסה של שינוי שהדייר עשה בינתיים */
+    /* מיזוג מול המצב העדכני בשרת — מונע דריסה של שינוי שהדייר עשה בינתיים.
+       הטופס המלא כולל גם את הגדרות הפרסום (ads_promo, ads_mode וכו').
+       קודם המיזוג השתמש ב-readDisplayConfig() בלבד, שאינו מכיר אותן,
+       ולכן הן נמחקו בכל שמירה. */
+    var formAll = (body.display_config && typeof body.display_config==='object')
+                  ? body.display_config : readDisplayConfig();
     sf('screens?screen_id=eq.'+encodeURIComponent(orig)+'&select=display_config')
       .then(function(rows){
         var live = (rows&&rows[0]) ? (parseDC(rows[0].display_config)||{}) : {};
         var merged = {};
         for(var k1 in live){ if(Object.prototype.hasOwnProperty.call(live,k1)) merged[k1]=live[k1]; }
-        var form = readDisplayConfig();
+        var form = formAll;
         for(var k2 in form){ if(Object.prototype.hasOwnProperty.call(form,k2)) merged[k2]=form[k2]; }
         body.display_config = JSON.stringify(merged);
       })
       .catch(function(){})
       .then(function(){
+        if(body.display_config && typeof body.display_config==='object')
+          body.display_config = JSON.stringify(body.display_config);
         return sf('screens?screen_id=eq.'+encodeURIComponent(orig),{method:'PATCH',body:JSON.stringify(body)});
       })
       .then(function(){closeModal('modal-sc');toast('המסך עודכן!');loadAll();});
@@ -3349,7 +3361,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 2.6</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 2.7</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){
