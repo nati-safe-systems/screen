@@ -2659,19 +2659,37 @@ function startNews(src){
         }
         i++;
       }
-      window._newsInflight = false;
-      if(merged.length){ window._newsGood = true; renderNews(merged); }
-      else{
+      if(merged.length){ window._newsInflight = false; window._newsGood = true; renderNews(merged); return; }
+      /* מסלול גיבוי: GAS לא החזיר כלום — מבקשים את אותם מקורות דרך
+         השרת של סופהבייס (nsf-news), שמושך את ה-RSS בעצמו. */
+      newsBackup(urls).then(function(lists2){
+        window._newsInflight = false;
+        var m2=[],j=0,more=true;
+        while(more){ more=false;
+          for(var q=0;q<lists2.length;q++){ if(lists2[q]&&lists2[q][j]){ m2.push(lists2[q][j]); more=true; } }
+          j++; }
+        if(m2.length){ window._newsGood = true; renderNews(m2); return; }
         /* כשל זמני לא מוחק מבזקים שכבר מוצגים — נשארים עליהם ומנסים
            שוב בעוד דקה. הודעת אבחון מוצגת רק אם עוד לא הצליח אף פעם. */
-        if(!window._newsGood) renderNews([{title:"⚠ אבחון: "+(errs.join(" | ")||"לא התקבלו מבזקים")}]);
+        if(!window._newsGood) renderNews([{title:"⚠ אבחון: "+(errs.join(" | ")||"לא התקבלו מבזקים")+" | גם מסלול הגיבוי לא החזיר מבזקים"}]);
         setTimeout(function(){ try{ if(_newsSig===_sig) load(); }catch(e){} }, 60000);
-      }
+      });
     }).catch(function(){ window._newsInflight = false; });
   }
   load();
   if(_newsTimer)clearInterval(_newsTimer);
   _newsTimer=setInterval(load,5*60*1000); // רענון כל 5 דק'
+}
+
+/* מבזקים דרך פונקציית השרת nsf-news — מחזיר רשימה לכל מקור */
+function newsBackup(urls){
+  return fetch(SUPA+"/functions/v1/nsf-news",{
+    method:"POST",
+    headers:{apikey:SKEY,Authorization:"Bearer "+SKEY,"Content-Type":"application/json"},
+    body:JSON.stringify({urls:urls,max:10})
+  }).then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){ return (d && d.ok && Array.isArray(d.lists)) ? d.lists : []; })
+    .catch(function(){ return []; });
 }
 
 function renderNews(items){
@@ -4766,6 +4784,6 @@ function adPromoNext(sl){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 11.3</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 11.4</div>
 </body>
 </html>
