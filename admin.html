@@ -976,10 +976,10 @@ tr:hover td{background:rgba(128,0,0,0.05);}
               <div style="font-size:24px">&#128247;</div>
               <div style="font-weight:700;font-size:13.5px">לחצו להעלאת קובץ המודעה</div>
               <div style="color:#8b949e;font-size:11.5px;margin-top:3px">
-                JPG · PNG · WEBP · PDF &nbsp;·&nbsp; עד 20 מגה</div>
+                תמונה · GIF · PDF · סרטון MP4 / WEBM / MOV &nbsp;·&nbsp; סרטון עד 30 מגה</div>
             </div>
             <input type="file" id="adimg-file"
-                   accept="image/jpeg,image/png,image/webp,application/pdf"
+                   accept="image/jpeg,image/png,image/webp,image/gif,image/avif,image/bmp,application/pdf,video/mp4,video/webm,video/quicktime,.jpg,.jpeg,.png,.webp,.gif,.avif,.bmp,.pdf,.mp4,.m4v,.webm,.mov"
                    style="display:none" onchange="adImgPick(this)">
             <div id="adimg-have" style="display:none;align-items:center;gap:9px;
                  background:#0d1117;border:1px solid #30363d;border-radius:8px;
@@ -1759,7 +1759,7 @@ function loadQueue(){
       var scr=(c.screens||[]).join(' · ');
       var cre=(c.creatives||[]).map(function(x){
         return '<a href="'+escH(x.url)+'" target="_blank" rel="noopener" '+
-          'style="color:#58a6ff;font-size:12px;">פתח את '+(x.kind==='pdf'?'ה-PDF':'התמונה')+'</a>';
+          'style="color:#58a6ff;font-size:12px;">פתח את '+(x.kind==='pdf'?'ה-PDF':(NSF_MEDIA.isVideoUrl(x.url)?'הסרטון':'התמונה'))+'</a>';
       }).join(' · ') || '<span style="color:#f85149;font-size:12px;">לא צורף קובץ</span>';
 
       var acts='';
@@ -3361,7 +3361,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 2.7</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 2.8</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){
@@ -3417,8 +3417,85 @@ document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener(
 /* ---- העלאת תמונת מודעה ----
    עולה לאותו דלי screen-media שמשמש את שאר המדיה, והכתובת
    נכתבת לשדה ad-img — כך שאר הקוד אינו משתנה כלל. */
-var AD_IMG_MAX=20*1024*1024;
-var AD_IMG_OK=["image/jpeg","image/png","image/webp","application/pdf"];
+/* ---- NSF_MEDIA — קבצי מודעה ----
+   משותף לטופס ההזמנה ולמסך הניהול, כדי ששניהם יקבלו בדיוק אותם קבצים.
+   סוגים: תמונה (JPG/PNG/WEBP/AVIF/BMP), תמונה מונפשת (GIF / WEBP מונפש),
+   PDF, וידאו (MP4/WEBM/MOV).
+   - תמונה רגילה גדולה מוקטנת בדפדפן ל-1920 פיקסלים ונשמרת כ-WEBP —
+     בדרך כלל פי 3–10 קטן יותר, בלי הבדל שרואים על המסך.
+   - GIF ו-WEBP לא נוגעים בהם, כי הקטנה דרך canvas מוחקת את ההנפשה.
+   - וידאו אי אפשר לדחוס בדפדפן, ולכן יש לו תקרת גודל.
+   סוג הקובץ מזוהה גם לפי הסיומת, כי בחלק מהטלפונים הדפדפן לא מוסר אותו. */
+var NSF_MEDIA=(function(){
+  var MB=1024*1024;
+  var EXT={jpg:"image/jpeg",jpeg:"image/jpeg",jfif:"image/jpeg",png:"image/png",
+    webp:"image/webp",gif:"image/gif",avif:"image/avif",bmp:"image/bmp",
+    pdf:"application/pdf",mp4:"video/mp4",m4v:"video/mp4",webm:"video/webm",
+    mov:"video/quicktime"};
+  var MIME_EXT={"image/jpeg":"jpg","image/png":"png","image/webp":"webp",
+    "image/gif":"gif","image/avif":"avif","image/bmp":"bmp","application/pdf":"pdf",
+    "video/mp4":"mp4","video/webm":"webm","video/quicktime":"mov"};
+  var LIMIT={still:10*MB, anim:15*MB, pdf:10*MB, video:30*MB};
+  var RAW_STILL=25*MB;   // תמונה גדולה מזה לא נכנסת גם לפני הקטנה
+  var ACCEPT="image/jpeg,image/png,image/webp,image/gif,image/avif,image/bmp,"+
+    "application/pdf,video/mp4,video/webm,video/quicktime,"+
+    ".jpg,.jpeg,.png,.webp,.gif,.avif,.bmp,.pdf,.mp4,.m4v,.webm,.mov";
+  function extOf(name){ var m=/\.([a-z0-9]+)$/i.exec(String(name||"")); return m?m[1].toLowerCase():""; }
+  function info(f){
+    if(!f) return null;
+    var t=String(f.type||"").toLowerCase();
+    var mime = MIME_EXT[t] ? t : (EXT[extOf(f.name)]||"");
+    if(!mime) return null;
+    var group = mime.indexOf("video/")===0 ? "video"
+              : mime==="application/pdf" ? "pdf"
+              : (mime==="image/gif"||mime==="image/webp") ? "anim" : "still";
+    return {mime:mime, ext:MIME_EXT[mime], group:group};
+  }
+  function tooBig(f,inf){
+    if(inf.group==="still") return f.size>RAW_STILL;
+    return f.size>LIMIT[inf.group];
+  }
+  function limitText(inf){
+    var mb=(inf.group==="still"?RAW_STILL:LIMIT[inf.group])/MB;
+    return mb+" מגה";
+  }
+  /* מחזיר {blob,mime,ext} — מוקטן אם כדאי, אחרת המקורי */
+  function prepare(f,inf){
+    var orig={blob:f, mime:inf.mime, ext:inf.ext};
+    if(inf.group!=="still") return Promise.resolve(orig);
+    return new Promise(function(res){
+      var url; try{ url=URL.createObjectURL(f); }catch(e){ return res(orig); }
+      var im=new Image();
+      im.onload=function(){
+        var w=im.naturalWidth, h=im.naturalHeight, max=1920;
+        var sc=Math.min(1, max/Math.max(w,h||1));
+        if(sc===1 && f.size<=700*1024){ URL.revokeObjectURL(url); return res(orig); }
+        var cw=Math.round(w*sc), ch=Math.round(h*sc);
+        var c=document.createElement("canvas"); c.width=cw; c.height=ch;
+        var g=c.getContext("2d");
+        function done(b,mime,ext){
+          URL.revokeObjectURL(url);
+          if(!b || b.size>=f.size) return res(orig);
+          res({blob:b, mime:mime, ext:ext});
+        }
+        g.drawImage(im,0,0,cw,ch);
+        c.toBlob(function(b){
+          if(b && b.type==="image/webp") return done(b,"image/webp","webp");
+          /* דפדפן שלא יודע לכתוב WEBP — JPEG על רקע לבן */
+          g.fillStyle="#fff"; g.fillRect(0,0,cw,ch); g.drawImage(im,0,0,cw,ch);
+          c.toBlob(function(j){ done(j,"image/jpeg","jpg"); },"image/jpeg",0.86);
+        },"image/webp",0.86);
+      };
+      im.onerror=function(){ URL.revokeObjectURL(url); res(orig); };
+      im.src=url;
+    });
+  }
+  function isVideoUrl(u){ return /\.(mp4|m4v|webm|mov)(\?|#|$)/i.test(String(u||"")); }
+  function isPdfUrl(u){ return /\.pdf(\?|#|$)/i.test(String(u||"")); }
+  return {info:info, prepare:prepare, tooBig:tooBig, limitText:limitText,
+          LIMIT:LIMIT, ACCEPT:ACCEPT, isVideoUrl:isVideoUrl, isPdfUrl:isPdfUrl};
+})();
+
 
 function adImgErr(t){
   var e=document.getElementById("adimg-err");
@@ -3435,18 +3512,18 @@ function adImgPick(inp){
   var f=inp.files && inp.files[0];
   if(!f) return;
   adImgErr("");
-  if(AD_IMG_OK.indexOf(f.type)===-1){ adImgErr("סוג קובץ לא נתמך."); adImgClear(); return; }
-  if(f.size>AD_IMG_MAX){ adImgErr("הקובץ גדול מ-20 מגה."); adImgClear(); return; }
+  var inf=NSF_MEDIA.info(f);
+  if(!inf){ adImgErr("סוג קובץ לא נתמך."); adImgClear(); return; }
+  if(NSF_MEDIA.tooBig(f,inf)){ adImgErr("הקובץ גדול מדי. המקסימום לסוג הזה: "+NSF_MEDIA.limitText(inf)+"."); adImgClear(); return; }
 
   var have=document.getElementById("adimg-have");
-  document.getElementById("adimg-name").textContent=
-    f.name+"  ("+Math.round(f.size/1024)+" KB)";
+  var nm=document.getElementById("adimg-name");
+  nm.textContent=f.name+"  ("+Math.round(f.size/1024)+" KB)";
   try{
     var th=document.getElementById("adimg-thumb");
-    if(f.type==="application/pdf"){
+    if(inf.group==="pdf" || inf.group==="video"){
       th.style.display="none";
-      var n=document.getElementById("adimg-name");
-      if(n) n.textContent="\uD83D\uDCC4  "+n.textContent;
+      nm.textContent=(inf.group==="pdf"?"\uD83D\uDCC4  ":"\uD83C\uDFAC  ")+nm.textContent;
     }else{
       th.style.display=""; th.src=URL.createObjectURL(f);
     }
@@ -3454,26 +3531,31 @@ function adImgPick(inp){
   have.style.display="flex";
 
   var bar=document.getElementById("adimg-bar"), bi=document.getElementById("adimg-bar-i");
-  bar.style.display="block"; bi.style.width="30%";
-
-  var ext=(f.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"");
+  bar.style.display="block"; bi.style.width="15%";
   var sid=(document.getElementById("edit-sc-id")||{}).value||"ads";
-  var key=sid+"/ads/"+Date.now().toString(36)+"-"+
-          Math.random().toString(36).slice(2,8)+"."+ext;
 
-  fetch(SB+"/storage/v1/object/screen-media/"+key,{
-    method:"POST",
-    headers:{apikey:SK,Authorization:"Bearer "+SK,
-             "Content-Type":f.type,"x-upsert":"false"},
-    body:f
-  }).then(function(r){
-    if(!r.ok) throw new Error("upload "+r.status);
-    bi.style.width="100%";
-    var u=document.getElementById("ad-img");
-    if(u) u.value = SB+"/storage/v1/object/public/screen-media/"+key;
-    toast("התמונה הועלתה");
-  }).catch(function(){
-    adImgErr("ההעלאה נכשלה. נסה שוב.");
+  NSF_MEDIA.prepare(f,inf).then(function(p){
+    if(p.blob.size>NSF_MEDIA.LIMIT[inf.group]) throw new Error("size");
+    var key=sid+"/ads/"+Date.now().toString(36)+"-"+
+            Math.random().toString(36).slice(2,8)+"."+p.ext;
+    bi.style.width="35%";
+    return fetch(SB+"/storage/v1/object/screen-media/"+key,{
+      method:"POST",
+      headers:{apikey:SK,Authorization:"Bearer "+SK,
+               "Content-Type":p.mime,"x-upsert":"false"},
+      body:p.blob
+    }).then(function(r){
+      if(!r.ok) throw new Error("upload "+r.status);
+      bi.style.width="100%";
+      var u=document.getElementById("ad-img");
+      if(u) u.value = SB+"/storage/v1/object/public/screen-media/"+key;
+      nm.textContent=nm.textContent.replace(/\(\d+ KB\)/,"("+Math.round(p.blob.size/1024)+" KB)");
+      toast(inf.group==="video"?"הסרטון הועלה":"הקובץ הועלה");
+    });
+  }).catch(function(err){
+    adImgErr(String(err&&err.message)==="size"
+      ? "הקובץ גדול מדי גם אחרי הקטנה."
+      : "ההעלאה נכשלה. נסה שוב.");
     bar.style.display="none";
   });
 }
@@ -3577,7 +3659,12 @@ function loadLiveAds(){
     if(!arr.length){ box.innerHTML=''; return; }
     box.innerHTML = arr.map(function(a){
       var isPdf=/\.pdf(\?|#|$)/i.test(a.img||'');
-      var th = isPdf
+      var isVid=NSF_MEDIA.isVideoUrl(a.img);
+      var th = isVid
+        ? '<div style="width:52px;height:52px;background:#21262d;border-radius:6px;'+
+          'display:flex;align-items:center;justify-content:center;font-size:22px;'+
+          'flex:0 0 auto">\uD83C\uDFAC</div>'
+        : isPdf
         ? '<div style="width:52px;height:52px;background:#21262d;border-radius:6px;'+
           'display:flex;align-items:center;justify-content:center;font-size:22px;'+
           'flex:0 0 auto">\uD83D\uDCC4</div>'

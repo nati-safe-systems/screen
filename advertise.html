@@ -121,9 +121,11 @@ footer a{color:var(--gold-d);cursor:pointer;text-decoration:underline;margin:0 7
 <div class="wrap">
 
   <div class="hero">
-    <div><b>יומי</b> מ-90 ₪</div>
-    <div><b>שבועי</b> מ-290 ₪</div>
-    <div><b>חודשי</b> מ-1,000 ₪</div>
+    <!-- המחירים נמשכים מהמחירון שבמסך הניהול (nsf_ad_quote), כך שכל
+         שינוי שם מופיע כאן מיד. "החל מ-" = מסך אחד, כולל מע״מ. -->
+    <div><b>יומי</b> <span id="h-day">החל מ-…</span></div>
+    <div><b>שבועי</b> <span id="h-week">החל מ-…</span></div>
+    <div><b>חודשי</b> <span id="h-month">החל מ-…</span></div>
   </div>
 
   <div id="msg" class="msg" role="alert"></div>
@@ -208,7 +210,8 @@ footer a{color:var(--gold-d);cursor:pointer;text-decoration:underline;margin:0 7
 
     <div class="card">
       <h2>המודעה <span style="color:#ff7b72">*</span></h2>
-      <div class="hint">קובץ תמונה או PDF · עד 10 מגה</div>
+      <div class="hint">תמונה, תמונה מונפשת (GIF / WEBP), PDF או סרטון קצר ·
+        תמונות גדולות מוקטנות אוטומטית · סרטון עד 30 מגה</div>
 
       <label for="f-title">כותרת המודעה</label>
       <input id="f-title" placeholder="לדוגמה: מבצע פתיחה">
@@ -218,9 +221,9 @@ footer a{color:var(--gold-d);cursor:pointer;text-decoration:underline;margin:0 7
            onkeydown="if(event.key==='Enter')document.getElementById('file').click()">
         <div class="ic">📎</div>
         <div class="t">לחצו כאן לבחירת קובץ</div>
-        <div class="s">JPG · PNG · WEBP · PDF</div>
+        <div class="s">JPG · PNG · WEBP · GIF · AVIF · PDF · MP4 · WEBM · MOV</div>
       </div>
-      <input type="file" id="file" accept="image/jpeg,image/png,image/webp,application/pdf">
+      <input type="file" id="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif,image/bmp,application/pdf,video/mp4,video/webm,video/quicktime,.jpg,.jpeg,.png,.webp,.gif,.avif,.bmp,.pdf,.mp4,.m4v,.webm,.mov">
       <div class="fname" id="fname">
         <span class="n" id="fname-n"></span>
         <button type="button" onclick="clearFile()" aria-label="הסר קובץ">✕</button>
@@ -790,8 +793,10 @@ el("f-phone2").addEventListener("input",function(){
 rpc("nsf_ad_public_screens",{}).then(function(list){
   var box=el("f-screens");
   if(!Array.isArray(list)||!list.length){
+    try{ document.querySelector(".hero").style.display="none"; }catch(e){}
     box.innerHTML='<div style="color:#8fa0b5">אין כרגע מסכים זמינים לפרסום</div>'; return;
   }
+  try{ heroPrices(list[0].screen_id); }catch(e){}
   box.innerHTML=list.map(function(s,i){
     var nm=String(s.name).replace(/[<>&"]/g,"");
     return '<label class="scr" for="sc'+i+'"><input type="checkbox" id="sc'+i+'" class="sc" value="'+
@@ -803,6 +808,22 @@ rpc("nsf_ad_public_screens",{}).then(function(list){
 function picked(){
   return Array.prototype.map.call(document.querySelectorAll(".sc:checked"),
     function(c){ return c.value; });
+}
+
+/* ---- מחירי "החל מ-" בראש הדף ----
+   מחושבים בשרת לפי המחירון שבמסך הניהול: מסך אחד, יום / 7 ימים /
+   30 ימים, מחיר בסיס כולל מע״מ (לפני תוספת חגים והנחת כמות). */
+function heroPrices(sid){
+  function iso(d){ return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2); }
+  var start=new Date(); start.setDate(start.getDate()+1);
+  [["h-day",1],["h-week",7],["h-month",30]].forEach(function(x){
+    var end=new Date(start); end.setDate(end.getDate()+x[1]-1);
+    rpc("nsf_ad_quote",{p_screens:[sid],p_from:iso(start),p_to:iso(end)}).then(function(q){
+      var e=el(x[0]); if(!e) return;
+      if(!q||!q.ok||!(q.base_incl>0)){ e.parentNode.style.display="none"; return; }
+      e.textContent="החל מ-"+ils(q.base_incl)+" ₪";
+    }).catch(function(){ var e=el(x[0]); if(e) e.parentNode.style.display="none"; });
+  });
 }
 
 /* ---- הצעת מחיר — מחושבת בשרת ---- */
@@ -830,18 +851,95 @@ el("f-to").addEventListener("change",quote);
 /* ---- העלאת הקובץ ----
    נשלח ישירות ל-Supabase Storage. שם הקובץ נוצר אקראית, ולכן אין
    דרך לנחש קובץ של מישהו אחר או לדרוס אותו. */
-var OK_TYPES=["image/jpeg","image/png","image/webp","application/pdf"];
-var MAXB=10*1024*1024;
+/* ---- NSF_MEDIA — קבצי מודעה ----
+   משותף לטופס ההזמנה ולמסך הניהול, כדי ששניהם יקבלו בדיוק אותם קבצים.
+   סוגים: תמונה (JPG/PNG/WEBP/AVIF/BMP), תמונה מונפשת (GIF / WEBP מונפש),
+   PDF, וידאו (MP4/WEBM/MOV).
+   - תמונה רגילה גדולה מוקטנת בדפדפן ל-1920 פיקסלים ונשמרת כ-WEBP —
+     בדרך כלל פי 3–10 קטן יותר, בלי הבדל שרואים על המסך.
+   - GIF ו-WEBP לא נוגעים בהם, כי הקטנה דרך canvas מוחקת את ההנפשה.
+   - וידאו אי אפשר לדחוס בדפדפן, ולכן יש לו תקרת גודל.
+   סוג הקובץ מזוהה גם לפי הסיומת, כי בחלק מהטלפונים הדפדפן לא מוסר אותו. */
+var NSF_MEDIA=(function(){
+  var MB=1024*1024;
+  var EXT={jpg:"image/jpeg",jpeg:"image/jpeg",jfif:"image/jpeg",png:"image/png",
+    webp:"image/webp",gif:"image/gif",avif:"image/avif",bmp:"image/bmp",
+    pdf:"application/pdf",mp4:"video/mp4",m4v:"video/mp4",webm:"video/webm",
+    mov:"video/quicktime"};
+  var MIME_EXT={"image/jpeg":"jpg","image/png":"png","image/webp":"webp",
+    "image/gif":"gif","image/avif":"avif","image/bmp":"bmp","application/pdf":"pdf",
+    "video/mp4":"mp4","video/webm":"webm","video/quicktime":"mov"};
+  var LIMIT={still:10*MB, anim:15*MB, pdf:10*MB, video:30*MB};
+  var RAW_STILL=25*MB;   // תמונה גדולה מזה לא נכנסת גם לפני הקטנה
+  var ACCEPT="image/jpeg,image/png,image/webp,image/gif,image/avif,image/bmp,"+
+    "application/pdf,video/mp4,video/webm,video/quicktime,"+
+    ".jpg,.jpeg,.png,.webp,.gif,.avif,.bmp,.pdf,.mp4,.m4v,.webm,.mov";
+  function extOf(name){ var m=/\.([a-z0-9]+)$/i.exec(String(name||"")); return m?m[1].toLowerCase():""; }
+  function info(f){
+    if(!f) return null;
+    var t=String(f.type||"").toLowerCase();
+    var mime = MIME_EXT[t] ? t : (EXT[extOf(f.name)]||"");
+    if(!mime) return null;
+    var group = mime.indexOf("video/")===0 ? "video"
+              : mime==="application/pdf" ? "pdf"
+              : (mime==="image/gif"||mime==="image/webp") ? "anim" : "still";
+    return {mime:mime, ext:MIME_EXT[mime], group:group};
+  }
+  function tooBig(f,inf){
+    if(inf.group==="still") return f.size>RAW_STILL;
+    return f.size>LIMIT[inf.group];
+  }
+  function limitText(inf){
+    var mb=(inf.group==="still"?RAW_STILL:LIMIT[inf.group])/MB;
+    return mb+" מגה";
+  }
+  /* מחזיר {blob,mime,ext} — מוקטן אם כדאי, אחרת המקורי */
+  function prepare(f,inf){
+    var orig={blob:f, mime:inf.mime, ext:inf.ext};
+    if(inf.group!=="still") return Promise.resolve(orig);
+    return new Promise(function(res){
+      var url; try{ url=URL.createObjectURL(f); }catch(e){ return res(orig); }
+      var im=new Image();
+      im.onload=function(){
+        var w=im.naturalWidth, h=im.naturalHeight, max=1920;
+        var sc=Math.min(1, max/Math.max(w,h||1));
+        if(sc===1 && f.size<=700*1024){ URL.revokeObjectURL(url); return res(orig); }
+        var cw=Math.round(w*sc), ch=Math.round(h*sc);
+        var c=document.createElement("canvas"); c.width=cw; c.height=ch;
+        var g=c.getContext("2d");
+        function done(b,mime,ext){
+          URL.revokeObjectURL(url);
+          if(!b || b.size>=f.size) return res(orig);
+          res({blob:b, mime:mime, ext:ext});
+        }
+        g.drawImage(im,0,0,cw,ch);
+        c.toBlob(function(b){
+          if(b && b.type==="image/webp") return done(b,"image/webp","webp");
+          /* דפדפן שלא יודע לכתוב WEBP — JPEG על רקע לבן */
+          g.fillStyle="#fff"; g.fillRect(0,0,cw,ch); g.drawImage(im,0,0,cw,ch);
+          c.toBlob(function(j){ done(j,"image/jpeg","jpg"); },"image/jpeg",0.86);
+        },"image/webp",0.86);
+      };
+      im.onerror=function(){ URL.revokeObjectURL(url); res(orig); };
+      im.src=url;
+    });
+  }
+  function isVideoUrl(u){ return /\.(mp4|m4v|webm|mov)(\?|#|$)/i.test(String(u||"")); }
+  function isPdfUrl(u){ return /\.pdf(\?|#|$)/i.test(String(u||"")); }
+  return {info:info, prepare:prepare, tooBig:tooBig, limitText:limitText,
+          LIMIT:LIMIT, ACCEPT:ACCEPT, isVideoUrl:isVideoUrl, isPdfUrl:isPdfUrl};
+})();
 
 el("file").addEventListener("change",function(){
   var f=this.files&&this.files[0];
   if(!f) return;
   fieldErr("file","");
-  if(OK_TYPES.indexOf(f.type)===-1){
-    fieldErr("file","סוג קובץ לא נתמך. יש להעלות JPG, PNG, WEBP או PDF."); clearFile(); return;
+  var inf=NSF_MEDIA.info(f);
+  if(!inf){
+    fieldErr("file","סוג קובץ לא נתמך. אפשר תמונה, GIF, PDF או סרטון MP4 / WEBM / MOV."); clearFile(); return;
   }
-  if(f.size>MAXB){
-    fieldErr("file","הקובץ גדול מ-10 מגה."); clearFile(); return;
+  if(NSF_MEDIA.tooBig(f,inf)){
+    fieldErr("file","הקובץ גדול מדי. המקסימום לסוג הזה: "+NSF_MEDIA.limitText(inf)+"."); clearFile(); return;
   }
   el("fname-n").textContent=f.name+"  ("+Math.round(f.size/1024)+" KB)";
   el("fname").style.display="flex";
@@ -871,20 +969,27 @@ function uploadFile(){
   if(!f) return Promise.resolve(null);
   if(UPLOADED) return Promise.resolve(UPLOADED);
 
-  var ext=(f.name.split(".").pop()||"bin").toLowerCase().replace(/[^a-z0-9]/g,"");
-  var key=Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,10)+"."+ext;
+  var inf=NSF_MEDIA.info(f);
+  if(!inf) return Promise.reject(new Error("type"));
 
-  el("bar").style.display="block"; el("bar-i").style.width="30%";
-  return fetch(SB+"/storage/v1/object/ad-uploads/"+key,{
-    method:"POST",
-    headers:{apikey:SK,Authorization:"Bearer "+SK,"Content-Type":f.type,"x-upsert":"false"},
-    body:f
-  }).then(function(r){
-    if(!r.ok) throw new Error("upload "+r.status);
-    el("bar-i").style.width="100%";
-    UPLOADED={url:SB+"/storage/v1/object/public/ad-uploads/"+key,
-              kind:(f.type==="application/pdf")?"pdf":"image"};
-    return UPLOADED;
+  el("bar").style.display="block"; el("bar-i").style.width="15%";
+  return NSF_MEDIA.prepare(f,inf).then(function(p){
+    if(p.blob.size>NSF_MEDIA.LIMIT[inf.group]) throw new Error("size");
+    var key=Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,10)+"."+p.ext;
+    el("bar-i").style.width="35%";
+    return fetch(SB+"/storage/v1/object/ad-uploads/"+key,{
+      method:"POST",
+      headers:{apikey:SK,Authorization:"Bearer "+SK,"Content-Type":p.mime,"x-upsert":"false"},
+      body:p.blob
+    }).then(function(r){
+      if(!r.ok) throw new Error("upload "+r.status);
+      el("bar-i").style.width="100%";
+      /* סרטון נשמר כ-"image": המסך מזהה וידאו לפי סיומת הקובץ, וכך
+         אין צורך לשנות את מבנה הטבלה או את פונקציית ההגשה. */
+      UPLOADED={url:SB+"/storage/v1/object/public/ad-uploads/"+key,
+                kind:(inf.group==="pdf")?"pdf":"image"};
+      return UPLOADED;
+    });
   });
 }
 
@@ -951,7 +1056,10 @@ function submitOrder(){
       }).catch(function(){});
     }catch(e){}
   }).catch(function(err){
-    say("שגיאה בשליחה. נא לנסות שוב.",1);
+    var m=String(err&&err.message||"");
+    if(m==="size"){ fieldErr("file","הקובץ גדול מדי גם אחרי הקטנה. נא לבחור קובץ קטן יותר."); say("הקובץ גדול מדי.",1); }
+    else if(m.indexOf("upload")===0){ say("העלאת הקובץ נכשלה. נא לנסות שוב, או לבחור קובץ אחר.",1); }
+    else say("שגיאה בשליחה. נא לנסות שוב.",1);
     b.disabled=false; b.textContent="שליחת ההזמנה לאישור";
   });
 }

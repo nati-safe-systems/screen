@@ -721,6 +721,10 @@ body.wx-header:not(.portrait) #building-title-name{
   display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;
 }
 body.wx-header:not(.portrait) #building-title-bg > .wx{max-width:17%;}
+/* וידאו במודעות — אותם גבולות כמו תמונה */
+.ad-slide video.ad-vid{width:100%;height:100%;object-fit:cover;display:block;background:#000;}
+body.ads-bottom .ad-slide video.ad-vid{width:auto;height:17vh;max-width:60%;object-fit:contain;}
+#ads-full video.ad-vid{width:auto;height:auto;max-width:96%;max-height:84vh;object-fit:contain;}
 @media (max-width:1200px){
   body.wx-header .ttl,
   body.wx-header .board-hdr{padding-right:23vw}
@@ -2785,6 +2789,7 @@ function startAds(list, bodyId, tkey){
     /* PDF מוצג ב-embed ולא ב-img. קודם כל מודעה נבנתה כתמונה,
        ולכן קובץ PDF הופיע כמסגרת שבורה. */
     var isPdf = src && /\.pdf(\?|#|$)/i.test(src);
+    var isVid = src && adIsVideo(src);
     /* PDF מרונדר ב-PDF.js ולא ב-embed.
        embed מוסר את ההצגה למציג של הדפדפן, שמתנהג אחרת בכל
        מערכת: עברית עלולה להתהפך, גופן לא מוטמע מוחלף, וקידוד
@@ -2793,7 +2798,7 @@ function startAds(list, bodyId, tkey){
        PDF.js מרנדר ל-canvas עם טבלאות הקידוד והגופנים של המסמך,
        ולכן התוצאה זהה בכל מכשיר. זה אותו מנוע שכבר מציג את
        הודעות מרכז המסך. */
-    var img = !src ? '' :
+    var img = !src ? '' : isVid ? adVideoHTML(src) :
       (isPdf
         ? '<canvas class="ad-pdf" data-pdf="'+src.replace(/"/g,"&quot;")+'"></canvas>'
         : '<img src="'+src.replace(/"/g,"")+'" alt="">');
@@ -2810,6 +2815,7 @@ function startAds(list, bodyId, tkey){
   }
   body.innerHTML=html;
   try{ renderAdPdfs(body); }catch(e){}
+  try{ adSyncVideos(body); }catch(e){}
   var slides=body.querySelectorAll(".ad-slide"),idx=0;
   if(slides.length>1){
     var durOf=function(n){
@@ -2824,6 +2830,7 @@ function startAds(list, bodyId, tkey){
       slides[idx].classList.remove("active");
       idx=(idx+1)%slides.length;
       slides[idx].classList.add("active");
+      try{ adSyncVideos(body); }catch(e){}
       _adTimers[tkey]=setTimeout(next, durOf(idx));
     };
     _adTimers[tkey]=setTimeout(next, durOf(0));
@@ -4369,7 +4376,7 @@ function adsFullShow(sec){
   var h="";
   if(a.img){
     var _s=String(a.img);
-    h += /\.pdf(\?|#|$)/i.test(_s)
+    h += adIsVideo(_s) ? adVideoHTML(_s) : /\.pdf(\?|#|$)/i.test(_s)
        ? '<canvas class="ad-pdf" data-pdf="'+_s.replace(/"/g,"&quot;")+'"></canvas>'
        : '<img src="'+_s.replace(/"/g,"&quot;")+'" alt="">';
   }
@@ -4379,6 +4386,7 @@ function adsFullShow(sec){
   box.innerHTML=h;
   try{ renderAdPdfs(box); }catch(e){}
   wrap.classList.add("on");
+  try{ var _v=box.querySelector("video.ad-vid"); if(_v){ _v.currentTime=0; var _pp=_v.play(); if(_pp&&_pp.catch) _pp.catch(function(){}); } }catch(e){}
 
   if(bar){
     bar.style.transition="none"; bar.style.width="0";
@@ -4387,7 +4395,10 @@ function adsFullShow(sec){
       bar.style.width="100%";
     },50);
   }
-  setTimeout(function(){ wrap.classList.remove("on"); }, sec*1000);
+  setTimeout(function(){
+    wrap.classList.remove("on");
+    try{ var _v=box.querySelector("video.ad-vid"); if(_v) _v.pause(); }catch(e){}
+  }, sec*1000);
 }
 
 /* ---- מודעות בתשלום — אתחול עצמאי ----
@@ -4481,6 +4492,30 @@ function renderAdPdfs(root){
   });
 }
 
+/* ---- וידאו במודעות ----
+   סרטון מזוהה לפי סיומת הקובץ (mp4 / m4v / webm / mov). הוא מושתק
+   (דפדפנים חוסמים ניגון אוטומטי עם קול), חוזר בלולאה, ומתנגן רק
+   כשהשקופית שלו מוצגת — כדי לא להעמיס על המכשיר. סרטון שהמכשיר
+   לא מצליח לפענח מוסתר, ובמקומו נשאר רק הכיתוב. */
+function adIsVideo(u){ return /\.(mp4|m4v|webm|mov)(\?|#|$)/i.test(String(u||"")); }
+function adVideoHTML(src){
+  return '<video class="ad-vid" src="'+String(src).replace(/"/g,"&quot;")+'" muted loop playsinline '+
+         'webkit-playsinline preload="auto" disablepictureinpicture '+
+         'onerror="this.style.display=\'none\'"></video>';
+}
+function adSyncVideos(root){
+  var vs=(root||document).querySelectorAll("video.ad-vid");
+  for(var i=0;i<vs.length;i++){
+    var v=vs[i], sl=v.closest ? v.closest(".ad-slide") : null;
+    var on = !sl || sl.classList.contains("active");
+    try{
+      v.muted=true;
+      if(on){ if(v.paused){ var p=v.play(); if(p&&p.catch) p.catch(function(){}); } }
+      else if(!v.paused){ v.pause(); }
+    }catch(e){}
+  }
+}
+
 /* ---- כרטיס שטח פרסום פנוי ----
    נבנה כאן במקום להיות מוטמע ב-HTML, כדי שיוכל להופיע גם בין
    מודעות אמיתיות וגם לבד כשאין אף אחת. */
@@ -4500,6 +4535,6 @@ function adPromoHTML(){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 10.4</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 10.5</div>
 </body>
 </html>
