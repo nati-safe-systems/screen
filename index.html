@@ -685,8 +685,11 @@ body.ads-bottom .ad-pdf{height:17vh}
 .ad-promo .ap-qr img{width:100%;height:auto;display:block}
 .ad-promo .ap-c{
   position:relative;z-index:2;
-  color:#8fa0b5;font-size:1.3vh;direction:ltr;
+  color:#8fa0b5;font-size:1.3vh;direction:rtl;line-height:1.55;text-align:center;
 }
+.ad-promo .ap-c .ap-n{color:#e8d48a;font-weight:800;}
+.ad-promo .ap-c .ap-m{margin-top:.3vh;color:#cfd8e3;}
+.ad-promo .ap-c bdi{unicode-bidi:isolate;direction:ltr;}
 body.ads-bottom .ad-promo{flex-direction:row;gap:2vw;justify-content:center}
 body.ads-bottom .ad-promo .ap-qr{width:auto;height:13vh;max-width:none}
 body.ads-bottom .ad-promo .ap-qr img{height:100%;width:auto}
@@ -2728,6 +2731,25 @@ function drvImg(u){
    ריק. */
 var ADS_URL="https://nati-safe-systems.github.io/screen/advertise.html";
 var ADS_MAIL="";
+/* כתובת המייל לפניות פרסום — אחת לכל המסכים, מוגדרת במסך הניהול
+   (לשונית פרסומות). נמשכת יחד עם המודעות בתשלום, כל 30 שניות. */
+var ADS_CONTACT="";
+function pullAdContact(){
+  fetch(SUPA+"/rest/v1/rpc/nsf_ad_contact_get",{
+    method:"POST",
+    headers:{apikey:SKEY,Authorization:"Bearer "+SKEY,"Content-Type":"application/json"},
+    body:"{}"
+  }).then(function(r){ return r.ok ? r.json() : null; })
+  .then(function(d){
+    if(!d) return;
+    var e=String(d.email||"").trim();
+    if(e===ADS_CONTACT) return;
+    ADS_CONTACT=e;
+    try{ var m=document.getElementById("adqr-mail"); if(m) m.textContent=ADS_CONTACT||ADS_MAIL||""; }catch(x){}
+    /* בונים מחדש את הרצועות, כדי שהכרטיס יציג את הכתובת החדשה */
+    try{ if(CFG_LAST){ _adsSig={}; applyDisplayConfig(CFG_LAST); } }catch(x){}
+  }).catch(function(){});
+}
 var _qrDone=false;
 
 /* ---- קוד ה-QR ----
@@ -2770,7 +2792,7 @@ function showAdQR(on, mail){
   }catch(e){}
   if(!on) return;
   var m=document.getElementById("adqr-mail");
-  if(m) m.textContent = mail || ADS_MAIL || "";
+  if(m) m.textContent = ADS_CONTACT || mail || ADS_MAIL || "";
   drawQR();
 }
 
@@ -2836,7 +2858,7 @@ function startAds(list, bodyId, tkey){
   var sig="";
   try{ sig=JSON.stringify(list||[]); }catch(e){ sig=String((list||[]).length); }
   /* גם הדלקה/כיבוי של כרטיס "שטח פרסום פנוי" משנה את הסבב */
-  sig += "|promo:" + ((CFG_LAST && CFG_LAST.ads_promo) ? 1 : 0);
+  sig += "|promo:" + ((CFG_LAST && CFG_LAST.ads_promo) ? 1 : 0) + "|mail:" + ADS_CONTACT;
   if(_adsSig[tkey]===sig && body.querySelector(".ad-slide")) return;
   _adsSig[tkey]=sig;
   stopAds(tkey);
@@ -4491,8 +4513,8 @@ function adsFullShow(sec){
   if(window.__paidAdsBooted) return;
   window.__paidAdsBooted=true;
   function boot(){
-    try{ pullPaidAds(); }catch(e){}
-    setInterval(function(){ try{ pullPaidAds(); }catch(e){} }, 30000);
+    try{ pullPaidAds(); pullAdContact(); }catch(e){}
+    setInterval(function(){ try{ pullPaidAds(); pullAdContact(); }catch(e){} }, 30000);
     setInterval(function(){
       fetch(SUPA+"/rest/v1/rpc/nsf_ad_tick",{
         method:"POST",
@@ -4528,11 +4550,13 @@ function adPdfDraw(cv, page){
   var host=cv.parentNode;
   var w=(host&&host.clientWidth)||600, h=(host&&host.clientHeight)||800;
   var vp0=page.getViewport({scale:1});
-  var scale=Math.max(w/vp0.width, h/vp0.height);
+  /* contain — כל העמוד נכנס, בלי לחתוך שוליים */
+  var scale=Math.min(w/vp0.width, h/vp0.height);
   var dpr=Math.min(window.devicePixelRatio||1, 2);
   var vp=page.getViewport({scale:scale*dpr});
   cv.width=Math.round(vp.width); cv.height=Math.round(vp.height);
-  cv.style.width="100%"; cv.style.height="100%"; cv.style.objectFit="cover";
+  cv.style.width=Math.floor(vp0.width*scale)+"px"; cv.style.height=Math.floor(vp0.height*scale)+"px";
+  cv.style.objectFit="contain"; cv.style.margin="auto";
   return page.render({canvasContext:cv.getContext("2d"), viewport:vp}).promise;
 }
 /* החלפת עמודים בשקופית PDF פעילה; בשקופית לא פעילה חוזרים לעמוד 1 */
@@ -4598,14 +4622,7 @@ function renderAdPdfs(root){
       var host=cv.parentNode;
       var w=(host&&host.clientWidth)||600, h=(host&&host.clientHeight)||800;
       var vp0=page.getViewport({scale:1});
-      /* cover — ממלא את השטח, כמו התמונות */
-      var scale=Math.max(w/vp0.width, h/vp0.height);
-      var dpr=Math.min(window.devicePixelRatio||1, 2);
-      var vp=page.getViewport({scale:scale*dpr});
-      cv.width=Math.round(vp.width); cv.height=Math.round(vp.height);
-      cv.style.width="100%"; cv.style.height="100%";
-      cv.style.objectFit="cover";
-      return page.render({canvasContext:cv.getContext("2d"), viewport:vp}).promise;
+      return adPdfDraw(cv, page);
     }).catch(function(){
       /* נכשל — לא משאירים ריבוע ריק */
       cv.__done=0;
@@ -4671,13 +4688,18 @@ function adPromoHTML(){
     '<div class="ap-s">המודעה שלכם מול הדיירים והמבקרים בבניין.<br>'+
     'סרקו את הקוד והזמינו בכמה דקות.</div>'+
     qr+
-    '<div class="ap-c">נתי Safe מערכות · 052-7171280</div>'+
+    '<div class="ap-c">'+
+      '<div class="ap-n">נתי Safe מערכות</div>'+
+      '<div><bdi>052-7171280</bdi></div>'+
+      (ADS_CONTACT ? '<div class="ap-m">לפרטים שלחו מייל: <bdi>'+
+        String(ADS_CONTACT).replace(/[<>&"]/g,"")+'</bdi></div>' : '')+
+    '</div>'+
   '</div>';
 }
 </script>
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 10.9</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 11.0</div>
 </body>
 </html>

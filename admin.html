@@ -446,6 +446,22 @@ tr:hover td{background:rgba(128,0,0,0.05);}
       </div>
 
       <button class="btn-sm blue" onclick="savePricing()">שמור מחירון</button>
+
+      <!-- כתובת מייל לפניות פרסום — אחת לכל המסכים. מופיעה מיד בכרטיס
+           "שטח הפרסום הזה יכול להיות שלך" ומתחת לברקוד. -->
+      <div style="font-weight:800;color:#8b949e;margin:22px 0 8px;font-size:13px;
+           padding-top:14px;border-top:1px solid rgba(255,255,255,.1);">
+        מייל לפניות פרסום
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input type="email" id="ap-mail" dir="ltr" placeholder="ads@natisafe.co.il"
+               style="flex:1;min-width:220px;">
+        <button class="btn-sm blue" onclick="saveAdMail()">שמור כתובת</button>
+      </div>
+      <div style="font-size:11px;color:#8b949e;margin-top:6px;line-height:1.6;">
+        מוצגת על כל המסכים, בכרטיס שטח הפרסום ומתחת לברקוד, תוך חצי דקה מהשמירה.
+        שדה ריק — הכתובת לא מוצגת.
+      </div>
       <div style="font-size:11px;color:#8b949e;margin-top:8px;">
         שינוי מחירון אינו משפיע על קמפיינים שכבר אושרו — הם שומרים את התמחור שלהם.
       </div>
@@ -1892,6 +1908,9 @@ function payLink(id){
 }
 
 function loadAdsTab(){
+  rpc('nsf_ad_contact_get',{}).then(function(r){
+    var f=document.getElementById('ap-mail'); if(f && r) f.value=r.email||'';
+  }).catch(function(){});
   rpc('nsf_ad_pricing_get',{p_token:NSF_TOKEN}).then(function(r){
     if(!r||!r.ok) return;
     var p=r.pricing||{};
@@ -1927,6 +1946,14 @@ function loadAdsTab(){
   if(mi && !mi.value){ var d=new Date(); mi.value=d.getFullYear()+'-'+(d.getMonth()<9?'0':'')+(d.getMonth()+1); }
 }
 
+function saveAdMail(){
+  var v=((document.getElementById('ap-mail')||{}).value||'').trim();
+  if(v && !/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(v)){ toast('כתובת מייל לא תקינה'); return; }
+  rpc('nsf_ad_contact_save',{p_token:NSF_TOKEN,p_email:v}).then(function(r){
+    if(r&&r.ok) toast(v?'הכתובת נשמרה — תופיע במסכים תוך חצי דקה':'הכתובת הוסרה מהמסכים');
+    else toast((r&&r.err)||'השמירה נכשלה');
+  }).catch(function(){ toast('השמירה נכשלה — הרצת את קובץ ה-SQL?'); });
+}
 function savePricing(){
   var g=function(id){ var e=document.getElementById(id); return e?e.value:null; };
   rpc('nsf_ad_pricing_save',{p_token:NSF_TOKEN,p_row:{
@@ -3362,7 +3389,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 2.9</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 3.0</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){
