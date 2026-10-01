@@ -2627,9 +2627,16 @@ function startNews(src){
   var _sig = urls.join("|");
   var _tr  = document.querySelector("#news-ticker .nt-track");
   if(_newsSig === _sig && _tr && _tr.children.length && _newsTimer) return;
+  /* טעינה לאותם מקורות כבר באוויר — לא שולחים בקשה כפולה. קודם, כשההגדרות
+     הוחלו שוב תוך שניות (למשל כשנטענה כתובת המייל לפרסום), יצאה בקשה שנייה
+     ל-GAS, נכשלה, והחליפה את המבזקים שכבר הוצגו בהודעת שגיאה. */
+  if(_newsSig === _sig && window._newsInflight) return;
+  if(_newsSig !== _sig) window._newsGood = false;
   _newsSig = _sig;
 
   function load(){
+    if(window._newsInflight) return;
+    window._newsInflight = true;
     var errs=[];
     var reqs=urls.map(function(one){
       var u=GAS+"?action=rss&max=10&url="+encodeURIComponent(one)+"&_="+Date.now();
@@ -2652,9 +2659,15 @@ function startNews(src){
         }
         i++;
       }
-      if(merged.length){ renderNews(merged); }
-      else{ renderNews([{title:"⚠ אבחון: "+(errs.join(" | ")||"לא התקבלו מבזקים")}]); }
-    });
+      window._newsInflight = false;
+      if(merged.length){ window._newsGood = true; renderNews(merged); }
+      else{
+        /* כשל זמני לא מוחק מבזקים שכבר מוצגים — נשארים עליהם ומנסים
+           שוב בעוד דקה. הודעת אבחון מוצגת רק אם עוד לא הצליח אף פעם. */
+        if(!window._newsGood) renderNews([{title:"⚠ אבחון: "+(errs.join(" | ")||"לא התקבלו מבזקים")}]);
+        setTimeout(function(){ try{ if(_newsSig===_sig) load(); }catch(e){} }, 60000);
+      }
+    }).catch(function(){ window._newsInflight = false; });
   }
   load();
   if(_newsTimer)clearInterval(_newsTimer);
@@ -4753,6 +4766,6 @@ function adPromoNext(sl){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 11.2</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 11.3</div>
 </body>
 </html>

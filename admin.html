@@ -462,6 +462,19 @@ tr:hover td{background:rgba(128,0,0,0.05);}
         מוצגת על כל המסכים, בכרטיס שטח הפרסום ומתחת לברקוד, תוך חצי דקה מהשמירה.
         שדה ריק — הכתובת לא מוצגת.
       </div>
+
+      <div style="font-weight:800;color:#8b949e;margin:18px 0 8px;font-size:13px;">
+        זמן תצוגה למודעה חדשה (שניות)
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input type="number" id="ap-defdur" min="3" max="60" step="1" style="width:90px;">
+        <button class="btn-sm blue" onclick="saveAdDefDur()">שמור</button>
+      </div>
+      <div style="font-size:11px;color:#8b949e;margin-top:6px;line-height:1.6;">
+        כל הזמנה חדשה מקבלת את הזמן הזה. בדף ההזמנה מופיע בהתאם
+        "סרטון עד X שניות", והטופס לא מקבל סרטון ארוך יותר.
+        מודעות קיימות לא משתנות.
+      </div>
       <div style="font-size:11px;color:#8b949e;margin-top:8px;">
         שינוי מחירון אינו משפיע על קמפיינים שכבר אושרו — הם שומרים את התמחור שלהם.
       </div>
@@ -1848,19 +1861,81 @@ function edge(fn,body){
   }).then(function(r){ return r.json(); });
 }
 
+/* ---- סיבות דחייה ----
+   נשלחות ללקוח במייל הדחייה. {DUR} מוחלף בזמן התצוגה שנקבע. */
+var AD_DEF_DUR=12;
+var AD_REJECT_REASONS=[
+  ['content','תוכן שאינו הולם',
+   'תוכן המודעה אינו תואם את אופי המקום והציבור שבו מוצגים המסכים. נשמח אם תתאימו את המודעה ותשלחו בקשה חדשה.'],
+  ['quality','קובץ לא ברור / איכות נמוכה',
+   'הקובץ שצורף אינו ברור מספיק להצגה על המסך (איכות נמוכה, טקסט קטן מדי או חיתוך). נא לשלוח קובץ ברור יותר בבקשה חדשה.'],
+  ['video','סרטון ארוך / לא לאורך',
+   'הסרטון שצורף ארוך מזמן התצוגה או אינו מצולם לאורך. נא לשלוח סרטון אנכי באורך של עד {DUR} שניות.'],
+  ['details','חסרים פרטים במודעה',
+   'במודעה חסרים פרטי התקשרות, או שהטקסט אינו ברור. נא להשלים את הפרטים ולשלוח בקשה חדשה.'],
+  ['field','תחום שאינו מתפרסם כאן',
+   'תחום הפעילות של המודעה אינו מתאים לפרסום במסכים אלה. תודה על ההתעניינות.'],
+  ['other','אחר — טקסט חופשי','']
+];
 function decide(id,what){
-  var q = what==='approve'
-    ? 'לאשר את ההזמנה?\n\nחלוקת ההכנסה תיכתב לפי האחוזים התקפים כעת,\nויישלח ללקוח מייל עם קישור לתשלום.'
-    : 'לדחות את ההזמנה?\n\nיישלח ללקוח מייל שמסביר זאת.';
-  if(!confirm(q)) return;
-
-  rpc('nsf_ad_decide',{p_token:NSF_TOKEN,p_campaign:id,p_decision:what,p_note:''})
+  if(what==='reject'){ openRejectModal(id); return; }
+  if(!confirm('לאשר את ההזמנה?\n\nחלוקת ההכנסה תיכתב לפי האחוזים התקפים כעת,\nויישלח ללקוח מייל עם קישור לתשלום.')) return;
+  doDecide(id,'approve','');
+}
+function openRejectModal(id){
+  var old=document.getElementById('rej-modal'); if(old) old.remove();
+  var m=document.createElement('div');
+  m.id='rej-modal';
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100000;display:flex;'+
+    'align-items:center;justify-content:center;padding:16px;direction:rtl;';
+  var opts=AD_REJECT_REASONS.map(function(r,i){
+    return '<label style="display:flex;gap:9px;align-items:flex-start;padding:9px 10px;border:1px solid #30363d;'+
+      'border-radius:8px;margin-bottom:7px;cursor:pointer;background:#0d1117">'+
+      '<input type="radio" name="rej-r" value="'+r[0]+'" '+(i===0?'checked':'')+' style="margin-top:3px">'+
+      '<span><b>'+r[1]+'</b>'+(r[2]?'<br><span style="font-size:12px;color:#8b949e;line-height:1.5">'+
+        r[2].replace('{DUR}',AD_DEF_DUR)+'</span>':'')+'</span></label>';
+  }).join('');
+  m.innerHTML='<div style="background:#161b22;border:1px solid #30363d;border-radius:12px;max-width:520px;'+
+    'width:100%;max-height:90vh;overflow:auto;padding:18px;color:#e6edf3">'+
+    '<div style="font-size:17px;font-weight:800;margin-bottom:4px">דחיית ההזמנה</div>'+
+    '<div style="font-size:12px;color:#8b949e;margin-bottom:12px">הסיבה שתבחר תישלח ללקוח במייל.</div>'+
+    opts+
+    '<textarea id="rej-txt" rows="3" placeholder="כתוב כאן את הסיבה" style="width:100%;box-sizing:border-box;'+
+    'display:none;margin:4px 0 10px;padding:9px;border-radius:8px;border:1px solid #30363d;background:#0d1117;'+
+    'color:#e6edf3;font-family:inherit;font-size:14px"></textarea>'+
+    '<div style="display:flex;gap:8px;justify-content:flex-start;margin-top:6px">'+
+    '<button class="btn-sm" style="background:#da3633;color:#fff" id="rej-ok">דחה ושלח מייל</button>'+
+    '<button class="btn-sm" id="rej-cancel">ביטול</button></div></div>';
+  document.body.appendChild(m);
+  var txt=m.querySelector('#rej-txt');
+  m.querySelectorAll('input[name=rej-r]').forEach(function(r){
+    r.addEventListener('change',function(){ txt.style.display=(r.value==='other'&&r.checked)?'block':'none';
+      if(r.value==='other'&&r.checked) txt.focus(); });
+  });
+  m.querySelector('#rej-cancel').onclick=function(){ m.remove(); };
+  m.addEventListener('click',function(e){ if(e.target===m) m.remove(); });
+  m.querySelector('#rej-ok').onclick=function(){
+    var sel=m.querySelector('input[name=rej-r]:checked'); var key=sel?sel.value:'content';
+    var note;
+    if(key==='other'){
+      note=(txt.value||'').trim();
+      if(!note){ toast('נא לכתוב את סיבת הדחייה'); txt.focus(); return; }
+    }else{
+      var R=AD_REJECT_REASONS.filter(function(r){return r[0]===key;})[0];
+      note=R[2].replace('{DUR}',AD_DEF_DUR);
+    }
+    m.remove();
+    doDecide(id,'reject',note);
+  };
+}
+function doDecide(id,what,note){
+  rpc('nsf_ad_decide',{p_token:NSF_TOKEN,p_campaign:id,p_decision:what,p_note:note||''})
     .then(function(r){
       if(!r||!r.ok){ toast((r&&r.err)||'הפעולה נכשלה'); return; }
 
       if(what==='reject'){
         toast('ההזמנה נדחתה · שולח מייל');
-        return edge('nsf-mail',{token:NSF_TOKEN,campaign_id:id,kind:'rejected'})
+        return edge('nsf-mail',{token:NSF_TOKEN,campaign_id:id,kind:'rejected',note:note||''})
           .then(function(){ toast('נדחה והלקוח עודכן'); loadQueue(); });
       }
 
@@ -1918,6 +1993,8 @@ function payLink(id){
 function loadAdsTab(){
   rpc('nsf_ad_contact_get',{}).then(function(r){
     var f=document.getElementById('ap-mail'); if(f && r) f.value=r.email||'';
+    var d=document.getElementById('ap-defdur'); if(d && r) d.value=r.default_dur||12;
+    if(r && r.default_dur) AD_DEF_DUR=+r.default_dur;
   }).catch(function(){});
   rpc('nsf_ad_pricing_get',{p_token:NSF_TOKEN}).then(function(r){
     if(!r||!r.ok) return;
@@ -1954,6 +2031,14 @@ function loadAdsTab(){
   if(mi && !mi.value){ var d=new Date(); mi.value=d.getFullYear()+'-'+(d.getMonth()<9?'0':'')+(d.getMonth()+1); }
 }
 
+function saveAdDefDur(){
+  var v=parseInt((document.getElementById('ap-defdur')||{}).value,10);
+  if(!v||v<3||v>60){ toast('ערך לא תקין — 3 עד 60 שניות'); return; }
+  rpc('nsf_ad_default_dur_save',{p_token:NSF_TOKEN,p_sec:v}).then(function(r){
+    if(r&&r.ok){ AD_DEF_DUR=v; toast('נשמר — מודעות חדשות יקבלו '+v+' שניות'); }
+    else toast((r&&r.err)||'השמירה נכשלה');
+  }).catch(function(){ toast('השמירה נכשלה — הרצת את קובץ ה-SQL?'); });
+}
 function saveAdMail(){
   var v=((document.getElementById('ap-mail')||{}).value||'').trim();
   if(v && !/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(v)){ toast('כתובת מייל לא תקינה'); return; }
@@ -3401,7 +3486,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 3.1</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 3.2</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){

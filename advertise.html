@@ -211,7 +211,9 @@ footer a{color:var(--gold-d);cursor:pointer;text-decoration:underline;margin:0 7
     <div class="card">
       <h2>המודעה <span style="color:#ff7b72">*</span></h2>
       <div class="hint">תמונה, תמונה מונפשת (GIF / WEBP), PDF או סרטון קצר ·
-        תמונות גדולות מוקטנות אוטומטית · סרטון עד 30 מגה</div>
+        תמונות גדולות מוקטנות אוטומטית</div>
+      <div class="hint" style="margin-top:4px">🎬 סרטון: מצולם <b>לאורך</b> (אנכי), באורך של עד
+        <b id="vid-max">12</b> שניות — זה זמן ההצגה של כל מודעה על המסך · עד 30 מגה</div>
       <div class="hint" style="margin-top:8px;color:#e8d48a;line-height:1.6">
         המסכים מוצבים בבנייני מגורים ובמוסדות קהילה. נא להעלות תוכן צנוע
         ומכבד, ההולם את אופי המקום והציבור. כל מודעה עוברת אישור לפני העלייה
@@ -300,8 +302,9 @@ footer a{color:var(--gold-d);cursor:pointer;text-decoration:underline;margin:0 7
   <p>באמצעות העלאת הקובץ אתם מצהירים כי בידיכם מלוא הזכויות בו, וכי
      אין בהצגתו משום הפרת זכויות של צד שלישי.</p>
   <h4>ביטול</h4>
-  <p>ביטול לפני תחילת הפרסום — החזר מלא. לאחר שהפרסום החל — החזר יחסי
-     לימים שטרם נוצלו.</p>
+  <p>ביטול לפני תחילת הפרסום — החזר מלא. לאחר שהפרסום החל, אפשר לבקש
+     להוריד את המודעה בכל עת, אך לא יינתן החזר עבור הימים שנותרו.</p>
+  <p>לבקשת הורדה, שינוי או ביטול: Nati@natisafe.co.il · 052-7171280.</p>
   <button onclick="hideModal('m-terms')">סגירה</button>
 </div></div>
 
@@ -818,6 +821,7 @@ function picked(){
 /* ---- מחירי "החל מ-" בראש הדף ----
    מחושבים בשרת לפי המחירון שבמסך הניהול: מסך אחד, יום / 7 ימים /
    30 ימים, מחיר בסיס כולל מע״מ (לפני תוספת חגים והנחת כמות). */
+try{ setTimeout(loadAdDur,0); }catch(e){}
 function heroPrices(sid){
   function iso(d){ return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2); }
   var start=new Date(); start.setDate(start.getDate()+1);
@@ -949,7 +953,41 @@ el("file").addEventListener("change",function(){
   el("fname-n").textContent=f.name+"  ("+Math.round(f.size/1024)+" KB)";
   el("fname").style.display="flex";
   UPLOADED=null;
+  if(inf.group==="video") checkVideo(f);
 });
+
+/* ---- בדיקת סרטון: אורך ≤ זמן ההצגה, ומצולם לאורך ----
+   זמן ההצגה נמשך מהגדרות הפרסום (פאנל הניהול), כך שאם הוא משתנה —
+   גם הטקסט בדף וגם הבדיקה משתנים איתו. סרטון שהדפדפן לא מצליח לפענח
+   (קידוד נדיר) לא נחסם כאן — הוא ייבדק באישור הידני. */
+var AD_DUR=12;
+function loadAdDur(){
+  rpc("nsf_ad_contact_get",{}).then(function(r){
+    if(r && +r.default_dur>0){ AD_DUR=+r.default_dur; var e=el("vid-max"); if(e) e.textContent=AD_DUR; }
+  }).catch(function(){});
+}
+function checkVideo(f){
+  var url; try{ url=URL.createObjectURL(f); }catch(e){ return; }
+  var v=document.createElement("video");
+  v.preload="metadata"; v.muted=true;
+  var done=false;
+  function fin(){ if(done) return; done=true; try{ URL.revokeObjectURL(url); }catch(e){} }
+  v.onloadedmetadata=function(){
+    var d=v.duration, w=v.videoWidth, h=v.videoHeight;
+    fin();
+    if(isFinite(d) && d > AD_DUR+0.5){
+      fieldErr("file","הסרטון באורך "+Math.round(d)+" שניות. המקסימום הוא "+AD_DUR+" שניות — זמן ההצגה של מודעה על המסך.");
+      clearFile(); return;
+    }
+    if(w && h && w > h){
+      fieldErr("file","הסרטון מצולם לרוחב. נא להעלות סרטון שמצולם לאורך (אנכי).");
+      clearFile(); return;
+    }
+  };
+  v.onerror=fin;
+  setTimeout(fin,8000);
+  v.src=url;
+}
 function clearFile(){
   el("file").value=""; el("fname").style.display="none";
   el("bar").style.display="none"; el("bar-i").style.width="0";
