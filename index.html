@@ -714,12 +714,23 @@ body.wx-header .board-hdr{padding-right:19vw}
    כך שאינה עולה על התחזית בכלל. */
 body.wx-header:not(.portrait) #building-title{
   backdrop-filter:none;-webkit-backdrop-filter:none;
-  padding-left:2vw;padding-right:2vw;
-  max-width:62%;box-sizing:border-box;overflow:hidden;
+  padding-left:2vw;padding-right:2vw;box-sizing:border-box;
 }
-body.wx-header:not(.portrait) #building-title-name{
-  display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;
-}
+/* מעברים משתנים בין מודעות — מצב ההתחלה של כל סוג */
+.ad-slide{transition:opacity .9s cubic-bezier(.4,0,.2,1),transform .9s cubic-bezier(.22,.8,.3,1),
+  filter .9s ease,clip-path .9s cubic-bezier(.4,0,.2,1);}
+.ad-slide.active{filter:none;clip-path:inset(0 0 0 0);}
+.ad-slide:not(.active)[data-fx="slide-r"]{transform:translateX(14%);}
+.ad-slide:not(.active)[data-fx="slide-l"]{transform:translateX(-14%);}
+.ad-slide:not(.active)[data-fx="rise"]{transform:translateY(10%);}
+.ad-slide:not(.active)[data-fx="zoom-in"]{transform:scale(.86);}
+.ad-slide:not(.active)[data-fx="zoom-out"]{transform:scale(1.14);}
+.ad-slide:not(.active)[data-fx="blur"]{filter:blur(16px);transform:scale(1.04);}
+.ad-slide:not(.active)[data-fx="flip"]{transform:perspective(1100px) rotateY(22deg) scale(.95);}
+.ad-slide:not(.active)[data-fx="wipe-r"]{clip-path:inset(0 0 0 100%);opacity:1;}
+.ad-slide:not(.active)[data-fx="wipe-l"]{clip-path:inset(0 100% 0 0);opacity:1;}
+.ad-slide:not(.active)[data-fx="tilt"]{transform:rotate(-2.5deg) scale(.93);}
+.ad-slide[data-anim="none"]{transition:none;}
 /* וידאו במודעות — אותם גבולות כמו תמונה */
 .ad-slide video.ad-vid{width:100%;height:100%;object-fit:cover;display:block;background:#000;}
 body.ads-bottom .ad-slide video.ad-vid{width:auto;height:17vh;max-width:60%;object-fit:contain;}
@@ -2022,19 +2033,29 @@ function wxEnsureEl(){
 /* גדלים נקבעים ב-CSS ביחס לרוחב המסך. אין מדידה בקוד — זה מה
    שגרם לתוצאות בלתי צפויות. הרוחב מוגבל ב-max-width וזהו. */
 function fitWx(){
-  /* בכותרת (לרוחב): התחזית נשארת בגודל הטבעי שלה, והכותרת שבמרכז
-     מקבלת רוחב מקסימלי לפי הרוחב האמיתי של התחזית, כך שלעולם
-     אינה עולה עליה. כשאין תחזית בכותרת — מבטלים את ההגבלה. */
+  /* הכותרת לא נחתכת יותר. קודם בודקים אם השם נכנס במרכז בלי לגעת
+     בתחזית — אם כן, לא נוגעים בכלום. אחרת הכותרת מוזזת למרכז השטח
+     הפנוי שמימין לתחזית, ורק אם גם שם אין מקום — הגופן מוקטן מעט. */
   var t=document.getElementById("building-title");
+  var n=document.getElementById("building-title-name");
   if(!t) return;
+  t.style.maxWidth=""; t.style.left=""; if(n) n.style.fontSize="";
   var w=document.getElementById("wx");
   var on = w && w.getAttribute("data-pos")==="header" &&
            !document.body.classList.contains("portrait") && w.offsetWidth>0;
-  if(!on){ t.style.maxWidth=""; return; }
+  if(!on) return;
   var box=t.offsetParent || t.parentNode;
   var W=(box && box.clientWidth) || window.innerWidth;
-  var side=w.offsetWidth + 14 + 20;          /* רוחב התחזית + המרחק מהקצה + רווח */
-  t.style.maxWidth=Math.max(200, W-2*side)+"px";
+  var used=w.offsetLeft + w.offsetWidth + 18;      /* קצה ימני של התחזית + רווח */
+  var tw=t.offsetWidth;
+  if((W-tw)/2 >= used) return;                     /* נכנס במרכז */
+  var free=W-used-12;
+  t.style.left=(used+free/2)+"px";
+  t.style.maxWidth=free+"px";
+  if(n && tw>free){
+    var fs=parseFloat(getComputedStyle(n).fontSize)||40;
+    n.style.fontSize=Math.max(fs*0.6, fs*free/tw)+"px";
+  }
 }
 window.addEventListener("resize",function(){ try{ fitWx(); }catch(e){} });
 setInterval(function(){ try{ fitWx(); }catch(e){} }, 5000);
@@ -2847,14 +2868,15 @@ function startAds(list, bodyId, tkey){
     var durOf=function(n){
       /* כרטיס הפרסום אינו ברשימה, ולכן מקבל משך קבוע */
       var sl=slides[n];
-      if(sl && sl.getAttribute("data-promo")==="1") return 10000;
+      if(sl && sl.getAttribute("data-promo")==="1") return 12000;
       var d=parseFloat((list[n]||{}).dur);
-      if(!d||d<1)d=8;            // ברירת מחדל 8 שניות, מינימום 1
+      if(!d||d<1)d=12;           // ברירת מחדל 12 שניות, מינימום 1
       return d*1000;
     };
     var next=function(){
       slides[idx].classList.remove("active");
       idx=(idx+1)%slides.length;
+      try{ adPickFx(slides[idx]); }catch(e){}
       slides[idx].classList.add("active");
       try{ adSyncVideos(body); }catch(e){}
       _adTimers[tkey]=setTimeout(next, durOf(idx));
@@ -4526,6 +4548,22 @@ function renderAdPdfs(root){
   });
 }
 
+/* ---- מעברים משתנים בין מודעות ----
+   מודעה שהמעבר שלה "משתנים" (ברירת המחדל, וגם "דהייה" הישנה וכל
+   המודעות בתשלום וכרטיס שטח הפרסום) מקבלת לפני כל כניסה מעבר אקראי
+   מתוך רשימה עדינה — שונה מהקודם, כדי שלא יחזור אותו מעבר פעמיים. */
+var AD_FX=["slide-r","slide-l","rise","zoom-in","zoom-out","blur","flip","wipe-r","wipe-l","tilt"];
+var _adFxLast="";
+function adPickFx(sl){
+  if(!sl) return;
+  var a=sl.getAttribute("data-anim")||"fade";
+  if(a!=="fade" && a!=="mix") return;          /* מעבר שנבחר במפורש נשאר כמו שהוא */
+  var fx; do{ fx=AD_FX[Math.floor(Math.random()*AD_FX.length)]; }while(fx===_adFxLast && AD_FX.length>1);
+  _adFxLast=fx;
+  sl.setAttribute("data-fx",fx);
+  void sl.offsetWidth;                           /* מצב ההתחלה נקלט לפני הכניסה */
+}
+
 /* ---- וידאו במודעות ----
    סרטון מזוהה לפי סיומת הקובץ (mp4 / m4v / webm / mov). הוא מושתק
    (דפדפנים חוסמים ניגון אוטומטי עם קול), חוזר בלולאה, ומתנגן רק
@@ -4569,6 +4607,6 @@ function adPromoHTML(){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 10.6</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 10.7</div>
 </body>
 </html>

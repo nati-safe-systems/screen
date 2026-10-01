@@ -1008,11 +1008,12 @@ tr:hover td{background:rgba(128,0,0,0.05);}
               <div style="flex:1">
                 <label style="font-size:11px;color:#8b949e;display:block;margin-bottom:3px">
                   משך הצגה בשניות</label>
-                <input id="ad-dur" type="number" min="1" step="1" value="8"
+                <input id="ad-dur" type="number" min="1" step="1" value="12"
                        style="width:100%">
               </div>
               <select id="ad-anim" style="flex:1;">
-                <option value="fade">מעבר: דהייה</option>
+                <option value="mix">מעבר: משתנים (מומלץ)</option>
+                <option value="fadeonly">מעבר: דהייה בלבד</option>
                 <option value="slide">מעבר: החלקה</option>
                 <option value="zoom">מעבר: הגדלה</option>
                 <option value="none">מעבר: ללא (מיידי)</option>
@@ -1766,7 +1767,7 @@ function loadQueue(){
       /* שליטה בקמפיין פעיל: משך, עצירה וסיום. עד כה אפשר היה
          לאשר ולדחות בלבד, ואחרי שקמפיין עלה לא הייתה דרך לגעת בו. */
       if(c.status==='active'||c.status==='paid'||c.status==='paused'){
-        var dur=(c.creatives&&c.creatives[0]&&c.creatives[0].dur)||8;
+        var dur=(c.creatives&&c.creatives[0]&&c.creatives[0].dur)||12;
         acts+='<span style="display:inline-flex;align-items:center;gap:5px;'+
           'margin-left:8px"><span style="font-size:11.5px;color:#8b949e">'+
           'שניות</span><input type="number" min="1" max="120" value="'+dur+'" '+
@@ -2236,7 +2237,7 @@ var DC_PROFILES={
 /* ----- ניהול פרסומות ----- */
 var adsList=[];
 var subUsers=[];
-var ANIM_LABELS={fade:"דהייה",slide:"החלקה",zoom:"הגדלה",none:"ללא"};
+var ANIM_LABELS={mix:"משתנים",fade:"משתנים",fadeonly:"דהייה",slide:"החלקה",zoom:"הגדלה",none:"ללא"};
 var SIDE_LABELS={both:"שני הצדדים",left:"שמאל בלבד",right:"ימין בלבד"};
 function toggleAdsMgmt(){
   /* ניהול הפרסומות היה מוסתר עד שמסמנים "פרסומות" בהגדרות
@@ -2256,7 +2257,7 @@ function renderAdsAdmin(){
   wrap.innerHTML=adsList.map(function(a,i){
     var t=(a.txt||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')||'(ללא טקסט)';
     var sideTxt=(a.side&&a.side!=='both')?(' · '+(SIDE_LABELS[a.side]||'')):'';
-    var meta=(a.dur||8)+' שנ\' · '+(ANIM_LABELS[a.anim||'fade']||'דהייה')+sideTxt;
+    var meta=(a.dur||12)+' שנ\' · '+(ANIM_LABELS[a.anim||'mix']||'משתנים')+sideTxt;
     return '<div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border-radius:8px;padding:6px 10px;">'+
       '<span style="flex:1;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(i+1)+'. '+t+
         ' <span style="color:#8b949e;">— '+meta+'</span></span>'+
@@ -2270,8 +2271,8 @@ function resetAdForm(){
   document.getElementById('ad-img').value='';
   try{ adImgClear(); }catch(e){}
   document.getElementById('ad-txt').value='';
-  document.getElementById('ad-dur').value='8';
-  document.getElementById('ad-anim').value='fade';
+  document.getElementById('ad-dur').value='12';
+  document.getElementById('ad-anim').value='mix';
   document.getElementById('ad-side').value='both';
   _adEditIdx=-1;
   var btn=document.getElementById('ad-save-btn'); if(btn)btn.textContent='+ הוסף מודעה';
@@ -2280,8 +2281,8 @@ function editAd(i){
   var a=adsList[i]; if(!a)return;
   document.getElementById('ad-img').value=a.img||'';
   document.getElementById('ad-txt').value=a.txt||'';
-  document.getElementById('ad-dur').value=a.dur||8;
-  document.getElementById('ad-anim').value=a.anim||'fade';
+  document.getElementById('ad-dur').value=a.dur||12;
+  document.getElementById('ad-anim').value=(!a.anim||a.anim==='fade')?'mix':a.anim;
   document.getElementById('ad-side').value=a.side||'both';
   _adEditIdx=i;
   var btn=document.getElementById('ad-save-btn'); if(btn)btn.textContent='שמור שינויים';
@@ -2290,8 +2291,8 @@ function editAd(i){
 function addAd(){
   var img=document.getElementById('ad-img').value.trim();
   var txt=document.getElementById('ad-txt').value.trim();
-  var dur=parseInt(document.getElementById('ad-dur').value,10); if(!dur||dur<1)dur=8;
-  var anim=document.getElementById('ad-anim').value||'fade';
+  var dur=parseInt(document.getElementById('ad-dur').value,10); if(!dur||dur<1)dur=12;
+  var anim=document.getElementById('ad-anim').value||'mix';
   var side=document.getElementById('ad-side').value||'both';
   if(!img && !txt){ toast('הדבק קישור תמונה או טקסט'); return; }
   var ad={img:img, txt:txt, dur:dur, anim:anim, side:side};
@@ -3361,7 +3362,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 2.8</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 2.9</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){
@@ -3654,7 +3655,7 @@ function loadLiveAds(){
     var arr=Array.isArray(list)?list:[];
     if(cnt) cnt.textContent = arr.length
       ? (arr.length+' מודעות בתשלום · סבב של '+
-         arr.reduce(function(a,x){return a+(+x.dur||8);},0)+' שניות')
+         arr.reduce(function(a,x){return a+(+x.dur||12);},0)+' שניות')
       : 'אין כרגע מודעות בתשלום';
     if(!arr.length){ box.innerHTML=''; return; }
     box.innerHTML = arr.map(function(a){
@@ -3676,7 +3677,7 @@ function loadLiveAds(){
         '<div style="flex:1;min-width:0">'+
           '<div style="font-size:12.5px;overflow:hidden;text-overflow:ellipsis;'+
           'white-space:nowrap">'+escH(a.txt||'מודעה ללא כותרת')+'</div>'+
-          '<div style="font-size:11px;color:#8b949e">מוצגת '+(+a.dur||8)+
+          '<div style="font-size:11px;color:#8b949e">מוצגת '+(+a.dur||12)+
           ' שניות · מתחילה '+escH(a._from||'')+'</div>'+
         '</div></div>';
     }).join('');
