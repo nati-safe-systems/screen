@@ -508,6 +508,15 @@ tr:hover td{background:rgba(128,0,0,0.05);}
   </div>
 
   <div id="pane-settings" class="tab-pane" style="display:none;">
+    <!-- שלט גבאי: "תפילת ___ מתחילה כאן עכשיו" על מסך הדלת של החדר -->
+    <div class="settings-card">
+      <div class="settings-title">שלט גבאי — תחילת תפילה בחדר</div>
+      <p style="font-size:12.5px;color:#8b949e;line-height:1.7;margin:0 0 10px">
+        לכל בית כנסת יש קוד וקישור לאפליקציית הגבאי. לחיצה על חדר מקפיצה על מסך הדלת שלו
+        הודעה ירוקה: "תפילת … מתחילה כאן עכשיו". המסך צריך להיות משויך באדמין לאתר ולחדר.
+      </p>
+      <div id="rk-list" style="font-size:13px;color:#8b949e">טוען…</div>
+    </div>
     <div class="settings-card">
       <div class="settings-title">שינוי סיסמת מנהל</div>
       <div class="field"><label>סיסמה נוכחית</label><div style="position:relative;">
@@ -2157,6 +2166,48 @@ function switchTab(t){
   document.querySelectorAll('.tab').forEach(function(el,i){el.className='tab'+(tabs[i]===t?' active':'');});
   tabs.forEach(function(n){document.getElementById('pane-'+n).style.display=n===t?'block':'none';});
   if(t==='ads') loadAdsTab();
+  if(t==='settings') loadRoomKeys();
+}
+
+/* ---- שלט גבאי: קודים, קישורים וכתובות Shelly לכל אתר ---- */
+var RK_APP="https://nati-safe-systems.github.io/screen/gabbai.html?k=";
+var RK_SHELLY=SB+"/functions/v1/nsf-room?k=";
+function loadRoomKeys(){
+  var box=document.getElementById('rk-list'); if(!box) return;
+  rpc('nsf_room_keys',{p_token:NSF_TOKEN}).then(function(list){
+    if(!Array.isArray(list)||!list.length){ box.textContent='אין אתרים — או שקובץ ה-SQL עוד לא הורץ.'; return; }
+    box.innerHTML=list.map(function(x){
+      var app=RK_APP+encodeURIComponent(x.key);
+      var rooms=(x.rooms||[]).map(function(r){
+        return '<div style="display:flex;gap:8px;align-items:center;padding:3px 0">'+
+          '<b style="color:#ffcc00;min-width:22px">'+r.no+'</b><span style="color:#e6edf3">'+esc2(r.name)+'</span></div>';
+      }).join('') || '<div>לא הוגדרו חדרים</div>';
+      return '<div style="border:1px solid #30363d;border-radius:10px;padding:12px;margin-bottom:10px;background:#0d1117">'+
+        '<div style="font-weight:800;color:#e6edf3;font-size:15px;margin-bottom:8px">'+esc2(x.site||'')+'</div>'+
+        '<div style="margin-bottom:8px">אפליקציית הגבאי:</div>'+
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'+
+          '<input readonly value="'+esc2(app)+'" dir="ltr" style="flex:1;min-width:200px;font-size:12px">'+
+          '<button class="btn-sm blue" onclick="rkCopy(this.previousElementSibling.value)">העתק</button>'+
+          '<button class="btn-sm" onclick="window.open(\''+app+'\',\'_blank\')">פתח</button></div>'+
+        '<div style="margin-bottom:4px">חדרים (המספר = הכפתור בשלט):</div>'+rooms+
+        '<div style="margin:10px 0 4px">כתובת ל-Shelly (במקום N — מספר החדר):</div>'+
+        '<div style="display:flex;gap:6px;flex-wrap:wrap">'+
+          '<input readonly value="'+esc2(RK_SHELLY+x.key+'&room=N')+'" dir="ltr" style="flex:1;min-width:200px;font-size:12px">'+
+          '<button class="btn-sm blue" onclick="rkCopy(this.previousElementSibling.value)">העתק</button></div>'+
+        '<div style="margin-top:10px"><button class="btn-sm" style="color:#ff8a8a" '+
+          'onclick="rkRekey(\''+x.key+'\')">החלף קוד (אם הקישור דלף)</button></div>'+
+      '</div>';
+    }).join('');
+  }).catch(function(){ box.textContent='שגיאה בטעינה — הרצת את room_calls.sql?'; });
+}
+function rkCopy(v){
+  try{ navigator.clipboard.writeText(v); toast('הועתק'); }catch(e){ prompt('העתק:',v); }
+}
+function rkRekey(old){
+  if(!confirm('להחליף את הקוד?\n\nהקישור הישן לאפליקציה וכתובות ה-Shelly יפסיקו לעבוד, ויהיה צריך לעדכן אותם.')) return;
+  rpc('nsf_room_rekey',{p_token:NSF_TOKEN,p_old:old}).then(function(r){
+    toast(r&&r.ok?'הקוד הוחלף':'הפעולה נכשלה'); loadRoomKeys();
+  });
 }
 
 function makeScRow(s,cm,now){
@@ -3486,7 +3537,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 3.2</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 3.3</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){
