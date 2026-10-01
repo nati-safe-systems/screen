@@ -720,7 +720,6 @@ body.wx-header:not(.portrait) #building-title{
 body.wx-header:not(.portrait) #building-title-name{
   display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;
 }
-body.wx-header:not(.portrait) #building-title-bg > .wx{max-width:17%;}
 /* וידאו במודעות — אותם גבולות כמו תמונה */
 .ad-slide video.ad-vid{width:100%;height:100%;object-fit:cover;display:block;background:#000;}
 body.ads-bottom .ad-slide video.ad-vid{width:auto;height:17vh;max-width:60%;object-fit:contain;}
@@ -1852,7 +1851,16 @@ function parseDisplayConfig(raw){
     audio_enabled: !!c.audio_enabled,
     audio_url: c.audio_url || "",
     audio_list: Array.isArray(c.audio_list) ? c.audio_list : [],
-    audio_volume: (c.audio_volume>=0 && c.audio_volume<=100) ? c.audio_volume : 40
+    audio_volume: (c.audio_volume>=0 && c.audio_volume<=100) ? c.audio_volume : 40,
+    /* הגדרות הפרסום. הפונקציה הזו מעבירה רק שדות שמופיעים כאן,
+       ולכן ads_promo / ads_mode נשמרו באדמין אבל לא הגיעו למסך מעולם —
+       זו הסיבה שכרטיס "שטח פרסום פנוי" ומצבי תחתון / מסך מלא לא עבדו. */
+    ads_promo: c.ads_promo===true,
+    ads_mode: (c.ads_mode==="bottom"||c.ads_mode==="full") ? c.ads_mode : "side",
+    ads_full_sec: (+c.ads_full_sec>=5) ? +c.ads_full_sec : 25,
+    ads_full_every: (+c.ads_full_every>=1) ? +c.ads_full_every : 5,
+    ads_qr: c.ads_qr,
+    ads_email: c.ads_email
   };
 }
 
@@ -2013,7 +2021,23 @@ function wxEnsureEl(){
    בנוסף, הכותרת מקבלת ריפוד שמונע ממנה לרוץ מתחת לווידג'ט. */
 /* גדלים נקבעים ב-CSS ביחס לרוחב המסך. אין מדידה בקוד — זה מה
    שגרם לתוצאות בלתי צפויות. הרוחב מוגבל ב-max-width וזהו. */
-function fitWx(){}
+function fitWx(){
+  /* בכותרת (לרוחב): התחזית נשארת בגודל הטבעי שלה, והכותרת שבמרכז
+     מקבלת רוחב מקסימלי לפי הרוחב האמיתי של התחזית, כך שלעולם
+     אינה עולה עליה. כשאין תחזית בכותרת — מבטלים את ההגבלה. */
+  var t=document.getElementById("building-title");
+  if(!t) return;
+  var w=document.getElementById("wx");
+  var on = w && w.getAttribute("data-pos")==="header" &&
+           !document.body.classList.contains("portrait") && w.offsetWidth>0;
+  if(!on){ t.style.maxWidth=""; return; }
+  var box=t.offsetParent || t.parentNode;
+  var W=(box && box.clientWidth) || window.innerWidth;
+  var side=w.offsetWidth + 14 + 20;          /* רוחב התחזית + המרחק מהקצה + רווח */
+  t.style.maxWidth=Math.max(200, W-2*side)+"px";
+}
+window.addEventListener("resize",function(){ try{ fitWx(); }catch(e){} });
+setInterval(function(){ try{ fitWx(); }catch(e){} }, 5000);
 
 function wxPaint(d){
   var el=document.getElementById("wx"); if(!el||!d||!d.current) return;
@@ -2738,7 +2762,9 @@ function pullPaidAds(){
     if(typeof list==="string"){ try{ list=JSON.parse(list); }catch(e){} }
     var arr=Array.isArray(list)?list:[];
     try{ console.log("[NatiSAFE] מודעות בתשלום:", arr.length); }catch(e){}
-    var sig=JSON.stringify(arr.map(function(a){return a._id+a.img;}));
+    /* החתימה כוללת גם את המשך והכיתוב — אחרת שינוי שניות באדמין
+       לא נקלט עד רענון ידני של המסך */
+    var sig=JSON.stringify(arr.map(function(a){return [a._id,a.img,a.dur,a.txt];}));
     if(sig===PAID_ADS.__sig) return;      /* בלי שינוי — לא מאתחלים סבב */
     PAID_ADS=arr; PAID_ADS.__sig=sig;
     /* הרצועות נבנות מחדש עם הרשימה הממוזגת. startAds משווה חתימה
@@ -4345,8 +4371,16 @@ function start(){
    כדי שמסך קיים לא ישתנה בלי שביקשו. */
 var _adsFullTimer=null, _adsFullIdx=0;
 
+var _adsModeSig=null, _adsFullFirst=null;
 function applyAdsMode(cfg){
   var mode=(cfg && cfg.ads_mode) || "side";
+  /* ההגדרות מוחלות מחדש בכל poll (כל 15 שניות). בלי ההשוואה הזו
+     הטיימר של מסך מלא היה מתאפס כל פעם, והמודעה הייתה קופצת
+     על כל המסך כל 15 שניות. */
+  var _sig=mode+"|"+(cfg&&cfg.ads_full_sec)+"|"+(cfg&&cfg.ads_full_every);
+  if(_sig===_adsModeSig) return;
+  _adsModeSig=_sig;
+  if(_adsFullFirst){ clearTimeout(_adsFullFirst); _adsFullFirst=null; }
   var B=document.body;
   B.classList.remove("ads-bottom");
   if(_adsFullTimer){ clearInterval(_adsFullTimer); _adsFullTimer=null; }
@@ -4361,7 +4395,7 @@ function applyAdsMode(cfg){
   var showSec=Math.max(5, +(cfg.ads_full_sec||25));
   var everyMin=Math.max(1, +(cfg.ads_full_every||5));
   _adsFullTimer=setInterval(function(){ adsFullShow(showSec); }, everyMin*60000);
-  setTimeout(function(){ adsFullShow(showSec); }, 8000);
+  _adsFullFirst=setTimeout(function(){ adsFullShow(showSec); }, 8000);
 }
 
 function adsFullShow(sec){
@@ -4413,7 +4447,7 @@ function adsFullShow(sec){
   window.__paidAdsBooted=true;
   function boot(){
     try{ pullPaidAds(); }catch(e){}
-    setInterval(function(){ try{ pullPaidAds(); }catch(e){} }, 120000);
+    setInterval(function(){ try{ pullPaidAds(); }catch(e){} }, 30000);
     setInterval(function(){
       fetch(SUPA+"/rest/v1/rpc/nsf_ad_tick",{
         method:"POST",
@@ -4535,6 +4569,6 @@ function adPromoHTML(){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 10.5</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 10.6</div>
 </body>
 </html>
