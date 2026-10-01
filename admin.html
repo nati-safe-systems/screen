@@ -356,14 +356,16 @@ tr:hover td{background:rgba(128,0,0,0.05);}
             <option value="pending">ממתינות לאישור</option>
             <option value="approved">מאושרות — ממתינות לתשלום</option>
             <option value="paid">שולמו</option>
-            <option value="active">פעילות</option>
+            <option value="active">פעילות — רצות על המסכים</option>
+            <option value="paused">מושהות</option>
             <option value="rejected">נדחו</option>
             <option value="">הכל</option>
           </select>
           <button class="btn-sm gray" onclick="loadQueue()">רענן</button>
         </div>
       </div>
-      <div id="aq-list"><div style="color:#8b949e;">טוען...</div></div>
+      <div style="background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.35);border-radius:9px;padding:10px 12px;margin-bottom:11px;font-size:12.5px;line-height:1.65"><b>כאן נמצאות המודעות ששולמו.</b> בחר <b>פעילות</b> כדי לראות מה רץ כרגע על המסכים, ושם אפשר לשנות משך הצגה, להשהות או לסיים.<br>המקטע <b>ניהול פרסומות</b> בעריכת מסך הוא למודעות ידניות בלבד.</div>
+          <div id="aq-list"><div style="color:#8b949e;">טוען...</div></div>
     </div>
 
     <div class="settings-card">
@@ -1739,7 +1741,7 @@ function loadAll(){
 var _adScreens=[];
 
 /* ---- תור ההזמנות ---- */
-var ST={pending:['ממתינה לאישור','#d29922'], approved:['מאושרת · ממתינה לתשלום','#58a6ff'],
+var ST={'paused':['מושהית','#d29922'],pending:['ממתינה לאישור','#d29922'], approved:['מאושרת · ממתינה לתשלום','#58a6ff'],
         paid:['שולמה','#3fb950'], active:['פעילה','#3fb950'],
         done:['הסתיימה','#8b949e'], rejected:['נדחתה','#f85149'],
         cancelled:['בוטלה','#8b949e'], draft:['טיוטה','#8b949e']};
@@ -1761,6 +1763,20 @@ function loadQueue(){
       }).join(' · ') || '<span style="color:#f85149;font-size:12px;">לא צורף קובץ</span>';
 
       var acts='';
+      /* שליטה בקמפיין פעיל: משך, עצירה וסיום. עד כה אפשר היה
+         לאשר ולדחות בלבד, ואחרי שקמפיין עלה לא הייתה דרך לגעת בו. */
+      if(c.status==='active'||c.status==='paid'||c.status==='paused'){
+        var dur=(c.creatives&&c.creatives[0]&&c.creatives[0].dur)||8;
+        acts+='<span style="display:inline-flex;align-items:center;gap:5px;'+
+          'margin-left:8px"><span style="font-size:11.5px;color:#8b949e">'+
+          'שניות</span><input type="number" min="1" max="120" value="'+dur+'" '+
+          'id="dur-'+c.id+'" style="width:58px;padding:5px 7px;font-size:13px">'+
+          '<button class="btn-sm" onclick="setDur(\''+c.id+'\')">שמור</button></span>';
+        acts+= (c.status==='paused')
+          ? '<button class="btn-sm green" onclick="pauseAd(\''+c.id+'\',true)">החזר לאוויר</button>'
+          : '<button class="btn-sm" onclick="pauseAd(\''+c.id+'\',false)">השהה</button>';
+        acts+='<button class="btn-sm red" onclick="stopAd(\''+c.id+'\')">סיים</button>';
+      }
       if(c.status==='pending'){
         acts='<button class="btn-sm green" onclick="decide(\''+c.id+'\',\'approve\')">אשר</button>'+
              '<button class="btn-sm red" onclick="decide(\''+c.id+'\',\'reject\')">דחה</button>';
@@ -3568,6 +3584,34 @@ function loadLiveAds(){
   }).catch(function(){
     box.innerHTML='<div style="color:#f85149;font-size:12px">הטעינה נכשלה</div>';
   });
+}
+
+/* ---- שליטה בקמפיין פעיל ---- */
+function setDur(id){
+  var el=document.getElementById('dur-'+id);
+  var v=parseInt((el||{}).value,10);
+  if(!v||v<1||v>120){ toast('משך לא תקין'); return; }
+  rpc('nsf_ad_set_dur',{p_token:NSF_TOKEN,p_campaign:id,p_sec:v})
+    .then(function(r){
+      if(r&&r.ok){ toast('המשך עודכן ל-'+v+' שניות'); loadQueue(); }
+      else toast((r&&r.err)||'העדכון נכשל');
+    }).catch(function(){ toast('העדכון נכשל'); });
+}
+function pauseAd(id,on){
+  if(!confirm(on?'להחזיר את המודעה לאוויר?':'להשהות את המודעה?\n\nהיא תרד מהמסכים עד שתחזיר אותה.')) return;
+  rpc('nsf_ad_pause',{p_token:NSF_TOKEN,p_campaign:id,p_on:!!on})
+    .then(function(r){
+      if(r&&r.ok){ toast(on?'חזרה לאוויר':'הושהתה'); loadQueue(); }
+      else toast((r&&r.err)||'הפעולה נכשלה');
+    }).catch(function(){ toast('הפעולה נכשלה'); });
+}
+function stopAd(id){
+  if(!confirm('לסיים את הקמפיין לפני הזמן?\n\nהמודעה תרד מהמסכים ולא תחזור.\nפעולה זו אינה הפיכה.')) return;
+  rpc('nsf_ad_stop',{p_token:NSF_TOKEN,p_campaign:id})
+    .then(function(r){
+      if(r&&r.ok){ toast('הקמפיין הסתיים'); loadQueue(); }
+      else toast((r&&r.err)||'הפעולה נכשלה');
+    }).catch(function(){ toast('הפעולה נכשלה'); });
 }
 </script>
 </body>
