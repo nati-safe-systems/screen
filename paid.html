@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>נתי SAFE · תשלום</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+body{background:#0a0e14;color:#eef2f7;font-family:Heebo,Arial,sans-serif;direction:rtl;
+  display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;box-sizing:border-box}
+.box{text-align:center;max-width:430px}
+.v{width:92px;height:92px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:46px;margin:0 auto 22px}
+.v.ok{background:rgba(63,185,80,.14);border:2px solid #3fb950;color:#3fb950}
+.v.no{background:rgba(248,81,73,.12);border:2px solid #f85149;color:#f85149}
+h1{font-size:25px;margin:0 0 14px}
+h1.ok{color:#3fb950} h1.no{color:#f85149}
+p{color:#8fa0b5;font-size:15.5px;line-height:1.65;margin:0 0 10px}
+.f{margin-top:30px;color:#8fa0b5;font-size:13px}
+</style>
+</head>
+<body>
+<div class="box" id="box"></div>
+<script>
+/* =====================================================================
+   נתי SAFE — דף החזרה אחרי תשלום בסאמית
+   ---------------------------------------------------------------------
+   עד עכשיו סאמית החזיר את הלקוח לפונקציה בסופהבייס שהחזירה HTML.
+   סופהבייס מגיש HTML מפונקציות כטקסט פשוט, ולכן הלקוח ראה קוד
+   וג׳יבריש. הדף הזה יושב בגיטהאב ומוצג כרגיל.
+
+   בנוסף, כגיבוי: הוא מעביר את פרטי החזרה ל-nsf-pay-ipn. אם ה-IPN
+   של סאמית כבר הגיע — לא קורה כלום (הקמפיין כבר מסומן). אם לא הגיע,
+   הפונקציה מאמתת את התשלום מול סאמית ומעלה את המודעה.
+   ===================================================================== */
+var SB="https://cxtrrejclkhqhkqbicmz.supabase.co";
+var SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dHJyZWpjbGtocWhrcWJpY216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTk3MDksImV4cCI6MjA5NTU3NTcwOX0._7wB4YwrYEnK6hWuR6YqcFxRb05OLnWvOelIC-ahIEQ";
+var q=new URLSearchParams(location.search);
+var ok=q.get("ok")!=="0";
+var box=document.getElementById("box");
+
+if(ok){
+  box.innerHTML=
+    '<div class="v ok">&#10003;</div>'+
+    '<h1 class="ok">התשלום התקבל, תודה!</h1>'+
+    '<p>המודעה תעלה למסכים בתאריך ההתחלה שבחרתם.</p>'+
+    '<p>אישור וחשבונית נשלחים לכתובת הדוא״ל שמסרתם.</p>'+
+    '<div class="f">נתי SAFE · 052-717-1280</div>';
+
+  /* גיבוי ל-IPN */
+  try{
+    var body={};
+    q.forEach(function(v,k){ body[k]=v; });
+    var c=q.get("c");
+    if(c) body.ExternalIdentifier=c;
+    /* סאמית מוסיף את מזהה התשלום בשמות שונים — מאתרים כל שדה שמכיל paymentid */
+    q.forEach(function(v,k){
+      if(/paymentid/i.test(k.replace(/[^a-z]/gi,"")) && v) body.PaymentID=v;
+    });
+    if(body.PaymentID || c){
+      fetch(SB+"/functions/v1/nsf-pay-ipn",{
+        method:"POST",
+        headers:{apikey:SK,Authorization:"Bearer "+SK,"Content-Type":"application/json"},
+        body:JSON.stringify(body)
+      }).catch(function(){});
+    }
+  }catch(e){}
+}else{
+  box.innerHTML=
+    '<div class="v no">&#10005;</div>'+
+    '<h1 class="no">התשלום לא הושלם</h1>'+
+    '<p>לא בוצע חיוב. אפשר לחזור לקישור התשלום שנשלח אליכם במייל ולנסות שוב.</p>'+
+    '<div class="f">לשאלות: נתי SAFE · 052-717-1280</div>';
+}
+</script>
+</body>
+</html>

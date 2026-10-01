@@ -1028,7 +1028,9 @@ function submitOrder(){
   uploadFile().then(function(up){
     b.textContent="שולח...";
     return rpc("nsf_ad_submit",{p_order:{
-      business: el("f-biz").value.trim(),
+      /* שם העסק אינו חובה. השרת דורש ערך בשדה, ולכן כשהוא ריק נשלח
+         השם הפרטי — זה גם השם שמופיע על החשבונית במקרה כזה. */
+      business: el("f-biz").value.trim() || contact,
       contact:  contact,
       phone:    el("f-phone1").value+"-"+ph,
       email:    email,

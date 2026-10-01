@@ -2851,7 +2851,8 @@ function startAds(list, bodyId, tkey){
         : '<img src="'+src.replace(/"/g,"")+'" alt="">');
     var txt=a.txt?'<div class="ad-txt">'+(a.txt.replace(/</g,"&lt;").replace(/>/g,"&gt;"))+'</div>':'';
     var anim=(a.anim||"fade");
-    html+='<div class="ad-slide'+(i===0?' active':'')+'" data-anim="'+anim+'">'+img+txt+'</div>';
+    var _ds=parseFloat(a.dur); if(!_ds||_ds<1) _ds=12;
+    html+='<div class="ad-slide'+(i===0?' active':'')+'" data-anim="'+anim+'" data-dur="'+_ds+'">'+img+txt+'</div>';
   }
   /* הכרטיס נכנס אחרי המודעות, כך שמספור השקופיות זהה למספור
      הרשימה. קודם הוא נכנס ראשון: המשכים הוזזו במקום אחד, ועם
@@ -2860,9 +2861,10 @@ function startAds(list, bodyId, tkey){
     html+='<div class="ad-slide" data-anim="fade" data-promo="1">'+
           adPromoHTML()+'</div>';
   }
+  try{ Array.prototype.forEach.call(body.querySelectorAll(".ad-slide"),function(x){ if(x.__pgT){ clearInterval(x.__pgT); x.__pgT=null; } }); }catch(e){}
   body.innerHTML=html;
   try{ renderAdPdfs(body); }catch(e){}
-  try{ adSyncVideos(body); }catch(e){}
+  try{ adSyncVideos(body); adPdfPages(body); }catch(e){}
   var slides=body.querySelectorAll(".ad-slide"),idx=0;
   if(slides.length>1){
     var durOf=function(n){
@@ -2871,14 +2873,16 @@ function startAds(list, bodyId, tkey){
       if(sl && sl.getAttribute("data-promo")==="1") return 12000;
       var d=parseFloat((list[n]||{}).dur);
       if(!d||d<1)d=12;           // ברירת מחדל 12 שניות, מינימום 1
-      return d*1000;
+      /* PDF של כמה עמודים: כל עמוד מקבל את מלוא הזמן */
+      var pg=parseInt(sl && sl.getAttribute("data-pages"),10)||1;
+      return d*1000*pg;
     };
     var next=function(){
       slides[idx].classList.remove("active");
       idx=(idx+1)%slides.length;
       try{ adPickFx(slides[idx]); }catch(e){}
       slides[idx].classList.add("active");
-      try{ adSyncVideos(body); }catch(e){}
+      try{ adSyncVideos(body); adPdfPages(body); }catch(e){}
       _adTimers[tkey]=setTimeout(next, durOf(idx));
     };
     _adTimers[tkey]=setTimeout(next, durOf(0));
@@ -4500,6 +4504,37 @@ function adsFullShow(sec){
      disableFontFace      רינדור בתוך ה-canvas, בלי תלות במערכת
 
    שלושתן יחד הן מה שמונע עברית הפוכה וג׳יבריש. */
+/* מצייר עמוד PDF ל-canvas, באותו מילוי כמו העמוד הראשון */
+function adPdfDraw(cv, page){
+  var host=cv.parentNode;
+  var w=(host&&host.clientWidth)||600, h=(host&&host.clientHeight)||800;
+  var vp0=page.getViewport({scale:1});
+  var scale=Math.max(w/vp0.width, h/vp0.height);
+  var dpr=Math.min(window.devicePixelRatio||1, 2);
+  var vp=page.getViewport({scale:scale*dpr});
+  cv.width=Math.round(vp.width); cv.height=Math.round(vp.height);
+  cv.style.width="100%"; cv.style.height="100%"; cv.style.objectFit="cover";
+  return page.render({canvasContext:cv.getContext("2d"), viewport:vp}).promise;
+}
+/* החלפת עמודים בשקופית PDF פעילה; בשקופית לא פעילה חוזרים לעמוד 1 */
+function adPdfPages(root){
+  var sls=(root||document).querySelectorAll(".ad-slide[data-pages]");
+  for(var i=0;i<sls.length;i++){
+    (function(sl){
+      var cvs=sl.querySelectorAll("canvas.ad-pdf");
+      var show=function(j){ for(var q=0;q<cvs.length;q++) cvs[q].style.display=(q===j)?"":"none"; };
+      if(sl.classList.contains("active")){
+        if(sl.__pgT) return;
+        var d=(parseFloat(sl.getAttribute("data-dur"))||12)*1000, j=0;
+        show(0);
+        sl.__pgT=setInterval(function(){ j=(j+1)%cvs.length; show(j); }, d);
+      }else{
+        if(sl.__pgT){ clearInterval(sl.__pgT); sl.__pgT=null; }
+        show(0);
+      }
+    })(sls[i]);
+  }
+}
 function renderAdPdfs(root){
   var list=(root||document).querySelectorAll("canvas.ad-pdf[data-pdf]");
   if(!list.length) return;
@@ -4522,6 +4557,23 @@ function renderAdPdfs(root){
       disableFontFace:true,
       isEvalSupported:false
     }).promise.then(function(doc){
+      /* PDF של כמה עמודים (עד 8): כל עמוד מרונדר ל-canvas משלו,
+         והשקופית מחליפה ביניהם — כל עמוד למשך מלוא זמן המודעה. */
+      var n=Math.min(doc.numPages||1, 8);
+      if(n>1){
+        var sl=cv.closest ? cv.closest(".ad-slide") : null;
+        var prev=cv;
+        for(var k=2;k<=n;k++){
+          (function(k){
+            var c2=document.createElement("canvas");
+            c2.className="ad-pdf"; c2.style.display="none"; c2.setAttribute("data-pg",k);
+            prev.parentNode.insertBefore(c2, prev.nextSibling); prev=c2;
+            doc.getPage(k).then(function(pg){ adPdfDraw(c2, pg); }).catch(function(){});
+          })(k);
+        }
+        if(sl){ sl.setAttribute("data-pages",n);
+                if(sl.classList.contains("active") && sl.parentNode) adPdfPages(sl.parentNode); }
+      }
       return doc.getPage(1);
     }).then(function(page){
       var host=cv.parentNode;
@@ -4607,6 +4659,6 @@ function adPromoHTML(){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 10.7</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 10.8</div>
 </body>
 </html>
