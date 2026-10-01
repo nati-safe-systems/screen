@@ -2510,6 +2510,11 @@ function resolveSite(cb){
 }
 
 var SITE=null,ROOMS=[],MINS=[],ANN=[],Z=null,ZDAY="";
+/* ספרדי = ערבית, אשכנזי = מעריב — לפי הגדרת בית הכנסת (sites.nusach) */
+function prName(k){
+  if(k==="arvit"||k==="maariv") return (SITE && SITE.nusach==="ashkenaz") ? "מעריב" : "ערבית";
+  return PR[k]||k;
+}
 var PR={selichot:"סליחות",shacharit:"שחרית",mussaf:"מוסף",mincha:"מנחה",arvit:"ערבית",maariv:"מעריב",unassigned:"טרם הוגדר",other:"תפילה"};
 
 function load(){
@@ -2552,6 +2557,8 @@ function drawMinyanim(now,nowMin){
     var list=NatiMinyan.resolve(rows,Z,now,{});
     if(!list.length)return;
     var nx=NatiMinyan.next(list,nowMin), g=NatiMinyan.byPrayer(list), rh="";
+    /* ערבית ומעריב הן אותה תפילה — שורה אחת, והשם לפי נוסח בית הכנסת */
+    if(g.maariv){ g.arvit=(g.arvit||[]).concat(g.maariv).sort(function(a,b){return a.minutes-b.minutes;}); delete g.maariv; }
     /* סדר קבוע, כדי שהתפילות תמיד יופיעו באותו סדר */
     ["selichot","shacharit","mussaf","mincha","arvit","maariv","other"].forEach(function(pk){
       var arr=g[pk]; if(!arr||!arr.length)return;
@@ -2566,7 +2573,7 @@ function drawMinyanim(now,nowMin){
           return '<i'+(nx&&x.minutes===nx.minutes?' class="nx"':'')+'>'+x.time+'</i>';
         }).join("");
       }
-      rh+='<div class="prow"><span>'+(PR[pk]||pk)+'</span><b>'+cells+'</b></div>';
+      rh+='<div class="prow"><span>'+prName(pk)+'</span><b>'+cells+'</b></div>';
     });
     out+='<div class="room"><div class="rn">'+esc(r.display_name||r.name)+'</div>'+rh+'</div>';
   });
@@ -3039,5 +3046,5 @@ setInterval(mkNextMinyan, 20000);
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot);
   else boot();
 })();
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 4.7 · 28.09.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 4.8 · 02.10.26</div>
 </body></html>

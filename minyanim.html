@@ -184,6 +184,11 @@ button.dz:hover{color:#ff6b6b}
       <div><label>קו אורך</label><input id="s_lng" type="number" step="0.0001"></div>
       <div><label>גובה (מ')</label><input id="s_elev" type="number"></div>
       <div><label>הדלקת נרות (דק' לפני שקיעה)</label><input id="s_candle" type="number"></div>
+      <div><label>נוסח בית הכנסת</label>
+        <select id="s_nusach" onchange="saveNusach()">
+          <option value="sefard">ספרדי / עדות המזרח — "ערבית"</option>
+          <option value="ashkenaz">אשכנזי — "מעריב"</option>
+        </select></div>
     </div>
     <button class="pri" style="margin-top:9px" onclick="saveSite()">שמור אתר</button>
     <div class="hint">הזמנים בכל מסכי האתר מחושבים לפי הנתונים האלה.</div>
@@ -1353,6 +1358,8 @@ function pickSite(){var id=document.getElementById("siteSel").value;
   fillThemes();
   var _th=document.getElementById("s_theme"); if(_th) _th.value=SITE.theme||"classic";
   s_lat.value=SITE.lat; s_lng.value=SITE.lng; s_elev.value=SITE.elevation; s_candle.value=SITE.candle_offset;
+  var _ns=document.getElementById("s_nusach"); if(_ns) _ns.value=(SITE.nusach==="ashkenaz")?"ashkenaz":"sefard";
+  applyNusach();
   Promise.all([
     sf("rooms?site_id=eq."+SITE.id+"&select=*&order=sort_order"),
     sf("prayer_times?site_id=eq."+SITE.id+"&select=*&order=sort_order"),
@@ -1371,6 +1378,28 @@ function saveSiteName(){
   sf("sites?id=eq."+SITE.id,{method:"PATCH",body:JSON.stringify({name:v})})
    .then(function(){flash();boot();}).catch(function(e){say("שמירה נכשלה: "+(e.message||e),1);});}
 
+/* ---- נוסח: ספרדי = ערבית, אשכנזי = מעריב ----
+   נקבע פעם אחת לבית הכנסת וחל על כל המסכים, על הודעת הגבאי ועל
+   אפליקציית הגבאי. ברשימת התפילות מוצגת רק המילה של הנוסח, ומניין
+   שהוגדר בעבר בשם השני מוצג באותה קבוצה. */
+function applyNusach(){
+  var w=(SITE && SITE.nusach==="ashkenaz")?"מעריב":"ערבית";
+  PRAYERS.arvit=w; PRAYERS.maariv=w;
+}
+function prayerOpts(sel){
+  var keep=(SITE && SITE.nusach==="ashkenaz")?"maariv":"arvit";
+  var drop=(keep==="arvit")?"maariv":"arvit";
+  var o={}; Object.keys(PRAYERS).forEach(function(k){ if(k!==drop || sel===drop) o[k]=PRAYERS[k]; });
+  if(sel===drop){ delete o[keep]; }
+  return opts(o,sel);
+}
+function saveNusach(){
+  if(!SITE) return;
+  var v=document.getElementById("s_nusach").value;
+  sf("sites?id=eq."+SITE.id,{method:"PATCH",body:JSON.stringify({nusach:v})})
+    .then(function(){ SITE.nusach=v; applyNusach(); flash(); try{ drawMins(); }catch(e){} try{ preview(); }catch(e){} })
+    .catch(function(e){ say("השמירה נכשלה: "+(e.message||e)+" — הורץ room_calls_v2.sql?",1); });
+}
 function saveSite(){sf("sites?id=eq."+SITE.id,{method:"PATCH",body:JSON.stringify({
   lat:+s_lat.value,lng:+s_lng.value,elevation:+s_elev.value,candle_offset:+s_candle.value})})
   .then(function(){flash();boot();}).catch(function(e){say("שמירה נכשלה: "+(e.message||e),1);});}
@@ -1468,7 +1497,7 @@ function healMins(){
 function drawMins(){
   healMins();
   var groups={};
-  MINS.forEach(function(m,i){ var k=m.prayer||"other"; (groups[k]=groups[k]||[]).push(i); });
+  MINS.forEach(function(m,i){ var k=m.prayer||"other"; if(k==="maariv") k="arvit"; (groups[k]=groups[k]||[]).push(i); });
   var order=PORDER.filter(function(k){return groups[k];})
     .concat(Object.keys(groups).filter(function(k){return PORDER.indexOf(k)===-1;}));
   document.getElementById("mins").innerHTML = order.length ? order.map(function(k){
@@ -1490,7 +1519,7 @@ function drawMinRow(i){ return [i].map(function(i){
     var h='<div class="item"'+(m.active===false?' style="border-color:#ff9f43"':'')+'><div class="hd"><b>'+(PRAYERS[m.prayer]||m.prayer)+'</b>'+
       '<span><span class="tag">'+({fixed:"שעה קבועה",interval:"כל X דקות",relative:"יחסי לזמן"}[m.mode])+'</span>'+
       '<button class="dz" onclick="delMin('+i+')">×</button></span></div><div class="grid" style="margin-top:6px">'+
-      '<div><label>תפילה</label><select onchange="saveMin('+i+',\'prayer\',this.value)">'+opts(PRAYERS,m.prayer)+'</select></div>'+
+      '<div><label>תפילה</label><select onchange="saveMin('+i+',\'prayer\',this.value)">'+prayerOpts(m.prayer)+'</select></div>'+
       '<div><label>חדר</label><select onchange="saveMin('+i+',\'room_id\',this.value)">'+
         '<option value="">— כל החדרים —</option>'+
         ROOMS.map(function(r){return "<option value='"+r.id+"'"+(m.room_id===r.id?" selected":"")+">"+esc(r.name)+"</option>";}).join("")+
