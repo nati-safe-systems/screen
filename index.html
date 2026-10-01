@@ -730,6 +730,25 @@ body.wx-header:not(.portrait) #building-title{
 .ad-slide:not(.active)[data-fx="wipe-r"]{clip-path:inset(0 0 0 100%);opacity:1;}
 .ad-slide:not(.active)[data-fx="wipe-l"]{clip-path:inset(0 100% 0 0);opacity:1;}
 .ad-slide:not(.active)[data-fx="tilt"]{transform:rotate(-2.5deg) scale(.93);}
+/* מסגרת זהב דקה סביב אזור המודעה — עם ברק עדין שנע לאט.
+   המסגרת יושבת על המיכל ולא על השקופית, ולכן לא משתתפת במעברים;
+   השקופיות מוכנסות פנימה כדי שהתמונה לא תצא מחוץ למסגרת. */
+@keyframes nsfGold{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+#adbar-body::after,#side-ads::after{
+  content:"";position:absolute;inset:5px;border-radius:11px;padding:2px;pointer-events:none;z-index:6;
+  background:linear-gradient(120deg,#7a5a14 0%,#d4af37 18%,#fff1b8 30%,#c9a227 45%,#8a6a1f 60%,#f3d778 78%,#b8901f 100%);
+  background-size:260% 260%;animation:nsfGold 9s ease-in-out infinite;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+  filter:drop-shadow(0 0 4px rgba(255,214,102,.35));
+}
+#adbar-body > .ad-slide,#side-ads > .ad-slide{
+  inset:7px !important;border-radius:9px;overflow:hidden;
+}
+#ads-full-in > img,#ads-full-in > video.ad-vid,#ads-full-in > canvas.ad-pdf{
+  border:2px solid #d4af37;border-radius:12px;
+  box-shadow:0 0 0 1px rgba(255,241,184,.35),0 0 18px rgba(212,175,55,.35);
+}
 .ad-slide[data-anim="none"]{transition:none;}
 /* וידאו במודעות — אותם גבולות כמו תמונה */
 .ad-slide video.ad-vid{width:100%;height:100%;object-fit:cover;display:block;background:#000;}
@@ -4648,17 +4667,17 @@ function adPromoHTML(){
     ? '<div class="ap-qr"><img src="'+ADS_QR_PNG+'" alt="קוד סריקה"></div>' : '';
   return '<div class="ad-promo">'+
     '<div class="ap-k">שטח פרסום</div>'+
-    '<div class="ap-h">המקום הזה<br>יכול להיות שלך</div>'+
-    '<div class="ap-s">אלפי עוברים ושבים מדי יום.<br>'+
-    'סרקו והזמינו בכמה דקות.</div>'+
+    '<div class="ap-h">שטח הפרסום הזה<br>יכול להיות שלך</div>'+
+    '<div class="ap-s">המודעה שלכם מול הדיירים והמבקרים בבניין.<br>'+
+    'סרקו את הקוד והזמינו בכמה דקות.</div>'+
     qr+
-    '<div class="ap-c">נתי SAFE · 052-717-1280</div>'+
+    '<div class="ap-c">נתי Safe מערכות · 052-7171280</div>'+
   '</div>';
 }
 </script>
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 10.8</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 10.9</div>
 </body>
 </html>
