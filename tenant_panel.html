@@ -404,12 +404,13 @@ input:focus,select:focus{border-color:#58a6ff;}
       </div>
 
       <div class="field" id="t-pdf-outer" style="border:1px solid #30363d;border-radius:10px;padding:14px;">
-        <div style="font-size:14px;color:#ffcc00;font-weight:700;margin-bottom:4px;">מסמכי PDF להצגה</div>
+        <div style="font-size:14px;color:#ffcc00;font-weight:700;margin-bottom:4px;">מודעות וקבצים ללוח המודעות</div>
         <div class="hint" style="margin-bottom:8px;">
-          כמה מסמכים שיוצגו אחד אחרי השני, כל אחד למשך שתגדיר.
+          מוצגים במרכז המסך, בלוח המודעות של הבניין — אחד אחרי השני, כל אחד למשך שתגדיר.
+          אפשר PDF, תמונה או סרטון קצר.
         </div>
         <div id="t-pdf-list"></div>
-        <button type="button" onclick="tPdfAdd()" style="background:#21262d;border:1px solid #30363d;color:#ffcc00;border-radius:6px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer;margin-top:4px;">+ מסמך</button>
+        <button type="button" onclick="tPdfAdd()" style="background:#21262d;border:1px solid #30363d;color:#ffcc00;border-radius:6px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer;margin-top:4px;">+ קובץ</button>
         <div style="display:flex;justify-content:flex-end;margin-top:10px;">
           <button class="btn-save" style="padding:10px 18px;" onclick="saveDisplayConfig()">שמור</button>
         </div>
@@ -1334,11 +1335,9 @@ var PERM_DEFS_T=[
     {id:'disp_zmanim',label:'זמני הלכה'},
     {id:'disp_parasha',label:'פרשת שבוע / חגים'},
     {id:'disp_board',label:'לוח מודעות'},
-    {id:'disp_news',label:'מבזקי חדשות'},
-    {id:'disp_ads',label:'פרסומות בצדדים'}
-  ]},
-  {cat:'פרסומות',items:[
-    {id:'ads_manage',label:'ניהול פרסומות'}
+    {id:'disp_news',label:'מבזקי חדשות'}
+    /* פרסומות — לא בפאנל הלקוח. רצועת הפרסום היא מערכת הפרסום בתשלום,
+       ונשלטת רק מהאדמין. */
   ]},
   {cat:'עיצוב רקע',items:[
     {id:'bg_brightness',label:'בהירות תמונת הרקע'}
@@ -2018,16 +2017,16 @@ function applyTenantPerms(){
   _tShow('opt-pdf', !!P.type_pdf);
   _tShow('opt-scrollpdf', !!P.type_pdf);
   // רכיבי המסך
-  var anyDisp = P.disp_clock||P.disp_zmanim||P.disp_parasha||P.disp_board||P.disp_news||P.disp_ads;
+  var anyDisp = P.disp_clock||P.disp_zmanim||P.disp_parasha||P.disp_board||P.disp_news;
   _tShow('tenant-display-sec', !!anyDisp);
   _tRow('td-clock', !!P.disp_clock);
   _tRow('td-zmanim', !!P.disp_zmanim);
   _tRow('td-parasha', !!P.disp_parasha);
   _tRow('td-board', !!P.disp_board);
   _tRow('td-news', !!P.disp_news);
-  _tRow('td-ads', !!P.disp_ads);
+  _tRow('td-ads', false);            /* רצועת הפרסום — אדמין בלבד */
   // ניהול פרסומות
-  _tShow('tenant-ads-sec', !!P.ads_manage);
+  _tShow('tenant-ads-sec', false);   /* פרסומות — לא בפאנל הלקוח, לאף אחד */
   // מהירות גלילה
   _tShow('tspeed-sec', !!P.scroll_speed);
   // בהירות רקע
@@ -2050,7 +2049,7 @@ function _tenantSaveDC(out){
 }
 function saveDisplayConfig(){
   var P=CURRENT_PERMS||{};
-  if(!(P.disp_clock||P.disp_zmanim||P.disp_parasha||P.disp_board||P.disp_news||P.disp_ads)){toast("אין הרשאה");return;}
+  if(!(P.disp_clock||P.disp_zmanim||P.disp_parasha||P.disp_board||P.disp_news)){toast("אין הרשאה");return;}
   var out=_tenantBaseDC();
   out.clock   = document.getElementById("td-clock").checked;
   out.zmanim  = document.getElementById("td-zmanim").checked;
@@ -2093,37 +2092,42 @@ function tPdfDraw(){
       '<span style="color:#8b949e;font-size:12px;min-width:16px">'+(i+1)+'.</span>'+
       (x.url
         ? '<div style="flex:1;min-width:0;display:flex;align-items:center;gap:7px;background:#0d1117;border:1px solid #30363d;'+
-            'border-radius:6px;padding:6px 8px;font-size:12px;color:#e6edf3;">📄 <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+
+            'border-radius:6px;padding:6px 8px;font-size:12px;color:#e6edf3;">'+tAdThumb(x.url)+' <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+
             (x.name ? String(x.name).replace(/</g,"&lt;") : "מסמך "+(i+1)+(/\/storage\/v1\/object\/public\//.test(x.url)?"":" · קישור"))+'</span></div>'
         : '<label style="flex:1;background:#21262d;border:1px dashed #ffcc00;color:#ffcc00;border-radius:6px;padding:7px;'+
-            'font-size:13px;font-weight:700;text-align:center;cursor:pointer;">בחר קובץ PDF'+
-            '<input type="file" accept="application/pdf,.pdf" style="display:none" onchange="tPdfFile(this,'+i+')"></label>')+
+            'font-size:13px;font-weight:700;text-align:center;cursor:pointer;">בחר קובץ (PDF / תמונה / סרטון)'+
+            '<input type="file" accept="application/pdf,.pdf,image/*,video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" style="display:none" onchange="tPdfFile(this,'+i+')"></label>')+
       '<input type="number" min="3" max="600" value="'+(x.sec||20)+'" oninput="_tPdf['+i+'].sec=+this.value" '+
       'style="width:72px;background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:6px;font-family:inherit;">'+
       '<span style="font-size:12px;color:#8b949e">שנ\'</span>'+
       '<button type="button" onclick="_tPdf.splice('+i+',1);tPdfDraw()" '+
       'style="background:none;border:none;color:#8b949e;font-size:17px;cursor:pointer;">×</button></div>';
-  }).join("") || '<div class="hint">אין מסמכים. לחץ "+ מסמך".</div>';
+  }).join("") || '<div class="hint">אין קבצים. לחץ "+ קובץ".</div>';
 }
 function tPdfAdd(){ _tPdf.push({url:"",sec:20}); tPdfDraw(); }
 /* מסמך PDF עולה כקובץ לאחסון — בלי קישורי דרייב */
 function tPdfFile(inp,i){
   var f=inp.files&&inp.files[0]; if(!f) return;
-  if(!/\.pdf$/i.test(f.name) && f.type!=="application/pdf"){ toast("נא לבחור קובץ PDF"); return; }
-  if(f.size>10*1024*1024){ toast("הקובץ גדול מ-10 מגה"); return; }
+  var inf=NSF_MEDIA.info(f);
+  if(!inf){ toast("סוג קובץ לא נתמך"); inp.value=""; return; }
+  if(NSF_MEDIA.tooBig(f,inf)){ toast("הקובץ גדול מדי (עד "+NSF_MEDIA.limitText(inf)+")"); inp.value=""; return; }
   var screenId=(typeof sid!=="undefined"&&sid)?sid:"general";
-  var path="screens/"+screenId+"/pdf/"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8)+".pdf";
   toast("מעלה...");
-  fetch(SUPA_BASE+"/storage/v1/object/screen-media/"+path,{
-    method:"POST",
-    headers:{apikey:SUPA_KEY,Authorization:"Bearer "+SUPA_KEY,"Content-Type":"application/pdf","x-upsert":"false"},
-    body:f
-  }).then(function(r){
-    if(!r.ok) throw new Error("HTTP "+r.status);
-    _tPdf[i].url=SUPA_BASE+"/storage/v1/object/public/screen-media/"+path;
-    _tPdf[i].name=f.name;
-    tPdfDraw(); toast("הועלה ✓ — לחץ שמור");
-  }).catch(function(e){ toast("ההעלאה נכשלה"); });
+  NSF_MEDIA.prepare(f,inf).then(function(p){
+    if(p.blob.size>NSF_MEDIA.LIMIT[inf.group]) throw new Error("big");
+    var path="screens/"+screenId+"/board/"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8)+"."+p.ext;
+    return fetch(SUPA_BASE+"/storage/v1/object/screen-media/"+path,{
+      method:"POST",
+      headers:{apikey:SUPA_KEY,Authorization:"Bearer "+SUPA_KEY,"Content-Type":p.mime,"x-upsert":"false"},
+      body:p.blob
+    }).then(function(r){
+      if(!r.ok) throw new Error("HTTP "+r.status);
+      _tPdf[i].url=SUPA_BASE+"/storage/v1/object/public/screen-media/"+path;
+      _tPdf[i].name=f.name;
+      tPdfDraw(); toast("הועלה ✓ — לחץ שמור");
+    });
+  }).catch(function(e){ toast(e&&e.message==="big"?"הקובץ גדול מדי":"ההעלאה נכשלה"); })
+    .then(function(){ inp.value=""; });
 }
 /* כל תמונה מוצגת כקובץ: תמונה ממוזערת, שם ומספר — לא ככתובת.
    (קישורים ישנים שהודבקו בעבר ממשיכים לעבוד ומוצגים באותה צורה.) */
@@ -2352,7 +2356,7 @@ function tAddAd(){
 }
 function tDelAd(i){ _tenantAds.splice(i,1); renderTenantAds(); }
 function saveAds(){
-  if(!(CURRENT_PERMS&&CURRENT_PERMS.ads_manage)){toast("אין הרשאה");return;}
+  toast("ניהול הפרסומות אינו זמין בפאנל הלקוח"); return;
   var out=_tenantBaseDC();
   out.ads_list=_tenantAds.slice();
   _tenantSaveDC(out).then(function(){ toast("הפרסומות עודכנו"); });
@@ -3038,7 +3042,7 @@ window.addEventListener("load",function(){
   }
 });
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 2.9</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.0</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון/טופס פתוח במקום לצאת מהאפליקציה */
 (function(){

@@ -1922,6 +1922,7 @@ function parseDisplayConfig(raw){
        זו הסיבה שכרטיס "שטח פרסום פנוי" ומצבי תחתון / מסך מלא לא עבדו. */
     ads_promo: c.ads_promo===true,
     ads_promo_en: c.ads_promo_en===true,
+    ads_sides: (c.ads_sides==="left"||c.ads_sides==="right"||c.ads_sides==="both") ? c.ads_sides : "",
     ads_mode: (c.ads_mode==="bottom"||c.ads_mode==="full") ? c.ads_mode : "side",
     ads_full_sec: (+c.ads_full_sec>=5) ? +c.ads_full_sec : 25,
     ads_full_every: (+c.ads_full_every>=1) ? +c.ads_full_every : 5,
@@ -2595,11 +2596,15 @@ function applyDisplayConfig(cfg){
   }
 
   // --- רצועת פרסומות שמאל ---
-  var wantSide = !!(cfg.ads && !cfg.zmanim);   // האם יוצגו פרסומות גם בצד ימין (במקום הזמנים)
+  /* באיזה צד רצועת הפרסום: ads_sides = left / right / both (נקבע באדמין).
+     בלי הגדרה — ההתנהגות הישנה: שמאל, וימין רק כשהזמנים כבויים. */
+  var _sides = cfg.ads_sides;
+  var wantLeft = !!cfg.ads && (!_sides || _sides==="left" || _sides==="both");
+  var wantSide = !!cfg.ads && (_sides ? (_sides==="right" || _sides==="both") : !cfg.zmanim);
   var adbar=document.getElementById("adbar");
   if(adbar){
     // בצד שמאל: מודעות ש'שני הצדדים' או 'שמאל בלבד'
-    if(cfg.ads){ adbar.style.display="flex"; startAds(adsForSide(cfg.ads_list,"left"),"adbar-body","main"); }
+    if(wantLeft){ adbar.style.display="flex"; startAds(adsForSide(cfg.ads_list,"left"),"adbar-body","main"); }
     else{ adbar.style.display="none"; stopAds("main"); _adsSig["main"]=null; }
     /* הכרטיס מוצג רק כשהמסך נפתח למכירת פרסום באדמין.
        מחוץ ל-if/else, אחרת הוא היה שובר את הצירוף ביניהם. */
@@ -2614,7 +2619,7 @@ function applyDisplayConfig(cfg){
   // --- פרסומות בסיידבר במקום הזמנים (כשהזמנים כבויים והפרסומות פעילות) ---
   if(sb) sb.classList.toggle("side-ads-on", wantSide);
   // איזון גודל התמונות בין שני הצדדים — רק כששני הצדדים מציגים פרסומות
-  document.body.classList.toggle("dual-ads", wantSide);
+  document.body.classList.toggle("dual-ads", wantLeft && wantSide);
   if(wantSide){ startAds(adsForSide(cfg.ads_list,"right"),"side-ads","side"); }
   else{ stopAds("side"); _adsSig["side"]=null; var _sa=document.getElementById("side-ads"); if(_sa) _sa.innerHTML=""; }
 
@@ -3086,7 +3091,17 @@ function startDocs(list, secPerPage, cols, animPdf){
   _docIdx=0;
   function step(){
     var it=_docList[_docIdx % _docList.length];
-    startPdf(it.url, secPerPage, cols, animPdf);
+    /* לוח המודעות של הבניין מקבל גם תמונות וסרטונים, לא רק PDF */
+    if(/\.(jpe?g|png|webp|gif|avif|bmp)(\?|#|$)/i.test(it.url) || adIsVideo(it.url)){
+      stopPdf._keepDocs=true; stopPdf(); stopPdf._keepDocs=false;
+      var st=document.getElementById("st-text"); st.className="";
+      var u=String(it.url).replace(/"/g,"&quot;");
+      st.innerHTML = adIsVideo(it.url)
+        ? '<video src="'+u+'" muted autoplay loop playsinline style="max-width:100%;max-height:100%;object-fit:contain;display:block;margin:auto"></video>'
+        : '<img src="'+u+'" alt="" style="max-width:100%;max-height:100%;object-fit:contain;display:block;margin:auto">';
+    }else{
+      startPdf(it.url, secPerPage, cols, animPdf);
+    }
     if(_docList.length>1){
       var ms=Math.max(3,(+it.sec||20))*1000;
       _docTimer=setTimeout(function(){ _docIdx++; step(); }, ms);
@@ -3096,7 +3111,7 @@ function startDocs(list, secPerPage, cols, animPdf){
   return true;
 }
 function stopPdf(){
-  stopDocs();
+  if(!stopPdf._keepDocs) stopDocs();
   if(_pdfState.timer){ clearTimeout(_pdfState.timer); _pdfState.timer=null; }
   _pdfState.doc=null;
   _pdfState.token++;
@@ -3131,14 +3146,18 @@ function startPdf(pdfUrl, secPerPage, cols, animPdf){
   }
   pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
+  /* קובץ שהועלה לאחסון שלנו נטען ישירות; קישור דרייב — דרך GAS כמו קודם */
+  var direct=/\/storage\/v1\/object\/public\//.test(String(pdfUrl||""));
   var proxy=GAS+"?action=pdf&url="+encodeURIComponent(pdfUrl)+"&_="+Date.now();
-  fetch(proxy,{cache:"no-store"})
-    .then(function(r){ return r.json(); })
+  (direct
+    ? Promise.resolve({ok:true, direct:true})
+    : fetch(proxy,{cache:"no-store"}).then(function(r){ return r.json(); }))
     .then(function(d){
       if(myToken!==_pdfState.token) return null;
-      if(!d||!d.ok||!d.b64) throw new Error((d&&d.error)?d.error:"לא התקבל קובץ");
+      if(!d||!d.ok||(!d.direct&&!d.b64)) throw new Error((d&&d.error)?d.error:"לא התקבל קובץ");
       return pdfjsLib.getDocument({
-        data:b64ToUint8(d.b64),
+        url:  d.direct ? pdfUrl : undefined,
+        data: d.direct ? undefined : b64ToUint8(d.b64),
         cMapUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/",
         cMapPacked:true,
         standardFontDataUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/",
@@ -4837,6 +4856,6 @@ function adPromoNext(sl){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 11.6</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 11.7</div>
 </body>
 </html>

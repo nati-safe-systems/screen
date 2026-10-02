@@ -968,6 +968,12 @@ tr:hover td{background:rgba(128,0,0,0.05);}
             <option value="bottom">רצועה תחתונה — רוחב מלא, גובה 20%</option>
             <option value="full">מסך מלא — המודעה משתלטת לזמן קצוב</option>
           </select>
+          <label style="margin-top:10px">צד רצועת הפרסום</label>
+          <select id="edit-sc-adssides">
+            <option value="left">שמאל בלבד</option>
+            <option value="right">ימין בלבד (מתחת לזמנים)</option>
+            <option value="both">שני הצדדים</option>
+          </select>
           <div style="font-size:11px;color:#8b949e;margin-top:6px;line-height:1.55">
             התחתונה נותנת שטח גדול בהרבה בלי לגזול מלוח המודעות.
             המלאה היא החזקה מסחרית — היא מה שמצדיק מחיר גבוה.
@@ -1076,10 +1082,9 @@ tr:hover td{background:rgba(128,0,0,0.05);}
           <div id="ads-list-admin" style="margin-top:12px;display:flex;flex-direction:column;gap:6px;"></div>
           <div style="font-size:11px;color:#8b949e;margin-top:6px;">העלה את התמונה ל-Google Drive, שתף כ"כל מי שיש לו הקישור", והדבק כאן את הקישור. המודעות מתחלפות אוטומטית על המסך.</div>
 
-          <label class="dc-chk" style="font-weight:700;margin-top:12px;">
-            <input type="checkbox" id="dc-tenant-ads"> אפשר ללקוח לנהל את תוכן הפרסומות
-          </label>
-          <div style="font-size:11px;color:#8b949e;margin-top:4px;">כשמופעל, הלקוח יוכל להוסיף/למחוק מודעות פרסום משלו דרך הממשק שלו.</div>
+          <!-- פרסום = רק מערכת הפרסום בתשלום. הלקוח / ועד הבית מעלה מודעות רק
+               ללוח המודעות שבמרכז המסך, לא לרצועת הפרסום. -->
+          <input type="checkbox" id="dc-tenant-ads" style="display:none">
         </div>
 
       <div class="accm" data-t="מסך הפרנסים" data-k="synagogue"></div>
@@ -2531,7 +2536,7 @@ function readDisplayConfig(){
     news_sources: Array.prototype.slice.call(document.querySelectorAll('.ns-src:checked')).map(function(c){return c.value;}),
     protected: document.getElementById('dc-protected').checked,
     tenant_can_edit: document.getElementById('dc-tenant-edit').checked,
-    tenant_ads_edit: document.getElementById('dc-tenant-ads').checked,
+    tenant_ads_edit: false,
     ads_list: adsList.slice(),
     pdf_sec: parseInt(document.getElementById('edit-sc-pdfsec').value,10)||10,
     pdf_cols: (document.getElementById('edit-sc-pdfcols').value==='2') ? 2 : 1,
@@ -2974,6 +2979,8 @@ function openEditScreen(sid){
     var dc = (typeof s.display_config==="string")
              ? JSON.parse(s.display_config||"{}") : (s.display_config||{});
     var am=document.getElementById('edit-sc-adsmode');
+    var asd=document.getElementById('edit-sc-adssides');
+    if(asd) asd.value = dc.ads_sides || (dc.zmanim===false ? "both" : "left");
     if(am){ am.value = dc.ads_mode || "side";
             var o=document.getElementById("adsfull-opts");
             if(o) o.style.display=(am.value==="full")?"block":"none"; }
@@ -3153,6 +3160,8 @@ function saveScreen(){
                 : (body.display_config||{}); }catch(e){}
     var am=document.getElementById('edit-sc-adsmode');
     if(am) cur.ads_mode = am.value || "side";
+    var asd=document.getElementById('edit-sc-adssides');
+    if(asd) cur.ads_sides = asd.value || "left";
     var fs=document.getElementById('edit-sc-adsfullsec');
     if(fs) cur.ads_full_sec = parseInt(fs.value,10)||25;
     var fe=document.getElementById('edit-sc-adsfullevery');
@@ -3560,7 +3569,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 3.5</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 3.6</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){
