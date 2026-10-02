@@ -417,14 +417,17 @@ input:focus,select:focus{border-color:#58a6ff;}
 
       <div class="field" id="t-bg-outer" style="border:1px solid #30363d;border-radius:10px;padding:14px;">
         <div id="t-bg-box">
-          <div style="font-size:14px;color:#ffcc00;font-weight:700;margin-bottom:6px;">תמונות רקע</div>
+          <div style="font-size:14px;color:#ffcc00;font-weight:700;margin-bottom:4px;">תמונות רקע</div>
+          <div class="hint" style="margin-bottom:8px;">
+            התמונה שמופיעה על המסך <b>מאחורי כל התוכן</b> — מאחורי הלוח, הזמנים וההודעות.
+            בלי תמונה מוצג הרקע המובנה של ערכת העיצוב.
+          </div>
           <div id="t-bg-list"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;align-items:center;">
             <label style="background:#ffcc00;color:#161b22;border-radius:6px;padding:7px 15px;font-size:13px;font-weight:800;cursor:pointer;">
               העלה תמונה מהמכשיר
-              <input type="file" accept="image/*" style="display:none" onchange="tBgUpload(this)">
+              <input type="file" accept="image/*" multiple style="display:none" onchange="tBgUpload(this)">
             </label>
-            <button type="button" onclick="tBgAdd()" style="background:#21262d;border:1px solid #30363d;color:#ffcc00;border-radius:6px;padding:7px 12px;font:inherit;font-size:13px;cursor:pointer;">+ קישור</button>
             <span id="tBgMsg" style="font-size:12px;color:#8b949e;"></span>
           </div>
           <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
@@ -2084,16 +2087,29 @@ function tPdfDraw(){
   }).join("") || '<div class="hint">אין מסמכים. לחץ "+ מסמך".</div>';
 }
 function tPdfAdd(){ _tPdf.push({url:"",sec:20}); tPdfDraw(); }
+/* כל תמונה מוצגת כקובץ: תמונה ממוזערת, שם ומספר — לא ככתובת.
+   (קישורים ישנים שהודבקו בעבר ממשיכים לעבוד ומוצגים באותה צורה.) */
 function tBgDraw(){
   var w=document.getElementById("t-bg-list"); if(!w)return;
-  w.innerHTML=_tBg.map(function(u,i){
-    return '<div style="display:flex;gap:6px;margin-bottom:5px;align-items:center;">'+
-      '<input value="'+String(u).replace(/"/g,"&quot;")+'" placeholder="כתובת תמונה" '+
-      'oninput="_tBg['+i+']=this.value" style="flex:1;background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:6px;font:inherit;">'+
-      '<button type="button" onclick="_tBg.splice('+i+',1);tBgDraw()" '+
-      'style="background:none;border:none;color:#8b949e;font-size:17px;cursor:pointer;">×</button></div>';
+  var list=_tBg.filter(function(u){ return String(u||"").trim(); });
+  _tBg=list;
+  w.innerHTML=list.map(function(u,i){
+    var safe=String(u).replace(/"/g,"&quot;");
+    var ours=/\/storage\/v1\/object\/public\//.test(u);
+    var name=ours ? ("תמונה "+(i+1)) : ("תמונה "+(i+1)+" · קישור חיצוני");
+    return '<div style="display:flex;gap:10px;margin-bottom:7px;align-items:center;background:#0d1117;'+
+        'border:1px solid #30363d;border-radius:8px;padding:6px;">'+
+      '<img src="'+safe+'" alt="" style="width:72px;height:46px;object-fit:cover;border-radius:5px;'+
+        'background:#21262d;flex:0 0 auto" onerror="this.style.opacity=.25">'+
+      '<div style="flex:1;min-width:0;font-size:13px;color:#e6edf3">'+name+
+        (list.length>1?'<div style="font-size:11px;color:#8b949e">מוצגת '+(i+1)+' מתוך '+list.length+'</div>':'')+'</div>'+
+      (i>0?'<button type="button" title="הקדם" onclick="tBgMove('+i+',-1)" '+
+        'style="background:none;border:none;color:#8b949e;font-size:16px;cursor:pointer;">▲</button>':'')+
+      '<button type="button" title="הסר" onclick="_tBg.splice('+i+',1);tBgDraw()" '+
+        'style="background:none;border:none;color:#ff7b72;font-size:19px;cursor:pointer;">×</button></div>';
   }).join("") || '<div style="font-size:12px;color:#6e7681;">אין תמונות — יוצג הרקע המובנה.</div>';
 }
+function tBgMove(i,d){ var j=i+d; if(j<0||j>=_tBg.length)return; var t=_tBg[i]; _tBg[i]=_tBg[j]; _tBg[j]=t; tBgDraw(); }
 function tBgAdd(){ _tBg.push(""); tBgDraw(); }
 
 /* מציג בפאנל הלקוח רק את מה שרלוונטי לסוג המסך.
@@ -2126,15 +2142,23 @@ function saveMinyanView(){
    .catch(function(){ toast("השמירה נכשלה"); });
 }
 function tBgUpload(inp){
-  var f=inp.files&&inp.files[0]; if(!f)return;
-  var msg=document.getElementById("tBgMsg");
-  if(msg){ msg.textContent="מעלה..."; msg.style.color="#8b949e"; }
-  nsfUpload(f, (typeof sid!=="undefined"?sid:"general"), function(url,err){
-    inp.value="";
-    if(err){ if(msg){ msg.textContent="ההעלאה נכשלה: "+err; msg.style.color="#ff6b6b"; } return; }
-    _tBg.push(url); tBgDraw();
-    if(msg){ msg.textContent="הועלה ✓ — לחץ שמור תצוגה"; msg.style.color="#3fb950"; }
-  });
+  var files=Array.prototype.slice.call(inp.files||[]); if(!files.length)return;
+  var msg=document.getElementById("tBgMsg"), done=0, fail=0;
+  function say(t,c){ if(msg){ msg.textContent=t; msg.style.color=c||"#8b949e"; } }
+  function next(){
+    if(!files.length){
+      inp.value="";
+      say(fail ? ("הועלו "+done+", נכשלו "+fail) : "הועלה ✓ — לחץ שמור תצוגה", fail?"#ff6b6b":"#3fb950");
+      return;
+    }
+    var f=files.shift();
+    say("מעלה"+(done+fail+1>1||files.length?" "+(done+fail+1):"")+"...");
+    nsfUpload(f, (typeof sid!=="undefined"?sid:"general"), function(url,err){
+      if(err||!url){ fail++; } else { done++; _tBg.push(url); tBgDraw(); }
+      next();
+    });
+  }
+  next();
 }
 
 function renderTenantAds(){
@@ -2853,7 +2877,7 @@ window.addEventListener("load",function(){
   }
 });
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 2.7</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 2.8</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון/טופס פתוח במקום לצאת מהאפליקציה */
 (function(){
