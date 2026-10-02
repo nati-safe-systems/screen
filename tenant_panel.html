@@ -475,12 +475,27 @@ input:focus,select:focus{border-color:#58a6ff;}
       <div class="field" id="tenant-ads-sec" style="display:none;border:1px solid #30363d;border-radius:10px;padding:14px;">
         <label style="color:#ffcc00;font-weight:800;">ניהול פרסומות</label>
         <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
-          <input id="t-ad-img" placeholder="קישור Google Drive לתמונה (שיתוף: כל מי שיש לו הקישור)" style="font-family:monospace;font-size:12px;direction:ltr;text-align:left;">
+          <!-- הקובץ עולה לאחסון; הכתובת נשמרת בשדה הנסתר t-ad-img -->
+          <input id="t-ad-img" type="hidden">
+          <div id="t-ad-file" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <label style="background:#ffcc00;color:#161b22;border-radius:6px;padding:8px 15px;font-size:13px;font-weight:800;cursor:pointer;">
+              בחר קובץ למודעה
+              <input type="file" style="display:none" onchange="tAdFile(this)"
+                accept="image/jpeg,image/png,image/webp,image/gif,image/avif,image/bmp,application/pdf,video/mp4,video/webm,video/quicktime,.jpg,.jpeg,.png,.webp,.gif,.avif,.bmp,.pdf,.mp4,.m4v,.webm,.mov">
+            </label>
+            <div id="t-ad-prev" style="display:none;align-items:center;gap:8px;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:5px 8px;">
+              <span id="t-ad-thumb"></span><span id="t-ad-fname" style="font-size:12px;color:#e6edf3;"></span>
+              <button type="button" onclick="tAdClear()" style="background:none;border:none;color:#ff7b72;font-size:17px;cursor:pointer;">×</button>
+            </div>
+            <span id="t-ad-msg" style="font-size:12px;color:#8b949e;"></span>
+          </div>
+          <div class="hint" style="margin:-2px 0 0">תמונה, GIF, PDF או סרטון קצר. תמונות גדולות מוקטנות אוטומטית.</div>
           <input id="t-ad-txt" placeholder="טקסט / כותרת (אופציונלי)">
           <div style="display:flex;gap:8px;">
-            <input id="t-ad-dur" type="number" min="1" step="1" value="8" placeholder="זמן הצגה (שניות)" style="flex:1;">
+            <input id="t-ad-dur" type="number" min="1" step="1" value="12" placeholder="זמן הצגה (שניות)" style="flex:1;">
             <select id="t-ad-anim" style="flex:1;">
-              <option value="fade">מעבר: דהייה</option>
+              <option value="mix">מעבר: משתנים (מומלץ)</option>
+              <option value="fadeonly">מעבר: דהייה בלבד</option>
               <option value="slide">מעבר: החלקה</option>
               <option value="zoom">מעבר: הגדלה</option>
               <option value="none">מעבר: ללא (מיידי)</option>
@@ -2076,9 +2091,13 @@ function tPdfDraw(){
   w.innerHTML=_tPdf.map(function(x,i){
     return '<div style="display:flex;gap:6px;align-items:center;margin-bottom:5px;">'+
       '<span style="color:#8b949e;font-size:12px;min-width:16px">'+(i+1)+'.</span>'+
-      '<input value="'+String(x.url||"").replace(/"/g,"&quot;")+'" placeholder="קישור PDF מגוגל דרייב" '+
-      'oninput="_tPdf['+i+'].url=this.value" style="flex:1;direction:ltr;font-size:12px;'+
-      'background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:6px;font-family:inherit;">'+
+      (x.url
+        ? '<div style="flex:1;min-width:0;display:flex;align-items:center;gap:7px;background:#0d1117;border:1px solid #30363d;'+
+            'border-radius:6px;padding:6px 8px;font-size:12px;color:#e6edf3;">📄 <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+
+            (x.name ? String(x.name).replace(/</g,"&lt;") : "מסמך "+(i+1)+(/\/storage\/v1\/object\/public\//.test(x.url)?"":" · קישור"))+'</span></div>'
+        : '<label style="flex:1;background:#21262d;border:1px dashed #ffcc00;color:#ffcc00;border-radius:6px;padding:7px;'+
+            'font-size:13px;font-weight:700;text-align:center;cursor:pointer;">בחר קובץ PDF'+
+            '<input type="file" accept="application/pdf,.pdf" style="display:none" onchange="tPdfFile(this,'+i+')"></label>')+
       '<input type="number" min="3" max="600" value="'+(x.sec||20)+'" oninput="_tPdf['+i+'].sec=+this.value" '+
       'style="width:72px;background:#0d1117;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:6px;font-family:inherit;">'+
       '<span style="font-size:12px;color:#8b949e">שנ\'</span>'+
@@ -2087,6 +2106,25 @@ function tPdfDraw(){
   }).join("") || '<div class="hint">אין מסמכים. לחץ "+ מסמך".</div>';
 }
 function tPdfAdd(){ _tPdf.push({url:"",sec:20}); tPdfDraw(); }
+/* מסמך PDF עולה כקובץ לאחסון — בלי קישורי דרייב */
+function tPdfFile(inp,i){
+  var f=inp.files&&inp.files[0]; if(!f) return;
+  if(!/\.pdf$/i.test(f.name) && f.type!=="application/pdf"){ toast("נא לבחור קובץ PDF"); return; }
+  if(f.size>10*1024*1024){ toast("הקובץ גדול מ-10 מגה"); return; }
+  var screenId=(typeof sid!=="undefined"&&sid)?sid:"general";
+  var path="screens/"+screenId+"/pdf/"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8)+".pdf";
+  toast("מעלה...");
+  fetch(SUPA_BASE+"/storage/v1/object/screen-media/"+path,{
+    method:"POST",
+    headers:{apikey:SUPA_KEY,Authorization:"Bearer "+SUPA_KEY,"Content-Type":"application/pdf","x-upsert":"false"},
+    body:f
+  }).then(function(r){
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    _tPdf[i].url=SUPA_BASE+"/storage/v1/object/public/screen-media/"+path;
+    _tPdf[i].name=f.name;
+    tPdfDraw(); toast("הועלה ✓ — לחץ שמור");
+  }).catch(function(e){ toast("ההעלאה נכשלה"); });
+}
 /* כל תמונה מוצגת כקובץ: תמונה ממוזערת, שם ומספר — לא ככתובת.
    (קישורים ישנים שהודבקו בעבר ממשיכים לעבוד ומוצגים באותה צורה.) */
 function tBgDraw(){
@@ -2165,28 +2203,151 @@ function renderTenantAds(){
   var wrap=document.getElementById("t-ads-list");
   if(!wrap)return;
   if(!_tenantAds.length){ wrap.innerHTML='<div style="font-size:12px;color:#8b949e;">אין מודעות עדיין.</div>'; return; }
-  var labels={fade:"דהייה",slide:"החלקה",zoom:"הגדלה",none:"ללא"};
+  var labels={mix:"משתנים",fade:"משתנים",fadeonly:"דהייה",slide:"החלקה",zoom:"הגדלה",none:"ללא"};
   wrap.innerHTML=_tenantAds.map(function(a,i){
     var t=(a.txt||"").replace(/</g,"&lt;").replace(/>/g,"&gt;")||"(ללא טקסט)";
-    var meta=(a.dur||8)+" שנ' · "+(labels[a.anim||"fade"]||"דהייה");
+    var meta=(a.dur||12)+" שנ' · "+(labels[a.anim||"mix"]||"משתנים");
     return '<div style="display:flex;align-items:center;gap:8px;background:#161b22;border:1px solid #30363d;border-radius:8px;padding:6px 10px;">'+
+      tAdThumb(a.img)+
       '<span style="flex:1;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(i+1)+'. '+t+
         ' <span style="color:#8b949e;">— '+meta+'</span></span>'+
       '<button type="button" onclick="tDelAd('+i+')" style="background:#5a1a1a;color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;">מחק</button>'+
     '</div>';
   }).join("");
 }
+/* ---- NSF_MEDIA — קבצי מודעה ----
+   משותף לטופס ההזמנה ולמסך הניהול, כדי ששניהם יקבלו בדיוק אותם קבצים.
+   סוגים: תמונה (JPG/PNG/WEBP/AVIF/BMP), תמונה מונפשת (GIF / WEBP מונפש),
+   PDF, וידאו (MP4/WEBM/MOV).
+   - תמונה רגילה גדולה מוקטנת בדפדפן ל-1920 פיקסלים ונשמרת כ-WEBP —
+     בדרך כלל פי 3–10 קטן יותר, בלי הבדל שרואים על המסך.
+   - GIF ו-WEBP לא נוגעים בהם, כי הקטנה דרך canvas מוחקת את ההנפשה.
+   - וידאו אי אפשר לדחוס בדפדפן, ולכן יש לו תקרת גודל.
+   סוג הקובץ מזוהה גם לפי הסיומת, כי בחלק מהטלפונים הדפדפן לא מוסר אותו. */
+var NSF_MEDIA=(function(){
+  var MB=1024*1024;
+  var EXT={jpg:"image/jpeg",jpeg:"image/jpeg",jfif:"image/jpeg",png:"image/png",
+    webp:"image/webp",gif:"image/gif",avif:"image/avif",bmp:"image/bmp",
+    pdf:"application/pdf",mp4:"video/mp4",m4v:"video/mp4",webm:"video/webm",
+    mov:"video/quicktime"};
+  var MIME_EXT={"image/jpeg":"jpg","image/png":"png","image/webp":"webp",
+    "image/gif":"gif","image/avif":"avif","image/bmp":"bmp","application/pdf":"pdf",
+    "video/mp4":"mp4","video/webm":"webm","video/quicktime":"mov"};
+  var LIMIT={still:10*MB, anim:15*MB, pdf:10*MB, video:30*MB};
+  var RAW_STILL=25*MB;   // תמונה גדולה מזה לא נכנסת גם לפני הקטנה
+  var ACCEPT="image/jpeg,image/png,image/webp,image/gif,image/avif,image/bmp,"+
+    "application/pdf,video/mp4,video/webm,video/quicktime,"+
+    ".jpg,.jpeg,.png,.webp,.gif,.avif,.bmp,.pdf,.mp4,.m4v,.webm,.mov";
+  function extOf(name){ var m=/\.([a-z0-9]+)$/i.exec(String(name||"")); return m?m[1].toLowerCase():""; }
+  function info(f){
+    if(!f) return null;
+    var t=String(f.type||"").toLowerCase();
+    var mime = MIME_EXT[t] ? t : (EXT[extOf(f.name)]||"");
+    if(!mime) return null;
+    var group = mime.indexOf("video/")===0 ? "video"
+              : mime==="application/pdf" ? "pdf"
+              : (mime==="image/gif"||mime==="image/webp") ? "anim" : "still";
+    return {mime:mime, ext:MIME_EXT[mime], group:group};
+  }
+  function tooBig(f,inf){
+    if(inf.group==="still") return f.size>RAW_STILL;
+    return f.size>LIMIT[inf.group];
+  }
+  function limitText(inf){
+    var mb=(inf.group==="still"?RAW_STILL:LIMIT[inf.group])/MB;
+    return mb+" מגה";
+  }
+  /* מחזיר {blob,mime,ext} — מוקטן אם כדאי, אחרת המקורי */
+  function prepare(f,inf){
+    var orig={blob:f, mime:inf.mime, ext:inf.ext};
+    if(inf.group!=="still") return Promise.resolve(orig);
+    return new Promise(function(res){
+      var url; try{ url=URL.createObjectURL(f); }catch(e){ return res(orig); }
+      var im=new Image();
+      im.onload=function(){
+        var w=im.naturalWidth, h=im.naturalHeight, max=1920;
+        var sc=Math.min(1, max/Math.max(w,h||1));
+        if(sc===1 && f.size<=700*1024){ URL.revokeObjectURL(url); return res(orig); }
+        var cw=Math.round(w*sc), ch=Math.round(h*sc);
+        var c=document.createElement("canvas"); c.width=cw; c.height=ch;
+        var g=c.getContext("2d");
+        function done(b,mime,ext){
+          URL.revokeObjectURL(url);
+          if(!b || b.size>=f.size) return res(orig);
+          res({blob:b, mime:mime, ext:ext});
+        }
+        g.drawImage(im,0,0,cw,ch);
+        c.toBlob(function(b){
+          if(b && b.type==="image/webp") return done(b,"image/webp","webp");
+          /* דפדפן שלא יודע לכתוב WEBP — JPEG על רקע לבן */
+          g.fillStyle="#fff"; g.fillRect(0,0,cw,ch); g.drawImage(im,0,0,cw,ch);
+          c.toBlob(function(j){ done(j,"image/jpeg","jpg"); },"image/jpeg",0.86);
+        },"image/webp",0.86);
+      };
+      im.onerror=function(){ URL.revokeObjectURL(url); res(orig); };
+      im.src=url;
+    });
+  }
+  function isVideoUrl(u){ return /\.(mp4|m4v|webm|mov)(\?|#|$)/i.test(String(u||"")); }
+  function isPdfUrl(u){ return /\.pdf(\?|#|$)/i.test(String(u||"")); }
+  return {info:info, prepare:prepare, tooBig:tooBig, limitText:limitText,
+          LIMIT:LIMIT, ACCEPT:ACCEPT, isVideoUrl:isVideoUrl, isPdfUrl:isPdfUrl};
+})();
+
+/* ---- קובץ למודעה ---- */
+var _tAdBusy=false;
+function tAdThumb(u){
+  u=String(u||""); if(!u) return '<span style="width:46px;height:30px;flex:0 0 auto"></span>';
+  var box='width:46px;height:30px;flex:0 0 auto;border-radius:4px;background:#21262d;';
+  if(NSF_MEDIA.isVideoUrl(u)) return '<span style="'+box+'display:flex;align-items:center;justify-content:center;">🎬</span>';
+  if(NSF_MEDIA.isPdfUrl(u))   return '<span style="'+box+'display:flex;align-items:center;justify-content:center;">📄</span>';
+  return '<img src="'+u.replace(/"/g,"&quot;")+'" style="'+box+'object-fit:cover" onerror="this.style.opacity=.25">';
+}
+function tAdClear(){
+  document.getElementById("t-ad-img").value="";
+  document.getElementById("t-ad-prev").style.display="none";
+  document.getElementById("t-ad-msg").textContent="";
+}
+function tAdFile(inp){
+  var f=inp.files&&inp.files[0]; if(!f) return;
+  var msg=document.getElementById("t-ad-msg");
+  var inf=NSF_MEDIA.info(f);
+  if(!inf){ msg.textContent="סוג קובץ לא נתמך"; msg.style.color="#ff6b6b"; inp.value=""; return; }
+  if(NSF_MEDIA.tooBig(f,inf)){ msg.textContent="הקובץ גדול מדי (עד "+NSF_MEDIA.limitText(inf)+")"; msg.style.color="#ff6b6b"; inp.value=""; return; }
+  _tAdBusy=true; msg.textContent="מעלה..."; msg.style.color="#8b949e";
+  var screenId=(typeof sid!=="undefined"&&sid)?sid:"general";
+  NSF_MEDIA.prepare(f,inf).then(function(p){
+    if(p.blob.size>NSF_MEDIA.LIMIT[inf.group]) throw new Error("הקובץ גדול מדי גם אחרי הקטנה");
+    var path="screens/"+screenId+"/ads/"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8)+"."+p.ext;
+    return fetch(SUPA_BASE+"/storage/v1/object/screen-media/"+path,{
+      method:"POST",
+      headers:{apikey:SUPA_KEY,Authorization:"Bearer "+SUPA_KEY,"Content-Type":p.mime,"x-upsert":"false"},
+      body:p.blob
+    }).then(function(r){
+      if(!r.ok) return r.text().then(function(t){ throw new Error(t||("HTTP "+r.status)); });
+      var url=SUPA_BASE+"/storage/v1/object/public/screen-media/"+path;
+      document.getElementById("t-ad-img").value=url;
+      document.getElementById("t-ad-thumb").innerHTML=tAdThumb(url);
+      document.getElementById("t-ad-fname").textContent=f.name;
+      document.getElementById("t-ad-prev").style.display="flex";
+      msg.textContent='הועלה ✓ — לחץ "+ הוסף מודעה"'; msg.style.color="#3fb950";
+    });
+  }).catch(function(e){
+    msg.textContent="ההעלאה נכשלה: "+(e.message||e); msg.style.color="#ff6b6b";
+  }).then(function(){ _tAdBusy=false; inp.value=""; });
+}
 function tAddAd(){
   var img=document.getElementById("t-ad-img").value.trim();
   var txt=document.getElementById("t-ad-txt").value.trim();
-  var dur=parseInt(document.getElementById("t-ad-dur").value,10); if(!dur||dur<1)dur=8;
-  var anim=document.getElementById("t-ad-anim").value||"fade";
-  if(!img && !txt){ toast("הדבק קישור תמונה או טקסט"); return; }
+  var dur=parseInt(document.getElementById("t-ad-dur").value,10); if(!dur||dur<1)dur=12;
+  var anim=document.getElementById("t-ad-anim").value||"mix";
+  if(_tAdBusy){ toast("הקובץ עדיין עולה — רגע"); return; }
+  if(!img && !txt){ toast("בחר קובץ או כתוב טקסט"); return; }
   _tenantAds.push({img:img,txt:txt,dur:dur,anim:anim});
-  document.getElementById("t-ad-img").value="";
+  tAdClear();
   document.getElementById("t-ad-txt").value="";
-  document.getElementById("t-ad-dur").value="8";
-  document.getElementById("t-ad-anim").value="fade";
+  document.getElementById("t-ad-dur").value="12";
+  document.getElementById("t-ad-anim").value="mix";
   renderTenantAds();
 }
 function tDelAd(i){ _tenantAds.splice(i,1); renderTenantAds(); }
@@ -2877,7 +3038,7 @@ window.addEventListener("load",function(){
   }
 });
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 2.8</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 2.9</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון/טופס פתוח במקום לצאת מהאפליקציה */
 (function(){
