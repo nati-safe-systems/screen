@@ -60,7 +60,10 @@ function nsfPrayerNow(d, lat, lon){
   " background-size:250% 100%;animation:nsfRcShine 2.6s linear infinite}"+
   "#nsf-rc .p{color:#fff;font-weight:900;font-size:13vmin;line-height:1.05;text-shadow:0 .6vmin 2vmin rgba(0,0,0,.35)}"+
   "#nsf-rc .s{color:#eafff0;font-weight:800;font-size:7vmin;margin-top:2vh;text-shadow:0 .4vmin 1.4vmin rgba(0,0,0,.3)}"+
-  "#nsf-rc .a{font-size:9vmin;margin-top:1.5vh;animation:nsfRcBounce 1s ease-in-out infinite}"+
+  "#nsf-rc .lg{display:block;margin:0 auto 2.6vh;max-height:17vh;max-width:56vw;object-fit:contain;"+
+  " filter:drop-shadow(0 0 .8vmin rgba(255,214,90,.95)) drop-shadow(0 0 2.6vmin rgba(255,190,40,.55))}"+
+  "#nsf-rc .a{margin-top:2.2vh;animation:nsfRcBounce 1s ease-in-out infinite;line-height:0}"+
+  "#nsf-rc .a svg{width:15vmin;height:15vmin;filter:drop-shadow(0 .6vmin 1.4vmin rgba(0,0,0,.35))}"+
   "@keyframes nsfRcPop{0%{transform:scale(.3);opacity:0}100%{transform:scale(1);opacity:1}}"+
   "@keyframes nsfRcGlow{0%,100%{transform:scale(1)}50%{transform:scale(1.04);"+
   " box-shadow:0 0 9vmin rgba(46,255,120,.95),0 0 22vmin rgba(46,255,120,.6),inset 0 0 4vmin rgba(255,255,255,.3)}}"+
@@ -69,13 +72,34 @@ function nsfPrayerNow(d, lat, lon){
   document.head.appendChild(css);
 
   var box=null, hideT=null;
+  /* הלוגו של הלקוח: מה שערכת העיצוב של המסך מציגה (--mkl, למשל
+     "המרכז הרוחני"), אחרת תמונת לוגו שמופיעה בדף. בלי לוגו — לא מוצג. */
+  function logoUrl(){
+    try{
+      var v=getComputedStyle(document.body).getPropertyValue("--mkl")||
+            getComputedStyle(document.documentElement).getPropertyValue("--mkl")||"";
+      var m=/url\(\s*["']?([^"')]+)["']?\s*\)/.exec(v);
+      if(m) return m[1];
+      var im=document.querySelector("img[id*=logo],img[class*=logo]");
+      if(im && im.src && !/natisafe-logo/.test(im.src)) return im.src;
+    }catch(e){}
+    return "";
+  }
   function show(prayer, secLeft){
     if(!box){
       box=document.createElement("div"); box.id="nsf-rc";
-      box.innerHTML='<div class="c"><div class="p"></div><div class="s">מתחילה כאן עכשיו</div><div class="a">⬇</div></div>';
+      /* לוגו הלקוח (זהב) למעלה, וחץ עבה למטה */
+      box.innerHTML='<div class="c"><img class="lg" alt="" style="display:none">'+
+        '<div class="p"></div><div class="s">מתחילה כאן עכשיו</div>'+
+        '<div class="a"><svg viewBox="0 0 100 100" aria-hidden="true">'+
+          '<path d="M50 92 L14 52 H36 V8 H64 V52 H86 Z" fill="#ffffff" stroke="#e9ffef" stroke-width="3" stroke-linejoin="round"/>'+
+        '</svg></div></div>';
       document.body.appendChild(box);
     }
     box.querySelector(".p").textContent="תפילת "+prayer;
+    var lg=box.querySelector(".lg"), src=logoUrl();
+    if(src){ if(lg.getAttribute("src")!==src) lg.src=src; lg.style.display="block"; lg.onerror=function(){ lg.style.display="none"; }; }
+    else lg.style.display="none";
     var c=box.querySelector(".c"); c.style.animation="none"; void c.offsetWidth; c.style.animation="";
     box.style.display="flex"; void box.offsetWidth; box.classList.add("on");
     clearTimeout(hideT);
