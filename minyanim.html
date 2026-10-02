@@ -172,6 +172,8 @@ button.dz:hover{color:#ff6b6b}
   <div id="siteCfg" class="hide">
     <label>שם האתר</label>
     <input id="s_name" onchange="saveSiteName()">
+    <!-- ערכת עיצוב ומיקום — למנהל המערכת בלבד. ללקוח מוסתר. -->
+    <div class="adm-only">
     <label style="margin-top:9px">ערכת עיצוב למסכים</label>
     <select id="s_theme" onchange="saveTheme()"><!-- מתמלא מ-NatiOrnate.THEMES --></select>
     <div class="hint">
@@ -179,10 +181,11 @@ button.dz:hover{color:#ff6b6b}
       ערכות <b>"המרכז הרוחני"</b> הן אותה מסגרת בארבעה גוונים ללוח הפנימי —
       אפשר להחליף ביניהן בכל רגע.
     </div>
+    </div>
     <div class="grid" style="margin-top:9px">
-      <div><label>קו רוחב</label><input id="s_lat" type="number" step="0.0001"></div>
-      <div><label>קו אורך</label><input id="s_lng" type="number" step="0.0001"></div>
-      <div><label>גובה (מ')</label><input id="s_elev" type="number"></div>
+      <div class="adm-only"><label>קו רוחב</label><input id="s_lat" type="number" step="0.0001"></div>
+      <div class="adm-only"><label>קו אורך</label><input id="s_lng" type="number" step="0.0001"></div>
+      <div class="adm-only"><label>גובה (מ')</label><input id="s_elev" type="number"></div>
       <div><label>הדלקת נרות (דק' לפני שקיעה)</label><input id="s_candle" type="number"></div>
       <div><label>נוסח בית הכנסת</label>
         <select id="s_nusach" onchange="saveNusach()">
@@ -1282,6 +1285,7 @@ function mnyLogin(){
   if(!NSF_TOKEN){ return; }
   rpc("nsf_me",{p_token:NSF_TOKEN}).then(function(res){
     if(res&&res.ok){
+      setAdminOnly(!!res.is_admin);
       document.getElementById("mny-login").style.display="none";
       boot();
     }else{ setMnyToken(''); }
@@ -1296,7 +1300,19 @@ function mnyLogin(){
    זו הגבלת תצוגה בלבד. ההרשאה האמיתית נאכפת בשרת. */
 var ONLY_CO = (new URLSearchParams(location.search)).get("co") || "";
 
-function boot(){ sf("sites?select=*&order=name").then(function(r){
+/* ערכת עיצוב, קו רוחב/אורך וגובה — רק למנהל המערכת. כברירת מחדל
+   מוסתרים, ונחשפים רק אחרי שהשרת אישר שהאסימון של מנהל. */
+var MNY_ADMIN=false;
+(function(){ var st=document.createElement("style");
+  st.textContent="body:not(.is-admin) .adm-only{display:none !important}";
+  document.head.appendChild(st); })();
+function setAdminOnly(on){
+  MNY_ADMIN=!!on;
+  document.body.classList.toggle("is-admin", MNY_ADMIN);
+}
+function boot(){
+  if(!MNY_ADMIN) rpc("nsf_me",{p_token:NSF_TOKEN}).then(function(r){ if(r&&r.ok) setAdminOnly(!!r.is_admin); }).catch(function(){});
+  sf("sites?select=*&order=name").then(function(r){
   SITES=Array.isArray(r)?r:[];
   if(ONLY_CO){
     SITES=SITES.filter(function(s){ return s.company_id===ONLY_CO; });
@@ -1494,6 +1510,33 @@ function healMins(){
   });
 }
 
+/* הסיבה האמיתית ששורה לא מוצגת היום. קודם ההודעה ניחשה לפי סוג
+   השורה ("חסר עוגן"), גם כשהשורה תקינה ופשוט לא חלה היום — למשל
+   מנחה של "ימי חול" ביום שישי. */
+function whyNotToday(m,z,date){
+  var ctx=NatiMinyan.dayCtx(date), dow=date.getDay();
+  var DN=["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"];
+  if(!NatiMinyan.matchDayType(m.day_type,ctx))
+    return "לא חל היום — מוגדר ל"+(DAYT[m.day_type]||m.day_type)+(ctx.isFriday?" (היום יום שישי)":"");
+  if(Array.isArray(m.days_of_week)&&m.days_of_week.length&&m.days_of_week.indexOf(dow)===-1)
+    return "לא חל היום — מוגדר לימים: "+m.days_of_week.map(function(d){return DN[d];}).join(", ");
+  var iso=date.getFullYear()+"-"+String(date.getMonth()+1).padStart(2,"0")+"-"+String(date.getDate()).padStart(2,"0");
+  if(m.date_from&&iso<m.date_from) return "לא חל היום — מתחיל ב-"+m.date_from;
+  if(m.date_to&&iso>m.date_to)   return "לא חל היום — הסתיים ב-"+m.date_to;
+  if(m.hebrew_only) return "לא חל היום — מוגבל ל"+({weekday:"ימי חול",shabbat:"שבת",yomtov:"יום טוב",rosh_chodesh:"ראש חודש"}[m.hebrew_only]||m.hebrew_only);
+  function zOk(k){ var kk=NatiMinyan.ZKEY[k]; return kk && z[kk]!=null && !isNaN(z[kk]); }
+  if(m.mode==="fixed") return "חסרה שעה";
+  if(m.mode==="relative") return !m.rel_zman ? "לא נבחר זמן הלכתי" : (zOk(m.rel_zman)?"":"הזמן ההלכתי לא חושב (בדוק מיקום)");
+  if(m.mode==="interval"){
+    if(!(+m.interval_min>0)) return "חסר מרווח בין מניינים (דקות)";
+    if(!m.interval_start && !m.interval_start_zman) return "חסר זמן התחלה";
+    if(!m.interval_end && !m.interval_end_zman) return "חסר זמן סיום";
+    if(m.interval_start_zman && !zOk(m.interval_start_zman)) return "זמן ההתחלה ההלכתי לא חושב";
+    if(m.interval_end_zman && !zOk(m.interval_end_zman)) return "זמן הסיום ההלכתי לא חושב";
+    return "חלון ארוך מ-24 שעות — בדוק התחלה וסיום";
+  }
+  return "סוג שורה לא מוכר";
+}
 function drawMins(){
   healMins();
   var groups={};
@@ -1620,10 +1663,8 @@ function preview(){
     if(m.active===false){ bad.push((PRAYERS[m.prayer]||m.prayer)+" — לא פעיל (בחר תפילה)"); return; }
     var r1=NatiMinyan.resolve([m],z,now,{});
     if(!r1.length){
-      var why = m.mode==="fixed" ? "חסרה שעה"
-              : m.mode==="relative" ? "חסר עוגן הלכתי"
-              : "חסרים מרווח או עוגני התחלה/סיום";
-      bad.push((PRAYERS[m.prayer]||m.prayer)+" — "+why);
+      var why=whyNotToday(m,z,now);
+      if(why) bad.push((PRAYERS[m.prayer]||m.prayer)+(m.label?" ("+m.label+")":"")+" — "+why);
     }
   });
   if(bad.length) out+='<div style="margin-top:9px;color:#ff9f43">לא מוצג במסכים:<br>'+
