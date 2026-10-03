@@ -1450,6 +1450,60 @@ function hc_mevMolad(info){
             dayHe:heNum(h.day), yearHe:heYear(h.year)};
   }
 
+  /* ---- חגים ומועדים (ארץ ישראל) ----
+     מחזיר שם המועד לתאריך לועזי, או "" אם אין. כולל דחיות צומות
+     שחלים בשבת, ודחיות יום הזיכרון / העצמאות / השואה. */
+  function hebHoliday(y,m,d){
+    var h=hebParts(y,m,d), M=h.m, D=h.d, dow=new Date(y,m-1,d).getDay(), leap=hc_leap(h.y);
+    function at(off){ var x=new Date(y,m-1,d+off); return hebParts(x.getFullYear(),x.getMonth()+1,x.getDate()); }
+    function dowOfDay(day){ return new Date(y,m-1,d+(day-D)).getDay(); }
+    if(M===7){
+      if(D<=2) return 'ראש השנה';
+      if((D===3&&dow!==6)||(D===4&&dow===0)) return 'צום גדליה';
+      if(D===9) return 'ערב יום כיפור';
+      if(D===10) return 'יום כיפור';
+      if(D===14) return 'ערב סוכות';
+      if(D===15) return 'סוכות';
+      if(D>=16&&D<=20) return 'חול המועד סוכות';
+      if(D===21) return 'הושענא רבה';
+      if(D===22) return 'שמחת תורה';
+    }
+    for(var k=0;k<8;k++){ var x=at(-k); if(x.m===9&&x.d===25) return 'חנוכה · נר '+heNum(k+1); }
+    if(M===10&&D===10) return 'עשרה בטבת';
+    if(M===11&&D===15) return 'ט״ו בשבט';
+    var adar=leap?13:12;
+    if(M===adar){
+      if((D===13&&dow!==6)||(D===11&&dow===4)) return 'תענית אסתר';
+      if(D===14) return 'פורים';
+      if(D===15) return 'שושן פורים';
+    }
+    if(leap&&M===12&&D===14) return 'פורים קטן';
+    if(M===1){
+      if(D===14) return 'ערב פסח';
+      if(D===15) return 'פסח';
+      if(D>=16&&D<=20) return 'חול המועד פסח';
+      if(D===21) return 'שביעי של פסח';
+      var sh=27, s27=dowOfDay(27); if(s27===5) sh=26; else if(s27===0) sh=28;
+      if(D===sh) return 'יום השואה';
+    }
+    if(M===2){
+      var atz=5, d5=dowOfDay(5);
+      if(d5===5) atz=4; else if(d5===6) atz=3; else if(d5===1) atz=6;
+      if(D===atz-1) return 'יום הזיכרון';
+      if(D===atz) return 'יום העצמאות';
+      if(D===18) return 'ל״ג בעומר';
+      if(D===28) return 'יום ירושלים';
+    }
+    if(M===3){ if(D===5) return 'ערב שבועות'; if(D===6) return 'שבועות'; }
+    if(M===4&&((D===17&&dow!==6)||(D===18&&dow===0))) return 'צום י״ז בתמוז';
+    if(M===5){
+      if((D===9&&dow!==6)||(D===10&&dow===0)) return 'תשעה באב';
+      if(D===15) return 'ט״ו באב';
+    }
+    if(D===30||(D===1&&M!==7)) return 'ראש חודש';
+    return '';
+  }
+
   var DOW=['א','ב','ג','ד','ה','ו','ש'];
   var GMON=['ינואר','פברואר','מרץ','אפריל','מאי','יוני',
             'יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
@@ -1483,6 +1537,10 @@ function hc_mevMolad(info){
       '.nhp-c.today{border-color:#3fb950}',
       '.nhp-c.on{background:#ffcc00}.nhp-c.on .g{color:#161b22}.nhp-c.on .h{color:#5a4700}',
       '.nhp-c.out{opacity:.28;cursor:default}',
+      '.nhp-c.hol{background:#2a2410;border-color:#6b5a1a}.nhp-c.hol .h{color:#ffcc00}',
+      '.nhp-c.rc .h{color:#7ee787}',
+      '.nhp-hl{margin-top:9px;font-size:12px;line-height:1.75;color:#cfd8e3;max-height:120px;overflow:auto}',
+      '.nhp-hl b{color:#ffcc00;font-weight:700}',
       '.nhp-ft{display:flex;gap:8px;margin-top:10px}',
       '.nhp-ft button{flex:1;background:#21262d;border:1px solid #30363d;color:#e6edf3;',
         'border-radius:7px;padding:7px;font:700 12px Heebo;cursor:pointer}'
@@ -1513,7 +1571,7 @@ function hc_mevMolad(info){
     var hTtl = (hf.name===hl.name) ? (hf.name+' '+hf.yearHe)
                                    : (hf.name+' – '+hl.name+' '+hl.yearHe);
 
-    var cells='';
+    var cells='', hols=[];
     for(var i=0;i<start;i++){
       cells+='<div class="nhp-c out"><span class="g">'+(prevDim-start+i+1)+'</span></div>';
     }
@@ -1521,9 +1579,11 @@ function hc_mevMolad(info){
       var h=hebParts(vy,vm,d);
       var dow=new Date(vy,vm-1,d).getDay();
       var cls='nhp-c'+(dow===6?' sat':'');
+      var hn=hebHoliday(vy,vm,d);
+      if(hn){ cls+=(hn==='ראש חודש'?' rc':' hol'); hols.push('<b>'+d+'.'+vm+'</b> · '+h.dayHe+' '+h.name+' — '+hn); }
       if(t.getFullYear()===vy && t.getMonth()===vm-1 && t.getDate()===d) cls+=' today';
       if(sel && sel.y===vy && sel.m===vm && sel.d===d) cls+=' on';
-      cells+='<div class="'+cls+'" data-d="'+d+'">'+
+      cells+='<div class="'+cls+'" data-d="'+d+'"'+(hn?' title="'+hn+'"':'')+'>'+
              '<span class="g">'+d+'</span><span class="h">'+h.dayHe+'</span></div>';
     }
     var tail=(7-((start+dim)%7))%7;
@@ -1538,6 +1598,7 @@ function hc_mevMolad(info){
       '<div class="nhp-grid">'+
         DOW.map(function(x){return '<div class="nhp-dow">'+x+'</div>';}).join('')+
         cells+'</div>'+
+      (hols.length?'<div class="nhp-hl">'+hols.join('<br>')+'</div>':'')+
       '<div class="nhp-ft"><button data-act="today">היום</button>'+
         '<button data-act="clear">נקה</button>'+
         '<button data-act="close">סגור</button></div>';
@@ -1653,6 +1714,7 @@ function hc_mevMolad(info){
     attachAll: attachAll,
     toHeb: toHeb,
     hebParts: hebParts,
+    hebHoliday: hebHoliday,
     heNum: heNum,
     VERSION: '1.1'
   };
@@ -3569,7 +3631,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 3.6</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 3.7</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){
