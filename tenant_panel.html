@@ -2725,10 +2725,12 @@ function saveMsg(){
                   {method:"PATCH",body:JSON.stringify(_bodyOther)}));
   });
   var _targets=[sid].concat(_others);
+  /* קודם, אחרי שמירה מוצלחת נקראה פונקציה load() שלא קיימת. השגיאה
+     נתפסה כאילו השמירה נכשלה — למרות שהכל נשמר. */
   Promise.all(_jobs).then(function(){
     closeModal();
-    if(_targets.length>1) toast("נשמר ל-"+_targets.length+" מסכים");
-    load();
+    toast(_targets.length>1 ? ("נשמר ל-"+_targets.length+" מסכים") : "נשמר ✓");
+    try{ loadScreens(); }catch(e){}
   }).catch(function(){ toast("השמירה נכשלה"); });
 }
 
@@ -2952,6 +2954,20 @@ function editSched(i){
   document.getElementById("sf-pdf-show-val").value=sc.pdf_show_sec||20;
   dtStartVal=sc.start||null; dtEndVal=sc.end||null;
   if(dpStart)dpStart.refresh(); if(dpEnd)dpEnd.refresh();
+  /* המסכים הנוספים שבהם המודעה הזו כבר קיימת — מסומנים מראש,
+     כך ששמירה מעדכנת אותה בכולם */
+  try{
+    var _with=(allScreens||[]).filter(function(x){
+      return x.screen_id!==sid && parseSchedules(x.schedules).some(function(o){ return sfbSame(o,sc); });
+    }).map(function(x){ return x.screen_id; });
+    if(_with.length){
+      document.getElementById("sfb-on").checked=true;
+      document.getElementById("sfb-box").style.display="block";
+      sfbRender();
+      Array.prototype.forEach.call(document.querySelectorAll(".sfb-cb"),function(c){ c.checked=_with.indexOf(c.value)>-1; });
+      sfbCount();
+    }
+  }catch(e){}
   document.getElementById("sf-wrap").classList.add("open");
   document.getElementById("sf-wrap").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
@@ -3004,15 +3020,31 @@ function sfbReset(){
   sfbCount();
 }
 
-/* מוסיף רשומה אחת לרשימת המתוזמנות של כל מסך שנבחר */
-function sfbBroadcast(rec, targets){
+/* לכל מודעה מתוזמנת יש מזהה (bid) שמשותף לכל המסכים ששודרה אליהם.
+   בשידור: אם במסך כבר יש מודעה עם אותו מזהה — היא מתעדכנת. מודעה
+   ישנה בלי מזהה מזוהה לפי התוכן והתאריכים של הגרסה שלפני העריכה.
+   רק אם לא נמצאה — נוספת חדשה. */
+function sfbNewId(){ return "s"+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function sfbSame(a,b){
+  if(!a||!b) return false;
+  if(a.bid&&b.bid) return a.bid===b.bid;
+  return (a.message||"")===(b.message||"") && (a.message_type||"")===(b.message_type||"") &&
+         (a.pdf_url||"")===(b.pdf_url||"") && (a.start||null)===(b.start||null) && (a.end||null)===(b.end||null);
+}
+function sfbFind(list, rec, old){
+  for(var i=0;i<list.length;i++){ if(list[i]&&rec.bid&&list[i].bid===rec.bid) return i; }
+  if(old){ for(var j=0;j<list.length;j++){ if(sfbSame(list[j],old)) return j; } }
+  return -1;
+}
+function sfbBroadcast(rec, targets, old){
   if(!targets.length) return Promise.resolve(0);
   var jobs=targets.map(function(t){
     return sf("screens?screen_id=eq."+encodeURIComponent(t)+"&select=schedules")
       .then(function(rows){
         var cur=[];
         try{ cur=parseSchedules(rows&&rows[0]?rows[0].schedules:null)||[]; }catch(e){ cur=[]; }
-        cur.push(rec);
+        var at=sfbFind(cur, rec, old);
+        if(at>=0) cur[at]=rec; else cur.push(rec);
         return sf("screens?screen_id=eq."+encodeURIComponent(t),
                   {method:"PATCH",body:JSON.stringify({schedules:JSON.stringify(cur)})});
       });
@@ -3041,14 +3073,17 @@ function saveSchedForm(){
     start: dtStartVal,
     end: dtEndVal
   };
+  var _old = sfIndex>=0 ? schedules[sfIndex] : null;
+  rec.bid = (_old && _old.bid) || sfbNewId();
   if(sfIndex>=0)schedules[sfIndex]=rec; else schedules.push(rec);
 
   var _t=sfbTargets();
   if(_t.length){
     /* למסכים האחרים נשמר מיד. במסך הנוכחי — בלחיצת "שמור ועדכן מסך",
        כמו קודם, כדי לא לשנות התנהגות שאתה כבר מכיר. */
-    sfbBroadcast(rec,_t).then(function(n){
-      toast("שודר ל-"+n+" מסכים נוספים · לחץ 'שמור ועדכן מסך' למסך הזה");
+    sfbBroadcast(rec,_t,_old).then(function(n){
+      toast((_old?"עודכן ב-":"שודר ל-")+n+" מסכים נוספים · לחץ 'שמור ועדכן מסך' למסך הזה");
+      try{ loadScreens(); }catch(e){}
     }).catch(function(){ toast("השידור למסכים הנוספים נכשל"); });
   }else{
     toast("נשמר (לחץ 'שמור ועדכן מסך' לעדכון המסך)");
@@ -3158,7 +3193,7 @@ window.addEventListener("load",function(){
   }
 });
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.1</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.2</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון/טופס פתוח במקום לצאת מהאפליקציה */
 (function(){
