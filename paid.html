@@ -42,15 +42,23 @@ var SB="https://cxtrrejclkhqhkqbicmz.supabase.co";
 var SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dHJyZWpjbGtocWhrcWJpY216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTk3MDksImV4cCI6MjA5NTU3NTcwOX0._7wB4YwrYEnK6hWuR6YqcFxRb05OLnWvOelIC-ahIEQ";
 var q=new URLSearchParams(location.search);
 var ok=q.get("ok")!=="0";
+/* אנגלית: ?lang=en, או טלפון שמוגדר באנגלית, או מי שבחר אנגלית בדף ההזמנה */
+var EN=false;
+try{ EN = q.get("lang")==="en" || localStorage.getItem("nsf_adv_lang")==="en" ||
+          (!q.get("lang") && !localStorage.getItem("nsf_adv_lang") && /^en/i.test(navigator.language||"")); }catch(e){}
+if(EN){ document.documentElement.lang="en"; document.documentElement.dir="ltr"; document.body.style.direction="ltr"; }
 var box=document.getElementById("box");
 
 if(ok){
   box.innerHTML=
     '<div class="v ok">&#10003;</div>'+
-    '<h1 class="ok">התשלום התקבל, תודה!</h1>'+
-    '<p>המודעה תעלה למסכים בתאריך ההתחלה שבחרתם.</p>'+
-    '<p>אישור וחשבונית נשלחים לכתובת הדוא״ל שמסרתם.</p>'+
-    '<div class="f"><b>נתי Safe מערכות</b> · <a href="tel:0527171280">052-7171280</a><br>'+
+    (EN ? '<h1 class="ok">Payment received — thank you!</h1>'+
+          '<p>Your ad will go live on the screens on the start date you chose.</p>'+
+          '<p>A confirmation and invoice are on their way to your email.</p>'
+        : '<h1 class="ok">התשלום התקבל, תודה!</h1>'+
+          '<p>המודעה תעלה למסכים בתאריך ההתחלה שבחרתם.</p>'+
+          '<p>אישור וחשבונית נשלחים לכתובת הדוא״ל שמסרתם.</p>')+
+    '<div class="f"><b>'+(EN?'Nati Safe Systems':'נתי Safe מערכות')+'</b> · <a href="tel:0527171280">052-7171280</a><br>'+
     '<a href="mailto:Nati@natisafe.co.il">Nati@natisafe.co.il</a></div>';
 
   /* גיבוי ל-IPN */
@@ -74,9 +82,11 @@ if(ok){
 }else{
   box.innerHTML=
     '<div class="v no">&#10005;</div>'+
-    '<h1 class="no">התשלום לא הושלם</h1>'+
-    '<p>לא בוצע חיוב. אפשר לחזור לקישור התשלום שנשלח אליכם במייל ולנסות שוב.</p>'+
-    '<div class="f"><b>נתי Safe מערכות</b> · <a href="tel:0527171280">052-7171280</a><br>'+
+    (EN ? '<h1 class="no">Payment was not completed</h1>'+
+          '<p>You have not been charged. You can return to the payment link in your email and try again.</p>'
+        : '<h1 class="no">התשלום לא הושלם</h1>'+
+          '<p>לא בוצע חיוב. אפשר לחזור לקישור התשלום שנשלח אליכם במייל ולנסות שוב.</p>')+
+    '<div class="f"><b>'+(EN?'Nati Safe Systems':'נתי Safe מערכות')+'</b> · <a href="tel:0527171280">052-7171280</a><br>'+
     '<a href="mailto:Nati@natisafe.co.il">Nati@natisafe.co.il</a></div>';
 }
 </script>

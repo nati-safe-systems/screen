@@ -1176,6 +1176,7 @@ function submitOrder(){
       /* שם העסק אינו חובה — ריק נשלח כריק, והשרת לא דורס איתו
          שם עסק שנשמר בהזמנה קודמת. החשבונית תצא על שם איש הקשר. */
       business: el("f-biz").value.trim(),
+      lang: LANG,                       /* המיילים יישלחו בשפת ההזמנה */
       contact:  contact,
       phone:    el("f-phone1").value+"-"+ph,
       email:    email,

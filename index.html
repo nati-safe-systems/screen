@@ -169,6 +169,7 @@ body.portrait #cam-wrap{top:90px;}
 /* מצלמות שמכסות את המרכז (מרכז / רשת): הלוח שמאחור מוסתר לגמרי,
    ורקע אטום בין המצלמות — שלא יציץ טקסט נגלל בין הסדקים */
 #cam-wrap.l-center,#cam-wrap.l-grid{background:#05070b;}
+
 body.cams-cover #mq-wrap,body.cams-cover #st-wrap{visibility:hidden !important;}
 #st-text{font-size:2.5vw;color:#fff;text-shadow:0 4px 20px rgba(0,0,0,0.9);text-align:center;padding:0 80px;line-height:1.6;}
 /* ===== נתי SAFE: תצוגה מודולרית לפי קהל יעד ===== */
@@ -801,6 +802,22 @@ body.ads-bottom .ad-slide video.ad-vid{width:auto;height:17vh;max-width:60%;obje
   body.wx-header .ttl,
   body.wx-header .board-hdr{padding-right:23vw}
 }
+
+/* מודעה בפרופורציה הנכונה: התמונה מוצגת בשלמותה (contain), בלי חיתוך
+   ובלי מתיחה. השטח שנשאר בצדדים מתמלא בגרסה מטושטשת וכהה של אותה
+   תמונה — נראה מכוון ולא "פסים שחורים". */
+.ad-slide .ad-bgimg{position:absolute;inset:-8%;background-size:cover;background-position:center;
+  filter:blur(2.4vh) brightness(.45) saturate(1.15);z-index:0;pointer-events:none;}
+.ad-slide img{object-fit:contain !important;position:relative;z-index:1;}
+.ad-slide .ad-txt{z-index:2;}
+/* כרטיס "רוצים לפרסם" קומפקטי יותר — יותר גובה למודעה עצמה */
+.adqr{padding:.8vh .6vw !important;}
+.adqr-t{font-size:1.6vh !important;margin-bottom:.5vh !important;}
+.adqr-row .adqr-img{max-width:118px !important;}
+.adqr-s{font-size:1.1vh !important;margin-top:.3vh !important;}
+.adqr-or{font-size:1.6vh;}
+.adqr-why{font-size:1.15vh;margin-top:.3vh;}
+.adqr-mb .adqr-m{margin-top:.5vh !important;}
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;800;900&family=Heebo:wght@300;400;500;700;800;900&family=Rubik:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,900&family=Suez+One&display=swap" rel="stylesheet">
 </head>
@@ -3005,7 +3022,8 @@ function startAds(list, bodyId, tkey){
     var img = !src ? '' : isVid ? adVideoHTML(src) :
       (isPdf
         ? '<canvas class="ad-pdf" data-pdf="'+src.replace(/"/g,"&quot;")+'"></canvas>'
-        : '<img src="'+src.replace(/"/g,"")+'" alt="">');
+        : '<div class="ad-bgimg" style="background-image:url(\''+src.replace(/["'()\\]/g,"")+'\')"></div>'+
+          '<img src="'+src.replace(/"/g,"")+'" alt="">');
     var txt=a.txt?'<div class="ad-txt">'+(a.txt.replace(/</g,"&lt;").replace(/>/g,"&gt;"))+'</div>':'';
     var anim=(a.anim||"fade");
     var _ds=parseFloat(a.dur); if(!_ds||_ds<1) _ds=12;
@@ -4929,6 +4947,6 @@ function adPromoNext(sl){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 11.9</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.0</div>
 </body>
 </html>
