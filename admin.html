@@ -1896,9 +1896,10 @@ function loadQueue(){
     if(!Array.isArray(list)||!list.length){
       box.innerHTML='<div style="color:#8b949e;">אין הזמנות בסטטוס הזה</div>'; return;
     }
+    list.forEach(function(c){ AQ_LANG[c.id]=c.lang||'he'; });
     box.innerHTML=list.map(function(c){
       var st=ST[c.status]||[c.status,'#8b949e'];
-      var scr=(c.screens||[]).join(' · ');
+      var scr=(c.screens||[]).join(' · ')+(c.lang==='en'?' · <b style="color:#58a6ff">EN</b>':'');
       var cre=(c.creatives||[]).map(function(x){
         return '<a href="'+escH(x.url)+'" target="_blank" rel="noopener" '+
           'style="color:#58a6ff;font-size:12px;">פתח את '+(x.kind==='pdf'?'ה-PDF':(NSF_MEDIA.isVideoUrl(x.url)?'הסרטון':'התמונה'))+'</a>';
@@ -1968,19 +1969,26 @@ function edge(fn,body){
 /* ---- סיבות דחייה ----
    נשלחות ללקוח במייל הדחייה. {DUR} מוחלף בזמן התצוגה שנקבע. */
 var AD_DEF_DUR=12;
+/* [מפתח, תווית, עברית, אנגלית] — הנוסח נבחר לפי שפת ההזמנה */
 var AD_REJECT_REASONS=[
   ['content','תוכן שאינו הולם',
-   'תוכן המודעה אינו תואם את אופי המקום והציבור שבו מוצגים המסכים. נשמח אם תתאימו את המודעה ותשלחו בקשה חדשה.'],
+   'תוכן המודעה אינו תואם את אופי המקום והציבור שבו מוצגים המסכים. נשמח אם תתאימו את המודעה ותשלחו בקשה חדשה.',
+   'The content of the ad does not suit the place and the public where the screens are shown. You are welcome to adjust the ad and submit a new request.'],
   ['quality','קובץ לא ברור / איכות נמוכה',
-   'הקובץ שצורף אינו ברור מספיק להצגה על המסך (איכות נמוכה, טקסט קטן מדי או חיתוך). נא לשלוח קובץ ברור יותר בבקשה חדשה.'],
+   'הקובץ שצורף אינו ברור מספיק להצגה על המסך (איכות נמוכה, טקסט קטן מדי או חיתוך). נא לשלוח קובץ ברור יותר בבקשה חדשה.',
+   'The attached file is not clear enough to show on the screen (low quality, text too small, or cropped). Please submit a new request with a clearer file.'],
   ['video','סרטון ארוך / לא לאורך',
-   'הסרטון שצורף ארוך מזמן התצוגה או אינו מצולם לאורך. נא לשלוח סרטון אנכי באורך של עד {DUR} שניות.'],
+   'הסרטון שצורף ארוך מזמן התצוגה או אינו מצולם לאורך. נא לשלוח סרטון אנכי באורך של עד {DUR} שניות.',
+   'The attached video is longer than the display time or is not vertical. Please send a vertical (portrait) video of up to {DUR} seconds.'],
   ['details','חסרים פרטים במודעה',
-   'במודעה חסרים פרטי התקשרות, או שהטקסט אינו ברור. נא להשלים את הפרטים ולשלוח בקשה חדשה.'],
+   'במודעה חסרים פרטי התקשרות, או שהטקסט אינו ברור. נא להשלים את הפרטים ולשלוח בקשה חדשה.',
+   'The ad is missing contact details, or the text is unclear. Please complete the details and submit a new request.'],
   ['field','תחום שאינו מתפרסם כאן',
-   'תחום הפעילות של המודעה אינו מתאים לפרסום במסכים אלה. תודה על ההתעניינות.'],
-  ['other','אחר — טקסט חופשי','']
+   'תחום הפעילות של המודעה אינו מתאים לפרסום במסכים אלה. תודה על ההתעניינות.',
+   'The type of business in this ad is not suitable for these screens. Thank you for your interest.'],
+  ['other','אחר — טקסט חופשי','','']
 ];
+var AQ_LANG={};   /* מזהה קמפיין → שפת ההזמנה, מתמלא בטעינת התור */
 function decide(id,what){
   if(what==='reject'){ openRejectModal(id); return; }
   if(!confirm('לאשר את ההזמנה?\n\nחלוקת ההכנסה תיכתב לפי האחוזים התקפים כעת,\nויישלח ללקוח מייל עם קישור לתשלום.')) return;
@@ -2003,6 +2011,7 @@ function openRejectModal(id){
     'width:100%;max-height:90vh;overflow:auto;padding:18px;color:#e6edf3">'+
     '<div style="font-size:17px;font-weight:800;margin-bottom:4px">דחיית ההזמנה</div>'+
     '<div style="font-size:12px;color:#8b949e;margin-bottom:12px">הסיבה שתבחר תישלח ללקוח במייל.</div>'+
+    (AQ_LANG[id]==='en'?'<div style="font-size:12.5px;color:#58a6ff;font-weight:700;margin:-6px 0 12px">🇬🇧 הלקוח הזמין באנגלית — הסיבה תישלח באנגלית. ב"אחר" כתוב באנגלית.</div>':'')+
     opts+
     '<textarea id="rej-txt" rows="3" placeholder="כתוב כאן את הסיבה" style="width:100%;box-sizing:border-box;'+
     'display:none;margin:4px 0 10px;padding:9px;border-radius:8px;border:1px solid #30363d;background:#0d1117;'+
@@ -2026,7 +2035,7 @@ function openRejectModal(id){
       if(!note){ toast('נא לכתוב את סיבת הדחייה'); txt.focus(); return; }
     }else{
       var R=AD_REJECT_REASONS.filter(function(r){return r[0]===key;})[0];
-      note=R[2].replace('{DUR}',AD_DEF_DUR);
+      note=(AQ_LANG[id]==='en'?R[3]:R[2]).replace('{DUR}',AD_DEF_DUR);
     }
     m.remove();
     doDecide(id,'reject',note);
@@ -3673,7 +3682,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 3.8</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 3.9</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){
