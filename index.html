@@ -4957,10 +4957,33 @@ document.addEventListener("dblclick", function(){
     }
   }catch(e){}
 });
+
+/* ---- השעון תמיד נכנס ברוחב הסרגל ----
+   גודל השעון מחושב לפי רוחב המסך, אבל רוחב הסרגל משתנה (מסך מלא,
+   רצועת פרסום בשני הצדדים, יחס מסך שונה) — ואז הספרות נחתכו בקצה.
+   כאן הגופן מוקטן בדיוק עד שהשעה, כולל השניות, נכנסת במלואה. */
+function fitTimer(){
+  var t=document.getElementById("timer"); if(!t || !t.offsetParent) return;
+  t.style.removeProperty("font-size");
+  t.style.whiteSpace="nowrap";
+  var w=(t.parentNode && t.parentNode.clientWidth) || t.clientWidth;
+  if(!w) return;
+  var cs=getComputedStyle(t.parentNode);
+  w -= (parseFloat(cs.paddingLeft)||0) + (parseFloat(cs.paddingRight)||0) + 6;
+  var base=parseFloat(getComputedStyle(t).fontSize)||40, fs=base;
+  var guard=0;
+  while(t.scrollWidth > w && fs > base*0.5 && guard++ < 80){
+    fs-=1; t.style.setProperty("font-size", fs+"px", "important");
+  }
+}
+window.addEventListener("resize", function(){ setTimeout(fitTimer,150); });
+document.addEventListener("fullscreenchange", function(){ setTimeout(fitTimer,300); });
+setTimeout(fitTimer, 1500);
+setInterval(fitTimer, 60000);
 </script>
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.1</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.2</div>
 </body>
 </html>
