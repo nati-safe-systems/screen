@@ -21,7 +21,12 @@ body{background:var(--bg);color:var(--ink);font-family:Heebo,Arial,sans-serif;
 .wrap{max-width:660px;margin:0 auto;padding:0 14px}
 
 header{text-align:center;padding:30px 14px 24px}
-header img{width:78px;height:78px;border-radius:50%;object-fit:cover;
+header{position:relative}
+#lang-btn{position:absolute;top:14px;inset-inline-end:14px;background:#1a2331;border:1px solid #2a3544;
+  color:#ffcc00;border-radius:20px;padding:6px 14px;font:700 13px Heebo,Arial,sans-serif;cursor:pointer}
+html[dir=ltr] body{direction:ltr}
+html[dir=ltr] .phone{flex-direction:row-reverse}
+header img{width:150px;max-width:55%;height:auto;object-fit:contain;
   border:2px solid var(--gold);box-shadow:0 0 30px rgba(255,204,0,.25);margin-bottom:14px}
 header h1{font-family:"Frank Ruhl Libre",serif;font-size:27px;font-weight:900;
   background:linear-gradient(175deg,#fff6d4,#ffcc00 45%,#c99a2e);
@@ -113,7 +118,8 @@ footer a{color:var(--gold-d);cursor:pointer;text-decoration:underline;margin:0 7
 </style></head><body>
 
 <header>
-  <img src="https://nati-safe-systems.github.io/screen/nati-logo.jpeg" alt="נתי SAFE מערכות">
+  <button id="lang-btn" type="button" onclick="setLang(LANG==='en'?'he':'en')">English</button>
+  <img src="natisafe-logo.png" alt="Nati Safe">
   <h1>פרסום במסכי נתי SAFE</h1>
   <div class="tag">מסכים דיגיטליים בלובי בנייני מגורים</div>
 </header>
@@ -309,6 +315,89 @@ footer a{color:var(--gold-d);cursor:pointer;text-decoration:underline;margin:0 7
 </div></div>
 
 <script>
+
+/* =====================================================================
+   עברית / English
+   ---------------------------------------------------------------------
+   הדף נטען בעברית. אנגלית נבחרת בכפתור למעלה, אוטומטית לפי שפת
+   הטלפון, או בקישור עם ?lang=en. הבחירה נזכרת בטלפון.
+   כל טקסט קבוע בדף מוחלף לפי הרשימה כאן; הודעות שנוצרות בקוד
+   עוברות דרך T(עברית, אנגלית).
+   ===================================================================== */
+var LANG="he";
+var I18N=[
+  ["title","Advertise on Nati Safe Screens"],
+  ["header h1","Advertise on Nati Safe Screens"],
+  ["header .tag","Digital screens in residential building lobbies"],
+  [".hero div:nth-child(1) b","Daily"],
+  [".hero div:nth-child(2) b","Weekly"],
+  [".hero div:nth-child(3) b","Monthly"],
+  ["#form .card:nth-of-type(1) h2","Contact details"],
+  ["#form .card:nth-of-type(1) .hint",'Fields marked <span style="color:#ff7b72">*</span> are required'],
+  ["label[for=f-contact]","Full name"],
+  ["label[for=f-phone2]","Phone"],
+  ["label[for=f-email]","Email"],
+  ["label[for=f-email2]","Confirm email"],
+  ["#form .card:nth-of-type(1) .note","This is the only address we will use to contact you and send the payment link. Please type it again to make sure there is no typo — pasting is disabled on purpose."],
+  ["#form .card:nth-of-type(2) h2","Business details"],
+  ["#form .card:nth-of-type(2) .hint","Optional — private individuals can skip this"],
+  ["label[for=f-biz]","Business name"],
+  ["label[for=f-tax]","Company / VAT number — for the invoice"],
+  ["#form .card:nth-of-type(3) h2",'Where to advertise <span style="color:#ff7b72">*</span>'],
+  ["#form .card:nth-of-type(3) .hint","The more buildings you choose, the bigger the discount"],
+  ["#form .card:nth-of-type(4) h2",'Campaign dates <span style="color:#ff7b72">*</span>'],
+  ["#form .card:nth-of-type(4) .hint","Tap a field to open a combined Hebrew / Gregorian calendar"],
+  ["label[for=f-from]","From"],
+  ["label[for=f-to]","Until"],
+  ["#form .card:nth-of-type(6) h2",'Your ad <span style="color:#ff7b72">*</span>'],
+  ["#form .card:nth-of-type(6) .hint:nth-of-type(1)","Image, animated image (GIF / WEBP), PDF or a short video · large images are resized automatically"],
+  ["#form .card:nth-of-type(6) .hint:nth-of-type(2)",'🎬 Video: filmed <b>vertically</b> (portrait), up to <b id="vid-max">12</b> seconds — the display time of each ad · up to 30 MB'],
+  ["#form .card:nth-of-type(6) .hint:nth-of-type(3)","The screens are in residential buildings and community institutions. Please upload modest, respectful content that suits the place and its residents. Every ad is reviewed before it goes live, and you are charged only after approval."],
+  ["label[for=f-title]","Ad title"],
+  ["#drop .t","Tap here to choose a file"],
+  ["#btn","Send order for approval"],
+  ["#form > .note","Sending the order does not commit you. After approval you will receive a payment link, and the ad goes live only once payment is confirmed."],
+  ["#done h2","Order sent"],
+  ["#done p","We will review it and email you an approval with a payment link.<br>The ad goes live only after payment is confirmed."],
+  ["footer",'Nati Safe Systems · 052-7171280<br><a onclick="showModal(\'m-acc\')" tabindex="0">Accessibility</a>·<a onclick="showModal(\'m-priv\')" tabindex="0">Privacy policy</a>·<a onclick="showModal(\'m-terms\')" tabindex="0">Terms of use</a>'],
+  ["#m-acc .box",'<h3>Accessibility statement</h3><p>We want this site to be usable by everyone, including people with disabilities.</p><h4>What we did</h4><p>Semantic structure that works with a keyboard alone; a clear focus indicator; high contrast between text and background; explicit labels for every form field; and error messages in words, not only in color.</p><h4>Contact</h4><p>Ran into a problem? We would be glad to hear and fix it. Accessibility coordinator: Nati Margalit, phone 052-7171280.</p><button onclick="hideModal(\'m-acc\')">Close</button>'],
+  ["#m-priv .box",'<h3>Privacy policy</h3><h4>What we collect</h4><p>The details you entered: name, phone, email, and — if provided — business name and number. The file you uploaded is stored in order to show it on the screens.</p><h4>Why</h4><p>Only to handle your order: contacting you, issuing an invoice, and showing the ad on the screens you chose. The information is not sold or shared with third parties, except the payment processor for the payment itself.</p><h4>Where</h4><p>Data is stored on Supabase servers, protected by encryption and access control.</p><h4>Your rights</h4><p>Under the Israeli Privacy Protection Law, 1981, you may review the information we hold about you, ask to correct it or ask to delete it. Contact: 052-7171280.</p><button onclick="hideModal(\'m-priv\')">Close</button>'],
+  ["#m-terms .box",'<h3>Terms of use</h3><h4>The order</h4><p>Filling in the form does not commit you and is not a contract. The order is reviewed, and the ad goes live only after approval and payment.</p><h4>Content approval</h4><p>Every ad is reviewed before it goes live. We reserve the right to decline an ad, at our discretion, if its content does not suit the place and the public where the screens are shown, or does not comply with the law. You are charged only after approval; if an ad is declined after payment, the full amount is refunded.</p><h4>Rights in the content</h4><p>By uploading the file you declare that you hold all rights in it, and that showing it does not infringe the rights of any third party.</p><h4>Cancellation</h4><p>Cancellation before the campaign starts — full refund. Once the campaign has started you may ask to take the ad down at any time, but no refund is given for the remaining days.</p><p>To take down, change or cancel an ad: Nati@natisafe.co.il · 052-7171280.</p><button onclick="hideModal(\'m-terms\')">Close</button>']
+];
+var I18N_PH=[["#f-email2","Type the address again"],["#f-title","e.g. Grand opening sale"]];
+var _I18N_HE=null;
+function T(he,en){ return LANG==="en" ? en : he; }
+function setLang(l){
+  LANG=(l==="en")?"en":"he";
+  try{ localStorage.setItem("nsf_adv_lang",LANG); }catch(e){}
+  if(!_I18N_HE){
+    _I18N_HE={};
+    I18N.forEach(function(x){ var e=document.querySelector(x[0]); if(e) _I18N_HE[x[0]]=(x[0]==="title"?document.title:e.innerHTML); });
+    I18N_PH.forEach(function(x){ var e=document.querySelector(x[0]); if(e) _I18N_HE["ph:"+x[0]]=e.getAttribute("placeholder")||""; });
+  }
+  var vm=(document.getElementById("vid-max")||{}).textContent;
+  I18N.forEach(function(x){
+    if(x[0]==="title"){ document.title = LANG==="en" ? x[1] : _I18N_HE.title; return; }
+    var e=document.querySelector(x[0]); if(!e) return;
+    e.innerHTML = LANG==="en" ? x[1] : _I18N_HE[x[0]];
+  });
+  I18N_PH.forEach(function(x){ var e=document.querySelector(x[0]); if(e) e.setAttribute("placeholder", LANG==="en"?x[1]:_I18N_HE["ph:"+x[0]]); });
+  if(vm){ var v2=document.getElementById("vid-max"); if(v2) v2.textContent=vm; }
+  document.documentElement.lang = LANG==="en" ? "en" : "he";
+  document.documentElement.dir  = LANG==="en" ? "ltr" : "rtl";
+  var lb=document.getElementById("lang-btn"); if(lb) lb.textContent = LANG==="en" ? "עברית" : "English";
+  /* לשון פנייה בעברית — לא רלוונטי באנגלית */
+  var g=document.getElementById("f-gender"); if(g){ g.style.display=LANG==="en"?"none":""; var gl=document.querySelector("label[for=f-gender]"); if(gl) gl.style.display=LANG==="en"?"none":""; }
+  try{ heroRefresh(); }catch(e){}
+  try{ if(typeof _lastQuote!=="undefined" && _lastQuote) drawQuote(_lastQuote); }catch(e){}
+}
+function initLang(){
+  var q=""; try{ q=new URLSearchParams(location.search).get("lang")||""; }catch(e){}
+  var saved=""; try{ saved=localStorage.getItem("nsf_adv_lang")||""; }catch(e){}
+  var nav=(navigator.language||"").toLowerCase();
+  var l = q || saved || (nav.indexOf("en")===0 ? "en" : "he");
+  if(l==="en") setLang("en");
+}
 /* =====================================================================
    נתי SAFE — בורר תאריך עברי-לועזי  ·  NatiHebPicker v1.0
    ---------------------------------------------------------------------
@@ -568,15 +657,15 @@ function hc_mevMolad(info){
     pop.innerHTML=
       '<div class="nhp-hd">'+
         '<button data-nav="-1">‹</button>'+
-        '<div class="nhp-ttl"><div class="g">'+GMON[vm-1]+' '+vy+'</div>'+
+        '<div class="nhp-ttl"><div class="g">'+(window.LANG==="en"?["January","February","March","April","May","June","July","August","September","October","November","December"][vm-1]:GMON[vm-1])+' '+vy+'</div>'+
           '<div class="h">'+hTtl+'</div></div>'+
         '<button data-nav="1">›</button></div>'+
       '<div class="nhp-grid">'+
         DOW.map(function(x){return '<div class="nhp-dow">'+x+'</div>';}).join('')+
         cells+'</div>'+
-      '<div class="nhp-ft"><button data-act="today">היום</button>'+
-        '<button data-act="clear">נקה</button>'+
-        '<button data-act="close">סגור</button></div>';
+      '<div class="nhp-ft"><button data-act="today">'+(window.LANG==="en"?"Today":"היום")+'</button>'+
+        '<button data-act="clear">'+(window.LANG==="en"?"Clear":"נקה")+'</button>'+
+        '<button data-act="close">'+(window.LANG==="en"?"Close":"סגור")+'</button></div>';
 
     pop.onclick=function(e){
       var nav=e.target.closest('[data-nav]');
@@ -770,7 +859,7 @@ function showTip(v){
   var box=el("mail-tip");
   var sug=v?suggestDomain(v):null;
   if(!sug){ box.style.display="none"; return; }
-  box.innerHTML='האם התכוונתם ל־<b style="cursor:pointer;text-decoration:underline" '+
+  box.innerHTML=T('האם התכוונתם ל־','Did you mean ')+'<b style="cursor:pointer;text-decoration:underline" '+
     'onclick="useSuggest(\''+sug.replace(/'/g,"")+'\')">'+
     sug.replace(/[<>&"]/g,"")+'</b>?';
   box.style.display="block";
@@ -784,14 +873,14 @@ function useSuggest(v){
 el("f-email").addEventListener("blur",function(){
   var v=this.value.trim();
   if(!v){ fieldErr("email",""); showTip(""); return; }
-  fieldErr("email", emailOk(v) ? "" : "כתובת הדוא״ל אינה תקינה");
+  fieldErr("email", emailOk(v) ? "" : T("כתובת הדוא״ל אינה תקינה","The email address is not valid"));
   showTip(v);
 });
 el("f-email2").addEventListener("blur",function(){
   var a=el("f-email").value.trim().toLowerCase();
   var b=this.value.trim().toLowerCase();
   if(!b){ fieldErr("email2",""); return; }
-  fieldErr("email2", a===b ? "" : "הכתובות אינן זהות");
+  fieldErr("email2", a===b ? "" : T("הכתובות אינן זהות","The addresses do not match"));
 });
 el("f-phone2").addEventListener("input",function(){
   this.value=this.value.replace(/\D/g,"").slice(0,7);
@@ -802,7 +891,7 @@ rpc("nsf_ad_public_screens",{}).then(function(list){
   var box=el("f-screens");
   if(!Array.isArray(list)||!list.length){
     try{ document.querySelector(".hero").style.display="none"; }catch(e){}
-    box.innerHTML='<div style="color:#8fa0b5">אין כרגע מסכים זמינים לפרסום</div>'; return;
+    box.innerHTML='<div style="color:#8fa0b5">'+T('אין כרגע מסכים זמינים לפרסום','No screens are available for advertising right now')+'</div>'; return;
   }
   try{ heroPrices(list[0].screen_id); }catch(e){}
   box.innerHTML=list.map(function(s,i){
@@ -811,7 +900,7 @@ rpc("nsf_ad_public_screens",{}).then(function(list){
       String(s.screen_id).replace(/[<>&"]/g,"")+'" onchange="quote()"><span>'+nm+'</span></label>';
   }).join("");
 }).catch(function(){
-  el("f-screens").innerHTML='<div style="color:#ff7b72">שגיאה בטעינת המסכים</div>';
+  el("f-screens").innerHTML='<div style="color:#ff7b72">'+T('שגיאה בטעינת המסכים','Could not load the screens')+'</div>';
 });
 function picked(){
   return Array.prototype.map.call(document.querySelectorAll(".sc:checked"),
@@ -822,6 +911,13 @@ function picked(){
    מחושבים בשרת לפי המחירון שבמסך הניהול: מסך אחד, יום / 7 ימים /
    30 ימים, מחיר בסיס כולל מע״מ (לפני תוספת חגים והנחת כמות). */
 try{ setTimeout(loadAdDur,0); }catch(e){}
+function heroRefresh(){
+  ["h-day","h-week","h-month"].forEach(function(id){
+    var e=el(id); if(!e) return;
+    var v=e.getAttribute("data-v");
+    e.textContent = v ? (T("החל מ-","From ")+ils(+v)+" ₪") : T("החל מ-…","From …");
+  });
+}
 function heroPrices(sid){
   function iso(d){ return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2); }
   var start=new Date(); start.setDate(start.getDate()+1);
@@ -830,7 +926,8 @@ function heroPrices(sid){
     rpc("nsf_ad_quote",{p_screens:[sid],p_from:iso(start),p_to:iso(end)}).then(function(q){
       var e=el(x[0]); if(!e) return;
       if(!q||!q.ok||!(q.base_incl>0)){ e.parentNode.style.display="none"; return; }
-      e.textContent="החל מ-"+ils(q.base_incl)+" ₪";
+      e.setAttribute("data-v", q.base_incl);
+      e.textContent=T("החל מ-","From ")+ils(q.base_incl)+" ₪";
     }).catch(function(){ var e=el(x[0]); if(e) e.parentNode.style.display="none"; });
   });
 }
@@ -841,18 +938,23 @@ function quote(){
   var box=el("quote");
   if(!ids.length||!f||!t){ box.style.display="none"; return; }
   rpc("nsf_ad_quote",{p_screens:ids,p_from:f,p_to:t}).then(function(q){
-    if(!q||!q.ok){ box.style.display="none"; return; }
+    if(!q||!q.ok){ box.style.display="none"; _lastQuote=null; return; }
+    _lastQuote=q; drawQuote(q);
+  }).catch(function(){ box.style.display="none"; });
+}
+var _lastQuote=null;
+function drawQuote(q){
+    var box=el("quote");
     var r=function(l,v,c){ return '<div class="pr"><span'+(c?' class="'+c+'"':'')+'>'+l+
       '</span><span'+(c?' class="'+c+'"':'')+'>'+v+'</span></div>'; };
     box.innerHTML='<div style="color:#8fa0b5;font-size:13px;margin-bottom:10px">'+
-      q.days+' ימים · '+q.screens+' בניינים</div>'+
-      r('מחיר בסיס', ils(q.base_incl)+' ₪')+
-      (q.holiday_incl>0 ? r('תוספת תקופת חגים '+q.holiday_pct+'%','+ '+ils(q.holiday_incl)+' ₪','up'):'')+
-      (q.discount_incl>0 ? r('הנחת כמות '+q.discount_pct+'%','− '+ils(q.discount_incl)+' ₪','dn'):'')+
-      '<div class="pr tot"><span>סך הכל</span><span>'+ils(q.total_incl)+' ₪</span></div>'+
-      '<div class="note">המחיר כולל מע״מ '+q.vat_pct+'%</div>';
+      q.days+T(' ימים · ',' days · ')+q.screens+T(' בניינים',' buildings')+'</div>'+
+      r(T('מחיר בסיס','Base price'), ils(q.base_incl)+' ₪')+
+      (q.holiday_incl>0 ? r(T('תוספת תקופת חגים ','Holiday season surcharge ')+q.holiday_pct+'%','+ '+ils(q.holiday_incl)+' ₪','up'):'')+
+      (q.discount_incl>0 ? r(T('הנחת כמות ','Volume discount ')+q.discount_pct+'%','− '+ils(q.discount_incl)+' ₪','dn'):'')+
+      '<div class="pr tot"><span>'+T('סך הכל','Total')+'</span><span>'+ils(q.total_incl)+' ₪</span></div>'+
+      '<div class="note">'+T('המחיר כולל מע״מ ','Price includes VAT ')+q.vat_pct+'%</div>';
     box.style.display="block";
-  }).catch(function(){ box.style.display="none"; });
 }
 el("f-from").addEventListener("change",quote);
 el("f-to").addEventListener("change",quote);
@@ -900,7 +1002,7 @@ var NSF_MEDIA=(function(){
   }
   function limitText(inf){
     var mb=(inf.group==="still"?RAW_STILL:LIMIT[inf.group])/MB;
-    return mb+" מגה";
+    return mb+" MB";
   }
   /* מחזיר {blob,mime,ext} — מוקטן אם כדאי, אחרת המקורי */
   function prepare(f,inf){
@@ -945,10 +1047,10 @@ el("file").addEventListener("change",function(){
   fieldErr("file","");
   var inf=NSF_MEDIA.info(f);
   if(!inf){
-    fieldErr("file","סוג קובץ לא נתמך. אפשר תמונה, GIF, PDF או סרטון MP4 / WEBM / MOV."); clearFile(); return;
+    fieldErr("file",T("סוג קובץ לא נתמך. אפשר תמונה, GIF, PDF או סרטון MP4 / WEBM / MOV.","File type not supported. Use an image, GIF, PDF or an MP4 / WEBM / MOV video.")); clearFile(); return;
   }
   if(NSF_MEDIA.tooBig(f,inf)){
-    fieldErr("file","הקובץ גדול מדי. המקסימום לסוג הזה: "+NSF_MEDIA.limitText(inf)+"."); clearFile(); return;
+    fieldErr("file",T("הקובץ גדול מדי. המקסימום לסוג הזה: ","The file is too large. Maximum for this type: ")+NSF_MEDIA.limitText(inf)+"."); clearFile(); return;
   }
   el("fname-n").textContent=f.name+"  ("+Math.round(f.size/1024)+" KB)";
   el("fname").style.display="flex";
@@ -976,11 +1078,11 @@ function checkVideo(f){
     var d=v.duration, w=v.videoWidth, h=v.videoHeight;
     fin();
     if(isFinite(d) && d > AD_DUR+0.5){
-      fieldErr("file","הסרטון באורך "+Math.round(d)+" שניות. המקסימום הוא "+AD_DUR+" שניות — זמן ההצגה של מודעה על המסך.");
+      fieldErr("file",T("הסרטון באורך "+Math.round(d)+" שניות. המקסימום הוא "+AD_DUR+" שניות — זמן ההצגה של מודעה על המסך.","The video is "+Math.round(d)+" seconds long. The maximum is "+AD_DUR+" seconds — the display time of an ad on the screen."));
       clearFile(); return;
     }
     if(w && h && w > h){
-      fieldErr("file","הסרטון מצולם לרוחב. נא להעלות סרטון שמצולם לאורך (אנכי).");
+      fieldErr("file",T("הסרטון מצולם לרוחב. נא להעלות סרטון שמצולם לאורך (אנכי).","The video is horizontal. Please upload a vertical (portrait) video."));
       clearFile(); return;
     }
   };
@@ -1042,34 +1144,34 @@ function submitOrder(){
   var bad=false;
 
   var contact=el("f-contact").value.trim();
-  if(contact.length<2){ fieldErr("contact","נא למלא שם מלא"); bad=true; }
+  if(contact.length<2){ fieldErr("contact",T("נא למלא שם מלא","Please enter your full name")); bad=true; }
 
   var ph=el("f-phone2").value.replace(/\D/g,"");
-  if(ph.length<7){ fieldErr("phone","מספר הטלפון אינו מלא"); bad=true; }
+  if(ph.length<7){ fieldErr("phone",T("מספר הטלפון אינו מלא","The phone number is incomplete")); bad=true; }
 
   var email=el("f-email").value.trim();
-  if(!emailOk(email)){ fieldErr("email","כתובת הדוא״ל אינה תקינה"); bad=true; }
+  if(!emailOk(email)){ fieldErr("email",T("כתובת הדוא״ל אינה תקינה","The email address is not valid")); bad=true; }
   var email2=el("f-email2").value.trim();
   if(email2.toLowerCase()!==email.toLowerCase()){
-    fieldErr("email2","הכתובות אינן זהות — נא להקליד שוב"); bad=true;
+    fieldErr("email2",T("הכתובות אינן זהות — נא להקליד שוב","The addresses do not match — please type it again")); bad=true;
   }
 
   var ids=picked();
-  if(!ids.length){ fieldErr("screens","נא לבחור לפחות בניין אחד"); bad=true; }
+  if(!ids.length){ fieldErr("screens",T("נא לבחור לפחות בניין אחד","Please choose at least one building")); bad=true; }
 
   var f=el("f-from").value, t=el("f-to").value;
-  if(!f||!t){ fieldErr("dates","נא לבחור תאריכים"); bad=true; }
-  else if(t<f){ fieldErr("dates","תאריך הסיום מוקדם מתאריך ההתחלה"); bad=true; }
+  if(!f||!t){ fieldErr("dates",T("נא לבחור תאריכים","Please choose dates")); bad=true; }
+  else if(t<f){ fieldErr("dates",T("תאריך הסיום מוקדם מתאריך ההתחלה","The end date is before the start date")); bad=true; }
 
   if(!el("file").files||!el("file").files[0]){
-    fieldErr("file","נא לצרף את קובץ המודעה"); bad=true;
+    fieldErr("file",T("נא לצרף את קובץ המודעה","Please attach your ad file")); bad=true;
   }
 
-  if(bad){ say("יש שדות שדורשים תיקון. הם מסומנים באדום.",1); return; }
+  if(bad){ say(T("יש שדות שדורשים תיקון. הם מסומנים באדום.","Some fields need fixing. They are marked in red."),1); return; }
 
-  var b=el("btn"); b.disabled=true; b.textContent="מעלה את הקובץ...";
+  var b=el("btn"); b.disabled=true; b.textContent=T("מעלה את הקובץ...","Uploading the file...");
   uploadFile().then(function(up){
-    b.textContent="שולח...";
+    b.textContent=T("שולח...","Sending...");
     return rpc("nsf_ad_submit",{p_order:{
       /* שם העסק אינו חובה — ריק נשלח כריק, והשרת לא דורס איתו
          שם עסק שנשמר בהזמנה קודמת. החשבונית תצא על שם איש הקשר. */
@@ -1086,8 +1188,8 @@ function submitOrder(){
     }});
   }).then(function(r){
     if(!r||!r.ok){
-      say((r&&r.err)||"השליחה נכשלה",1);
-      b.disabled=false; b.textContent="שליחת ההזמנה לאישור"; return;
+      say(LANG==="en" ? ("Sending failed"+((r&&r.err)?" ("+r.err+")":"")) : ((r&&r.err)||"השליחה נכשלה"),1);
+      b.disabled=false; b.textContent=T("שליחת ההזמנה לאישור","Send order for approval"); return;
     }
     el("form").style.display="none"; el("done").style.display="block";
     window.scrollTo({top:0});
@@ -1102,10 +1204,10 @@ function submitOrder(){
     }catch(e){}
   }).catch(function(err){
     var m=String(err&&err.message||"");
-    if(m==="size"){ fieldErr("file","הקובץ גדול מדי גם אחרי הקטנה. נא לבחור קובץ קטן יותר."); say("הקובץ גדול מדי.",1); }
-    else if(m.indexOf("upload")===0){ say("העלאת הקובץ נכשלה. נא לנסות שוב, או לבחור קובץ אחר.",1); }
-    else say("שגיאה בשליחה. נא לנסות שוב.",1);
-    b.disabled=false; b.textContent="שליחת ההזמנה לאישור";
+    if(m==="size"){ fieldErr("file",T("הקובץ גדול מדי גם אחרי הקטנה. נא לבחור קובץ קטן יותר.","The file is still too large after resizing. Please choose a smaller file.")); say(T("הקובץ גדול מדי.","The file is too large."),1); }
+    else if(m.indexOf("upload")===0){ say(T("העלאת הקובץ נכשלה. נא לנסות שוב, או לבחור קובץ אחר.","The upload failed. Please try again, or choose another file."),1); }
+    else say(T("שגיאה בשליחה. נא לנסות שוב.","Sending failed. Please try again."),1);
+    b.disabled=false; b.textContent=T("שליחת ההזמנה לאישור","Send order for approval");
   });
 }
 
@@ -1121,4 +1223,7 @@ function submitOrder(){
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",go);
   else go();
 })();
+
+/* שפה — אחרי שכל הדף והפונקציות נטענו */
+try{ initLang(); }catch(e){}
 </script></body></html>
