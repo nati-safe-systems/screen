@@ -153,6 +153,19 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
 .pdf-anim-slide{animation:adSlide 1s cubic-bezier(.2,.7,.2,1);}
 
 #st-wrap{position:absolute;left:0;right:0;bottom:0;top:140px;z-index:6;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);pointer-events:none;}
+#cam-wrap{position:absolute;left:0;right:0;bottom:0;top:140px;z-index:7;display:none;padding:1.2vh 1.2vw;box-sizing:border-box;}
+body.portrait #cam-wrap{top:90px;}
+#cam-wrap .cam{position:relative;background:#000;border-radius:12px;overflow:hidden;border:2px solid #d4af37;
+  box-shadow:0 0 0 1px rgba(255,241,184,.25),0 6px 24px rgba(0,0,0,.5);}
+#cam-wrap .cam iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000;}
+#cam-wrap .cam .lbl{position:absolute;right:10px;top:8px;z-index:2;background:rgba(0,0,0,.55);color:#ffe27a;
+  font:700 1.5vh Heebo,Arial,sans-serif;padding:3px 9px;border-radius:6px;pointer-events:none;}
+#cam-wrap.l-center .cam{width:100%;height:100%;}
+#cam-wrap.l-grid{display:none;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1vh;}
+#cam-wrap.l-grid.on{display:grid;}
+#cam-wrap.l-corner{left:auto;top:auto;right:auto;bottom:1.5vh;left:1.5vw;width:32%;aspect-ratio:16/9;padding:0;}
+#cam-wrap.l-corner .cam{width:100%;height:100%;}
+#cam-wrap.on{display:block;}
 #st-text{font-size:2.5vw;color:#fff;text-shadow:0 4px 20px rgba(0,0,0,0.9);text-align:center;padding:0 80px;line-height:1.6;}
 /* ===== נתי SAFE: תצוגה מודולרית לפי קהל יעד ===== */
 /* רצועת פרסומות בצד שמאל */
@@ -876,6 +889,8 @@ body.ads-bottom .ad-slide video.ad-vid{width:auto;height:17vh;max-width:60%;obje
   <div id="chag-greet"></div>
   <div id="mq-wrap"><div id="mq-mover"></div></div>
   <div id="st-wrap"><div id="st-text"></div></div>
+  <!-- מצלמות (go2rtc) — במרכז המסך / רשת / פינה, לפי הגדרת המסך -->
+  <div id="cam-wrap"></div>
 </div>
 
 <div class="adbar" id="adbar">
@@ -1923,6 +1938,11 @@ function parseDisplayConfig(raw){
     ads_promo: c.ads_promo===true,
     ads_promo_en: c.ads_promo_en===true,
     ads_sides: (c.ads_sides==="left"||c.ads_sides==="right"||c.ads_sides==="both") ? c.ads_sides : "",
+    cam_on: c.cam_on===true,
+    cam_url: typeof c.cam_url==="string" ? c.cam_url : "",
+    cam_list: typeof c.cam_list==="string" ? c.cam_list : "",
+    cam_layout: (c.cam_layout==="grid"||c.cam_layout==="corner") ? c.cam_layout : "center",
+    cam_rotate: (+c.cam_rotate>=5) ? +c.cam_rotate : 0,
     ads_mode: (c.ads_mode==="bottom"||c.ads_mode==="full") ? c.ads_mode : "side",
     ads_full_sec: (+c.ads_full_sec>=5) ? +c.ads_full_sec : 25,
     ads_full_every: (+c.ads_full_every>=1) ? +c.ads_full_every : 5,
@@ -2614,6 +2634,7 @@ function applyDisplayConfig(cfg){
        הכרטיס מוצג עכשיו לפי ads_enabled בלבד. */
     try{ showAdQR(SCREEN_ADS_ON && (cfg.ads_qr!==false), cfg.ads_email); }catch(e){}
     try{ applyAdsMode(cfg); }catch(e){}
+    try{ applyCams(cfg); }catch(e){}
   }
 
   // --- פרסומות בסיידבר במקום הזמנים (כשהזמנים כבויים והפרסומות פעילות) ---
@@ -4749,6 +4770,53 @@ function renderAdPdfs(root){
   });
 }
 
+/* ---- מצלמות ----
+   הווידאו מגיע מ-go2rtc שרץ במחשב באתר (מיני PC), דרך כתובת מאובטחת
+   (Tailscale Funnel). cam_url = הכתובת עם הנתיב הסודי, למשל
+   https://xxx.ts.net/SECRET. cam_list = רשימת מצלמות מופרדת בפסיקים:
+   מספרים (1,2,3 → cam1,cam2,cam3) או שמות כפי שהוגדרו ב-go2rtc.
+   פריסה: center — מצלמה אחת במרכז · grid — רשת 2×2 · corner — חלון בפינה.
+   cam_rotate (שניות) — החלפה בין המצלמות; 0 = בלי החלפה. */
+var _camSig="", _camRot=null, _camRefresh=null, _camIdx=0;
+function camSrc(base, name){
+  base=String(base||"").replace(/\/+$/,"");
+  var n=String(name).trim(); if(/^\d+$/.test(n)) n="cam"+n;
+  return base+"/stream.html?src="+encodeURIComponent(n)+"&mode=webrtc,mse,hls";
+}
+function camBox(src,label){
+  return '<div class="cam"><iframe src="'+src.replace(/"/g,"&quot;")+'" allow="autoplay" loading="eager"></iframe>'+
+         (label?'<div class="lbl">'+String(label).replace(/[<>&"]/g,"")+'</div>':'')+'</div>';
+}
+function applyCams(cfg){
+  var w=document.getElementById("cam-wrap"); if(!w) return;
+  var on=!!(cfg&&cfg.cam_on&&cfg.cam_url&&cfg.cam_list);
+  var list=on ? cfg.cam_list.split(",").map(function(x){return x.trim();}).filter(Boolean) : [];
+  var sig=on ? [cfg.cam_url,list.join(","),cfg.cam_layout,cfg.cam_rotate].join("|") : "";
+  if(sig===_camSig) return;
+  _camSig=sig;
+  if(_camRot){ clearInterval(_camRot); _camRot=null; }
+  if(_camRefresh){ clearInterval(_camRefresh); _camRefresh=null; }
+  if(!on || !list.length){ w.className=""; w.innerHTML=""; return; }
+  var lay=cfg.cam_layout||"center", rot=+cfg.cam_rotate||0, per=(lay==="grid")?4:1;
+  _camIdx=0;
+  function draw(){
+    var h="";
+    for(var i=0;i<per && i<list.length;i++){
+      var name=list[(_camIdx+i)%list.length];
+      h+=camBox(camSrc(cfg.cam_url,name), list.length>1 ? ("מצלמה "+name) : "");
+    }
+    w.innerHTML=h;
+  }
+  w.className="l-"+lay+" on";
+  draw();
+  /* החלפה בין מצלמות (או בין עמודי רשת) */
+  if(rot>=5 && list.length>per){
+    _camRot=setInterval(function(){ _camIdx=(_camIdx+per)%list.length; draw(); }, rot*1000);
+  }
+  /* רענון כל 30 דקות — מחזיר זרם שנתקע בלי לחכות לרענון המסך */
+  _camRefresh=setInterval(draw, 30*60*1000);
+}
+
 /* ---- מעברים משתנים בין מודעות ----
    מודעה שהמעבר שלה "משתנים" (ברירת המחדל, וגם "דהייה" הישנה וכל
    המודעות בתשלום וכרטיס שטח הפרסום) מקבלת לפני כל כניסה מעבר אקראי
@@ -4856,6 +4924,6 @@ function adPromoNext(sl){
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 11.7</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 11.8</div>
 </body>
 </html>

@@ -928,6 +928,33 @@ tr:hover td{background:rgba(128,0,0,0.05);}
 
       <div class="accm" data-t="פרסומות" data-k="all"></div>
 
+        <!-- ===== מצלמות (go2rtc) ===== -->
+        <div class="field" id="cam-sec" style="border:1px solid rgba(212,175,55,.35);
+             border-radius:8px;padding:12px;background:rgba(212,175,55,.05);margin-bottom:14px;">
+          <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:800;color:#ffcc00">
+            <input type="checkbox" id="edit-sc-camon" style="width:17px;height:17px;flex:0 0 auto">
+            <span>הצג מצלמות על המסך</span>
+          </label>
+          <label style="margin-top:10px">כתובת go2rtc (כולל הנתיב הסודי)</label>
+          <input id="edit-sc-camurl" dir="ltr" placeholder="https://xxxx.ts.net/SECRET">
+          <label style="margin-top:8px">מצלמות</label>
+          <input id="edit-sc-camlist" dir="ltr" placeholder="1,2,3,4">
+          <div style="font-size:11px;color:#8b949e;margin-top:4px;line-height:1.6">
+            מספרי ערוצים מופרדים בפסיק (1 = cam1 ב-go2rtc), לפי הסדר שבו יוצגו.</div>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+            <div style="flex:1;min-width:150px"><label>פריסה</label>
+              <select id="edit-sc-camlayout">
+                <option value="center">מצלמה אחת — כל מרכז המסך</option>
+                <option value="grid">רשת של 4</option>
+                <option value="corner">חלון קטן בפינה</option>
+              </select></div>
+            <div style="flex:1;min-width:120px"><label>החלפה כל (שניות)</label>
+              <input id="edit-sc-camrot" type="number" min="0" step="1" placeholder="0 = בלי החלפה"></div>
+          </div>
+          <div style="font-size:11px;color:#8b949e;margin-top:6px;line-height:1.6">
+            "מרכז המסך" ו"רשת" מכסים את לוח המודעות של המסך. "פינה" משאיר אותו גלוי.</div>
+        </div>
+
         <!-- ===== פרסום בתשלום =====
              אחוז הרווח הוא הגדרה של המסך, ולכן מקומו כאן ולא רק
              במחשבון המחיר. שני המקומות כותבים לאותו שדה. -->
@@ -3043,6 +3070,11 @@ function openEditScreen(sid){
     var am=document.getElementById('edit-sc-adsmode');
     var asd=document.getElementById('edit-sc-adssides');
     if(asd) asd.value = dc.ads_sides || (dc.zmanim===false ? "both" : "left");
+    (function(){
+      function v(id,x){ var e=document.getElementById(id); if(e){ if(e.type==='checkbox') e.checked=!!x; else e.value=(x==null?'':x); } }
+      v('edit-sc-camon', dc.cam_on===true); v('edit-sc-camurl', dc.cam_url||''); v('edit-sc-camlist', dc.cam_list||'');
+      v('edit-sc-camlayout', dc.cam_layout||'center'); v('edit-sc-camrot', dc.cam_rotate||'');
+    })();
     if(am){ am.value = dc.ads_mode || "side";
             var o=document.getElementById("adsfull-opts");
             if(o) o.style.display=(am.value==="full")?"block":"none"; }
@@ -3224,6 +3256,16 @@ function saveScreen(){
     if(am) cur.ads_mode = am.value || "side";
     var asd=document.getElementById('edit-sc-adssides');
     if(asd) cur.ads_sides = asd.value || "left";
+    (function(){
+      function g(id){ return document.getElementById(id); }
+      if(g('edit-sc-camon')){
+        cur.cam_on = !!g('edit-sc-camon').checked;
+        cur.cam_url = (g('edit-sc-camurl').value||'').trim().replace(/\/+$/,'');
+        cur.cam_list = (g('edit-sc-camlist').value||'').replace(/\s+/g,'');
+        cur.cam_layout = g('edit-sc-camlayout').value || 'center';
+        cur.cam_rotate = parseInt(g('edit-sc-camrot').value,10) || 0;
+      }
+    })();
     var fs=document.getElementById('edit-sc-adsfullsec');
     if(fs) cur.ads_full_sec = parseInt(fs.value,10)||25;
     var fe=document.getElementById('edit-sc-adsfullevery');
@@ -3631,7 +3673,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 3.7</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 3.8</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){
