@@ -825,7 +825,7 @@ th.sc-sort .ar{font-size:10px;opacity:.85;margin-inline-start:4px;}
             <div style="display:flex;align-items:center;gap:9px;margin:8px 0 10px;">
               <span style="font-size:13px;color:#8b949e;">משך ההצגה</span>
               <input id="edit-sc-alertsec" type="number" min="5" max="600" value="60"
-                     oninput="markCustom()" style="width:90px;">
+                     oninput="this.dataset.custom='1';markCustom()" style="width:90px;">
               <span style="font-size:13px;color:#8b949e;">שניות</span>
             </div>
             <div style="font-size:12px;color:#8b949e;margin:5px 0 8px;line-height:1.5;">
@@ -2649,6 +2649,7 @@ function openAddScreen(){
   /* מסך חדש נולד נעול */
   var _lkN=document.getElementById('edit-sc-lock'); if(_lkN) _lkN.checked=true;
   var _kdN=document.getElementById('edit-sc-kind'); if(_kdN) _kdN.value='building';
+  var _asN=document.getElementById('edit-sc-alertsec'); if(_asN){ _asN.dataset.custom=''; _asN.value=60; }
   kindChanged();
   document.getElementById('edit-sc-profile').value='chareidi';
   applyProfile('chareidi');
@@ -2808,6 +2809,8 @@ function readDisplayConfig(){
     sponsors_static_max: parseInt((document.getElementById('sp-static')||{}).value,10)||6,
     sponsors_small_rows: parseInt((document.getElementById('sp-rows')||{}).value,10)||3,
     alert_seconds: parseInt((document.getElementById('edit-sc-alertsec')||{}).value,10)||60,
+    /* true רק אם שינית את משך ההתראה בעצמך. אחרת מסך בית כנסת מציג 10 שניות */
+    alert_custom: ((document.getElementById('edit-sc-alertsec')||{dataset:{}}).dataset.custom==='1'),
     rotate: { every: parseInt((document.getElementById('edit-sc-rotevery')||{}).value,10)||20,
               show:  parseInt((document.getElementById('edit-sc-rotshow')||{}).value,10)||8,
               mode:  (document.getElementById('edit-sc-rotmode')||{}).value || 'one',
@@ -3169,7 +3172,10 @@ function fillDisplayConfig(cfg){
   _bgImgs = Array.isArray(cfg.bg_images) ? cfg.bg_images.slice() : (cfg.bg_url?[cfg.bg_url]:[]);
   bgDraw();
   var _bs=document.getElementById('edit-sc-bgsec'); if(_bs) _bs.value = cfg.bg_sec || 10;
-  var _as=document.getElementById('edit-sc-alertsec'); if(_as) _as.value = cfg.alert_seconds || 60;
+  var _as=document.getElementById('edit-sc-alertsec');
+  if(_as){ _as.dataset.custom = cfg.alert_custom ? '1' : '';
+    _as.value = cfg.alert_custom ? (cfg.alert_seconds || 60)
+              : ((((document.getElementById('edit-sc-kind')||{}).value)==='synagogue') ? 10 : (cfg.alert_seconds || 60)); }
   var _ae=document.getElementById('edit-sc-audio');    if(_ae) _ae.checked = !!cfg.audio_enabled;
   _audList = Array.isArray(cfg.audio_list) ? cfg.audio_list.slice() : (cfg.audio_url?[cfg.audio_url]:[]);
   audDraw();
@@ -3346,6 +3352,14 @@ function buildAccordions(){
 /* הצגה או הסתרה של מגירות לפי סוג המסך */
 function kindChanged(){
   buildAccordions();
+  /* בית כנסת — התראות פיקוד העורף 10 שניות כברירת מחדל (אלא אם שינית ידנית) */
+  try{
+    var _k=(document.getElementById('edit-sc-kind')||{}).value, _a=document.getElementById('edit-sc-alertsec');
+    if(_a && _a.dataset.custom!=='1'){
+      if(_k==='synagogue') _a.value=10;
+      else if(+_a.value===10) _a.value=60;
+    }
+  }catch(e){}
   /* אם הבנייה לא הצליחה, לפחות נציג את הטופס במלואו במקום
      קווים ריקים — עדיף מסך לא מסודר על מסך לא שמיש. */
   try{
@@ -3835,7 +3849,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.2</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.3</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){
