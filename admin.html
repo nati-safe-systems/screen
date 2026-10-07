@@ -1180,7 +1180,7 @@ tr:hover td{background:rgba(128,0,0,0.05);}
               <option value="scroll">גוללת (טקסט נע)</option>
               <option value="static">קבועה (טקסט נייח)</option>
               <option value="pdf">PDF / תמונה</option>
-              <option value="scrollpdf">גלילה + PDF (טקסט נגלל ואז PDF)</option>
+              <option value="scrollpdf">גלילה + PDF / תמונה (טקסט נגלל ואז הקובץ)</option>
             </select>
           </div>
           <div class="field" id="edit-sc-msg-wrap">
@@ -1190,8 +1190,15 @@ tr:hover td{background:rgba(128,0,0,0.05);}
             <div style="font-size:11px;color:#8b949e;margin-top:4px;">הקלד טקסט חופשי. עיצוב קיים של הלקוח נשמר.</div>
           </div>
           <div class="field" id="edit-sc-pdf-wrap" style="display:none;">
-            <label>קישור ל-PDF / תמונה</label>
-            <input id="edit-sc-pdfurl" placeholder="https://..." style="font-family:monospace;font-size:12px;direction:ltr;text-align:left;">
+            <label>קובץ PDF / תמונה</label>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px;">
+              <label style="background:#ffcc00;color:#161b22;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:800;cursor:pointer;margin:0;">
+                העלה קובץ
+                <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp,image/gif,.pdf,.jpg,.jpeg,.png,.webp,.gif" style="display:none" onchange="admMsgFile(this)">
+              </label>
+              <span id="edit-sc-pdfmsg" style="font-size:12px;color:#8b949e;"></span>
+            </div>
+            <input id="edit-sc-pdfurl" placeholder="או הדבק קישור https://..." style="font-family:monospace;font-size:12px;direction:ltr;text-align:left;">
             <div style="display:flex;gap:12px;margin-top:10px;">
               <div class="field" style="flex:1;margin:0;">
                 <label>שניות לכל עמוד</label>
@@ -2504,7 +2511,7 @@ function openAddScreen(){
   Array.prototype.forEach.call(document.querySelectorAll('.ns-src'), function(c){ c.checked=false; });
   document.getElementById('edit-sc-mtype').value='scroll';
   document.getElementById('edit-sc-msg').innerHTML='';
-  document.getElementById('edit-sc-pdfurl').value='';
+  document.getElementById('edit-sc-pdfurl').value=''; var _pm=document.getElementById('edit-sc-pdfmsg'); if(_pm) _pm.textContent='';
   toggleAdminMsgType();
   document.getElementById('dc-tenant-edit').checked=false;
   document.getElementById('dc-tenant-ads').checked=false;
@@ -3433,7 +3440,7 @@ var PERM_DEFS=[
     {id:'edit_message',label:'עריכת טקסט ההודעה'},
     {id:'type_scroll',label:'סוג: גוללת'},
     {id:'type_static',label:'סוג: קבועה'},
-    {id:'type_pdf',label:'סוג: PDF'},
+    {id:'type_pdf',label:'סוג: PDF / תמונה'},
     {id:'scroll_speed',label:'שליטה במהירות הגלילה'}
   ]},
   {cat:'רכיבי המסך',items:[
@@ -3448,7 +3455,8 @@ var PERM_DEFS=[
     {id:'ads_manage',label:'ניהול פרסומות'}
   ]},
   {cat:'עיצוב רקע',items:[
-    {id:'bg_brightness',label:'בהירות תמונת הרקע'}
+    {id:'bg_brightness',label:'בהירות תמונת הרקע'},
+    {id:'bg_images',label:'החלפת תמונות רקע (מהפאנל של הלקוח)'}
   ]},
   {cat:'כללי',items:[
     {id:'building_name',label:'עריכת שם הבניין'},
@@ -3478,7 +3486,7 @@ var coPerms={};
 var editingSubIndex=null;
 
 /* רכיבים מתקדמים שכבויים כברירת מחדל — צריך לאשר אותם במפורש לכל לקוח */
-var PERM_DEFAULT_OFF=['disp_news','disp_ads','ads_manage','manage_users'];
+var PERM_DEFAULT_OFF=['disp_news','disp_ads','ads_manage','manage_users','bg_images'];
 function defaultAllPerms(){ var o={}; PERM_IDS.forEach(function(id){o[id]=PERM_DEFAULT_OFF.indexOf(id)<0;}); return o; }
 function migrateOldPerms(perms){
   if(!perms||typeof perms!=='object') return {};
@@ -3682,7 +3690,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 3.9</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.0</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){
@@ -3829,6 +3837,30 @@ function adImgClear(){
   var u=document.getElementById("ad-img"); if(u) u.value="";
   adImgErr("");
 }
+/* העלאת קובץ (PDF / תמונה) להודעת המסך מתוך האדמין */
+function admMsgFile(inp){
+  var f=inp.files&&inp.files[0]; if(!f) return;
+  var msg=document.getElementById("edit-sc-pdfmsg");
+  function say(t,c){ if(msg){ msg.textContent=t; msg.style.color=c||"#8b949e"; } }
+  var MAP={"application/pdf":"pdf","image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"};
+  var ext=MAP[f.type];
+  if(!ext){ say("סוג קובץ לא נתמך — PDF או תמונה","#ff6b6b"); inp.value=""; return; }
+  if(f.size>20*1024*1024){ say("הקובץ גדול מ-20 מגה","#ff6b6b"); inp.value=""; return; }
+  var sid=(document.getElementById("edit-sc-id")||{}).value||"general";
+  var key=sid+"/"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8)+"."+ext;
+  say("מעלה...");
+  fetch(SB+"/storage/v1/object/screen-media/"+key,{
+    method:"POST",
+    headers:{apikey:SK,Authorization:"Bearer "+SK,"Content-Type":f.type,"x-upsert":"false"},
+    body:f
+  }).then(function(r){
+    if(!r.ok) throw new Error("upload "+r.status);
+    document.getElementById("edit-sc-pdfurl").value=SB+"/storage/v1/object/public/screen-media/"+key;
+    say("הועלה ✓ "+f.name+" — לחץ שמור","#3fb950");
+  }).catch(function(){ say("ההעלאה נכשלה","#ff6b6b"); })
+    .then(function(){ inp.value=""; });
+}
+
 function adImgPick(inp){
   var f=inp.files && inp.files[0];
   if(!f) return;

@@ -440,7 +440,10 @@ input:focus,select:focus{border-color:#58a6ff;}
         <div class="hint">שם זה מוצג בראש מסך השילוט ובטבלת הניהול.</div>
       </div>
 
-      <div class="field" id="t-pdf-outer" style="border:1px solid #30363d;border-radius:10px;padding:14px;">
+      <!-- "מודעות וקבצים ללוח המודעות" — הוסר מהפאנל. הקובץ מוצג דרך ההודעה עצמה
+           (סוג "PDF / תמונה" או "גלילה + PDF / תמונה"), כדי שלא יהיו שני מקומות
+           שמתחרים על אותו לוח. -->
+      <div class="field" id="t-pdf-outer" style="display:none;border:1px solid #30363d;border-radius:10px;padding:14px;">
         <div style="font-size:14px;color:#ffcc00;font-weight:700;margin-bottom:4px;">מודעות וקבצים ללוח המודעות</div>
         <div class="hint" style="margin-bottom:8px;">
           מוצגים במרכז המסך, בלוח המודעות של הבניין — אחד אחרי השני, כל אחד למשך שתגדיר.
@@ -453,7 +456,7 @@ input:focus,select:focus{border-color:#58a6ff;}
         </div>
       </div>
 
-      <div class="field" id="t-bg-outer" style="border:1px solid #30363d;border-radius:10px;padding:14px;">
+      <div class="field" id="t-bg-outer" style="display:none;border:1px solid #30363d;border-radius:10px;padding:14px;">
         <div id="t-bg-box">
           <div style="font-size:14px;color:#ffcc00;font-weight:700;margin-bottom:4px;">תמונות רקע</div>
           <div class="hint" style="margin-bottom:8px;">
@@ -476,6 +479,10 @@ input:focus,select:focus{border-color:#58a6ff;}
           <div style="font-size:12px;color:#8b949e;margin-top:5px;">
             תמונה אחת = רקע קבוע. כמה תמונות = מצגת עם מעבר רך.
           </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:10px;">
+            <button class="btn-save" style="padding:10px 18px;" onclick="tBgSave()">שמור תמונות רקע</button>
+          </div>
+        </div>
       </div>
 
       <div class="field" id="tenant-minyan-sec" style="display:none;border:1px solid #30363d;border-radius:10px;padding:14px;">
@@ -500,9 +507,6 @@ input:focus,select:focus{border-color:#58a6ff;}
           <label class="td-chk"><input type="checkbox" id="td-board"> לוח מודעות (מרכז)</label>
           <label class="td-chk"><input type="checkbox" id="td-news"> מבזקי חדשות</label>
           <label class="td-chk"><input type="checkbox" id="td-ads"> פרסומות בצדדים</label>
-        </div>
-
-
         </div>
         <div style="display:flex;justify-content:flex-end;margin-top:12px;">
           <button class="btn-save" style="padding:10px 18px;" onclick="saveDisplayConfig()">שמור תצוגה</button>
@@ -561,11 +565,11 @@ input:focus,select:focus{border-color:#58a6ff;}
           </div>
           <div class="type-opt" id="opt-pdf" onclick="setType('pdf')">
             <div class="type-icon">&#128196;</div>
-            <div class="type-lbl">PDF</div>
+            <div class="type-lbl">PDF / תמונה</div>
           </div>
           <div class="type-opt" id="opt-scrollpdf" onclick="setType('scrollpdf')">
             <div class="type-icon">&#128240;</div>
-            <div class="type-lbl">גלילה + PDF</div>
+            <div class="type-lbl">גלילה + PDF / תמונה</div>
           </div>
         </div>
       </div>
@@ -672,9 +676,9 @@ input:focus,select:focus{border-color:#58a6ff;}
         <div id="pdf-drop" class="pdf-drop" onclick="document.getElementById('pdf-file').click()">
           <div class="pd-ic">&#128206;</div>
           <div class="pd-t">לחצו להעלאת קובץ</div>
-          <div class="pd-s">PDF · JPG · PNG &nbsp;·&nbsp; עד 20 מגה</div>
+          <div class="pd-s">PDF · JPG · PNG · WEBP · GIF &nbsp;·&nbsp; עד 20 מגה</div>
         </div>
-        <input type="file" id="pdf-file" accept="application/pdf,image/jpeg,image/png,image/webp"
+        <input type="file" id="pdf-file" accept="application/pdf,image/jpeg,image/png,image/webp,image/gif,.pdf,.jpg,.jpeg,.png,.webp,.gif"
                style="display:none" onchange="pdfPick(this)">
 
         <div id="pdf-have" style="display:none;align-items:center;gap:10px;
@@ -703,7 +707,7 @@ input:focus,select:focus{border-color:#58a6ff;}
 
       <!-- הנפשת PDF (רק ל-PDF) -->
       <div id="pdf-anim-sec" class="field" style="display:none;">
-        <label>סגנון הצגת ה-PDF על המסך</label>
+        <label>סגנון הצגת הקובץ על המסך</label>
         <select id="pdf-anim">
           <option value="none">ללא הנפשה (הצגה רגילה)</option>
           <option value="fade">עמעום (הופעה הדרגתית)</option>
@@ -732,9 +736,9 @@ input:focus,select:focus{border-color:#58a6ff;}
 
       <!-- משך הצגת PDF במצב גלילה+PDF -->
       <div id="pdf-show-sec" class="field" style="display:none;">
-        <label>משך הצגת ה-PDF בכל סבב (שניות)</label>
+        <label>משך הצגת הקובץ בכל סבב (שניות)</label>
         <input type="number" id="pdf-show-val" min="1" value="20" style="width:100%;">
-        <div class="hint">הטקסט נגלל מעבר אחד, ואז ה-PDF מוצג למשך הזמן הזה — וחוזר חלילה.</div>
+        <div class="hint">הטקסט נגלל מעבר אחד, ואז הקובץ (PDF או תמונה) מוצג למשך הזמן הזה — וחוזר חלילה.</div>
       </div>
 
       <!-- מודעות מתוזמנות -->
@@ -758,8 +762,8 @@ input:focus,select:focus{border-color:#58a6ff;}
               <div class="type-grid">
                 <div class="type-opt t-scroll" id="sf-opt-scroll" onclick="sfSetType('scroll')"><div class="type-icon">&#8593;</div><div class="type-lbl">גוללת</div></div>
                 <div class="type-opt" id="sf-opt-static" onclick="sfSetType('static')"><div class="type-icon">&#128204;</div><div class="type-lbl">קבועה</div></div>
-                <div class="type-opt" id="sf-opt-pdf" onclick="sfSetType('pdf')"><div class="type-icon">&#128196;</div><div class="type-lbl">PDF</div></div>
-                <div class="type-opt" id="sf-opt-scrollpdf" onclick="sfSetType('scrollpdf')"><div class="type-icon">&#128240;</div><div class="type-lbl">גלילה + PDF</div></div>
+                <div class="type-opt" id="sf-opt-pdf" onclick="sfSetType('pdf')"><div class="type-icon">&#128196;</div><div class="type-lbl">PDF / תמונה</div></div>
+                <div class="type-opt" id="sf-opt-scrollpdf" onclick="sfSetType('scrollpdf')"><div class="type-icon">&#128240;</div><div class="type-lbl">גלילה + PDF / תמונה</div></div>
               </div>
             </div>
 
@@ -802,10 +806,10 @@ input:focus,select:focus{border-color:#58a6ff;}
                    onclick="document.getElementById('sf-pdf-file').click()">
                 <div class="pd-ic">&#128206;</div>
                 <div class="pd-t">לחצו להעלאת קובץ</div>
-                <div class="pd-s">PDF · JPG · PNG &nbsp;·&nbsp; עד 20 מגה</div>
+                <div class="pd-s">PDF · JPG · PNG · WEBP · GIF &nbsp;·&nbsp; עד 20 מגה</div>
               </div>
               <input type="file" id="sf-pdf-file"
-                     accept="application/pdf,image/jpeg,image/png,image/webp"
+                     accept="application/pdf,image/jpeg,image/png,image/webp,image/gif,.pdf,.jpg,.jpeg,.png,.webp,.gif"
                      style="display:none" onchange="pdfPick(this,'sf-')">
 
               <div id="sf-pdf-have" style="display:none;align-items:center;gap:10px;
@@ -833,7 +837,7 @@ input:focus,select:focus{border-color:#58a6ff;}
             </div>
 
             <div class="field" id="sf-pdf-anim-sec" style="display:none;">
-              <label>סגנון הצגת ה-PDF על המסך</label>
+              <label>סגנון הצגת הקובץ על המסך</label>
               <select id="sf-pdf-anim">
                 <option value="none">ללא הנפשה (הצגה רגילה)</option>
                 <option value="fade">עמעום (הופעה הדרגתית)</option>
@@ -860,9 +864,9 @@ input:focus,select:focus{border-color:#58a6ff;}
             </div>
 
             <div class="field" id="sf-pdf-show-sec" style="display:none;">
-              <label>משך הצגת ה-PDF בכל סבב (שניות)</label>
+              <label>משך הצגת הקובץ בכל סבב (שניות)</label>
               <input type="number" id="sf-pdf-show-val" min="1" value="20">
-              <div class="hint">הטקסט נגלל מעבר אחד, ואז ה-PDF מוצג למשך הזמן הזה — וחוזר חלילה.</div>
+              <div class="hint">הטקסט נגלל מעבר אחד, ואז הקובץ (PDF או תמונה) מוצג למשך הזמן הזה — וחוזר חלילה.</div>
             </div>
 
             <div class="field">
@@ -1426,7 +1430,7 @@ var PERM_DEFS_T=[
     {id:'edit_message',label:'עריכת טקסט ההודעה'},
     {id:'type_scroll',label:'סוג: גוללת'},
     {id:'type_static',label:'סוג: קבועה'},
-    {id:'type_pdf',label:'סוג: PDF'},
+    {id:'type_pdf',label:'סוג: PDF / תמונה'},
     {id:'scroll_speed',label:'שליטה במהירות הגלילה'}
   ]},
   {cat:'רכיבי המסך',items:[
@@ -1439,7 +1443,8 @@ var PERM_DEFS_T=[
        ונשלטת רק מהאדמין. */
   ]},
   {cat:'עיצוב רקע',items:[
-    {id:'bg_brightness',label:'בהירות תמונת הרקע'}
+    {id:'bg_brightness',label:'בהירות תמונת הרקע'},
+    {id:'bg_images',label:'החלפת תמונות רקע'}
   ]},
   {cat:'כללי',items:[
     {id:'building_name',label:'עריכת שם הבניין'},
@@ -1450,7 +1455,7 @@ var PERM_IDS_T=[]; PERM_DEFS_T.forEach(function(g){g.items.forEach(function(it){
 var PERM_LABELS_T={}; PERM_DEFS_T.forEach(function(g){g.items.forEach(function(it){PERM_LABELS_T[it.id]=it.label;});});
 function allPermsT(){ var o={}; PERM_IDS_T.forEach(function(id){o[id]=true;}); return o; }
 /* ברירת מחדל ללקוח: רכיבים מתקדמים כבויים עד שהאדמין מאשר אותם במפורש */
-var PERM_DEFAULT_OFF_T=['disp_news','disp_ads','ads_manage','manage_users'];
+var PERM_DEFAULT_OFF_T=['disp_news','disp_ads','ads_manage','manage_users','bg_images'];
 function defaultClientPerms(){ var o={}; PERM_IDS_T.forEach(function(id){o[id]=PERM_DEFAULT_OFF_T.indexOf(id)<0;}); return o; }
 function migratePermsT(perms){
   if(!perms||typeof perms!=='object') return null;
@@ -1974,12 +1979,12 @@ function renderGrid(){
     return;
   }
 
-  var typeNames={"scroll":"גוללת","static":"קבועה","pdf":"PDF"};
+  var typeNames={"scroll":"גוללת","static":"קבועה","pdf":"PDF / תמונה","scrollpdf":"גלילה + PDF / תמונה"};
   g.innerHTML=list.map(function(s){
     var ex=new Date(s.license_expiry),ok=ex>now,days=Math.ceil((ex-now)/86400000);
     var i=screenInfo(s);
     var tn=typeNames[s.message_type]||"";
-    var prevText=s.message_type==="pdf"?"PDF":
+    var prevText=s.message_type==="pdf"?"PDF / תמונה":
       (s.message?s.message.replace(/<[^>]*>/g,"").substring(0,80):"");
     var safeId=s.screen_id.replace(/'/g,"").replace(/"/g,"");
     var safeName=(s.building_name||s.screen_id).replace(/'/g,"").replace(/"/g,"");
@@ -2131,6 +2136,9 @@ function applyTenantPerms(){
   _tShow('tspeed-sec', !!P.scroll_speed);
   // בהירות רקע
   _tShow('tbright-sec', !!P.bg_brightness);
+  // תמונות רקע — רק אם האדמין סימן "החלפת תמונות רקע" (כבוי כברירת מחדל)
+  _tShow('t-bg-outer', !!P.bg_images);
+  _tShow('t-pdf-outer', false);
 }
 function _tenantBaseDC(){
   /* בסיס לשמירה: העתקה מלאה של הקונפיג הקיים.
@@ -2157,9 +2165,7 @@ function saveDisplayConfig(){
   out.board   = document.getElementById("td-board").checked;
   out.news    = document.getElementById("td-news").checked;
   out.ads     = document.getElementById("td-ads").checked;
-  out.pdf_list  = _tPdf.filter(function(x){return x && x.url && x.url.trim();});
-  out.bg_images = _tBg.filter(function(u){return u && u.trim();});
-  out.bg_sec    = parseInt((document.getElementById("t-bg-sec")||{}).value,10)||10;
+  /* תמונות הרקע נשמרות בכפתור משלהן (ובהרשאה נפרדת) — כאן לא נוגעים בהן */
   _tenantSaveDC(out).then(function(){ toast("התצוגה עודכנה"); });
 }
 var SUPA_BASE=SB, SUPA_KEY=SK;
@@ -2251,6 +2257,17 @@ function tBgDraw(){
         'style="background:none;border:none;color:#ff7b72;font-size:19px;cursor:pointer;">×</button></div>';
   }).join("") || '<div style="font-size:12px;color:#6e7681;">אין תמונות — יוצג הרקע המובנה.</div>';
 }
+/* שמירת תמונות הרקע — כפתור משלה, רק בהרשאת "החלפת תמונות רקע".
+   קודם לא היה לסעיף כפתור שמירה: התמונה עלתה לאחסון אבל לא נשמרה למסך. */
+function tBgSave(silent){
+  if(!(CURRENT_PERMS&&CURRENT_PERMS.bg_images)){ if(!silent) toast("אין הרשאה"); return Promise.resolve(); }
+  var out=_tenantBaseDC();
+  out.bg_images=_tBg.filter(function(u){return u && String(u).trim();});
+  out.bg_sec=parseInt((document.getElementById("t-bg-sec")||{}).value,10)||10;
+  return _tenantSaveDC(out)
+    .then(function(){ toast(silent?"תמונות הרקע נשמרו ✓":"תמונות הרקע עודכנו ✓ — יופיעו במסך תוך דקה"); })
+    .catch(function(){ toast("השמירה נכשלה"); });
+}
 function tBgMove(i,d){ var j=i+d; if(j<0||j>=_tBg.length)return; var t=_tBg[i]; _tBg[i]=_tBg[j]; _tBg[j]=t; tBgDraw(); }
 function tBgAdd(){ _tBg.push(""); tBgDraw(); }
 
@@ -2272,8 +2289,8 @@ function tApplyPurpose(){
   show("tenant-minyan-sec", isDoor);
   var mv=document.getElementById("t-minyan-view"); if(mv) mv.value=_tMinyanView||"list";
   /* תמונות הרקע רלוונטיות לכל סוגי המסכים */
-  show("t-bg-outer", true);   /* תמונות רקע — רלוונטיות לכל סוג מסך */
-  show("t-pdf-outer", isBuilding);
+  show("t-bg-outer", !!(CURRENT_PERMS&&CURRENT_PERMS.bg_images));   /* רק בהרשאת אדמין */
+  show("t-pdf-outer", false);   /* הוסר — הקובץ מוצג דרך ההודעה */
 }
 
 function saveMinyanView(){
@@ -2290,7 +2307,8 @@ function tBgUpload(inp){
   function next(){
     if(!files.length){
       inp.value="";
-      say(fail ? ("הועלו "+done+", נכשלו "+fail) : "הועלה ✓ — לחץ שמור תצוגה", fail?"#ff6b6b":"#3fb950");
+      say(fail ? ("הועלו "+done+", נכשלו "+fail) : "הועלה ✓", fail?"#ff6b6b":"#3fb950");
+      if(done) tBgSave(true);   /* שמירה אוטומטית — שלא ייעלם אם שוכחים ללחוץ */
       return;
     }
     var f=files.shift();
@@ -2692,6 +2710,8 @@ function saveMsg(){
   var html=document.getElementById("rte-editor").innerHTML;
   var pdf=document.getElementById("pdf-url").value.trim();
   var isPdf=(mtype==="pdf"||mtype==="scrollpdf");
+  if(isPdf && _pdfBusy){ toast("הקובץ עדיין עולה — המתן רגע"); return; }
+  if(isPdf && !pdf){ toast("העלה קובץ PDF או תמונה"); return; }
   var body={
     message:html,
     message_type:mtype,
@@ -2878,7 +2898,7 @@ function initPickers(){
 }
 
 /* ============ מנוע מודעות מתוזמנות ============ */
-function typeLabel(t){return t==="pdf"?"PDF":(t==="scrollpdf"?"גלילה + PDF":(t==="static"?"קבועה":"גוללת"));}
+function typeLabel(t){return t==="pdf"?"PDF / תמונה":(t==="scrollpdf"?"גלילה + PDF / תמונה":(t==="static"?"קבועה":"גוללת"));}
 function schedActiveNow(sc){
   var now=new Date();
   if(sc.start&&new Date(sc.start)>now)return false;
@@ -2892,7 +2912,7 @@ function renderSchedList(){
   if(!schedules.length){box.innerHTML='<div class="sched-empty">אין מודעות מתוזמנות. לחץ "+ הוסף מודעה מתוזמנת".</div>';return;}
   box.innerHTML=schedules.map(function(sc,i){
     var live=schedActiveNow(sc), future=schedFuture(sc);
-    var prev=sc.message_type==="pdf"?"PDF":(sc.message?sc.message.replace(/<[^>]*>/g,"").substring(0,70):"(ריק)");
+    var prev=sc.message_type==="pdf"?"PDF / תמונה":(sc.message?sc.message.replace(/<[^>]*>/g,"").substring(0,70):"(ריק)");
     var range=(fmtDisplay(sc.start)||"מעכשיו")+" ← "+(fmtDisplay(sc.end)||"ללא סיום");
     var badge=live?'<span class="badge-live">● פעיל עכשיו</span>':(future?'<span class="badge-wait">⏳ ממתין</span>':'<span class="badge-wait">הסתיים</span>');
     return '<div class="sched-item'+(live?" active-now":"")+'">'+
@@ -3056,8 +3076,9 @@ function saveSchedForm(){
   var msg=document.getElementById("sf-rte").innerHTML;
   var pdfRaw=document.getElementById("sf-pdf-url").value.trim();
   var hasText=!!document.getElementById("sf-rte").textContent.trim();
-  if(sfType==="pdf"){ if(!pdfRaw){toast("הזן קישור PDF");return;} }
-  else if(sfType==="scrollpdf"){ if(!pdfRaw){toast("הזן קישור PDF");return;} if(!hasText){toast("הזן טקסט לגלילה");return;} }
+  if(_pdfBusy){toast("הקובץ עדיין עולה — המתן רגע");return;}
+  if(sfType==="pdf"){ if(!pdfRaw){toast("העלה קובץ PDF או תמונה");return;} }
+  else if(sfType==="scrollpdf"){ if(!pdfRaw){toast("העלה קובץ PDF או תמונה");return;} if(!hasText){toast("הזן טקסט לגלילה");return;} }
   else { if(!hasText){toast("הזן טקסט למודעה");return;} }
   if(dtStartVal&&dtEndVal&&new Date(dtEndVal)<new Date(dtStartVal)){toast("תאריך הסיום לפני ההתחלה");return;}
   var isPdf=(sfType==="pdf"||sfType==="scrollpdf");
@@ -3106,9 +3127,11 @@ function openPreview(){
     if(pdfUrl){
       var pdfSrc=pdfUrl.match(/\/file\/d\/([^/]+)/);
       var src=pdfSrc?"https://drive.google.com/file/d/"+pdfSrc[1]+"/preview":pdfUrl;
-      pc.innerHTML='<iframe src="'+src+'" style="width:100%;height:100%;border:none;"></iframe>';
+      pc.innerHTML = /\.(jpe?g|png|webp|gif|avif|bmp)(\?|#|$)/i.test(src)
+        ? '<img src="'+src.replace(/"/g,"&quot;")+'" style="width:100%;height:100%;object-fit:contain;">'
+        : '<iframe src="'+src+'" style="width:100%;height:100%;border:none;"></iframe>';
     } else {
-      pc.innerHTML='<div style="color:#fff;font-size:2vw;text-align:center;">לא הוזן קישור PDF</div>';
+      pc.innerHTML='<div style="color:#fff;font-size:2vw;text-align:center;">לא הועלה קובץ</div>';
     }
   } else if(mtype==="static") {
     pc.style.cssText="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);";
@@ -3193,7 +3216,7 @@ window.addEventListener("load",function(){
   }
 });
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.2</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.3</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון/טופס פתוח במקום לצאת מהאפליקציה */
 (function(){
@@ -3278,7 +3301,8 @@ function updateShulCta(){
    מחזיק קישור, אבל הוא אינו הדרך המומלצת. */
 var _pdfUp=null;
 var PDF_MAX=20*1024*1024;
-var PDF_OK=["application/pdf","image/jpeg","image/png","image/webp"];
+var PDF_OK=["application/pdf","image/jpeg","image/png","image/webp","image/gif"];
+var _pdfBusy=false;   /* קובץ באמצע העלאה — לא שומרים עד שמסתיים */
 
 function pdfErr(t,p){
   var e=document.getElementById((p||"")+"pdf-err");
@@ -3298,7 +3322,7 @@ function pdfPick(inp,p){
   var f=inp.files && inp.files[0];
   if(!f) return;
   pdfErr("",p);
-  if(PDF_OK.indexOf(f.type)===-1){ pdfErr("סוג קובץ לא נתמך. PDF, JPG או PNG.",p); pdfClear(p); return; }
+  if(PDF_OK.indexOf(f.type)===-1){ pdfErr("סוג קובץ לא נתמך. PDF או תמונה (JPG / PNG / WEBP / GIF).",p); pdfClear(p); return; }
   if(f.size>PDF_MAX){ pdfErr("הקובץ גדול מ-20 מגה.",p); pdfClear(p); return; }
 
   var have=document.getElementById(p+"pdf-have");
@@ -3310,7 +3334,10 @@ function pdfPick(inp,p){
   var bi=document.getElementById(p+"pdf-bar-i");
   bar.style.display="block"; bi.style.width="30%";
 
-  var ext=(f.name.split(".").pop()||"bin").toLowerCase().replace(/[^a-z0-9]/g,"");
+  /* הסיומת נקבעת לפי סוג הקובץ — המסך מזהה תמונה לפי הסיומת */
+  var ext={"application/pdf":"pdf","image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"}[f.type]||"bin";
+  var u0=document.getElementById(p+"pdf-url"); if(u0) u0.value="";
+  _pdfBusy=true;
   var key=(sid||"screen")+"/"+Date.now().toString(36)+"-"+
           Math.random().toString(36).slice(2,8)+"."+ext;
 
@@ -3325,8 +3352,10 @@ function pdfPick(inp,p){
     _pdfUp = SUPA_BASE+"/storage/v1/object/public/screen-media/"+key;
     var u=document.getElementById(p+"pdf-url");
     if(u) u.value=_pdfUp;     /* אותו שדה ממשיך לשמש את השמירה */
-    toast("הקובץ הועלה");
+    _pdfBusy=false;
+    toast("הקובץ הועלה — לחץ שמור");
   }).catch(function(){
+    _pdfBusy=false;
     pdfErr("ההעלאה נכשלה. נסה שוב.",p);
     bar.style.display="none";
   });

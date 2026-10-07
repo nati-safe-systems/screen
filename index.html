@@ -1941,6 +1941,8 @@ function parseDisplayConfig(raw){
     pdf_sec: c.pdf_sec,
     pdf_cols: c.pdf_cols,
     pdf_list: Array.isArray(c.pdf_list) ? c.pdf_list : [],
+    bg_images: Array.isArray(c.bg_images) ? c.bg_images : (c.bg_url ? [c.bg_url] : []),  // תמונות רקע ללוח (אדמין / לקוח עם הרשאה)
+    bg_sec: (+c.bg_sec>=3) ? +c.bg_sec : 10,
     pdf_show_sec: c.pdf_show_sec,
     sho_images: Array.isArray(c.sho_images)&&c.sho_images.length?c.sho_images:SHO_DEFAULT_IMAGES,  // תמונות רקע למסך שבת/חג
     sho_layout: c.sho_layout||"card",                          // card | float | bar
@@ -2592,6 +2594,7 @@ function applyDisplayConfig(cfg){
   /* נשמר כדי לבנות מחדש כשרשימת המודעות בתשלום משתנה */
   CFG_LAST=cfg;
   DC=cfg;
+  try{ applyBgImages(cfg); }catch(e){}
   window._zmSrc = (cfg && cfg.zmanim_source==="engine") ? "engine" : "hebcal";
   var _newOr = (cfg && cfg.orientation) || "auto";
   var _newWx = (cfg && cfg.weather_pos) || "off";
@@ -3167,11 +3170,69 @@ function b64ToUint8(b64){
   return bytes;
 }
 function startPdfOrList(pdfUrl, secPerPage, cols, animPdf, listOverride){
-  var lst = (Array.isArray(listOverride) && listOverride.length) ? listOverride
-          : ((DC && Array.isArray(DC.pdf_list)) ? DC.pdf_list : []);
+  /* הקובץ שנבחר בהודעה עצמה קודם לכל. רשימת הקבצים הישנה (pdf_list)
+     משמשת רק כשאין להודעה קובץ — כך הן כבר לא דורסות זו את זו. */
+  if(Array.isArray(listOverride) && listOverride.length) return startDocs(listOverride, secPerPage, cols, animPdf);
+  if(String(pdfUrl||"").trim()){ stopDocs(); return startPdf(pdfUrl, secPerPage, cols, animPdf); }
+  var lst=(DC && Array.isArray(DC.pdf_list)) ? DC.pdf_list : [];
   if(lst.length) return startDocs(lst, secPerPage, cols, animPdf);
   stopDocs();
   return startPdf(pdfUrl, secPerPage, cols, animPdf);
+}
+
+/* ---- פתיחת "מסמך" להצגה: PDF או תמונה ----
+   מחזיר אובייקט בממשק של pdf.js (numPages / getPage / getViewport / render),
+   כך שאותו קוד מציג גם PDF וגם תמונה — במצב PDF ובמצב גלילה+PDF.
+   קובץ שהועלה לאחסון שלנו נטען ישירות; קישור חיצוני/דרייב — דרך GAS. */
+function nsfIsImgUrl(u){ return /\.(jpe?g|png|webp|gif|avif|bmp)(\?|#|$)/i.test(String(u||"")); }
+function nsfImgDoc(src){
+  return new Promise(function(res,rej){
+    var im=new Image();
+    im.onload=function(){
+      var W=im.naturalWidth||1, H=im.naturalHeight||1;
+      var pg={
+        getViewport:function(o){ var k=(o&&o.scale)||1; return {width:W*k,height:H*k,scale:k}; },
+        render:function(o){
+          var cx=o.canvasContext, vp=o.viewport;
+          cx.fillStyle="#fff"; cx.fillRect(0,0,vp.width,vp.height);
+          cx.drawImage(im,0,0,vp.width,vp.height);
+          return {promise:Promise.resolve()};
+        }
+      };
+      res({numPages:1, isImage:true, getPage:function(){ return Promise.resolve(pg); }});
+    };
+    im.onerror=function(){ rej(new Error("התמונה לא נטענה")); };
+    im.src=src;
+  });
+}
+function nsfOpenDoc(url){
+  url=String(url||"").trim();
+  if(!url) return Promise.reject(new Error("לא הוגדר קובץ"));
+  if(nsfIsImgUrl(url)) return nsfImgDoc(url);
+  if(typeof pdfjsLib==="undefined") return Promise.reject(new Error("ספריית PDF טרם נטענה — בדוק חיבור אינטרנט"));
+  pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  var opts={
+    cMapUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/",
+    cMapPacked:true,
+    standardFontDataUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/",
+    /* מצייר את האותיות מהקובץ עצמו — פותר עברית משובשת */
+    disableFontFace:true,
+    useSystemFonts:false
+  };
+  if(/\/storage\/v1\/object\/public\//.test(url)){
+    opts.url=url;
+    return pdfjsLib.getDocument(opts).promise;
+  }
+  return fetch(GAS+"?action=pdf&url="+encodeURIComponent(url)+"&_="+Date.now(),{cache:"no-store"})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(!d||!d.ok||!d.b64) throw new Error((d&&d.error)?d.error:"לא התקבל קובץ");
+      opts.data=b64ToUint8(d.b64);
+      /* קישור דרייב לתמונה (לא PDF) — מציגים כתמונה */
+      return pdfjsLib.getDocument(opts).promise.catch(function(){
+        return nsfImgDoc("data:image/png;base64,"+d.b64);
+      });
+    });
 }
 
 function startPdf(pdfUrl, secPerPage, cols, animPdf){
@@ -3185,31 +3246,7 @@ function startPdf(pdfUrl, secPerPage, cols, animPdf){
   stText.className="";
   stText.innerHTML='<div style="color:#fff;font-size:1.6vw;font-weight:700;">טוען מסמך...</div>';
 
-  if(typeof pdfjsLib==="undefined"){
-    stText.innerHTML='<div style="color:#fff;font-size:1.4vw;">ספריית PDF טרם נטענה — בדוק חיבור אינטרנט</div>';
-    return;
-  }
-  pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-
-  /* קובץ שהועלה לאחסון שלנו נטען ישירות; קישור דרייב — דרך GAS כמו קודם */
-  var direct=/\/storage\/v1\/object\/public\//.test(String(pdfUrl||""));
-  var proxy=GAS+"?action=pdf&url="+encodeURIComponent(pdfUrl)+"&_="+Date.now();
-  (direct
-    ? Promise.resolve({ok:true, direct:true})
-    : fetch(proxy,{cache:"no-store"}).then(function(r){ return r.json(); }))
-    .then(function(d){
-      if(myToken!==_pdfState.token) return null;
-      if(!d||!d.ok||(!d.direct&&!d.b64)) throw new Error((d&&d.error)?d.error:"לא התקבל קובץ");
-      return pdfjsLib.getDocument({
-        url:  d.direct ? pdfUrl : undefined,
-        data: d.direct ? undefined : b64ToUint8(d.b64),
-        cMapUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/",
-        cMapPacked:true,
-        standardFontDataUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/",
-        disableFontFace:true,
-        useSystemFonts:false
-      }).promise;
-    })
+  nsfOpenDoc(pdfUrl)
     .then(function(doc){
       if(!doc||myToken!==_pdfState.token) return;
       _pdfState.doc=doc;
@@ -3257,7 +3294,7 @@ function startPdf(pdfUrl, secPerPage, cols, animPdf){
       if(myToken!==_pdfState.token) return;
       var st=document.getElementById("st-text");
       st.className="";
-      st.innerHTML='<div style="color:#fff;font-size:1.3vw;">שגיאה בטעינת ה-PDF: '+((e&&e.message)||e)+'</div>';
+      st.innerHTML='<div style="color:#fff;font-size:1.3vw;">שגיאה בטעינת הקובץ: '+((e&&e.message)||e)+'</div>';
     });
 }
   
@@ -3297,25 +3334,9 @@ function startCombo(msg, coLogo, pdfUrl, secPerPage, cols, animPdf, showSec){
   }
   layer.style.display="block"; layer.style.opacity="1"; layer.style.transition="none"; layer.innerHTML="";
 
-  function loadDoc(){
-    if(typeof pdfjsLib==="undefined") return Promise.reject(new Error("pdfjs"));
-    pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-    return fetch(GAS+"?action=pdf&url="+encodeURIComponent(pdfUrl)+"&_="+Date.now(),{cache:"no-store"})
-      .then(function(r){return r.json();})
-      .then(function(d){
-        if(!d||!d.ok||!d.b64) throw new Error("no data");
-        return pdfjsLib.getDocument({
-          data:b64ToUint8(d.b64),
-          cMapUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/",
-          cMapPacked:true,
-          standardFontDataUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/",
-          /* מצייר את האותיות מהקובץ עצמו במקום להסתמך על גופני המערכת.
-             זה מה שפותר עברית משובשת בקבצים עם גופן חסר או קידוד לא סטנדרטי. */
-          disableFontFace:true,
-          useSystemFonts:false
-        }).promise;
-      });
-  }
+  /* קודם המצב המשולב טען תמיד דרך GAS — ולכן קובץ שהועלה בכפתור ההעלאה
+     (אחסון Supabase) לא הוצג, ורק קישור דרייב עבד. עכשיו — אותו טוען של מצב PDF. */
+  function loadDoc(){ return nsfOpenDoc(pdfUrl); }
   var docP = loadDoc().catch(function(){ return null; });
 
   function renderPageTo(doc, pageNum, canvas){
@@ -4544,12 +4565,46 @@ setInterval(function(){
 }, 4000);
 
 /* ---- Slideshow ---- */
-var si=0,sl=document.querySelectorAll(".bs");
-setInterval(function(){
+/* תמונות הרקע של הלוח. ברירת מחדל — התמונות המובנות (כל 15 שנ').
+   אם נשמרו תמונות (display_config.bg_images) — הן מחליפות את המובנות,
+   ומתחלפות לפי bg_sec. קודם המסך הזה התעלם מ-bg_images לגמרי, ולכן
+   תמונה שהועלתה מהפאנל לא הופיעה. */
+var si=0,sl=document.querySelectorAll(".bs"),_bgTimer=null,_bgSig=null,_bgDefault=null,_bgMs=15000;
+function bgTick(){
+  if(!sl||sl.length<2) return;
   sl[si].classList.remove("active");sl[si].classList.add("previous");
   si=(si+1)%sl.length;sl[si].classList.add("active");
-  setTimeout(function(){sl.forEach(function(s,i){if(i!==si)s.classList.remove("previous");});},14000);
-},15000);
+  var keep=si;
+  setTimeout(function(){sl.forEach(function(s,i){if(i!==keep)s.classList.remove("previous");});},Math.max(2500,_bgMs-1000));
+}
+function bgRestart(){ if(_bgTimer) clearInterval(_bgTimer); _bgTimer=setInterval(bgTick,_bgMs); }
+function applyBgImages(cfg){
+  var bc=document.getElementById("bc"); if(!bc) return;
+  var imgs=((cfg&&Array.isArray(cfg.bg_images))?cfg.bg_images:[])
+    .map(function(u){ u=String(u||"").trim(); return u ? (typeof drvImg==="function"?drvImg(u):u) : ""; })
+    .filter(function(u){ return !!u; });
+  var sec=(cfg&&+cfg.bg_sec>=3)?+cfg.bg_sec:10;
+  var sig=imgs.length ? (JSON.stringify(imgs)+"|"+sec) : "default";
+  if(sig===_bgSig) return;
+  _bgSig=sig;
+  var olds=bc.querySelectorAll(".bs");
+  if(_bgDefault===null){ _bgDefault=Array.prototype.map.call(olds,function(d){return d.getAttribute("style")||"";}); }
+  var styles = imgs.length
+    ? imgs.map(function(u){ return 'background-image:linear-gradient(rgba(0,0,0,0.2),rgba(0,0,0,0.2)),url("'+u.replace(/["\\]/g,"")+'")'; })
+    : _bgDefault;
+  olds.forEach(function(d){ d.parentNode.removeChild(d); });
+  var first=bc.firstChild;
+  styles.forEach(function(st,i){
+    var d=document.createElement("div");
+    d.className="bs"+(i===0?" active":"");
+    d.setAttribute("style",st);
+    bc.insertBefore(d, first);
+  });
+  sl=bc.querySelectorAll(".bs"); si=0;
+  _bgMs = imgs.length ? sec*1000 : 15000;
+  bgRestart();
+}
+bgRestart();
 
 /* ---- Start ---- */
 function loadNextSat(cb){
@@ -4986,6 +5041,6 @@ setInterval(fitTimer, 60000);
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.3</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.4</div>
 </body>
 </html>
