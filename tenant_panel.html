@@ -2711,7 +2711,14 @@ function saveMsg(){
   var pdf=document.getElementById("pdf-url").value.trim();
   var isPdf=(mtype==="pdf"||mtype==="scrollpdf");
   if(isPdf && _pdfBusy){ toast("הקובץ עדיין עולה — המתן רגע"); return; }
-  if(isPdf && !pdf){ toast("העלה קובץ PDF או תמונה"); return; }
+  /* הקובץ נמחק (×) — שומרים בלי קובץ במקום לחסום:
+     יש טקסט → הופך להודעת גלילה רגילה; אין טקסט → המסך מתנקה מהקובץ. */
+  if(isPdf && !pdf){
+    var _hasTxt=!!document.getElementById("rte-editor").textContent.trim();
+    if(_hasTxt && mtype==="scrollpdf"){ try{ setType("scroll"); }catch(e){ mtype="scroll"; } toast("הקובץ הוסר — נשמר כטקסט גולל"); }
+    else { html=""; try{ setType("scroll"); }catch(e){ mtype="scroll"; } }
+    isPdf=false;
+  }
   var body={
     message:html,
     message_type:mtype,
@@ -3077,7 +3084,9 @@ function saveSchedForm(){
   var pdfRaw=document.getElementById("sf-pdf-url").value.trim();
   var hasText=!!document.getElementById("sf-rte").textContent.trim();
   if(_pdfBusy){toast("הקובץ עדיין עולה — המתן רגע");return;}
-  if(sfType==="pdf"){ if(!pdfRaw){toast("העלה קובץ PDF או תמונה");return;} }
+  /* הקובץ נמחק (×) בגלילה+קובץ — ממשיכים כגלילה רגילה */
+  if(sfType==="scrollpdf" && !pdfRaw){ try{ sfSetType("scroll"); }catch(e){ sfType="scroll"; } }
+  if(sfType==="pdf"){ if(!pdfRaw){toast("אין קובץ במודעה — העלה קובץ, או מחק את המודעה המתוזמנת");return;} }
   else if(sfType==="scrollpdf"){ if(!pdfRaw){toast("העלה קובץ PDF או תמונה");return;} if(!hasText){toast("הזן טקסט לגלילה");return;} }
   else { if(!hasText){toast("הזן טקסט למודעה");return;} }
   if(dtStartVal&&dtEndVal&&new Date(dtEndVal)<new Date(dtStartVal)){toast("תאריך הסיום לפני ההתחלה");return;}
@@ -3216,7 +3225,7 @@ window.addEventListener("load",function(){
   }
 });
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.3</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.4</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון/טופס פתוח במקום לצאת מהאפליקציה */
 (function(){
