@@ -29,6 +29,23 @@ button.dz:hover{color:#ff6b6b}
 .item{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:9px;margin-bottom:8px}
 .item .hd{display:flex;justify-content:space-between;align-items:center;gap:6px}
 .item .hd b{color:#ffcc00;font-size:14px}
+/* פרנס = מגירה סגורה. בחוץ: שם, מסך, בולטות ותאריכים. לחיצה פותחת לעריכה. */
+.spd{background:#0d1117;border:1px solid #30363d;border-radius:8px;margin-bottom:6px}
+.spd.live{border-color:#2ea043}
+.spd>summary{list-style:none;cursor:pointer;padding:8px 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.spd>summary::-webkit-details-marker{display:none}
+.spd>summary::before{content:"\25C0";color:#8b949e;font-size:10px;transition:transform .15s}
+.spd[open]>summary::before{transform:rotate(-90deg)}
+.spd .sn{color:#ffcc00;font-weight:800;font-size:14px;min-width:0}
+.spd .sc{color:#8b949e;font-size:12px}
+.spd .sm{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-inline-start:auto}
+.spd .pr1{color:#ffd769;border:1px solid #ffcc00}
+.spd .pr2{color:#f0c86a}
+.spd .bd{padding:0 10px 10px}
+.spd .dz{margin-inline-start:4px}
+#sponTools{display:flex;gap:8px;align-items:center;margin:6px 0 8px;flex-wrap:wrap}
+#sponTools input{flex:1;min-width:150px}
+#sponTools span{font-size:12px;color:#8b949e}
 .tag{display:inline-block;background:#21262d;color:#8b949e;font-size:11px;padding:1px 7px;border-radius:9px;margin-right:5px}
 .times{margin-top:6px;font-size:13px;color:#7ee787;font-family:ui-monospace,monospace;direction:ltr;text-align:right;line-height:1.7}
 .msg{padding:8px 11px;border-radius:7px;font-size:13px;margin-bottom:10px;display:none}
@@ -1329,7 +1346,10 @@ function drawMinRow(i){ return [i].map(function(i){
 function today(){var t=new Date();return t.getFullYear()+"-"+pad2(t.getMonth()+1)+"-"+pad2(t.getDate());}
 function pad2(n){return (n<10?"0":"")+n;}
 
+var SPON_OPEN={}, SPON_Q="";
 function addSpon(){ if(!SITE)return say("בחר אתר",1);
+  window._sponNew=true;   /* הפרנס החדש ייפתח לעריכה */
+  try{ var c=document.getElementById("sponCard"); if(c) c.open=true; }catch(e){}
   sf("sponsors",{method:"POST",body:JSON.stringify({site_id:SITE.id,category:"פרנס היום",
     name:"",priority:3,scope:"all",date_from:today(),date_to:today()})}).then(function(){pickSite();})
    .catch(function(e){say("שמירה נכשלה: "+(e.message||e),1);});}
@@ -1344,24 +1364,68 @@ function saveSpon(i,f,v){var x=SPONS[i];x[f]=(v===""?null:v);
 function delSpon(i){if(!confirm("למחוק?"))return;
   sf("sponsors?id=eq."+SPONS[i].id,{method:"DELETE"}).then(function(){say("נמחק");pickSite();});}
 
+var SCOPE_LBL={all:"כל המסכים",cafe:"חדר קפה בלבד",main:"מסך הפרנסים (לובי)"};
+function fmtD(d){ if(!d) return ""; var a=String(d).split("-"); return a.length===3 ? (+a[2])+"."+(+a[1])+"."+a[0].slice(2) : d; }
+function sponFilter(v){ SPON_Q=String(v||"").trim().toLowerCase(); drawSpons(); }
+function sponToggle(id,open){ if(open) SPON_OPEN[id]=1; else delete SPON_OPEN[id]; }
 function drawSpons(){
   var t=today();
-  document.getElementById("spons").innerHTML=SPONS.map(function(x,i){
+  var box=document.getElementById("spons");
+  /* פרנס חדש (ללא שם) נפתח אוטומטית */
+  if(window._sponNew){ SPONS.forEach(function(x){ if(!x.name) SPON_OPEN[x.id]=1; }); window._sponNew=false; }
+  var liveN=0;
+  var rows=SPONS.map(function(x,i){ return {x:x,i:i}; });
+  var shown=rows.filter(function(r){
+    if(!SPON_Q) return true;
+    var x=r.x;
+    return [x.name,x.category,x.dedication,SCOPE_LBL[x.scope||"all"],PRIO[x.priority||3],fmtD(x.date_from),fmtD(x.date_to)]
+      .join(" ").toLowerCase().indexOf(SPON_Q)>-1;
+  });
+  var html=shown.map(function(r){
+    var x=r.x, i=r.i;
     var live=(!x.date_from||t>=x.date_from)&&(!x.date_to||t<=x.date_to)&&x.active!==false;
-    return '<div class="item" style="'+(live?"border-color:#2ea043":"")+'">'+
-      '<div class="hd"><b>'+(esc(x.name)||"(ללא שם)")+'</b>'+
-      '<span><span class="tag" style="'+(live?"color:#7ee787":"")+'">'+(live?"מוצג היום":"לא בתוקף")+'</span>'+
-      '<button class="dz" onclick="delSpon('+i+')">×</button></span></div>'+
-      '<div class="grid" style="margin-top:6px">'+
+    if(live) liveN++;
+    var pr=+(x.priority||3);
+    var dates=(x.date_from||x.date_to)
+      ? (x.date_from&&x.date_to ? (x.date_from===x.date_to ? "ב-"+fmtD(x.date_from) : fmtD(x.date_from)+" עד "+fmtD(x.date_to))
+         : (x.date_from ? "מ-"+fmtD(x.date_from) : "עד "+fmtD(x.date_to)))
+      : "ללא הגבלת תאריך";
+    return '<details class="spd'+(live?" live":"")+'"'+(SPON_OPEN[x.id]?" open":"")+
+        ' ontoggle="sponToggle('+JSON.stringify(x.id).replace(/"/g,"&quot;")+',this.open)">'+
+      '<summary>'+
+        '<span class="sn">'+(esc(x.name)||"(ללא שם)")+'</span>'+
+        '<span class="sc">'+esc(x.category||"")+'</span>'+
+        '<span class="sm">'+
+          '<span class="tag">'+esc(SCOPE_LBL[x.scope||"all"]||x.scope)+'</span>'+
+          '<span class="tag pr'+pr+'">'+esc(String(PRIO[pr]||pr).replace(/^\d+\s*—\s*/,""))+'</span>'+
+          '<span class="tag">'+esc(dates)+'</span>'+
+          '<span class="tag" style="'+(live?"color:#7ee787":"")+'">'+(live?"מוצג היום":"לא בתוקף")+'</span>'+
+          '<button class="dz" title="מחק" onclick="event.preventDefault();event.stopPropagation();delSpon('+i+')">×</button>'+
+        '</span>'+
+      '</summary>'+
+      '<div class="bd"><div class="grid">'+
       '<div><label>סוג</label><input list="catlist" value="'+esc(x.category||"")+'" onchange="saveSpon('+i+',\'category\',this.value)"></div>'+
       '<div><label>שם</label><input value="'+esc(x.name||"")+'" placeholder="ר\' ישראל ישראלי" onchange="saveSpon('+i+',\'name\',this.value)"></div>'+
       '<div><label>הקדשה</label><input value="'+esc(x.dedication||"")+'" placeholder="לעילוי נשמת / לרפואת" onchange="saveSpon('+i+',\'dedication\',this.value)"></div>'+
       '<div><label>מופיע במסך</label><select onchange="saveSpon('+i+',\'scope\',this.value)">'+
-        opts({all:"כל המסכים",cafe:"חדר קפה בלבד",main:"מסך הפרנסים (לובי)"},x.scope||"all")+'</select></div>'+
+        opts(SCOPE_LBL,x.scope||"all")+'</select></div>'+
       '<div><label>בולטות</label><select onchange="saveSpon('+i+',\'priority\',+this.value)">'+opts(PRIO,String(x.priority||3))+'</select></div>'+
       '<div><label>מתאריך</label><input type="date" value="'+(x.date_from||"")+'" onchange="saveSpon('+i+',\'date_from\',this.value)"></div>'+
       '<div><label>עד תאריך</label><input type="date" value="'+(x.date_to||"")+'" onchange="saveSpon('+i+',\'date_to\',this.value)"></div>'+
-      '</div></div>';}).join("")||'<div class="hint">אין פרנסים. הוסף אחד — הוא יופיע במסך חדר הקפה ובמסך הפרנסים בטווח התאריכים שתגדיר.</div>';}
+      '</div></div></details>';
+  }).join("");
+  if(!SPONS.length) html='<div class="hint">אין פרנסים. הוסף אחד — הוא יופיע במסך חדר הקפה ובמסך הפרנסים בטווח התאריכים שתגדיר.</div>';
+  else if(!shown.length) html='<div class="hint">לא נמצאו פרנסים לחיפוש הזה.</div>';
+  var tools=SPONS.length>3
+    ? '<div id="sponTools"><input type="search" placeholder="חיפוש פרנס — שם, סוג, תאריך..." value="'+esc(SPON_Q)+'" oninput="sponFilter(this.value)">'+
+      '<span>'+SPONS.length+' פרנסים · '+SPONS.filter(function(x){return (!x.date_from||t>=x.date_from)&&(!x.date_to||t<=x.date_to)&&x.active!==false;}).length+' מוצגים היום</span></div>'
+    : '';
+  /* שומרים על הפוקוס בשדה החיפוש בזמן הקלדה */
+  var hadFocus=document.activeElement && document.activeElement.closest && document.activeElement.closest("#sponTools");
+  var pos=hadFocus?document.activeElement.selectionStart:null;
+  box.innerHTML=tools+html;
+  if(hadFocus){ var inp=box.querySelector("#sponTools input"); if(inp){ inp.focus(); try{ inp.setSelectionRange(pos,pos); }catch(e){} } }
+}
 
 function opts(o,sel){return Object.keys(o).map(function(k){
   return "<option value='"+k+"'"+(sel===k?" selected":"")+">"+o[k]+"</option>";}).join("");}

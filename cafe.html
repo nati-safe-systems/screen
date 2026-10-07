@@ -1420,7 +1420,8 @@ body.merkaz #nsf-slide::after{top:var(--mk-gap) !important}
     state.active = { areas: areas, at: Date.now() };
     /* משך ההצגה נקבע בהגדרות המסך */
     clearTimeout(state.hideT);
-    state.hideT = setTimeout(hide, Math.max(5, +CFG.seconds || 60) * 1000);
+    /* מסך בית כנסת: ברירת מחדל 10 שניות. ערך אחר רק אם נקבע במפורש באדמין */
+    state.hideT = setTimeout(hide, Math.max(5, +window.NSF_ALERT_SEC || 10) * 1000);
   }
   function hide(){
     var d = document.getElementById('nsf-alert');
@@ -2470,7 +2471,7 @@ function load(){
   else if(SCREEN_ID) q=sf("screens?screen_id=eq."+encodeURIComponent(SCREEN_ID)+"&select=site_id,display_config")
                        .then(function(r){
                          if(!r||!r[0])return null;
-                         try{ var dc=r[0].display_config; if(typeof dc==="string") dc=JSON.parse(dc);
+                         try{ var dc=r[0].display_config; if(typeof dc==="string") dc=JSON.parse(dc); if(dc){ window.NSF_ALERT_SEC=(dc.alert_custom && +dc.alert_seconds>=5) ? +dc.alert_seconds : 10; }
                               if(dc){ var im=Array.isArray(dc.bg_images)?dc.bg_images:(dc.bg_url?[dc.bg_url]:[]);
                                       if(im.length) setBg(im, dc.bg_sec); } }catch(e){}
                          return r[0].site_id;
@@ -2792,4 +2793,120 @@ NatiGuard.check(function(){ load(); tick(); });
   setInterval(marks, 2000);
 })();
 </script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · חדר קפה · גרסה 3.1 · 28.09.26</div>
+<!-- ===== נתי SAFE · סימן מים מוזהב + רענון נתונים חכם (משותף לכל מסכי בית הכנסת) ===== -->
+<style id="nsf-wm-css">
+/* הלוגו ברקע כל לוח ממוסגר. סימן המים הישן (.mk-mark) נמחק בחלק מהמסכים
+   על ידי ניקוי אלמנטים ריקים, ובאחרים קיבל גובה 0 — ולכן לא נראה. */
+body.merkaz .mk-mark{display:none !important}
+.nsf-wmhost{isolation:isolate}
+.nsf-wm{position:absolute !important;inset:0 !important;z-index:-1 !important;
+  pointer-events:none;overflow:hidden;display:block !important;
+  font-size:0 !important;line-height:0 !important;color:transparent !important}
+.nsf-wm::before,.nsf-wm::after{content:"";position:absolute;inset:10% 9%;
+  background:var(--mkl) center/contain no-repeat}
+/* הבסיס — עדין, תמיד נראה */
+.nsf-wm::before{opacity:.075;filter:sepia(.35) saturate(1.5) brightness(1.15)}
+/* ההבלטה — עותק מוזהב שנדלק כשפס הזוהר חולף מעליו.
+   רק שקיפות מונפשת — הכרטיס הגרפי מבצע לבד, בלי ציור מחדש. */
+.nsf-wm::after{opacity:0;will-change:opacity;
+  filter:brightness(1.75) sepia(.7) saturate(3.2) hue-rotate(-8deg) drop-shadow(0 0 1.4vh rgba(255,196,80,.6));
+  animation:nsfWmGlow 13s linear infinite}
+@keyframes nsfWmGlow{0%,37%{opacity:0}45%{opacity:.15}50%{opacity:.27}55%{opacity:.15}63%,100%{opacity:0}}
+</style>
+<script>
+/* ---- סימן מים: מוסיף ללוחות הממוסגרים, ומסנכרן את ההבלטה עם פס הזוהר ----
+   כל לוח נדלק ברגע שהפס עובר מעליו בפועל — הימני, האמצעי והשמאלי
+   כל אחד בתורו. */
+(function(){
+  var SEL=".col,.center,.mk-screen,.mincol,.mid,.mkwrap";
+  function sweepAnim(){
+    try{
+      var s=document.getElementById("mk-sweep"); if(!s||!s.getAnimations) return null;
+      var a=s.getAnimations({subtree:true});
+      for(var i=0;i<a.length;i++) if(a[i].animationName==="mkSweep") return a[i];
+    }catch(e){}
+    return null;
+  }
+  function sync(wm){
+    try{
+      var sa=sweepAnim(); if(!sa || sa.currentTime==null) return false;
+      var T=+((sa.effect&&sa.effect.getTiming&&sa.effect.getTiming().duration)||13000)||13000;
+      var r=wm.getBoundingClientRect(); if(!r.width) return false;
+      var vw=window.innerWidth||1;
+      var cx=(r.left+r.width/2)/vw*100;            /* מרכז הלוח, באחוזי רוחב */
+      var f=(cx+8.5)/130;                          /* מתי מרכז הפס נמצא שם */
+      var mine=wm.getAnimations({subtree:true}).filter(function(a){return a.animationName==="nsfWmGlow";});
+      if(!mine.length) return false;
+      mine.forEach(function(a){
+        try{ a.effect.updateTiming({duration:T}); }catch(e){}
+        a.currentTime=(((sa.currentTime % T) - f*T + 0.5*T) % T + T) % T;
+      });
+      return true;
+    }catch(e){ return false; }
+  }
+  var lastW=0;
+  function run(){
+    var on=document.body.classList.contains("merkaz");
+    var resized=(window.innerWidth!==lastW); lastW=window.innerWidth;
+    var hosts=document.querySelectorAll(SEL);
+    for(var i=0;i<hosts.length;i++){
+      var h=hosts[i], wm=null;
+      for(var c=h.firstElementChild;c;c=c.nextElementSibling){ if(c.classList.contains("nsf-wm")){ wm=c; break; } }
+      var framed=false;
+      if(on){ try{ framed=(getComputedStyle(h).borderImageSource||"").indexOf("frame-merkaz")>-1; }catch(e){} }
+      if(framed && !wm){
+        wm=document.createElement("div"); wm.className="nsf-wm";
+        wm.textContent="​";   /* לא "ריק" — כדי שניקוי האלמנטים הריקים לא ימחק אותו */
+        h.classList.add("nsf-wmhost");
+        h.insertBefore(wm,h.firstChild);
+        wm.__synced=false;
+      }else if(!framed && wm){ wm.remove(); h.classList.remove("nsf-wmhost"); wm=null; }
+      if(wm && (!wm.__synced || resized)) wm.__synced=sync(wm);
+    }
+  }
+  window.addEventListener("load",function(){ setTimeout(run,600); });
+  setInterval(run,3000);
+  /* סנכרון מחדש פעם בדקה — אם פס הזוהר התאפס */
+  setInterval(function(){ var w=document.querySelectorAll(".nsf-wm"); for(var i=0;i<w.length;i++) sync(w[i]); },60000);
+})();
+
+/* ---- רענון נתונים חכם ----
+   קודם הנתונים נמשכו רק כל 5 דקות, ושינוי בניהול (פרנס, מניין, הודעה)
+   לקח זמן להגיע — או שנדרש רענון ידני של כל המסך.
+   עכשיו: כל 30 שניות נבדק בשקט אם משהו בנתונים השתנה (אותן שאילתות
+   בדיוק שהמסך טוען). רק אם כן — נטען מחדש החלק של הנתונים, בלי
+   לרענן את הדף, בלי לעצור את המוזיקה ובלי הבהוב. */
+(function(){
+  if(typeof sf!=="function" || typeof load!=="function") return;
+  var _sf=sf, _load=load, REC=null, URLS=[], LAST=null, busy=false;
+  var VOL=/^(last_seen|last_ping|seen_at|heartbeat|ping_at|online|updated_at|device_seen|last_boot)$/;
+  sf=function(p){ if(REC && typeof p==="string") REC[p]=1; return _sf.apply(this,arguments); };
+  load=function(){
+    REC={};
+    var r=_load.apply(this,arguments);
+    setTimeout(function(){ if(REC){ URLS=Object.keys(REC); REC=null; LAST=null; snap(true); } },8000);
+    return r;
+  };
+  function clean(v){
+    if(Array.isArray(v)) return v.map(clean);
+    if(v && typeof v==="object"){ var o={}; Object.keys(v).sort().forEach(function(k){ if(!VOL.test(k)) o[k]=clean(v[k]); }); return o; }
+    return v;
+  }
+  function snap(base){
+    if(busy || !URLS.length || typeof SB==="undefined") return;
+    busy=true;
+    Promise.all(URLS.map(function(p){
+      return fetch(SB+"/rest/v1/"+p,{headers:{apikey:SK,Authorization:"Bearer "+SK},cache:"no-store"})
+        .then(function(r){ if(!r.ok) throw new Error("http"); return r.json(); });
+    })).then(function(all){
+      var s=JSON.stringify(clean(all));
+      if(LAST===null || base){ LAST=s; return; }
+      if(s!==LAST){ LAST=s; try{ load(); }catch(e){} }
+    }).catch(function(){ /* שגיאת רשת — מנסים בסבב הבא */ })
+      .then(function(){ busy=false; });
+  }
+  setInterval(function(){ snap(false); },30000);
+})();
+</script>
+
 </body></html>
