@@ -104,7 +104,13 @@ tr:hover td{background:rgba(128,0,0,0.05);}
 .sec-title{font-size:16px;font-weight:800;}
 .btn-add{background:linear-gradient(135deg,#238636,#2ea043);color:#fff;border:none;
   border-radius:7px;padding:8px 18px;font-family:Assistant,sans-serif;font-size:13px;font-weight:800;cursor:pointer;}
-.filter-row{display:flex;gap:10px;margin-bottom:14px;}
+.filter-row{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
+.sc-flt{padding:8px 10px;font-size:13px;width:auto;min-width:120px;max-width:200px;}
+.sc-count{font-size:12px;color:#8b949e;margin-inline-start:auto;}
+th.sc-sort{cursor:pointer;user-select:none;white-space:nowrap;}
+th.sc-sort:hover{color:#ffcc00;}
+th.sc-sort .ar{font-size:10px;opacity:.85;margin-inline-start:4px;}
+@media (max-width:700px){ .search-input#sc-search{width:100%;} .sc-flt{flex:1 1 45%;max-width:none;} .sc-count{width:100%;} }
 .search-input{width:240px;padding:8px 12px;font-size:13px;}
 
 /* SETTINGS */
@@ -316,11 +322,45 @@ tr:hover td{background:rgba(128,0,0,0.05);}
       <button class="btn-add" onclick="openAddScreen()">+ מסך חדש</button>
     </div>
     <div class="filter-row">
-      <input class="search-input" type="text" id="sc-search" placeholder="חיפוש..." oninput="renderScreens()">
+      <input class="search-input" type="search" id="sc-search" placeholder="חיפוש בכל השדות — מזהה, בניין, לקוח, תוכן..." oninput="renderScreens()">
+      <select class="sc-flt" id="sc-f-co" onchange="renderScreens()"><option value="">כל הלקוחות</option></select>
+      <select class="sc-flt" id="sc-f-kind" onchange="renderScreens()">
+        <option value="">כל סוגי המסכים</option>
+        <option value="building">בניין מגורים</option>
+        <option value="synagogue">בית כנסת</option>
+        <option value="business">עסק / פרסום</option>
+      </select>
+      <select class="sc-flt" id="sc-f-status" onchange="renderScreens()">
+        <option value="">כל הסטטוסים</option>
+        <option value="ok">פעיל</option>
+        <option value="warn">פג בקרוב (30 יום)</option>
+        <option value="exp">פג תוקף</option>
+        <option value="open">נעילה כבויה (פתוח)</option>
+        <option value="ads">פרסומות פעילות</option>
+        <option value="msg">יש הודעה על המסך</option>
+        <option value="nomsg">בלי הודעה</option>
+      </select>
+      <select class="sc-flt" id="sc-sort" onchange="scSortSel(this.value)">
+        <option value="building|1">מיון: בניין א–ת</option>
+        <option value="building|-1">מיון: בניין ת–א</option>
+        <option value="company|1">מיון: לקוח א–ת</option>
+        <option value="expiry|1">מיון: תפוגה — הקרובה קודם</option>
+        <option value="expiry|-1">מיון: תפוגה — הרחוקה קודם</option>
+        <option value="id|1">מיון: מזהה</option>
+        <option value="created|-1">מיון: החדש ביותר</option>
+      </select>
+      <button type="button" class="btn-sm gray" onclick="scResetFilters()">נקה</button>
+      <span class="sc-count" id="sc-count"></span>
     </div>
     <div class="tbl-card">
       <table>
-        <thead><tr><th>מזהה</th><th>בניין</th><th>לקוח</th><th>תפוגה</th><th>סטטוס</th><th>פעולות</th></tr></thead>
+        <thead><tr>
+          <th class="sc-sort" data-k="id" onclick="scSortBy('id')">מזהה<span class="ar"></span></th>
+          <th class="sc-sort" data-k="building" onclick="scSortBy('building')">בניין<span class="ar"></span></th>
+          <th class="sc-sort" data-k="company" onclick="scSortBy('company')">לקוח<span class="ar"></span></th>
+          <th class="sc-sort" data-k="expiry" onclick="scSortBy('expiry')">תפוגה<span class="ar"></span></th>
+          <th class="sc-sort" data-k="expiry" onclick="scSortBy('expiry')">ימים<span class="ar"></span></th>
+          <th>סטטוס</th><th>פעולות</th></tr></thead>
         <tbody id="screens-tbl"></tbody>
       </table>
     </div>
@@ -2433,14 +2473,113 @@ function renderDash(){
   }
 }
 
+/* ===== רשימת המסכים: חיפוש בכל השדות, סינון ומיון =====
+   החיפוש עובר על מזהה, שם בניין, שם הלקוח, סוג/ייעוד, תוכן ההודעה,
+   תאריך התפוגה וכל שדה טקסט אחר של המסך. כמה מילים = כולן חייבות להופיע. */
+var _scSort={k:'building',d:1};
+var SC_KIND_LBL={building:'בניין מגורים',synagogue:'בית כנסת',business:'עסק פרסום'};
+var SC_PURP_LBL={main:'מסך בניין',lobby:'לובי בית כנסת',door:'מעל דלת חדר',minyanim:'מניינים',cafe:'חדר קפה',mikveh:'מקווה',sponsors:'פרנסים ותורמים'};
+function scNorm(v){ return String(v==null?'':v).toLowerCase().replace(/["'׳״`]/g,'').replace(/\s+/g,' '); }
+function scKind(s){ try{ return s.screen_kind || kindFromPurpose(s.purpose); }catch(e){ return s.screen_kind||'building'; } }
+function scDays(s,now){ return Math.ceil((new Date(s.license_expiry)-now)/86400000); }
+function scHasMsg(s){
+  var t=!!(s.message&&String(s.message).replace(/<[^>]*>/g,'').trim());
+  var p=!!(s.pdf_url&&String(s.pdf_url).trim()&&(s.message_type==='pdf'||s.message_type==='scrollpdf'));
+  return t||p;
+}
+function scHay(s,cm){
+  var parts=[cm[s.company_id]||'', SC_KIND_LBL[scKind(s)]||'', SC_PURP_LBL[s.purpose]||''];
+  var skip={company_logo:1,display_config:1,schedules:1,screen_token:1};
+  for(var k in s){
+    if(skip[k]) continue;
+    var v=s[k];
+    if(v==null || typeof v==='object') continue;
+    v=String(v);
+    if(v.length>3000) continue;
+    parts.push(k==='message'? v.replace(/<[^>]*>/g,' ') : v);
+  }
+  if(s.license_expiry){ try{ parts.push(new Date(s.license_expiry).toLocaleDateString('he-IL')); }catch(e){} }
+  try{ var _sc=s.schedules; if(typeof _sc==='string'){ try{_sc=JSON.parse(_sc);}catch(e){_sc=[];} } (Array.isArray(_sc)?_sc:[]).forEach(function(x){ if(x&&x.message) parts.push(String(x.message).replace(/<[^>]*>/g,' ')); }); }catch(e){}
+  return scNorm(parts.join(' | '));
+}
+function scSortBy(k){
+  if(_scSort.k===k) _scSort.d=-_scSort.d; else { _scSort.k=k; _scSort.d=1; }
+  var sel=document.getElementById('sc-sort'); if(sel){ sel.value=_scSort.k+'|'+_scSort.d; }
+  renderScreens();
+}
+function scSortSel(v){ var a=String(v||'building|1').split('|'); _scSort={k:a[0],d:+a[1]||1}; renderScreens(); }
+function scResetFilters(){
+  ['sc-search','sc-f-co','sc-f-kind','sc-f-status'].forEach(function(id){ var e=document.getElementById(id); if(e) e.value=''; });
+  _scSort={k:'building',d:1}; var sel=document.getElementById('sc-sort'); if(sel) sel.value='building|1';
+  renderScreens();
+}
+function scFillCoFilter(){
+  var sel=document.getElementById('sc-f-co'); if(!sel) return;
+  var cur=sel.value;
+  var cos=allCompanies.slice().sort(function(a,b){ return String(a.company_name||'').localeCompare(String(b.company_name||''),'he'); });
+  sel.innerHTML='<option value="">כל הלקוחות</option>'+cos.map(function(c){
+    return '<option value="'+escH(c.company_id)+'">'+escH(c.company_name||c.company_id)+'</option>'; }).join('');
+  sel.value=cur;
+  if(sel.value!==cur) sel.value='';
+}
 function renderScreens(){
-  var q=(document.getElementById('sc-search')||{}).value||'';
+  var q=scNorm((document.getElementById('sc-search')||{}).value||'').trim();
+  var fCo=(document.getElementById('sc-f-co')||{}).value||'';
+  var fKind=(document.getElementById('sc-f-kind')||{}).value||'';
+  var fSt=(document.getElementById('sc-f-status')||{}).value||'';
   var now=new Date();
   var cm={};allCompanies.forEach(function(c){cm[c.company_id]=c.company_name;});
-  var rows=allScreens.filter(function(s){return !q||[s.screen_id,s.building_name,s.company_id].some(function(v){return (v||'').toLowerCase().includes(q.toLowerCase());});});
+  scFillCoFilter();
+  var words=q?q.split(' ').filter(Boolean):[];
+  var rows=allScreens.filter(function(s){
+    if(fCo && s.company_id!==fCo) return false;
+    if(fKind && scKind(s)!==fKind) return false;
+    if(fSt){
+      var d=scDays(s,now);
+      if(fSt==='ok'    && !(d>30)) return false;
+      if(fSt==='warn'  && !(d>0&&d<=30)) return false;
+      if(fSt==='exp'   && !(d<=0)) return false;
+      if(fSt==='open'  && s.lock_enabled!==false) return false;
+      if(fSt==='ads'   && s.ads_enabled!==true) return false;
+      if(fSt==='msg'   && !scHasMsg(s)) return false;
+      if(fSt==='nomsg' && scHasMsg(s)) return false;
+    }
+    if(words.length){
+      var h=scHay(s,cm);
+      for(var i=0;i<words.length;i++){ if(h.indexOf(words[i])<0) return false; }
+    }
+    return true;
+  });
+  var k=_scSort.k, dir=_scSort.d;
+  function val(s){
+    if(k==='id') return String(s.screen_id||'');
+    if(k==='company') return String(cm[s.company_id]||s.company_id||'');
+    if(k==='expiry') return new Date(s.license_expiry).getTime()||0;
+    if(k==='created') return new Date(s.created_at||0).getTime()||0;
+    return String(s.building_name||'');
+  }
+  rows.sort(function(a,b){
+    var x=val(a), y=val(b), r;
+    if(typeof x==='number') r=x-y;
+    else {
+      if(!x && y) return 1; if(x && !y) return -1;   /* ריקים תמיד בסוף */
+      r=x.localeCompare(y,'he',{numeric:true,sensitivity:'base'});
+    }
+    if(!r) r=String(a.building_name||'').localeCompare(String(b.building_name||''),'he',{numeric:true});
+    return r*dir;
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('th.sc-sort'),function(th){
+    var ar=th.querySelector('.ar'); if(ar) ar.textContent=(th.getAttribute('data-k')===k)?(dir>0?'▲':'▼'):'';
+  });
   var tbody=document.getElementById('screens-tbl');
   tbody.innerHTML='';
   rows.forEach(function(s){tbody.appendChild(makeScRow(s,cm,now));});
+  if(!rows.length){
+    tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:#8b949e;padding:20px;">'+
+      (allScreens.length?'לא נמצאו מסכים שמתאימים לחיפוש / לסינון':'אין מסכים עדיין')+'</td></tr>';
+  }
+  var cnt=document.getElementById('sc-count');
+  if(cnt) cnt.textContent = (rows.length===allScreens.length) ? (allScreens.length+' מסכים') : ('מוצגים '+rows.length+' מתוך '+allScreens.length);
 }
 
 function renderCompanies(){
@@ -3690,7 +3829,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.0</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.1</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){
