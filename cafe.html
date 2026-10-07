@@ -2805,13 +2805,29 @@ body.merkaz .mk-mark{display:none !important}
 .nsf-wm::before,.nsf-wm::after{content:"";position:absolute;inset:10% 9%;
   background:var(--mkl) center/contain no-repeat}
 /* הבסיס — עדין, תמיד נראה */
-.nsf-wm::before{opacity:.075;filter:sepia(.35) saturate(1.5) brightness(1.15)}
+.nsf-wm::before,.nsf-wm-sl::before{opacity:.06;filter:sepia(.35) saturate(1.5) brightness(1.1)}
 /* ההבלטה — עותק מוזהב שנדלק כשפס הזוהר חולף מעליו.
    רק שקיפות מונפשת — הכרטיס הגרפי מבצע לבד, בלי ציור מחדש. */
-.nsf-wm::after{opacity:0;will-change:opacity;
-  filter:brightness(1.75) sepia(.7) saturate(3.2) hue-rotate(-8deg) drop-shadow(0 0 1.4vh rgba(255,196,80,.6));
+.nsf-wm::after,.nsf-wm-sl::after{opacity:0;will-change:opacity;
+  filter:brightness(1.45) sepia(.6) saturate(2.4) hue-rotate(-8deg) drop-shadow(0 0 .6vh rgba(255,196,80,.3));
   animation:nsfWmGlow 13s linear infinite}
-@keyframes nsfWmGlow{0%,37%{opacity:0}45%{opacity:.15}50%{opacity:.27}55%{opacity:.15}63%,100%{opacity:0}}
+/* ---- שקופיות ההודעות ("אסור לדבר בשעת התפילה" וכו׳) ----
+   המסגרת של השקופית מיושרת בדיוק לקצוות הלוחות של המסך, באותו עובי,
+   והלוגו העליון יושב באותו מקום — כך שבמעבר שום דבר לא "קופץ". */
+.nsf-wm-sl{position:absolute !important;z-index:1 !important;margin:0 !important;flex:none !important;pointer-events:none;overflow:hidden;
+  font-size:0;line-height:0;color:transparent;max-width:none !important}
+.nsf-wm-sl::before,.nsf-wm-sl::after{content:"";position:absolute;inset:10% 9%;
+  background:var(--mkl) center/contain no-repeat}
+body.merkaz #nsf-slide.nsf-al::before{
+  inset:var(--slT) var(--slR) var(--slB) var(--slL) !important;
+  border-width:var(--bwT) var(--bwR) var(--bwB) var(--bwL) !important}
+/* מחוץ למסגרת — שקוף: העיטורים, הכותרת התחתונה והרקע נשארים בדיוק כמו במסך הרגיל */
+body.merkaz #nsf-slide.nsf-al{background:transparent !important}
+body.merkaz #nsf-slide.nsf-al .bgw{display:none !important}
+body.merkaz #nsf-slide.nsf-al::after{
+  top:var(--crT) !important;left:var(--crX) !important;height:var(--crH) !important;
+  transform:translate(-50%,0) !important}
+@keyframes nsfWmGlow{0%,38%{opacity:0}45%{opacity:.07}50%{opacity:.13}55%{opacity:.07}62%,100%{opacity:0}}
 </style>
 <script>
 /* ---- סימן מים: מוסיף ללוחות הממוסגרים, ומסנכרן את ההבלטה עם פס הזוהר ----
@@ -2863,11 +2879,58 @@ body.merkaz .mk-mark{display:none !important}
       }else if(!framed && wm){ wm.remove(); h.classList.remove("nsf-wmhost"); wm=null; }
       if(wm && (!wm.__synced || resized)) wm.__synced=sync(wm);
     }
+    try{ alignSlide(on); }catch(e){}
+  }
+  /* מיישר את מסגרת השקופית ללוחות האמיתיים שמתחתיה */
+  function px(n){ return Math.round(n)+"px"; }
+  function alignSlide(on){
+    var sl=document.getElementById("nsf-slide"); if(!sl) return;
+    if(!sl.__obs && window.MutationObserver){
+      sl.__obs=new MutationObserver(function(){
+        /* רק כשהשקופית נדלקת/נכבית — לא בכל שינוי שאנחנו עושים בעצמנו */
+        var o=sl.classList.contains("on"); if(o===sl.__wasOn) return; sl.__wasOn=o;
+        try{ alignSlide(document.body.classList.contains("merkaz")); }catch(e){} });
+      sl.__obs.observe(sl,{attributes:true,attributeFilter:["class"]});
+    }
+    var wmS=null;
+    for(var c=sl.firstElementChild;c;c=c.nextElementSibling){ if(c.classList.contains("nsf-wm-sl")){ wmS=c; break; } }
+    if(!on){ if(sl.classList.contains("nsf-al")) sl.classList.remove("nsf-al"); if(wmS) wmS.remove(); return; }
+    var hs=document.querySelectorAll(".nsf-wmhost"), U=null, big=null;
+    for(var i=0;i<hs.length;i++){
+      if(sl.contains(hs[i])) continue;
+      var r=hs[i].getBoundingClientRect(); if(!r.width||!r.height) continue;
+      if(!U) U={t:r.top,l:r.left,r:r.right,b:r.bottom};
+      else { U.t=Math.min(U.t,r.top); U.l=Math.min(U.l,r.left); U.r=Math.max(U.r,r.right); U.b=Math.max(U.b,r.bottom); }
+      if(!big || r.width*r.height > big.a) big={el:hs[i],a:r.width*r.height};
+    }
+    if(!U) return;
+    var S=sl.getBoundingClientRect(); if(!S.width) return;
+    var cs=getComputedStyle(big.el);
+    var bw={t:parseFloat(cs.borderTopWidth)||0,r:parseFloat(cs.borderRightWidth)||0,
+            b:parseFloat(cs.borderBottomWidth)||0,l:parseFloat(cs.borderLeftWidth)||0};
+    var v={"--slT":px(U.t-S.top),"--slL":px(U.l-S.left),"--slR":px(S.right-U.r),"--slB":px(S.bottom-U.b),
+           "--bwT":px(bw.t),"--bwR":px(bw.r),"--bwB":px(bw.b),"--bwL":px(bw.l)};
+    var cr=null, crs=document.querySelectorAll(".mk-crown");
+    for(var j=0;j<crs.length;j++){ if(sl.contains(crs[j])) continue; var q=crs[j].getBoundingClientRect(); if(q.width){ cr=q; break; } }
+    if(cr){ v["--crT"]=px(cr.top-S.top); v["--crX"]=px(cr.left+cr.width/2-S.left); v["--crH"]=px(cr.height); }
+    var key=JSON.stringify(v);
+    if(sl.__alKey!==key){ sl.__alKey=key; for(var k in v) sl.style.setProperty(k,v[k]); }
+    if(!sl.classList.contains("nsf-al")) sl.classList.add("nsf-al");   /* בלי הוספה כפולה — אחרת המשקיף מופעל שוב ושוב */
+    /* הלוגו ברקע גם בשקופית — בתוך שטח הלוח */
+    if(!wmS){ wmS=document.createElement("div"); wmS.className="nsf-wm-sl"; wmS.textContent="\u200b"; sl.insertBefore(wmS,sl.firstChild); wmS.__synced=false; }
+    var iT=U.t-S.top+bw.t, iL=U.l-S.left+bw.l, iW=(U.r-U.l)-bw.l-bw.r, iH=(U.b-U.t)-bw.t-bw.b;
+    wmS.style.cssText="top:"+px(iT)+";left:"+px(iL)+";width:"+px(Math.max(0,iW))+";height:"+px(Math.max(0,iH));
+    if(!wmS.__synced) wmS.__synced=sync(wmS);
   }
   window.addEventListener("load",function(){ setTimeout(run,600); });
+  /* השקופית נוצרת רק ברגע ההצגה הראשון — מחכים לה ומיישרים מיד */
+  var _slW=setInterval(function(){
+    if(document.getElementById("nsf-slide")){ clearInterval(_slW);
+      try{ alignSlide(document.body.classList.contains("merkaz")); }catch(e){} }
+  },250);
   setInterval(run,3000);
   /* סנכרון מחדש פעם בדקה — אם פס הזוהר התאפס */
-  setInterval(function(){ var w=document.querySelectorAll(".nsf-wm"); for(var i=0;i<w.length;i++) sync(w[i]); },60000);
+  setInterval(function(){ var w=document.querySelectorAll(".nsf-wm,.nsf-wm-sl"); for(var i=0;i<w.length;i++) sync(w[i]); },60000);
 })();
 
 /* ---- רענון נתונים חכם ----
