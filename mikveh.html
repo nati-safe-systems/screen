@@ -26,6 +26,18 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 .zc{background:rgba(255,255,255,.05);border:1px solid var(--nsf-line,rgba(255,204,0,.28));border-radius:1.1vh;
   padding:.9vh .5vw;text-align:center;min-width:0}
 .zc.past{opacity:.38}
+/* הזמן הקרוב הבא */
+.zc.next{border:2px solid #ffcc00;background:linear-gradient(180deg,rgba(255,204,0,.20),rgba(255,204,0,.05));
+  box-shadow:0 0 1.6vh rgba(255,204,0,.28)}
+.zc.next small{color:#ffe39a}
+.zc.next b{color:#ffd23f !important;font-size:4.3vh}
+.zc.next.soon{border-color:#ff9f1a;background:linear-gradient(180deg,rgba(255,150,30,.26),rgba(255,150,30,.07));box-shadow:0 0 1.6vh rgba(255,150,30,.35)}
+.zc.next.soon b{color:#ffa53a !important}
+.zc.next.soon .cd{color:#ffc27a}
+.zc.next.hot{border-color:#ff5a4a;box-shadow:0 0 1.8vh rgba(255,70,50,.4)}
+.zc.next.hot b{color:#ff6b5a !important}
+/* "נותרו X דק'" — שורה קטנה מתחת לשעה (כלל כללי של ".cd" הגדיל אותה לענק) */
+body.merkaz .zc .cd,.zc .cd{font-size:1.45vh !important;line-height:1.2 !important;margin-top:.3vh;font-weight:700}
 .zc.hot{background:linear-gradient(180deg,rgba(160,25,25,.55),rgba(105,10,10,.6));
   border-color:var(--nsf-gold,#ffcc00);box-shadow:0 0 2.2vh var(--nsf-line,rgba(255,204,0,.35))}
 .zc small{display:block;color:#c8d8ea;font-size:1.4vh;font-weight:700;margin-bottom:.3vh;
@@ -308,9 +320,9 @@ body.merkaz .mid{
   background-clip:padding-box !important;box-shadow:none !important;
   overflow:visible;
 }
-body.merkaz .mid{border-width:7.4vh 4vw 6vh 4vw !important}
+body.merkaz .mid{border-width:6.2vh 4vw 5.4vh 4vw !important}
 body.merkaz .mid > *:not(.mk-crown):not(.bsd){position:relative;z-index:3;min-width:0}
-body.merkaz .mid > .mk-crown{height:13vh}
+body.merkaz .mid > .mk-crown{height:11vh}
 body.merkaz .mid{display:flex;flex-direction:column}
 
 
@@ -353,7 +365,7 @@ body.merkaz .mk-crown{
 /* הלוח שנושא את הלוגו אינו חותך. החיתוך מוחל על התוכן בלבד,
    דרך מיכל פנימי, ולכן הלוגו חופשי לחרוג מעל הקורה. */
 body.merkaz .mk-host{overflow:visible !important}
-body.merkaz .mid{--mk-crown-h:12.5vh;overflow:visible !important}
+body.merkaz .mid{--mk-crown-h:11vh;overflow:visible !important}
 /* כותרת "זמני התפילות" יורדת מתחת ללוגו — קודם הלוגו הסתיר אותה */
 body.merkaz .mid > .secttl{margin-top:calc(var(--mk-crown-h, 12.5vh) * .56 + .8vh) !important}
 
@@ -520,11 +532,23 @@ body.merkaz #nsf-slide-t::after{
   opacity:.5;
 }
 
-body.merkaz .mid{margin-top:var(--mk-gap)}
+/* הרווח מעל המסגרת הוקטן (הלוגו ממילא יושב בתוך המסגרת) — המסגרת גבוהה יותר
+   ונשאר בדיוק מקום לעיטורים */
+body.merkaz .mid{margin-top:3.4vh}
 body.merkaz #nsf-slide::before{
   inset:var(--mk-gap) var(--mk-gapx) 1vh !important;
 }
 body.merkaz #nsf-slide::after{top:var(--mk-gap) !important}
+
+/* ---------- עיטורי זהב מעל המסגרת (כמו במסך הראשי) ---------- */
+#mk-orn2{display:none}
+body.merkaz #mk-orn2{display:block;position:absolute !important;left:0;right:0;top:-3.1vh;height:2vh;z-index:5 !important;pointer-events:none}
+body.merkaz #mk-orn2 .rule{position:absolute;top:0;height:2vh;width:32vw}
+body.merkaz #mk-orn2 .rule.l{left:8vw}
+body.merkaz #mk-orn2 .rule.r{right:8vw;transform:scaleX(-1)}
+body.merkaz #mk-orn2 .rule svg{width:100%;height:100%;display:block;overflow:visible}
+body.merkaz #mk-orn2 .gem{position:absolute;top:.2vh;width:1.6vh;height:1.6vh}
+body.merkaz #mk-orn2 .gem svg{width:100%;height:100%;display:block}
 </style></head><body>
 <div id="mk-sweep"></div>
 
@@ -542,6 +566,7 @@ body.merkaz #nsf-slide::after{top:var(--mk-gap) !important}
 <div class="mid">
   <div class="mk-mark"></div>
   <div class="mk-crown"></div>
+  <div id="mk-orn2" aria-hidden="true">​<div class="rule l"><svg viewBox="0 0 1000 40" preserveAspectRatio="none"><defs><linearGradient id="mkog2" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1000" y2="0"><stop offset="0" stop-color="#f3d778" stop-opacity="0"/><stop offset=".12" stop-color="#e8c766"/><stop offset=".55" stop-color="#fff1b8"/><stop offset=".85" stop-color="#c9a227"/><stop offset="1" stop-color="#c9a227" stop-opacity="0"/></linearGradient></defs><g fill="none" stroke="url(#mkog2)"><path d="M0 14 H1000" stroke-width="2.2" vector-effect="non-scaling-stroke"/><path d="M60 26 H940" stroke-width="1" opacity=".75" vector-effect="non-scaling-stroke"/></g></svg><svg viewBox="0 0 60 40" style="position:absolute;left:-2.2vh;top:-.9vh;width:4.2vh;height:2.8vh;overflow:visible"><path d="M58 14 C40 14 30 16 22 22 C14 28 6 26 6 18 C6 11 14 8 19 13 C22 16 20 21 16 20" fill="none" stroke="#e8c766" stroke-width="2.2" stroke-linecap="round"/><circle cx="16" cy="20" r="2.4" fill="#fff1b8"/></svg></div><div class="rule r"><svg viewBox="0 0 1000 40" preserveAspectRatio="none"><defs><linearGradient id="mkog2" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1000" y2="0"><stop offset="0" stop-color="#f3d778" stop-opacity="0"/><stop offset=".12" stop-color="#e8c766"/><stop offset=".55" stop-color="#fff1b8"/><stop offset=".85" stop-color="#c9a227"/><stop offset="1" stop-color="#c9a227" stop-opacity="0"/></linearGradient></defs><g fill="none" stroke="url(#mkog2)"><path d="M0 14 H1000" stroke-width="2.2" vector-effect="non-scaling-stroke"/><path d="M60 26 H940" stroke-width="1" opacity=".75" vector-effect="non-scaling-stroke"/></g></svg><svg viewBox="0 0 60 40" style="position:absolute;left:-2.2vh;top:-.9vh;width:4.2vh;height:2.8vh;overflow:visible"><path d="M58 14 C40 14 30 16 22 22 C14 28 6 26 6 18 C6 11 14 8 19 13 C22 16 20 21 16 20" fill="none" stroke="#e8c766" stroke-width="2.2" stroke-linecap="round"/><circle cx="16" cy="20" r="2.4" fill="#fff1b8"/></svg></div><div class="gem" style="left:calc(8vw + 32vw*.33 - .8vh)"><svg viewBox="0 0 20 20"><path d="M10 1 L19 10 L10 19 L1 10 Z" fill="#e8c766" stroke="#fff1b8" stroke-width="1"/><path d="M10 5 L15 10 L10 15 L5 10 Z" fill="#8a6a1f"/></svg></div><div class="gem" style="left:calc(8vw + 32vw*.66 - .8vh)"><svg viewBox="0 0 20 20"><path d="M10 1 L19 10 L10 19 L1 10 Z" fill="#e8c766" stroke="#fff1b8" stroke-width="1"/><path d="M10 5 L15 10 L10 15 L5 10 Z" fill="#8a6a1f"/></svg></div><div class="gem" style="right:calc(8vw + 32vw*.33 - .8vh)"><svg viewBox="0 0 20 20"><path d="M10 1 L19 10 L10 19 L1 10 Z" fill="#e8c766" stroke="#fff1b8" stroke-width="1"/><path d="M10 5 L15 10 L10 15 L5 10 Z" fill="#8a6a1f"/></svg></div><div class="gem" style="right:calc(8vw + 32vw*.66 - .8vh)"><svg viewBox="0 0 20 20"><path d="M10 1 L19 10 L10 19 L1 10 Z" fill="#e8c766" stroke="#fff1b8" stroke-width="1"/><path d="M10 5 L15 10 L10 15 L5 10 Z" fill="#8a6a1f"/></svg></div></div>
   <div id="bgimg"></div><div id="bgveil"></div>
   <div class="secttl">זמני התפילות</div>
   <div class="mgrid" id="mgrid"></div>
@@ -2563,10 +2588,11 @@ function drawZmanim(now,nowMin){
   document.getElementById("zwrap").innerHTML=items.map(function(x,i){
     var left=Math.round(x[1]-nowMin);
     var passed=(x[1]<=nowMin);
-    var hot=(!passed && left>0 && left<=45 &&
-             !items.slice(0,i).some(function(y){return y[1]>nowMin;}));
-    return '<div class="zc'+(hot?" hot":"")+(passed?" past":"")+'"><small>'+x[0]+'</small><b>'+NatiMinyan.fmt(x[1])+'</b>'+
-           (hot?'<span class="cd">נותרו '+left+' דק\'</span>':'')+'</div>';
+    /* הזמן הקרוב הבא — מודגש תמיד (צהוב וגדול). חצי שעה לפני: כתום. 10 דקות לפני: אדום */
+    var isNext=(!passed && left>0 && !items.slice(0,i).some(function(y){return y[1]>nowMin;}));
+    var lvl=isNext ? (left<=10?" hot":(left<=30?" soon":"")) : "";
+    return '<div class="zc'+(isNext?" next":"")+lvl+(passed?" past":"")+'"><small>'+x[0]+'</small><b>'+NatiMinyan.fmt(x[1])+'</b>'+
+           (isNext && left<=45?'<span class="cd">נותרו '+left+' דק\'</span>':'')+'</div>';
   }).join("")||'<div class="zc"><small>זמני היום</small><b>הסתיימו</b></div>';
 }
 
@@ -2808,7 +2834,7 @@ NatiGuard.check(function(){ load(); tick(); });
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot);
   else boot();
 })();
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מקווה · גרסה 3.4 · 08.10.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מקווה · גרסה 3.5 · 08.10.26</div>
 <!-- ===== נתי SAFE · סימן מים מוזהב + רענון נתונים חכם (משותף לכל מסכי בית הכנסת) ===== -->
 <style id="nsf-wm-css">
 /* הלוגו ברקע כל לוח ממוסגר. סימן המים הישן (.mk-mark) נמחק בחלק מהמסכים
@@ -2991,4 +3017,24 @@ body.merkaz #nsf-slide.nsf-al::after{
 })();
 </script>
 
+
+<script>
+/* ---- התאמת לוח המניינים לגובה ----
+   במסך נמוך (למשל מחשב עם סרגלי דפדפן) השורה האחרונה נחתכה.
+   אם התוכן גולש — מקטינים אותו בהדרגה עד שנכנס (עד 65%). */
+(function(){
+  var lastSig="";
+  function fit(){
+    var g=document.getElementById("mgrid"); if(!g) return;
+    var sig=window.innerWidth+"x"+window.innerHeight+"|"+g.textContent.length+"|"+g.clientHeight;
+    if(sig===lastSig) return;
+    g.style.zoom=1;
+    var z=1;
+    while(z>0.66 && g.scrollHeight>g.clientHeight+2){ z=Math.round((z-0.04)*100)/100; g.style.zoom=z; }
+    lastSig=window.innerWidth+"x"+window.innerHeight+"|"+g.textContent.length+"|"+g.clientHeight;
+  }
+  setInterval(function(){ try{ fit(); }catch(e){} },2000);
+  window.addEventListener("resize",function(){ lastSig=""; });
+})();
+</script>
 </body></html>
