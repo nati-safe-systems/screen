@@ -136,7 +136,7 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
   z-index:7;white-space:nowrap;
   text-shadow:0 3px 12px rgba(0,0,0,0.9);
   letter-spacing:3px;
-  backdrop-filter:blur(6px);
+  /* backdrop-filter הוסר — הכותרת יושבת על רקע אטום, והטשטוש רק העמיס */
 }
 #building-title::before{content:"לוח המודעות של";font-size:1.3vw;font-weight:700;color:rgba(255,204,0,0.6);letter-spacing:4px;text-transform:uppercase;line-height:1;}
 #chag-greet{display:none;text-align:center;margin-top:10px;font-family:"Frank Ruhl Libre",serif;font-size:2.1vw;font-weight:900;letter-spacing:2px;color:#ffd86b;text-shadow:0 0 18px rgba(255,200,80,0.55), 0 3px 14px rgba(0,0,0,0.9);animation:greetGlow 3.5s ease-in-out infinite;}
@@ -695,7 +695,7 @@ body.ads-bottom .ad-pdf{height:17vh}
     rgba(255,232,170,.13) 45%,rgba(255,244,210,.22) 50%,
     rgba(255,232,170,.13) 55%,transparent);
   transform:rotate(16deg);
-  animation:adPromoShine 9s linear infinite;
+  animation:adPromoShine 9s linear infinite;will-change:transform;
 }
 @keyframes adPromoShine{
   from{transform:translateX(-160%) rotate(16deg)}
@@ -783,7 +783,9 @@ body.wx-header:not(.portrait) #building-title{
 #adbar-body::after,#side-ads::after{
   content:"";position:absolute;inset:5px;border-radius:11px;padding:2px;pointer-events:none;z-index:6;
   background:linear-gradient(120deg,#7a5a14 0%,#d4af37 18%,#fff1b8 30%,#c9a227 45%,#8a6a1f 60%,#f3d778 78%,#b8901f 100%);
-  background-size:260% 260%;animation:nsfGold 9s ease-in-out infinite;
+  background-size:260% 260%;background-position:50% 50%;
+  /* בלי אנימציה: הזזת רקע בתוך מסכה + צל מצוירת מחדש בכל פריים,
+     ובמכשירי מסך חלשים זה גרם לקו הזהב "לקפץ" ולכל המסך להיתקע. */
   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
   -webkit-mask-composite:xor;mask-composite:exclude;
   filter:drop-shadow(0 0 4px rgba(255,214,102,.35));
@@ -2140,8 +2142,16 @@ function fitWx(){
   var t=document.getElementById("building-title");
   var n=document.getElementById("building-title-name");
   if(!t) return;
-  t.style.maxWidth=""; t.style.left=""; if(n) n.style.fontSize="";
   var w=document.getElementById("wx");
+  /* רץ כל 5 שניות. קודם הוא איפס ומדד מחדש את הכותרת בכל פעם —
+     עבודה על כל העמוד. עכשיו: אם שום דבר לא השתנה — יוצאים מיד. */
+  var _box0=t.offsetParent || t.parentNode;
+  var _sig=[window.innerWidth, window.innerHeight, (n&&n.textContent)||"",
+            w?w.getAttribute("data-pos"):"", w?w.offsetWidth:0, w?w.offsetLeft:0,
+            document.body.className, _box0?_box0.clientWidth:0].join("|");
+  if(_sig===fitWx._sig) return;
+  fitWx._sig=_sig;
+  t.style.maxWidth=""; t.style.left=""; if(n) n.style.fontSize="";
   var on = w && w.getAttribute("data-pos")==="header" &&
            !document.body.classList.contains("portrait") && w.offsetWidth>0;
   if(!on) return;
@@ -2486,16 +2496,23 @@ function audioApply(){
     window._ytWant={vid:vid,lst:lst,vol:Math.round(vol*100)};
 
     function buildYT(){
+      /* הפונקציה נקראת כל 15–20 שניות. קודם היא השוותה את הסרטון שמתנגן
+         כרגע לסרטון שבהגדרות — ובזמן טעינה/פרסומת/פלייליסט התשובה הייתה
+         "שונה", והנגן נטען מחדש: המוזיקה קפצה כל 15 שניות. עכשיו טוענים
+         מחדש רק אם הקישור עצמו השתנה בהגדרות. */
+      var key=window._ytWant.vid+"|"+window._ytWant.lst;
       if(window._ytPlayer){
         try{
-          window._ytPlayer.setVolume(window._ytWant.vol);
-          if(window._ytWant.vid && window._ytPlayer.getVideoData &&
-             window._ytPlayer.getVideoData().video_id!==window._ytWant.vid){
-            window._ytPlayer.loadVideoById(window._ytWant.vid);
+          if(window._ytVol!==window._ytWant.vol){ window._ytPlayer.setVolume(window._ytWant.vol); window._ytVol=window._ytWant.vol; }
+          if(window._ytKey!==key){
+            window._ytKey=key;
+            if(window._ytWant.lst) window._ytPlayer.loadPlaylist({list:window._ytWant.lst,listType:"playlist"});
+            else window._ytPlayer.loadVideoById(window._ytWant.vid);
           }
         }catch(e){}
         _auState="מנגן (יוטיוב)"; return;
       }
+      window._ytKey=key; window._ytVol=window._ytWant.vol;
       var cfg={ height:"1", width:"1",
         playerVars:{ autoplay:1, controls:0, rel:0, modestbranding:1,
                      iv_load_policy:3, playsinline:1, loop:1 },
@@ -2563,7 +2580,7 @@ function audioApply(){
       }catch(e){}
     };
   }
-  _au.volume=vol;
+  if(Math.abs((_au.volume||0)-vol)>0.005) _au.volume=vol;
   /* אחרי רענון — ממשיכים מאותו מקום, כדי שהמעבר לא יישמע */
   if(!_au._resumed){
     _au._resumed=true;
@@ -2607,7 +2624,8 @@ function applyDisplayConfig(cfg){
   if(_orChanged || window._isPortrait===undefined) { try{ applyOrientation(); }catch(e){} }
   if(_wxChanged) { window._wxFail=0;
     try{ wxFetch(); }catch(e){ window._wxState="שגיאת קוד: "+(e&&e.message?e.message:e); } }
-  /* רצועת הפרסומות משנה את רוחב האזור המרכזי — מודדים מחדש */
+  /* רצועת הפרסומות משנה את רוחב האזור המרכזי — מודדים מחדש
+     (fitWx עצמה יוצאת מיד אם שום דבר לא השתנה) */
   setTimeout(function(){ try{ fitWx(); }catch(e){} }, 300);
   try{ audioApply(); }catch(e){ _auState="שגיאה: "+(e&&e.message?e.message:e); }
   // בהירות תמונת הרקע (100=ללא שינוי, נמוך יותר=כהה יותר)
@@ -2658,7 +2676,12 @@ function applyDisplayConfig(cfg){
        ולכן הוא לא הופיע גם כשהמסך נפתח למכירה. אלה שתי הגדרות
        שונות: ads_enabled פותח למכירה, cfg.ads מפעיל את הרצועה.
        הכרטיס מוצג עכשיו לפי ads_enabled בלבד. */
-    try{ showAdQR(SCREEN_ADS_ON && (cfg.ads_qr!==false), cfg.ads_email); }catch(e){}
+    /* כרטיס ה-QR — רק כשמשהו בו השתנה. קודם הוא נבנה ונמדד מחדש כל 15 שניות */
+    try{
+      var _qrOn=SCREEN_ADS_ON && (cfg.ads_qr!==false);
+      var _qrSig=(_qrOn?1:0)+"|"+(cfg.ads_email||"")+"|"+ADS_CONTACT+"|"+(adbar.style.display||"");
+      if(_qrSig!==window._qrSig){ window._qrSig=_qrSig; showAdQR(_qrOn, cfg.ads_email); }
+    }catch(e){}
     try{ applyAdsMode(cfg); }catch(e){}
     try{ applyCams(cfg); }catch(e){}
   }
@@ -2674,16 +2697,20 @@ function applyDisplayConfig(cfg){
   var ticker=document.getElementById("news-ticker");
   var _src = (Array.isArray(cfg.news_sources)&&cfg.news_sources.length) ? cfg.news_sources.slice() : [];
   if(cfg.rss_url){ _src.push(cfg.rss_url); }   // כתובת ידנית (אם קיימת) נוספת לרשימה
+  /* חישוב גודל הסרגל (12 מדידות של כל העמוד) — רק כשהטיקר נדלק/נכבה.
+     קודם זה רץ בכל poll, כל 15 שניות, וגרם לקפיצה קטנה בגלילה ובמוזיקה. */
+  var _tkOn=!!(cfg.news && _src.length), _tkChanged=(_tkOn!==window._tkOn);
+  window._tkOn=_tkOn;
   if(cfg.news && _src.length){
     ticker.style.display="flex";
     document.body.classList.add("ticker-on");
-    setTimeout(function(){ try{ _fitSoon(); }catch(e){} },250);
+    if(_tkChanged) setTimeout(function(){ try{ _fitSoon(); }catch(e){} },250);
     document.body.classList.add("has-ticker");
     startNews(_src);
   }else{
     ticker.style.display="none";
     document.body.classList.remove("ticker-on");
-    setTimeout(function(){ try{ _fitSoon(); }catch(e){} },250);
+    if(_tkChanged) setTimeout(function(){ try{ _fitSoon(); }catch(e){} },250);
     document.body.classList.remove("has-ticker");
     if(_newsTimer){clearInterval(_newsTimer);_newsTimer=null;}
     _newsSig=null;
@@ -2863,7 +2890,7 @@ function pullAdContact(){
     ADS_CONTACT=e;
     try{ adqrSetMail(ADS_CONTACT||ADS_MAIL||""); }catch(x){}
     /* בונים מחדש את הרצועות, כדי שהכרטיס יציג את הכתובת החדשה */
-    try{ if(CFG_LAST){ _adsSig={}; applyDisplayConfig(CFG_LAST); } }catch(x){}
+    try{ if(CFG_LAST){ _adsSig={}; window._qrSig=null; applyDisplayConfig(CFG_LAST); } }catch(x){}
   }).catch(function(){});
 }
 var _qrDone=false;
@@ -2904,6 +2931,9 @@ function adqrFitMail(){
   var m=document.getElementById("adqr-mail");
   if(!m || !m.textContent) return;
   requestAnimationFrame(function(){
+    var _bx=m.parentNode, _s=m.textContent+"|"+((_bx&&_bx.clientWidth)||0)+"|"+window.innerWidth;
+    if(_s===adqrFitMail._sig) return;      /* אותו מייל, אותו רוחב — אין מה למדוד */
+    adqrFitMail._sig=_s;
     /* הגודל ב-CSS מוגדר עם !important, ולכן גם ההקטנה חייבת אותו */
     m.style.removeProperty("font-size");
     var base=parseFloat(getComputedStyle(m).fontSize)||16, fs=base;
@@ -4901,7 +4931,9 @@ function applyCams(cfg){
    מודעה שהמעבר שלה "משתנים" (ברירת המחדל, וגם "דהייה" הישנה וכל
    המודעות בתשלום וכרטיס שטח הפרסום) מקבלת לפני כל כניסה מעבר אקראי
    מתוך רשימה עדינה — שונה מהקודם, כדי שלא יחזור אותו מעבר פעמיים. */
-var AD_FX=["slide-r","slide-l","rise","zoom-in","zoom-out","blur","flip","wipe-r","wipe-l","tilt"];
+/* רק מעברים שהכרטיס הגרפי מבצע לבד (תזוזה / שקיפות / הגדלה).
+   blur ו-wipe הוסרו: הם מצוירים מחדש בכל פריים ומקרטעים במכשירים חלשים. */
+var AD_FX=["slide-r","slide-l","rise","zoom-in","zoom-out","flip","tilt"];
 var _adFxLast="";
 function adPickFx(sl){
   if(!sl) return;
@@ -5041,6 +5073,6 @@ setInterval(fitTimer, 60000);
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.4</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.5</div>
 </body>
 </html>

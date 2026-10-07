@@ -1900,13 +1900,19 @@ function doLogout(){
 // בדוק session בטעינה
 window.addEventListener('load',function(){
   document.getElementById('apass').value='';
-  loadAdminPass(function(){
-    if(checkSession()){
+  /* חזרה לחיבור אחרי רענון: קודם נקראה כאן פונקציה שלא קיימת (loadAdminPass),
+     הקוד נעצר — ותמיד היה צריך להתחבר מחדש. עכשיו האסימון השמור נבדק מול השרת
+     (nsf_me), ורק אם הוא תקף ושייך למנהל — נכנסים בלי סיסמה. */
+  if(!(checkSession() && NSF_TOKEN)) return;
+  rpc("nsf_me",{p_token:NSF_TOKEN}).then(function(res){
+    if(res && res.ok && res.is_admin){
       document.getElementById('login-wrap').style.display='none';
       document.getElementById('app').style.display='block';
-      loadAll();resetIdle();
+      loadAll(); resetIdle();
+    }else{
+      setAdminToken(''); sessionStorage.removeItem('nati_admin_logged');
     }
-  });
+  }).catch(function(){ /* שגיאת רשת — נשארים במסך הכניסה */ });
 });
 
 function loadAll(){
@@ -3829,7 +3835,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.1</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.2</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){
