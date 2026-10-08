@@ -122,7 +122,7 @@ function render(site, rooms){
     '<div class="grid'+(rooms.length===1?' one':'')+'" id="grid">'+rooms.map(function(r){
       return '<button class="rb" data-id="'+r.id+'"><span class="n">'+r.no+'</span>'+
         '<span class="nm">'+esc(r.name)+'</span><span class="st"></span></button>'; }).join("")+'</div>'+
-    '<div class="msg">לחיצה על חדר מקפיצה על המסך שמעל הדלת שלו<br>"תפילת … מתחילה כאן עכשיו" למשך 5 דקות.</div>';
+    '<div class="msg">לחיצה על חדר מקפיצה על המסך שמעל הדלת שלו<br>ספירה לאחור של 3 דקות, אחריה "תפילת … מתחילה כאן עכשיו" לשתי דקות,<br>ואז "המניין הבא" — למי שאיחר.</div>';
   function hint(){
     document.getElementById("hint").textContent = PRAYER==="auto"
       ? "יוצג עכשיו: תפילת "+shown(autoName())+" (לפי השעה)" : "יוצג: תפילת "+shown(PRAYER);
@@ -162,5 +162,6 @@ function load(){
 }
 load();
 </script>
+<div style="position:fixed;left:8px;bottom:6px;font-size:10px;color:#8b949e;opacity:.6;pointer-events:none">גרסה 1.1 · 08.10.26</div>
 </body>
 </html>

@@ -1,16 +1,23 @@
 /* =====================================================================
    נתי SAFE — "תפילת ___ מתחילה כאן עכשיו"
    ---------------------------------------------------------------------
+   גרסה 2.0 · 08.10.26
    נטען במסך דלת של חדר (door.html). המסך בודק כל 3 שניות אם הגבאי
-   לחץ על החדר שלו — בשלט או באפליקציה — ואם כן, מקפיץ הודעה ירוקה
-   בוהקת על כל המסך ל-5 דקות מרגע הלחיצה.
+   לחץ על החדר שלו — בשלט או באפליקציה — ואם כן, מתחיל רצף של שלושה שלבים:
+     1. "תפילת X תתחיל כאן בעוד" + ספירה לאחור של 3 דקות
+     2. "תפילת X מתחילה כאן עכשיו" + חץ — למשך 2 דקות
+     3. "המניין הבא" — שעה ושטיבל, למאחרים — למשך 3 דקות
+   הזמנים נספרים מרגע הלחיצה, כך שמסך שנדלק באמצע ממשיך מהשלב הנכון.
 
    מסך שלא משויך לחדר (באדמין: אתר + חדר) — הסקריפט פשוט לא פועל.
    ===================================================================== */
 (function(){
   var SUPA="https://cxtrrejclkhqhkqbicmz.supabase.co";
   var KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dHJyZWpjbGtocWhrcWJpY216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTk3MDksImV4cCI6MjA5NTU3NTcwOX0._7wB4YwrYEnK6hWuR6YqcFxRb05OLnWvOelIC-ahIEQ";
-  var SHOW_SEC=300;   // 5 דקות מרגע הלחיצה
+  var PRE_SEC=180;    // ספירה לאחור עד תחילת התפילה
+  var NOW_SEC=120;    // "מתחילה עכשיו" + חץ
+  var NEXT_SEC=180;   // "המניין הבא בשטיבל ..."
+  var TOTAL=PRE_SEC+NOW_SEC+NEXT_SEC;
 
   var qp; try{ qp=new URLSearchParams(location.search); }catch(e){ return; }
   var sid=qp.get("id"); if(!sid) return;
@@ -64,6 +71,18 @@ function nsfPrayerNow(d, lat, lon){
   " filter:drop-shadow(0 0 .8vmin rgba(255,214,90,.95)) drop-shadow(0 0 2.6vmin rgba(255,190,40,.55))}"+
   "#nsf-rc .a{margin-top:2.2vh;animation:nsfRcBounce 1s ease-in-out infinite;line-height:0}"+
   "#nsf-rc .a svg{width:15vmin;height:15vmin;filter:drop-shadow(0 .6vmin 1.4vmin rgba(0,0,0,.35))}"+
+  "#nsf-rc .tm{color:#fff;font-weight:900;font-size:22vmin;line-height:1;margin-top:1.2vh;"+
+  " font-variant-numeric:tabular-nums;font-family:Rubik,Heebo,Arial,sans-serif;direction:ltr;"+
+  " text-shadow:0 .8vmin 2.4vmin rgba(0,0,0,.35)}"+
+  "#nsf-rc .rm{color:#fff3c4;font-weight:900;font-size:9vmin;margin-top:1.6vh;line-height:1.1}"+
+  "#nsf-rc .sm{color:#eafff0;font-weight:700;font-size:4.6vmin;margin-top:1.4vh;opacity:.95}"+
+  /* שלב "המניין הבא" — כרטיס כהה עם זהב, כדי שיהיה ברור שזה מידע אחר */
+  "#nsf-rc .c.nx{background:linear-gradient(160deg,#18233f,#0d1630 60%,#08101f);border-color:#e8c766;"+
+  " box-shadow:0 0 5vmin rgba(232,199,102,.45),0 0 14vmin rgba(232,199,102,.25),inset 0 0 4vmin rgba(255,255,255,.08);"+
+  " animation:nsfRcPop .9s cubic-bezier(.2,1.6,.4,1) both}"+
+  "#nsf-rc .c.nx .p{color:#ffd769}"+
+  "#nsf-rc .c.nx .s{color:#fff}"+
+  "#nsf-rc .c.nx .sm{color:#cfd8e8}"+
   "@keyframes nsfRcPop{0%{transform:scale(.3);opacity:0}100%{transform:scale(1);opacity:1}}"+
   "@keyframes nsfRcGlow{0%,100%{transform:scale(1)}50%{transform:scale(1.04);"+
   " box-shadow:0 0 9vmin rgba(46,255,120,.95),0 0 22vmin rgba(46,255,120,.6),inset 0 0 4vmin rgba(255,255,255,.3)}}"+
@@ -85,28 +104,119 @@ function nsfPrayerNow(d, lat, lon){
     }catch(e){}
     return "";
   }
-  function show(prayer, secLeft){
-    if(!box){
-      box=document.createElement("div"); box.id="nsf-rc";
-      /* לוגו הלקוח (זהב) למעלה, וחץ עבה למטה */
-      box.innerHTML='<div class="c"><img class="lg" alt="" style="display:none">'+
-        '<div class="p"></div><div class="s">מתחילה כאן עכשיו</div>'+
-        '<div class="a"><svg viewBox="0 0 100 100" aria-hidden="true">'+
-          '<path d="M50 92 L14 52 H36 V8 H64 V52 H86 Z" fill="#ffffff" stroke="#e9ffef" stroke-width="3" stroke-linejoin="round"/>'+
-        '</svg></div></div>';
-      document.body.appendChild(box);
-    }
-    box.querySelector(".p").textContent="תפילת "+prayer;
+  function build(){
+    if(box) return;
+    box=document.createElement("div"); box.id="nsf-rc";
+    box.innerHTML='<div class="c"><img class="lg" alt="" style="display:none">'+
+      '<div class="p"></div><div class="s"></div><div class="tm"></div><div class="rm"></div><div class="sm"></div>'+
+      '<div class="a"><svg viewBox="0 0 100 100" aria-hidden="true">'+
+        '<path d="M50 92 L14 52 H36 V8 H64 V52 H86 Z" fill="#ffffff" stroke="#e9ffef" stroke-width="3" stroke-linejoin="round"/>'+
+      '</svg></div></div>';
+    document.body.appendChild(box);
+  }
+  function set(cls, txt){ var e=box.querySelector("."+cls); e.textContent=txt||""; e.style.display=txt?"":"none"; }
+  function pop(){ var c=box.querySelector(".c"); c.style.animation="none"; void c.offsetWidth; c.style.animation=""; }
+  function open(){
     var lg=box.querySelector(".lg"), src=logoUrl();
     if(src){ if(lg.getAttribute("src")!==src) lg.src=src; lg.style.display="block"; lg.onerror=function(){ lg.style.display="none"; }; }
     else lg.style.display="none";
-    var c=box.querySelector(".c"); c.style.animation="none"; void c.offsetWidth; c.style.animation="";
-    box.style.display="flex"; void box.offsetWidth; box.classList.add("on");
-    clearTimeout(hideT);
-    hideT=setTimeout(function(){
-      box.classList.remove("on");
-      setTimeout(function(){ if(!box.classList.contains("on")) box.style.display="none"; },600);
-    }, Math.max(5, secLeft)*1000);
+    if(!box.classList.contains("on")){ box.style.display="flex"; void box.offsetWidth; box.classList.add("on"); }
+  }
+  function close(){
+    if(!box) return;
+    box.classList.remove("on");
+    setTimeout(function(){ if(box && !box.classList.contains("on")) box.style.display="none"; },600);
+  }
+  function mmss(sec){ sec=Math.max(0,Math.ceil(sec)); var m=Math.floor(sec/60), x=sec%60; return m+":"+(x<10?"0":"")+x; }
+
+  /* ---- רצף ההודעה ---- */
+  var FLOW=null, flowT=null;
+  function startFlow(prayer, ageSec){
+    build();
+    FLOW={prayer:prayer, t0:Date.now()-Math.max(0,ageSec||0)*1000, phase:"", next:null, nextAsked:false};
+    loadSched();                       /* מכינים מראש את "המניין הבא" */
+    clearInterval(flowT); flowT=setInterval(step,250); step();
+  }
+  function step(){
+    if(!FLOW){ clearInterval(flowT); return; }
+    var e=(Date.now()-FLOW.t0)/1000, ph;
+    if(e<PRE_SEC) ph="pre";
+    else if(e<PRE_SEC+NOW_SEC) ph="now";
+    else if(e<TOTAL) ph="next";
+    else ph="end";
+    if(ph==="next" && !FLOW.nextAsked){
+      /* לוח המניינים עוד בטעינה — ממתינים לו עד 8 שניות לפני שמוותרים */
+      if(!SCH && e<PRE_SEC+NOW_SEC+8){ ph=(FLOW.phase||"now"); }
+      else { FLOW.nextAsked=true; FLOW.next=nextMinyan(FLOW.prayer); }
+    }
+    if(ph==="next" && !FLOW.next) ph="end";          /* אין מניין נוסף היום — מסיימים */
+    if(ph==="end"){ FLOW=null; clearInterval(flowT); close(); return; }
+    var c=box.querySelector(".c"), arrow=box.querySelector(".a");
+    if(ph!==FLOW.phase){
+      FLOW.phase=ph;
+      c.classList.toggle("nx", ph==="next");
+      arrow.style.display=(ph==="next")?"none":"";
+      if(ph==="pre"){ set("p","תפילת "+FLOW.prayer); set("s","תתחיל כאן בעוד"); set("rm",""); set("sm",""); }
+      if(ph==="now"){ set("p","תפילת "+FLOW.prayer); set("s","מתחילה כאן עכשיו"); set("tm",""); set("rm",""); set("sm",""); }
+      if(ph==="next"){
+        var n=FLOW.next;
+        set("p","המניין הבא");
+        set("s",n.prayer+" · "+n.time);
+        set("tm","");
+        set("rm",n.here ? "כאן, בחדר הזה" : (n.room ? "ב"+n.room : ""));
+      }
+      open(); pop();
+    }
+    if(ph==="pre") set("tm",mmss(PRE_SEC-e));
+    /* הלוגו נטען לפעמים רק אחרי שערכת העיצוב הוחלה — בודקים שוב */
+    if(!FLOW.lg){ var lg=box.querySelector(".lg"), src=logoUrl();
+      if(src){ FLOW.lg=1; if(lg.getAttribute("src")!==src) lg.src=src; lg.style.display="block"; } }
+    if(ph==="next" && FLOW.next){
+      var d=new Date(), nowMin=d.getHours()*60+d.getMinutes()+d.getSeconds()/60;
+      var left=Math.round(FLOW.next.minutes-nowMin);
+      set("sm", left>0 ? ("בעוד "+left+" דק'") : "מתחיל עכשיו");
+    }
+  }
+
+  /* ---- "המניין הבא": כל המניינים של בית הכנסת, לפי אותו מנוע של המסכים ---- */
+  var SCH=null, schAt=0, schP=null;
+  var PR_HE={shacharit:"שחרית",mincha:"מנחה",arvit:"ערבית",maariv:"מעריב",mussaf:"מוסף",selichot:"סליחות"};
+  function sfx(p){ return fetch(SUPA+"/rest/v1/"+p,{headers:{apikey:KEY,Authorization:"Bearer "+KEY},cache:"no-store"})
+                     .then(function(r){ return r.ok?r.json():[]; }); }
+  function loadSched(){
+    if(SCH && Date.now()-schAt<10*60*1000) return Promise.resolve(SCH);
+    if(schP) return schP;
+    schP=sfx("screens?screen_id=eq."+encodeURIComponent(sid)+"&select=room_id")
+    .then(function(r){
+      var room=r&&r[0]&&r[0].room_id; if(!room) return null;
+      return sfx("rooms?id=eq."+room+"&select=id,site_id").then(function(rr){
+        var site=rr&&rr[0]&&rr[0].site_id; if(!site) return null;
+        return Promise.all([
+          sfx("sites?id=eq."+site+"&select=*"),
+          sfx("rooms?site_id=eq."+site+"&select=*&active=eq.true&order=sort_order"),
+          sfx("prayer_times?site_id=eq."+site+"&select=*&active=eq.true")
+        ]).then(function(x){ SCH={room:room, site:x[0][0], rooms:x[1]||[], rows:x[2]||[]}; schAt=Date.now(); return SCH; });
+      });
+    }).catch(function(){ return null; }).then(function(v){ schP=null; return v; });
+    return schP;
+  }
+  function nextMinyan(prayerHe){
+    try{
+      if(!SCH || !SCH.site || !window.NatiMinyan || !window.NatiZmanim) return null;
+      var now=new Date(), S=SCH.site;
+      var z=NatiZmanim.getZmanim(now,{lat:+S.lat,lng:+S.lng,elevation:+S.elevation,
+            candleMinutes:+S.candle_offset||40,timeZone:S.timezone||"Asia/Jerusalem"});
+      var list=NatiMinyan.resolve(SCH.rows,z,now);
+      var nowMin=now.getHours()*60+now.getMinutes()+now.getSeconds()/60;
+      var up=list.filter(function(x){ return x.minutes>nowMin+0.5; });
+      var he=function(k){ var t=PR_HE[k]||k||""; if(t==="ערבית" && S.nusach==="ashkenaz") t="מעריב"; return t; };
+      /* קודם — אותה תפילה; אם אין — המניין הבא מכל סוג */
+      var same=up.filter(function(x){ var t=he(x.prayer); return t===prayerHe || (t==="מעריב"&&prayerHe==="ערבית") || (t==="ערבית"&&prayerHe==="מעריב"); });
+      var n=(same[0]||up[0]); if(!n) return null;
+      var rm=null; SCH.rooms.forEach(function(r){ if(r.id===n.room_id) rm=r; });
+      return { prayer:he(n.prayer), time:n.time, minutes:n.minutes,
+               room: rm ? (rm.display_name||rm.name) : "", here: (n.room_id && n.room_id===SCH.room) };
+    }catch(e){ return null; }
   }
 
   function rpc(fn,args){
@@ -120,11 +230,11 @@ function nsfPrayerNow(d, lat, lon){
     rpc("nsf_room_poll",{p_screen:sid}).then(function(d){
       if(!d || !d.id || d.id===lastId) return;
       lastId=d.id; try{ localStorage.setItem("nsf_rc_last_"+sid,String(d.id)); }catch(e){}
-      var left=SHOW_SEC-(d.age||0);
+      var age=+d.age||0;
       /* ספרדי = ערבית, אשכנזי = מעריב — לפי הגדרת בית הכנסת */
       var pr=d.prayer || nsfPrayerNow(new Date(), d.lat!=null?+d.lat:null, d.lng!=null?+d.lng:null);
       if(pr==="ערבית" && d.nusach==="ashkenaz") pr="מעריב";
-      if(left>3) show(pr, left);
+      if(age < TOTAL-3) startFlow(pr, age);
     }).catch(function(){});
   }
 
@@ -140,7 +250,11 @@ function nsfPrayerNow(d, lat, lon){
     }).catch(function(){});
   }
   function start(){
-    if(qp.get("roomtest")==="1") show(nsfPrayerNow(new Date()), 20);
+    /* בדיקה: ?roomtest=1 — הרצף המלא; ?roomtest=now / next — קפיצה לשלב */
+    var rt=qp.get("roomtest");
+    if(rt==="1") startFlow(nsfPrayerNow(new Date()), 0);
+    if(rt==="now") startFlow(nsfPrayerNow(new Date()), PRE_SEC);
+    if(rt==="next") startFlow(nsfPrayerNow(new Date()), PRE_SEC+NOW_SEC);
     arm(); setInterval(arm, 10*60*1000);
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",start); else start();
