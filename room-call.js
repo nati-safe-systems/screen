@@ -1,12 +1,14 @@
 /* =====================================================================
    נתי SAFE — "תפילת ___ מתחילה כאן עכשיו"
    ---------------------------------------------------------------------
-   גרסה 2.0 · 08.10.26
+   גרסה 2.1 · 08.10.26
    נטען במסך דלת של חדר (door.html). המסך בודק כל 3 שניות אם הגבאי
    לחץ על החדר שלו — בשלט או באפליקציה — ואם כן, מתחיל רצף של שלושה שלבים:
      1. "תפילת X תתחיל כאן בעוד" + ספירה לאחור של 3 דקות
      2. "תפילת X מתחילה כאן עכשיו" + חץ — למשך 2 דקות
-     3. "המניין הבא" — שעה ושטיבל, למאחרים — למשך 3 דקות
+     3. "המניין הבא" — למשך 3 דקות. תפילה עם זמנים קבועים (שחרית): שעה ושטיבל.
+        תפילה בלי זמנים (מנחה, ערבית): השטיבל הבא בסבב, בלי שעה —
+        הגבאי ילחץ שם שוב כשהמניין יתחיל.
    הזמנים נספרים מרגע הלחיצה, כך שמסך שנדלק באמצע ממשיך מהשלב הנכון.
 
    מסך שלא משויך לחדר (באדמין: אתר + חדר) — הסקריפט פשוט לא פועל.
@@ -161,7 +163,7 @@ function nsfPrayerNow(d, lat, lon){
       if(ph==="next"){
         var n=FLOW.next;
         set("p","המניין הבא");
-        set("s",n.prayer+" · "+n.time);
+        set("s", n.rot ? ("תפילת "+n.prayer) : (n.prayer+" · "+n.time));
         set("tm","");
         set("rm",n.here ? "כאן, בחדר הזה" : (n.room ? "ב"+n.room : ""));
       }
@@ -171,7 +173,8 @@ function nsfPrayerNow(d, lat, lon){
     /* הלוגו נטען לפעמים רק אחרי שערכת העיצוב הוחלה — בודקים שוב */
     if(!FLOW.lg){ var lg=box.querySelector(".lg"), src=logoUrl();
       if(src){ FLOW.lg=1; if(lg.getAttribute("src")!==src) lg.src=src; lg.style.display="block"; } }
-    if(ph==="next" && FLOW.next){
+    if(ph==="next" && FLOW.next && FLOW.next.rot) set("sm","");
+    else if(ph==="next" && FLOW.next){
       var d=new Date(), nowMin=d.getHours()*60+d.getMinutes()+d.getSeconds()/60;
       var left=Math.round(FLOW.next.minutes-nowMin);
       set("sm", left>0 ? ("בעוד "+left+" דק'") : "מתחיל עכשיו");
@@ -210,12 +213,26 @@ function nsfPrayerNow(d, lat, lon){
       var nowMin=now.getHours()*60+now.getMinutes()+now.getSeconds()/60;
       var up=list.filter(function(x){ return x.minutes>nowMin+0.5; });
       var he=function(k){ var t=PR_HE[k]||k||""; if(t==="ערבית" && S.nusach==="ashkenaz") t="מעריב"; return t; };
-      /* קודם — אותה תפילה; אם אין — המניין הבא מכל סוג */
-      var same=up.filter(function(x){ var t=he(x.prayer); return t===prayerHe || (t==="מעריב"&&prayerHe==="ערבית") || (t==="ערבית"&&prayerHe==="מעריב"); });
-      var n=(same[0]||up[0]); if(!n) return null;
-      var rm=null; SCH.rooms.forEach(function(r){ if(r.id===n.room_id) rm=r; });
-      return { prayer:he(n.prayer), time:n.time, minutes:n.minutes,
-               room: rm ? (rm.display_name||rm.name) : "", here: (n.room_id && n.room_id===SCH.room) };
+      var isSame=function(x){ var t=he(x.prayer); return t===prayerHe || (t==="מעריב"&&prayerHe==="ערבית") || (t==="ערבית"&&prayerHe==="מעריב"); };
+      var allSame=list.filter(isSame), same=up.filter(isSame);
+      /* תפילה עם זמנים קבועים (למשל שחרית) — המניין הבא לפי הלוח, עם שעה */
+      if(same.length){
+        var n=same[0];
+        var rm=null; SCH.rooms.forEach(function(r){ if(r.id===n.room_id) rm=r; });
+        return { prayer:he(n.prayer), time:n.time, minutes:n.minutes,
+                 room: rm ? (rm.display_name||rm.name) : "", here: (n.room_id && n.room_id===SCH.room) };
+      }
+      /* היו זמנים היום והם כבר עברו — אין "מניין הבא" */
+      if(allSame.length) return null;
+      /* תפילה בלי זמנים קבועים (מנחה, ערבית): הגבאי מסתובב ולוחץ איפה שמתחיל
+         מניין. "המניין הבא" = השטיבל הבא בסבב, בלי שעה — שם הוא ילחץ שוב. */
+      var shuls=SCH.rooms.filter(function(r){ return !r.kind || r.kind==="shul"; })
+        .sort(function(a,b){ return (+a.sort_order||0)-(+b.sort_order||0); });
+      if(shuls.length<2) return null;
+      var i=-1; shuls.forEach(function(r,k){ if(r.id===SCH.room) i=k; });
+      var nx=shuls[(i+1)%shuls.length];
+      if(!nx || nx.id===SCH.room) return null;
+      return { prayer:prayerHe, time:"", minutes:null, room:(nx.display_name||nx.name), here:false, rot:true };
     }catch(e){ return null; }
   }
 
