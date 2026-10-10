@@ -117,6 +117,15 @@ button.dz:hover{color:#ff6b6b}
 <select id="siteSel" onchange="pickSite()" style="display:none"></select>
 <div id="siteCfg" class="hide"><input id="s_name"><input id="s_lat"><input id="s_lng"><input id="s_elev"><input id="s_candle"></div>
 
+<details class="card drw" id="callCard">
+  <summary><h2 style="margin:0">הודעת "התפילה מתחילה"</h2></summary>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px">
+    <span>כשהגבאי לוחץ על השלט, ההודעה מוצגת במשך</span>
+    <select id="callSec" onchange="saveCallSec(+this.value)" style="width:auto"></select>
+  </div>
+  <div class="hint">ההודעה מופיעה במסך שמעל דלת החדר ובמסך הראשי. השינוי נכנס לתוקף תוך 2 דקות.</div>
+</details>
+
 <details class="card drw" id="roomsCard">
   <summary><h2 style="margin:0">חדרים <button onclick="addRoom()">+ חדר</button></h2></summary>
   <div id="rooms"></div>
@@ -1178,8 +1187,22 @@ function addSite(){var n=document.getElementById("newSite").value.trim(); if(!n)
   .then(function(){document.getElementById("newSite").value="";say("האתר נוצר");boot();})
   .catch(function(){say("שמירה נכשלה",1);});}
 
+var CALL_OPTS=[[60,"דקה"],[120,"2 דקות"],[180,"3 דקות"],[300,"5 דקות"],[420,"7 דקות"],[600,"10 דקות"],[900,"15 דקות"]];
+function drawCallSec(){
+  var el=document.getElementById("callSec"); if(!el||!SITE) return;
+  var cur=+SITE.call_seconds||300, o=CALL_OPTS.slice();
+  if(!o.some(function(x){return x[0]===cur;})) o.push([cur,Math.round(cur/60*10)/10+" דקות"]);
+  el.innerHTML=o.map(function(x){ return "<option value='"+x[0]+"'"+(x[0]===cur?" selected":"")+">"+x[1]+"</option>"; }).join("");
+}
+function saveCallSec(sec){
+  if(!SITE) return;
+  rpc("nsf_set_call_seconds",{p_token:NSF_TOKEN,p_site:SITE.id,p_sec:sec})
+   .then(function(){ SITE.call_seconds=sec; flash(); })
+   .catch(function(e){ say("השמירה נכשלה: "+(e.message||e)+" — הורץ call_seconds.sql?",1); });
+}
 function pickSite(){var id=document.getElementById("siteSel").value;
   SITE=SITES.filter(function(s){return s.id===id;})[0]; if(!SITE)return;
+  try{ drawCallSec(); }catch(e){}
   document.getElementById("siteCfg").className="";
   s_name.value=SITE.name||"";
   s_lat.value=SITE.lat; s_lng.value=SITE.lng; s_elev.value=SITE.elevation; s_candle.value=SITE.candle_offset;
@@ -1655,5 +1678,5 @@ function stLogin(){
     }).observe(document.body,{childList:true,subtree:true});
   }catch(e){}
 })();
-</script><div id="app-version" style="position:fixed;left:8px;bottom:6px;font-size:11px;color:#8b949e;opacity:.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול בית הכנסת · גרסה 2.2 · 11.10.26</div>
+</script><div id="app-version" style="position:fixed;left:8px;bottom:6px;font-size:11px;color:#8b949e;opacity:.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול בית הכנסת · גרסה 2.3 · 11.10.26</div>
 </body></html>

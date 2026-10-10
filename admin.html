@@ -2329,9 +2329,28 @@ function switchTab(t){
 /* ---- שלט גבאי: קודים, קישורים וכתובות Shelly לכל אתר ---- */
 var RK_APP="https://nati-safe-systems.github.io/screen/gabbai.html?k=";
 var RK_SHELLY=SB+"/functions/v1/nsf-room?k=";
+/* זמן הצגת הודעת התפילה — לכל בית כנסת (sites.call_seconds) */
+var RK_CALL=[[60,"דקה"],[120,"2 דקות"],[180,"3 דקות"],[300,"5 דקות"],[420,"7 דקות"],[600,"10 דקות"],[900,"15 דקות"]];
+var RK_SITES={};
+function rkCallSel(site){
+  var s=RK_SITES[site]; if(!s) return '';
+  var cur=+s.call_seconds||300, opts=RK_CALL.slice();
+  if(!opts.some(function(o){return o[0]===cur;})) opts.push([cur,Math.round(cur/60*10)/10+" דקות"]);
+  return '<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">הודעת "התפילה מתחילה" מוצגת:'+
+    '<select onchange="rkCallSave(\''+s.id+'\',+this.value)" style="width:auto">'+
+    opts.map(function(o){ return '<option value="'+o[0]+'"'+(o[0]===cur?' selected':'')+'>'+o[1]+'</option>'; }).join('')+
+    '</select></div>';
+}
+function rkCallSave(site,sec){
+  rpc('nsf_set_call_seconds',{p_token:NSF_TOKEN,p_site:site,p_sec:sec}).then(function(r){
+    toast(r&&r.ok?'נשמר — יתעדכן במסכים תוך 2 דקות':'השמירה נכשלה — הרצת את call_seconds.sql?');
+  }).catch(function(){ toast('השמירה נכשלה — הרצת את call_seconds.sql?'); });
+}
 function loadRoomKeys(){
   var box=document.getElementById('rk-list'); if(!box) return;
-  rpc('nsf_room_keys',{p_token:NSF_TOKEN}).then(function(list){
+  sf('sites?select=id,name,call_seconds').then(function(rows){
+    RK_SITES={}; (Array.isArray(rows)?rows:[]).forEach(function(s){ RK_SITES[s.name]=s; });
+  }).catch(function(){}).then(function(){ return rpc('nsf_room_keys',{p_token:NSF_TOKEN}); }).then(function(list){
     if(!Array.isArray(list)||!list.length){ box.textContent='אין אתרים — או שקובץ ה-SQL עוד לא הורץ.'; return; }
     box.innerHTML=list.map(function(x){
       var app=RK_APP+encodeURIComponent(x.key);
@@ -2345,7 +2364,7 @@ function loadRoomKeys(){
           '<select onchange="rkNusach(\''+x.key+'\',this.value)" style="width:auto">'+
             '<option value="sefard"'+(x.nusach!=='ashkenaz'?' selected':'')+'>ספרדי — "ערבית"</option>'+
             '<option value="ashkenaz"'+(x.nusach==='ashkenaz'?' selected':'')+'>אשכנזי — "מעריב"</option>'+
-          '</select></div>'+
+          '</select></div>'+rkCallSel(x.site)+
         '<div style="margin-bottom:8px">אפליקציית הגבאי:</div>'+
         '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'+
           '<input readonly value="'+esc2(app)+'" dir="ltr" style="flex:1;min-width:200px;font-size:12px">'+
@@ -3849,7 +3868,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.3 · 08.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.4 · 11.10.26</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){

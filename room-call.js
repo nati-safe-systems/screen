@@ -1,7 +1,7 @@
 /* =====================================================================
    נתי SAFE — "תפילת ___ מתחילה כאן עכשיו"
    ---------------------------------------------------------------------
-   גרסה 2.2 · 11.10.26
+   גרסה 2.3 · 11.10.26 — משך ההצגה נקבע בניהול (sites.call_seconds), ברירת מחדל 5 דקות
    ---------------------------------------------------------------------
    שני מצבים, לפי המסך:
    • מסך דלת של חדר — "תפילת X / מתחילה כאן עכשיו" + חץ למטה, 5 דקות.
@@ -24,7 +24,7 @@
   var SUPA="https://cxtrrejclkhqhkqbicmz.supabase.co";
   var KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dHJyZWpjbGtocWhrcWJpY216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTk3MDksImV4cCI6MjA5NTU3NTcwOX0._7wB4YwrYEnK6hWuR6YqcFxRb05OLnWvOelIC-ahIEQ";
   var PRE_SEC=0;      // בלי ספירה לאחור
-  var NOW_SEC=300;    // "מתחילה עכשיו" — 5 דקות מרגע הלחיצה
+  var NOW_SEC=300;    // "מתחילה עכשיו" — ברירת מחדל 5 דקות; מתעדכן מהגדרת בית הכנסת
   var NEXT_SEC=0;     // בלי "המניין הבא"
   var TOTAL=PRE_SEC+NOW_SEC+NEXT_SEC;
 
@@ -300,10 +300,24 @@ function nsfPrayerNow(d, lat, lon){
   /* מסך עם חדר — מצב דלת. מסך בלי חדר אבל עם אתר — מצב המסך הראשי.
      משייכים מחדש כל 10 דקות (אם שונה באדמין). */
   var mode="";
+  /* משך ההצגה — מהגדרת בית הכנסת (ניהול / אדמין). נבדק כל 2 דקות. */
+  function loadSec(row){
+    var siteP = row.site_id ? Promise.resolve(row.site_id)
+      : (row.room_id ? sfx("rooms?id=eq."+row.room_id+"&select=site_id").then(function(r){ return r&&r[0]&&r[0].site_id; }) : Promise.resolve(null));
+    return siteP.then(function(site){
+      if(!site) return;
+      return sfx("sites?id=eq."+site+"&select=call_seconds").then(function(r){
+        var v=r&&r[0]&&+r[0].call_seconds;
+        if(v>=15 && v<=1800) NOW_SEC=v;
+        TOTAL=PRE_SEC+NOW_SEC+NEXT_SEC;
+      });
+    }).catch(function(){});
+  }
   function arm(){
     sfx("screens?screen_id=eq."+encodeURIComponent(sid)+"&select=room_id,site_id")
     .then(function(rows){
       var row=rows&&rows[0]||{};
+      loadSec(row);
       var m=row.room_id ? "room" : (row.site_id ? "site" : "");
       if(m!==mode){ if(timer){ clearInterval(timer); timer=null; } mode=m; }
       if(mode==="room" && !timer){ poll(); timer=setInterval(poll,3000); }
@@ -317,7 +331,7 @@ function nsfPrayerNow(d, lat, lon){
     var rt=qp.get("roomtest");
     if(rt==="1") startFlow(nsfPrayerNow(new Date()), 0);
     if(rt==="main") startFlow(nsfPrayerNow(new Date()), 0, "שטיבל א׳");   /* תצוגת המסך הראשי */
-    arm(); setInterval(arm, 10*60*1000);
+    arm(); setInterval(arm, 2*60*1000);
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",start); else start();
 })();
