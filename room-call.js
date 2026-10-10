@@ -1,7 +1,14 @@
 /* =====================================================================
    נתי SAFE — "תפילת ___ מתחילה כאן עכשיו"
    ---------------------------------------------------------------------
-   גרסה 2.1 · 08.10.26
+   גרסה 2.2 · 11.10.26
+   ---------------------------------------------------------------------
+   שני מצבים, לפי המסך:
+   • מסך דלת של חדר — "תפילת X / מתחילה כאן עכשיו" + חץ למטה, 5 דקות.
+   • המסך הראשי (בלי חדר, משויך לאתר) — "תפילת X / מתחילה עכשיו /
+     בשטיבל א׳", 5 דקות. רואה לחיצות של כל החדרים באותו בית כנסת.
+   הספירה לאחור ו"המניין הבא" (גרסה 2.0–2.1) הוסרו לבקשת הלקוח.
+   ---------------------------------------------------------------------
    נטען במסך דלת של חדר (door.html). המסך בודק כל 3 שניות אם הגבאי
    לחץ על החדר שלו — בשלט או באפליקציה — ואם כן, מתחיל רצף של שלושה שלבים:
      1. "תפילת X תתחיל כאן בעוד" + ספירה לאחור של 3 דקות
@@ -16,9 +23,9 @@
 (function(){
   var SUPA="https://cxtrrejclkhqhkqbicmz.supabase.co";
   var KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dHJyZWpjbGtocWhrcWJpY216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTk3MDksImV4cCI6MjA5NTU3NTcwOX0._7wB4YwrYEnK6hWuR6YqcFxRb05OLnWvOelIC-ahIEQ";
-  var PRE_SEC=180;    // ספירה לאחור עד תחילת התפילה
-  var NOW_SEC=120;    // "מתחילה עכשיו" + חץ
-  var NEXT_SEC=180;   // "המניין הבא בשטיבל ..."
+  var PRE_SEC=0;      // בלי ספירה לאחור
+  var NOW_SEC=300;    // "מתחילה עכשיו" — 5 דקות מרגע הלחיצה
+  var NEXT_SEC=0;     // בלי "המניין הבא"
   var TOTAL=PRE_SEC+NOW_SEC+NEXT_SEC;
 
   var qp; try{ qp=new URLSearchParams(location.search); }catch(e){ return; }
@@ -133,9 +140,9 @@ function nsfPrayerNow(d, lat, lon){
 
   /* ---- רצף ההודעה ---- */
   var FLOW=null, flowT=null;
-  function startFlow(prayer, ageSec){
+  function startFlow(prayer, ageSec, roomName){
     build();
-    FLOW={prayer:prayer, t0:Date.now()-Math.max(0,ageSec||0)*1000, phase:"", next:null, nextAsked:false};
+    FLOW={prayer:prayer, t0:Date.now()-Math.max(0,ageSec||0)*1000, phase:"", next:null, nextAsked:false, room:roomName||""};
     loadSched();                       /* מכינים מראש את "המניין הבא" */
     clearInterval(flowT); flowT=setInterval(step,250); step();
   }
@@ -159,7 +166,11 @@ function nsfPrayerNow(d, lat, lon){
       c.classList.toggle("nx", ph==="next");
       arrow.style.display=(ph==="next")?"none":"";
       if(ph==="pre"){ set("p","תפילת "+FLOW.prayer); set("s","תתחיל כאן בעוד"); set("rm",""); set("sm",""); }
-      if(ph==="now"){ set("p","תפילת "+FLOW.prayer); set("s","מתחילה כאן עכשיו"); set("tm",""); set("rm",""); set("sm",""); }
+      if(ph==="now"){
+        set("p","תפילת "+FLOW.prayer); set("tm",""); set("sm","");
+        if(FLOW.room){ set("s","מתחילה עכשיו"); set("rm","ב"+FLOW.room); arrow.style.display="none"; }   /* המסך הראשי */
+        else { set("s","מתחילה כאן עכשיו"); set("rm",""); }                                              /* מסך הדלת */
+      }
       if(ph==="next"){
         var n=FLOW.next;
         set("p","המניין הבא");
@@ -255,23 +266,57 @@ function nsfPrayerNow(d, lat, lon){
     }).catch(function(){});
   }
 
-  /* רק מסך שמשויך לחדר בודק; משייכים מחדש כל 10 דקות (אם שונה באדמין) */
+  /* ---- המסך הראשי: לחיצות של כל החדרים באתר ----
+     בודקים דרך מסכי הדלת של החדרים (אותה בדיקה שכל מסך דלת עושה),
+     ולוקחים את הלחיצה האחרונה. אין צורך בשינוי בשרת. */
+  var SITE_DOORS=[], lastSite=0;
+  try{ lastSite=+localStorage.getItem("nsf_rc_site_"+sid)||0; }catch(e){}
+  function loadDoors(site){
+    return Promise.all([
+      sfx("rooms?site_id=eq."+site+"&select=id,name,display_name"),
+      sfx("screens?site_id=eq."+site+"&room_id=not.is.null&select=screen_id,room_id")
+    ]).then(function(x){
+      var rooms={}; (x[0]||[]).forEach(function(r){ rooms[r.id]=r.display_name||r.name; });
+      var seen={}; SITE_DOORS=[];
+      (x[1]||[]).forEach(function(s){ if(seen[s.room_id]) return; seen[s.room_id]=1;   /* מסך אחד לכל חדר מספיק */
+        SITE_DOORS.push({screen:s.screen_id, room:rooms[s.room_id]||""}); });
+    });
+  }
+  function pollSite(){
+    if(!SITE_DOORS.length) return;
+    Promise.all(SITE_DOORS.map(function(d){
+      return rpc("nsf_room_poll",{p_screen:d.screen}).then(function(r){ return r&&r.id ? {d:d,r:r} : null; }).catch(function(){ return null; });
+    })).then(function(all){
+      var best=null;
+      all.forEach(function(x){ if(x && (+x.r.age||0)<NOW_SEC-3 && (!best || +x.r.id>+best.r.id)) best=x; });
+      if(!best || +best.r.id<=lastSite) return;
+      lastSite=+best.r.id; try{ localStorage.setItem("nsf_rc_site_"+sid,String(lastSite)); }catch(e){}
+      var d=best.r, pr=d.prayer || nsfPrayerNow(new Date(), d.lat!=null?+d.lat:null, d.lng!=null?+d.lng:null);
+      if(pr==="ערבית" && d.nusach==="ashkenaz") pr="מעריב";
+      startFlow(pr, +d.age||0, best.d.room||"בית הכנסת");
+    });
+  }
+
+  /* מסך עם חדר — מצב דלת. מסך בלי חדר אבל עם אתר — מצב המסך הראשי.
+     משייכים מחדש כל 10 דקות (אם שונה באדמין). */
+  var mode="";
   function arm(){
-    fetch(SUPA+"/rest/v1/screens?screen_id=eq."+encodeURIComponent(sid)+"&select=room_id",
-      {headers:{apikey:KEY,Authorization:"Bearer "+KEY},cache:"no-store"})
-    .then(function(r){ return r.json(); })
+    sfx("screens?screen_id=eq."+encodeURIComponent(sid)+"&select=room_id,site_id")
     .then(function(rows){
-      var has=!!(rows && rows[0] && rows[0].room_id);
-      if(has && !timer){ poll(); timer=setInterval(poll,3000); }
-      if(!has && timer){ clearInterval(timer); timer=null; }
+      var row=rows&&rows[0]||{};
+      var m=row.room_id ? "room" : (row.site_id ? "site" : "");
+      if(m!==mode){ if(timer){ clearInterval(timer); timer=null; } mode=m; }
+      if(mode==="room" && !timer){ poll(); timer=setInterval(poll,3000); }
+      if(mode==="site"){
+        loadDoors(row.site_id).then(function(){ if(!timer){ pollSite(); timer=setInterval(pollSite,4000); } });
+      }
     }).catch(function(){});
   }
   function start(){
-    /* בדיקה: ?roomtest=1 — הרצף המלא; ?roomtest=now / next — קפיצה לשלב */
+    /* בדיקה: ?roomtest=1 — כמו מסך דלת; ?roomtest=main — כמו המסך הראשי */
     var rt=qp.get("roomtest");
     if(rt==="1") startFlow(nsfPrayerNow(new Date()), 0);
-    if(rt==="now") startFlow(nsfPrayerNow(new Date()), PRE_SEC);
-    if(rt==="next") startFlow(nsfPrayerNow(new Date()), PRE_SEC+NOW_SEC);
+    if(rt==="main") startFlow(nsfPrayerNow(new Date()), 0, "שטיבל א׳");   /* תצוגת המסך הראשי */
     arm(); setInterval(arm, 10*60*1000);
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",start); else start();
