@@ -31,6 +31,17 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 .zc b{display:block;color:var(--nsf-chip,#00ff88);font-size:3.6vh;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
 .zc.hot b{color:var(--nsf-hi,#ffd86b)}
 .zc .cd{display:block;color:#ffb4b4;font-size:1.3vh;margin-top:.3vh}
+/* הזמן הקרוב הבא */
+.zc.next{border:2px solid #ffcc00;background:linear-gradient(180deg,rgba(255,204,0,.20),rgba(255,204,0,.05));
+  box-shadow:0 0 1.6vh rgba(255,204,0,.28)}
+.zc.next small{color:#ffe39a}
+.zc.next b{color:#ffd23f !important;font-size:4.3vh}
+.zc.next.soon{border-color:#ff9f1a;background:linear-gradient(180deg,rgba(255,150,30,.26),rgba(255,150,30,.07));box-shadow:0 0 1.6vh rgba(255,150,30,.35)}
+.zc.next.soon b{color:#ffa53a !important}
+.zc.next.soon .cd{color:#ffc27a}
+.zc.next.hot{border-color:#ff5a4a;box-shadow:0 0 1.8vh rgba(255,70,50,.4)}
+.zc.next.hot b{color:#ff6b5a !important}
+body.merkaz .zc .cd,.zc .cd{font-size:1.45vh !important;line-height:1.2 !important;font-weight:700}
 
 /* ---------- מניינים ---------- */
 .main{flex:1 1 auto;min-height:0;display:flex;gap:1vw;padding:1.2vh 1.2vw}
@@ -633,7 +644,11 @@ body.merkaz #nsf-slide::before{
   inset:var(--mk-gap) var(--mk-gapx) 1vh !important;
 }
 body.merkaz #nsf-slide::after{top:var(--mk-gap) !important}
-</style></head><body>
+.sfz{position:relative;flex:1;min-height:0;min-width:0}
+body.merkaz .mid > .sfz{position:relative !important;flex:1;min-height:0;margin:.4vh .2vw}
+</style>
+<script src="nsf-files.js?v=1.0-111026"></script>
+</head><body>
 <div id="mk-sweep"></div>
 
 <div class="hdr">בס"ד &nbsp;·&nbsp; <span id="siteName"></span></div>
@@ -654,6 +669,7 @@ body.merkaz #nsf-slide::after{top:var(--mk-gap) !important}
     <div id="bgimg"></div><div id="bgveil"></div>
     <div class="secttl" id="sponTtl">פרנסי היום</div>
     <div class="mgrid" id="mgrid"></div>
+    <div class="sfz" id="mfiles" style="display:none"></div>
   </div>
   <div class="mincol" id="minL"></div>
 </div>
@@ -2519,9 +2535,11 @@ function drawZmanim(now,nowMin){
   ].filter(function(x){return x[1]>nowMin;});
   document.getElementById("zwrap").innerHTML=items.map(function(x,i){
     var left=Math.round(x[1]-nowMin);
-    var hot=(i===0 && left<=45);
-    return '<div class="zc'+(hot?" hot":"")+'"><small>'+x[0]+'</small><b>'+NatiMinyan.fmt(x[1])+'</b>'+
-           (hot?'<span class="cd">נותרו '+left+' דק\'</span>':'')+'</div>';
+    /* הזמן הקרוב הבא — מודגש תמיד (צהוב וגדול). חצי שעה לפני: כתום. 10 דקות לפני: אדום */
+    var isNext=(i===0 && left>0);
+    var lvl=isNext ? (left<=10?" hot":(left<=30?" soon":"")) : "";
+    return '<div class="zc'+(isNext?" next":"")+lvl+'"><small>'+x[0]+'</small><b>'+NatiMinyan.fmt(x[1])+'</b>'+
+           (isNext && left<=45?'<span class="cd">נותרו '+left+' דק\'</span>':'')+'</div>';
   }).join("")||'<div class="zc"><small>זמני היום</small><b>הסתיימו</b></div>';
 }
 
@@ -2628,6 +2646,17 @@ function drawSponsors(){
   var dow=t.getDay();
   if(st && !window._shabNow) st.textContent=(dow===6||dow===5)?"פרנסי היום ופרנסי השבת":"פרנסי היום";
   if(!g || window._shabNow) return;
+  /* פרנסים שהועלו כקובץ (PDF שהומר לתמונה / תמונה) — בתצוגת קבצים.
+     קבצים בלבד / טקסט בלבד — תצוגה אחת; שניהם — מתחלפים כל 20 שניות. */
+  var fb=document.getElementById("mfiles");
+  var files=cur.filter(function(s){ return !!s.image_url; });
+  cur=cur.filter(function(s){ return !s.image_url; });
+  if(fb && window.NatiFiles){
+    NatiFiles.render(fb, files.map(function(s){ return normImg(s.image_url); }), {max:8});
+    if(files.length && cur.length) NatiFiles.alternate("cafe", fb, g, 20);
+    else if(files.length){ NatiFiles.single("cafe", fb, g); return; }
+    else NatiFiles.single("cafe", g, fb);
+  }
   if(!cur.length){ g.innerHTML='<div class="mcard"><div class="none">אין פרנסים להיום</div></div>'; return; }
 
   var GROW={1:6,2:3,3:2,4:1.4,5:1};
@@ -2792,7 +2821,7 @@ NatiGuard.check(function(){ load(); tick(); });
   else marks();
   setInterval(marks, 2000);
 })();
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · חדר קפה · גרסה 3.3 · 08.10.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · חדר קפה · גרסה 3.5 · 11.10.26</div>
 <!-- ===== נתי SAFE · סימן מים מוזהב + רענון נתונים חכם (משותף לכל מסכי בית הכנסת) ===== -->
 <style id="nsf-wm-css">
 /* הלוגו ברקע כל לוח ממוסגר. סימן המים הישן (.mk-mark) נמחק בחלק מהמסכים

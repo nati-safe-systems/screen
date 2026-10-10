@@ -70,6 +70,17 @@ button.dz:hover{color:#ff6b6b}
 #saved.on{opacity:1;transform:translateY(0)}
 .autos{font-size:11.5px;color:#3fb950;background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);
   border-radius:6px;padding:6px 10px;margin-bottom:12px;line-height:1.5}
+/* העלאת קבצים (פרנסים / הודעות) */
+.upbar{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 10px}
+.upbar .ub{flex:1;min-width:140px;display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:12px 10px;border-radius:9px;font:inherit;font-size:14px;font-weight:800;cursor:pointer;border:0}
+.upbar .ub.t{background:#21262d;color:#ffcc00;border:1px solid #30363d}
+.upbar .ub.f{background:#ffcc00;color:#161b22}
+.upbar .ub input{display:none}
+.uphint{font-size:12px;color:#8b949e;margin:-4px 0 10px}
+.fthumb{width:46px;height:34px;object-fit:cover;border-radius:5px;background:#21262d;flex:0 0 auto;border:1px solid #30363d}
+.fprev{display:block;max-width:100%;max-height:240px;object-fit:contain;border-radius:8px;margin:6px auto 4px;background:#0d1117;border:1px solid #30363d}
+.tag.file{color:#ffcc00;border:1px solid rgba(255,204,0,.4)}
 </style></head><body>
 <!-- ===== מסך כניסה =====
      הדף היה פתוח לחלוטין ושלף את רשימת כל בתי הכנסת במערכת. -->
@@ -1107,15 +1118,19 @@ function drawAnns(){
   w.innerHTML=ANNS.map(function(x,i){
     var live=(!x.date_from||t>=x.date_from)&&(!x.date_to||t<=x.date_to)&&x.active!==false;
     return '<div class="item" style="'+(live?"border-color:#2ea043":"")+'">'+
-      '<div class="hd"><b>'+(esc(x.title)||"(ללא כותרת)")+'</b>'+
+      '<div class="hd"><b style="display:flex;align-items:center;gap:8px">'+(x.image_url?'<img class="fthumb" src="'+esc(x.image_url)+'" alt="">':'')+(esc(x.title)||"(ללא כותרת)")+(x.image_url?' <span class="tag file">קובץ</span>':'')+'</b>'+
       '<span><span class="tag" style="'+(live?"color:#7ee787":"")+'">'+(live?"מוצג היום":"לא בתוקף")+'</span>'+
       '<button class="dz" onclick="delAnn('+i+')">×</button></span></div>'+
-      '<label>כותרת</label><input value="'+esc(x.title||"")+'" placeholder="בר מצווה למשפחת..." onchange="saveAnn('+i+',\'title\',this.value)" oninput="saveAnn('+i+',\'title\',this.value)">'+
-      '<label>פירוט</label><input value="'+esc(x.body||"")+'" placeholder="ביום שלישי באולם הגדול" oninput="saveAnn('+i+',\'body\',this.value)">'+
+      (x.image_url
+        ? '<img class="fprev" src="'+esc(x.image_url)+'" alt="">'+
+          '<label>שם (לזיהוי בלבד)</label><input value="'+esc(x.title||"")+'" oninput="saveAnn('+i+',\'title\',this.value)">'
+        : '<label>כותרת</label><input value="'+esc(x.title||"")+'" placeholder="בר מצווה למשפחת..." onchange="saveAnn('+i+',\'title\',this.value)" oninput="saveAnn('+i+',\'title\',this.value)">'+
+          '<label>פירוט</label><input value="'+esc(x.body||"")+'" placeholder="ביום שלישי באולם הגדול" oninput="saveAnn('+i+',\'body\',this.value)">')+
       '<div class="grid" style="margin-top:6px">'+
       '<div><label>מתאריך</label><input type="date" value="'+(x.date_from||"")+'" onchange="saveAnn('+i+',\'date_from\',this.value)"></div>'+
       '<div><label>עד תאריך</label><input type="date" value="'+(x.date_to||"")+'" onchange="saveAnn('+i+',\'date_to\',this.value)"></div>'+
-      '</div></div>';}).join("")||'<div class="hint">אין הודעות. הוסף אחת — היא תופיע במסך הראשי בטווח התאריכים שתגדיר.</div>';
+      '</div></div>';}).join("")||'<div class="hint">אין הודעות. הוסף הודעה בטקסט או העלה קבצים — הם יופיעו בלוח המודעות במסך הראשי בטווח התאריכים שתגדיר.</div>';
+  w.innerHTML=upBar("announcements")+w.innerHTML;
 }
 /* שמירה מושהית: ממתינים 2.5 שניות מרגע ההקלדה האחרונה,
    כדי שאפשר יהיה להקליד "11" בלי שהמערכת תשמור אחרי הספרה הראשונה. */
@@ -1365,6 +1380,113 @@ function delSpon(i){if(!confirm("למחוק?"))return;
   sf("sponsors?id=eq."+SPONS[i].id,{method:"DELETE"}).then(function(){say("נמחק");pickSite();});}
 
 var SCOPE_LBL={all:"כל המסכים",cafe:"חדר קפה בלבד",main:"מסך הפרנסים (לובי)"};
+
+/* =====================================================================
+   העלאת קבצים — PDF או תמונה
+   PDF הופך לתמונה כבר כאן, בדפדפן (כל עמוד = פריט נפרד). כך המסכים
+   מקבלים תמונה רגילה: נטען מהר גם במכשיר חלש, ובלי בעיות גופנים.
+   ===================================================================== */
+var PDFJS_URL="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+function needPdfJs(){
+  if(window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  return new Promise(function(res,rej){
+    var sc=document.createElement("script"); sc.src=PDFJS_URL;
+    sc.onload=function(){ pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS_URL.replace("pdf.min.js","pdf.worker.min.js"); res(pdfjsLib); };
+    sc.onerror=function(){ rej(new Error("לא ניתן לטעון את קורא ה-PDF")); };
+    document.head.appendChild(sc);
+  });
+}
+function canvasBlob(cv){ return new Promise(function(res){ cv.toBlob(function(b){ res(b); },"image/jpeg",0.88); }); }
+/* מחזיר מערך תמונות (Blob) מקובץ: PDF — עמוד לתמונה, תמונה — מוקטנת אם ענקית */
+function fileToImages(f){
+  var isPdf=(f.type==="application/pdf"||/\.pdf$/i.test(f.name));
+  if(isPdf){
+    return needPdfJs().then(function(lib){ return f.arrayBuffer().then(function(buf){ return lib.getDocument({data:buf}).promise; }); })
+    .then(function(doc){
+      var n=Math.min(doc.numPages,10), out=[], chain=Promise.resolve();
+      for(var i=1;i<=n;i++)(function(pn){
+        chain=chain.then(function(){ return doc.getPage(pn).then(function(pg){
+          var v1=pg.getViewport({scale:1}), sc=Math.min(3, 2000/Math.max(v1.width,v1.height));
+          var vp=pg.getViewport({scale:sc}), cv=document.createElement("canvas");
+          cv.width=Math.round(vp.width); cv.height=Math.round(vp.height);
+          var cx=cv.getContext("2d"); cx.fillStyle="#fff"; cx.fillRect(0,0,cv.width,cv.height);
+          return pg.render({canvasContext:cx,viewport:vp}).promise.then(function(){ return canvasBlob(cv); })
+            .then(function(b){ out.push(b); });
+        }); });
+      })(i);
+      return chain.then(function(){ return out; });
+    });
+  }
+  if(!/^image\//.test(f.type)) return Promise.reject(new Error("סוג קובץ לא נתמך: "+f.name));
+  return new Promise(function(res,rej){
+    var u=URL.createObjectURL(f), im=new Image();
+    im.onload=function(){
+      var W=im.naturalWidth, H=im.naturalHeight, k=Math.min(1, 2000/Math.max(W,H));
+      if(k===1 && f.size<2.5*1024*1024 && /jpe?g|png|webp/i.test(f.type)){ URL.revokeObjectURL(u); res([f]); return; }
+      var cv=document.createElement("canvas"); cv.width=Math.round(W*k); cv.height=Math.round(H*k);
+      var cx=cv.getContext("2d"); cx.fillStyle="#fff"; cx.fillRect(0,0,cv.width,cv.height); cx.drawImage(im,0,0,cv.width,cv.height);
+      URL.revokeObjectURL(u); canvasBlob(cv).then(function(b){ res([b]); });
+    };
+    im.onerror=function(){ URL.revokeObjectURL(u); rej(new Error("התמונה לא נפתחה: "+f.name)); };
+    im.src=u;
+  });
+}
+function upImage(blob, folder){
+  var ext=(blob.type==="image/png")?"png":(blob.type==="image/webp"?"webp":"jpg");
+  var path="sites/"+SITE.id+"/"+folder+"/"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8)+"."+ext;
+  return fetch(SB+"/storage/v1/object/screen-media/"+path,{method:"POST",
+    headers:{apikey:SK,Authorization:"Bearer "+SK,"Content-Type":blob.type||"image/jpeg","x-upsert":"false"},body:blob})
+  .then(function(r){ if(!r.ok) throw new Error("ההעלאה נכשלה ("+r.status+")"); return SB+"/storage/v1/object/public/screen-media/"+path; });
+}
+function addDays(n){ var d=new Date(); d.setDate(d.getDate()+n); return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+/* kind: "sponsors" | "announcements" */
+function addFiles(kind, inp){
+  if(!SITE){ say("בחר אתר",1); return; }
+  var files=Array.prototype.slice.call(inp.files||[]); inp.value="";
+  if(!files.length) return;
+  var made=0, failed=0, jobs=[];
+  say("מכין קבצים…");
+  var chain=Promise.resolve();
+  files.forEach(function(f){
+    chain=chain.then(function(){
+      return fileToImages(f).then(function(blobs){
+        var base=f.name.replace(/\.[^.]+$/,"");
+        var c2=Promise.resolve();
+        blobs.forEach(function(b,i){
+          c2=c2.then(function(){
+            say("מעלה "+(made+failed+1)+"…");
+            return upImage(b, kind==="sponsors"?"sponsors":"board").then(function(url){
+              var name=base+(blobs.length>1?" · עמוד "+(i+1):"");
+              var row = kind==="sponsors"
+                ? {site_id:SITE.id,category:"פרנס היום",name:name,priority:3,scope:"all",date_from:today(),date_to:addDays(6),image_url:url}
+                : {site_id:SITE.id,title:name,date_from:today(),date_to:addDays(6),priority:3,image_url:url};
+              return sf(kind,{method:"POST",body:JSON.stringify(row)}).then(function(r){
+                var id=r&&r[0]&&r[0].id;
+                /* שמירת הקישור בפונקציה ייעודית — עובד גם אם פונקציית השמירה הכללית מתעלמת מהשדה */
+                return id ? rpc("nsf_set_image",{p_token:NSF_TOKEN,p_table:kind,p_id:String(id),p_url:url}) : null;
+              }).then(function(){ made++; });
+            });
+          }).catch(function(e){ failed++; console.error(e); });
+        });
+        return c2;
+      }).catch(function(e){ failed++; say(e.message||String(e),1); });
+    });
+  });
+  chain.then(function(){
+    if(kind==="sponsors"){ try{ document.getElementById("sponCard").open=true; }catch(e){} }
+    else { try{ document.getElementById("annCard").open=true; }catch(e){} }
+    say(failed ? ("הועלו "+made+", נכשלו "+failed) : ("הועלו "+made+" ✓ — מוצגים שבוע מהיום. אפשר לשנות תאריכים"), !!failed);
+    pickSite();
+  });
+}
+function upBar(kind){
+  var isS=(kind==="sponsors");
+  return '<div class="upbar">'+
+    '<button type="button" class="ub t" onclick="'+(isS?'addSpon()':'addAnn()')+'">＋ '+(isS?'פרנס בטקסט':'הודעה בטקסט')+'</button>'+
+    '<label class="ub f">📎 העלאת קבצים<input type="file" multiple accept="application/pdf,.pdf,image/*" onchange="addFiles(\''+kind+'\',this)"></label>'+
+    '</div><div class="uphint">PDF או תמונה. אפשר לבחור כמה קבצים יחד — כל קובץ '+(isS?'הוא פרנס':'הוא הודעה')+' נפרד. '+
+    'עד 8 קבצים המסך מתחלק לפי הכמות; מעבר לזה הם נוסעים על המסך.</div>';
+}
 function fmtD(d){ if(!d) return ""; var a=String(d).split("-"); return a.length===3 ? (+a[2])+"."+(+a[1])+"."+a[0].slice(2) : d; }
 function sponFilter(v){ SPON_Q=String(v||"").trim().toLowerCase(); drawSpons(); }
 function sponToggle(id,open){ if(open) SPON_OPEN[id]=1; else delete SPON_OPEN[id]; }
@@ -1393,28 +1515,40 @@ function drawSpons(){
     return '<details class="spd'+(live?" live":"")+'"'+(SPON_OPEN[x.id]?" open":"")+
         ' ontoggle="sponToggle('+JSON.stringify(x.id).replace(/"/g,"&quot;")+',this.open)">'+
       '<summary>'+
+        (x.image_url?'<img class="fthumb" src="'+esc(x.image_url)+'" alt="">':'')+
         '<span class="sn">'+(esc(x.name)||"(ללא שם)")+'</span>'+
-        '<span class="sc">'+esc(x.category||"")+'</span>'+
+        (x.image_url?'<span class="tag file">קובץ</span>':'<span class="sc">'+esc(x.category||"")+'</span>')+
         '<span class="sm">'+
           '<span class="tag">'+esc(SCOPE_LBL[x.scope||"all"]||x.scope)+'</span>'+
-          '<span class="tag pr'+pr+'">'+esc(String(PRIO[pr]||pr).replace(/^\d+\s*—\s*/,""))+'</span>'+
+          (x.image_url?'':'<span class="tag pr'+pr+'">'+esc(String(PRIO[pr]||pr).replace(/^\d+\s*—\s*/,""))+'</span>')+
           '<span class="tag">'+esc(dates)+'</span>'+
           '<span class="tag" style="'+(live?"color:#7ee787":"")+'">'+(live?"מוצג היום":"לא בתוקף")+'</span>'+
           '<button class="dz" title="מחק" onclick="event.preventDefault();event.stopPropagation();delSpon('+i+')">×</button>'+
         '</span>'+
       '</summary>'+
-      '<div class="bd"><div class="grid">'+
-      '<div><label>סוג</label><input list="catlist" value="'+esc(x.category||"")+'" onchange="saveSpon('+i+',\'category\',this.value)"></div>'+
-      '<div><label>שם</label><input value="'+esc(x.name||"")+'" placeholder="ר\' ישראל ישראלי" onchange="saveSpon('+i+',\'name\',this.value)"></div>'+
-      '<div><label>הקדשה</label><input value="'+esc(x.dedication||"")+'" placeholder="לעילוי נשמת / לרפואת" onchange="saveSpon('+i+',\'dedication\',this.value)"></div>'+
-      '<div><label>מופיע במסך</label><select onchange="saveSpon('+i+',\'scope\',this.value)">'+
-        opts(SCOPE_LBL,x.scope||"all")+'</select></div>'+
-      '<div><label>בולטות</label><select onchange="saveSpon('+i+',\'priority\',+this.value)">'+opts(PRIO,String(x.priority||3))+'</select></div>'+
-      '<div><label>מתאריך</label><input type="date" value="'+(x.date_from||"")+'" onchange="saveSpon('+i+',\'date_from\',this.value)"></div>'+
-      '<div><label>עד תאריך</label><input type="date" value="'+(x.date_to||"")+'" onchange="saveSpon('+i+',\'date_to\',this.value)"></div>'+
-      '</div></div></details>';
+      '<div class="bd">'+(x.image_url
+        /* פרנס שהועלה כקובץ — תצוגה מקדימה, שם לזיהוי, מסך ותאריכים */
+        ? '<img class="fprev" src="'+esc(x.image_url)+'" alt="">'+
+          '<div class="grid">'+
+          '<div><label>שם (לזיהוי בלבד)</label><input value="'+esc(x.name||"")+'" onchange="saveSpon('+i+',\'name\',this.value)"></div>'+
+          '<div><label>מופיע במסך</label><select onchange="saveSpon('+i+',\'scope\',this.value)">'+opts(SCOPE_LBL,x.scope||"all")+'</select></div>'+
+          '<div><label>מתאריך</label><input type="date" value="'+(x.date_from||"")+'" onchange="saveSpon('+i+',\'date_from\',this.value)"></div>'+
+          '<div><label>עד תאריך</label><input type="date" value="'+(x.date_to||"")+'" onchange="saveSpon('+i+',\'date_to\',this.value)"></div>'+
+          '</div>'
+        /* פרנס בטקסט */
+        : '<div class="grid">'+
+          '<div><label>סוג</label><input list="catlist" value="'+esc(x.category||"")+'" onchange="saveSpon('+i+',\'category\',this.value)"></div>'+
+          '<div><label>שם</label><input value="'+esc(x.name||"")+'" placeholder="ר\' ישראל ישראלי" onchange="saveSpon('+i+',\'name\',this.value)"></div>'+
+          '<div><label>הקדשה</label><input value="'+esc(x.dedication||"")+'" placeholder="לעילוי נשמת / לרפואת" onchange="saveSpon('+i+',\'dedication\',this.value)"></div>'+
+          '<div><label>מופיע במסך</label><select onchange="saveSpon('+i+',\'scope\',this.value)">'+
+            opts(SCOPE_LBL,x.scope||"all")+'</select></div>'+
+          '<div><label>בולטות</label><select onchange="saveSpon('+i+',\'priority\',+this.value)">'+opts(PRIO,String(x.priority||3))+'</select></div>'+
+          '<div><label>מתאריך</label><input type="date" value="'+(x.date_from||"")+'" onchange="saveSpon('+i+',\'date_from\',this.value)"></div>'+
+          '<div><label>עד תאריך</label><input type="date" value="'+(x.date_to||"")+'" onchange="saveSpon('+i+',\'date_to\',this.value)"></div>'+
+          '</div>')+
+      '</div></details>';
   }).join("");
-  if(!SPONS.length) html='<div class="hint">אין פרנסים. הוסף אחד — הוא יופיע במסך חדר הקפה ובמסך הפרנסים בטווח התאריכים שתגדיר.</div>';
+  if(!SPONS.length) html='<div class="hint">אין פרנסים. הוסף פרנס בטקסט או העלה קבצים — הם יופיעו במסך הפרנסים ובחדר הקפה בטווח התאריכים שתגדיר.</div>';
   else if(!shown.length) html='<div class="hint">לא נמצאו פרנסים לחיפוש הזה.</div>';
   var tools=SPONS.length>3
     ? '<div id="sponTools"><input type="search" placeholder="חיפוש פרנס — שם, סוג, תאריך..." value="'+esc(SPON_Q)+'" oninput="sponFilter(this.value)">'+
@@ -1423,7 +1557,7 @@ function drawSpons(){
   /* שומרים על הפוקוס בשדה החיפוש בזמן הקלדה */
   var hadFocus=document.activeElement && document.activeElement.closest && document.activeElement.closest("#sponTools");
   var pos=hadFocus?document.activeElement.selectionStart:null;
-  box.innerHTML=tools+html;
+  box.innerHTML=upBar("sponsors")+tools+html;
   if(hadFocus){ var inp=box.querySelector("#sponTools input"); if(inp){ inp.focus(); try{ inp.setSelectionRange(pos,pos); }catch(e){} } }
 }
 
@@ -1521,5 +1655,5 @@ function stLogin(){
     }).observe(document.body,{childList:true,subtree:true});
   }catch(e){}
 })();
-</script><div id="app-version" style="position:fixed;left:8px;bottom:6px;font-size:11px;color:#8b949e;opacity:.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול בית הכנסת · גרסה 2.1 · 08.10.26</div>
+</script><div id="app-version" style="position:fixed;left:8px;bottom:6px;font-size:11px;color:#8b949e;opacity:.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול בית הכנסת · גרסה 2.2 · 11.10.26</div>
 </body></html>
