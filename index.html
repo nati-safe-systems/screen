@@ -2472,17 +2472,30 @@ setInterval(function(){ try{ musIndicator(); }catch(e){} }, 3000);
 
 /* מטמון מוזיקה בזיכרון: השיר הנוכחי והבא בתור (עד 3 קבצים, עד 60MB כל אחד) */
 var _audBl={}, _audBlK=[], _audBusy={}, _audFail={};
-function nsfAudCanBlob(u){ return /\/storage\/v1\/object\/public\//.test(u) && !_audFail[u] && typeof fetch==="function" && window.URL && URL.createObjectURL; }
+function nsfAudDrvId(u){ var m=String(u).match(/drive\.google\.com\/(?:uc\?(?:[^#]*&)?id=|file\/d\/|open\?id=)([A-Za-z0-9_\-]+)/); return m?m[1]:""; }
+function nsfAudCanBlob(u){ return (/\/storage\/v1\/object\/public\//.test(u) || !!nsfAudDrvId(u)) && !_audFail[u] && typeof fetch==="function" && window.URL && URL.createObjectURL; }
 function nsfAudBlob(u){ return _audBl[u]||null; }
 function nsfAudFetch(u){
   if(_audBl[u]) return Promise.resolve(_audBl[u]);
   if(_audBusy[u]) return _audBusy[u];
   var ctl=window.AbortController?new AbortController():null, to=setTimeout(function(){ try{ ctl&&ctl.abort(); }catch(e){} },90000);
-  var p=fetch(u,{cache:"force-cache",signal:ctl?ctl.signal:undefined}).then(function(r){
-    if(!r.ok) throw new Error("http "+r.status);
-    var n=+(r.headers.get("content-length")||0); if(n>60e6) throw new Error("big");
-    return r.blob();
-  }).then(function(b){
+  /* 12.11: קובץ מגוגל דרייב — דרייב לא מאפשר הזרמה יציבה (עוצר וקופץ באמצע),
+     לכן מורידים אותו פעם אחת במלואו דרך שרת העזר שלנו ומנגנים מהזיכרון */
+  var did=nsfAudDrvId(u);
+  var get = did
+    ? fetch(GAS+"?action=pdf&url="+encodeURIComponent("https://drive.google.com/file/d/"+did+"/view"),{cache:"no-store",signal:ctl?ctl.signal:undefined})
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if(!d||!d.ok||!d.b64||d.b64.length<20000) throw new Error("drive");
+          if(/^PCFET0NUW|^PGh0bWw|^PEhUTUw/.test(d.b64)) throw new Error("html");   /* דף אזהרה של גוגל, לא קובץ */
+          return fetch("data:audio/mpeg;base64,"+d.b64).then(function(r){ return r.blob(); });
+        })
+    : fetch(u,{cache:"force-cache",signal:ctl?ctl.signal:undefined}).then(function(r){
+        if(!r.ok) throw new Error("http "+r.status);
+        var n=+(r.headers.get("content-length")||0); if(n>60e6) throw new Error("big");
+        return r.blob();
+      });
+  var p=get.then(function(b){
     clearTimeout(to); delete _audBusy[u];
     var bu=URL.createObjectURL(b); _audBl[u]=bu; _audBlK.push(u);
     for(var k=0; _audBlK.length>3 && k<_audBlK.length; ){
@@ -2609,13 +2622,18 @@ function audioApply(){
     var blobU=nsfAudBlob(direct);
     if(blobU){ _au.src=blobU; }
     else if(nsfAudCanBlob(direct)){
-      _auState="טוען מוזיקה...";
+      _auState = dm ? "טוען מוזיקה מגוגל דרייב (פעם אחת)..." : "טוען מוזיקה...";
       nsfAudFetch(direct).then(function(){ if(_au && _au.getAttribute("data-src")===direct){ _au.removeAttribute("data-src"); audioApply(); } });
       try{ musIndicator(); }catch(e){}
       return;
     }
     else _au.src=direct;
     _au.onerror=function(){
+      /* הקובץ שנטען לזיכרון לא מתנגן — חוזרים לניגון רגיל מהקישור */
+      if(_au && /^blob:/.test(_au.src) && !_audFail[direct]){
+        _audFail[direct]=1; try{ URL.revokeObjectURL(_audBl[direct]); }catch(e){} delete _audBl[direct];
+        _au.removeAttribute("data-src"); audioApply(); return;
+      }
       /* קובץ פגום או חסום — מדלגים לבא בתור במקום להישאר תקוע */
       if(_auList.length>1){ _auIdx=(_auIdx+1)%_auList.length;
         _auState="דילוג על קובץ שלא נטען"; _au.removeAttribute("data-src"); audioApply(); return; }
@@ -5284,7 +5302,7 @@ setInterval(fitTimer, 60000);
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.10 · 13.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.11 · 13.10.26</div>
 <script>
 /* ---- עדכון אוטומטי מ-GitHub · 13.10.26 ----
    כל 3 דקות המסך בודק (בקשת HEAD קטנה, בלי להוריד את הקובץ) אם הקובץ שלו
