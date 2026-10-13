@@ -2470,6 +2470,36 @@ function musIndicator(){
 }
 setInterval(function(){ try{ musIndicator(); }catch(e){} }, 3000);
 
+/* מטמון מוזיקה בזיכרון: השיר הנוכחי והבא בתור (עד 3 קבצים, עד 60MB כל אחד) */
+var _audBl={}, _audBlK=[], _audBusy={}, _audFail={};
+function nsfAudCanBlob(u){ return /\/storage\/v1\/object\/public\//.test(u) && !_audFail[u] && typeof fetch==="function" && window.URL && URL.createObjectURL; }
+function nsfAudBlob(u){ return _audBl[u]||null; }
+function nsfAudFetch(u){
+  if(_audBl[u]) return Promise.resolve(_audBl[u]);
+  if(_audBusy[u]) return _audBusy[u];
+  var ctl=window.AbortController?new AbortController():null, to=setTimeout(function(){ try{ ctl&&ctl.abort(); }catch(e){} },90000);
+  var p=fetch(u,{cache:"force-cache",signal:ctl?ctl.signal:undefined}).then(function(r){
+    if(!r.ok) throw new Error("http "+r.status);
+    var n=+(r.headers.get("content-length")||0); if(n>60e6) throw new Error("big");
+    return r.blob();
+  }).then(function(b){
+    clearTimeout(to); delete _audBusy[u];
+    var bu=URL.createObjectURL(b); _audBl[u]=bu; _audBlK.push(u);
+    for(var k=0; _audBlK.length>3 && k<_audBlK.length; ){
+      var o=_audBlK[k];
+      if(o===u || (_au && _au.src===_audBl[o])){ k++; continue; }   /* לא מוחקים את מה שמתנגן */
+      _audBlK.splice(k,1); try{ URL.revokeObjectURL(_audBl[o]); }catch(e){} delete _audBl[o];
+    }
+    return bu;
+  }).catch(function(){ clearTimeout(to); delete _audBusy[u]; _audFail[u]=1; return null; });
+  _audBusy[u]=p; return p;
+}
+function nsfAudDirect(cur){
+  var dm=cur.match(/drive\.google\.com\/file\/d\/([A-Za-z0-9_\-]+)/)||cur.match(/drive\.google\.com\/open\?id=([A-Za-z0-9_\-]+)/);
+  if(dm) return "https://drive.google.com/uc?export=download&id="+dm[1];
+  if(/dropbox\.com/.test(cur)) return cur.replace(/[?&]dl=0/,"")+(cur.indexOf("?")>-1?"&":"?")+"raw=1";
+  return cur;
+}
 function audioApply(){
   var on   = !!(DC && DC.audio_enabled);
   /* רשימת השמעה: מנגן קובץ אחרי קובץ, ובסוף חוזר לראשון */
@@ -2556,14 +2586,14 @@ function audioApply(){
 
   /* קישור שיתוף של דרייב אינו קובץ. ממירים להורדה ישירה.
      קבצים גדולים (מעל ~100MB) ייחסמו על ידי גוגל — ראה הודעת המצב. */
+  /* אם הרשימה השתנתה — מתחילים אותה מהתחלה */
+  if(_auList.join("|")!==list.join("|")){ _auList=list.slice(); _auIdx=0; if(_au) _au.removeAttribute("data-src"); }
   var cur=_auList[_auIdx]||url;
   var direct=cur, dm=cur.match(/drive\.google\.com\/file\/d\/([A-Za-z0-9_\-]+)/)||
                      cur.match(/drive\.google\.com\/open\?id=([A-Za-z0-9_\-]+)/);
   if(dm) direct="https://drive.google.com/uc?export=download&id="+dm[1];
   else if(/dropbox\.com/.test(cur)) direct=cur.replace(/[?&]dl=0/,"")+(cur.indexOf("?")>-1?"&":"?")+"raw=1";
 
-  /* אם הרשימה השתנתה — מתחילים אותה מהתחלה */
-  if(_auList.join("|")!==list.join("|")){ _auList=list.slice(); _auIdx=0; if(_au) _au.removeAttribute("data-src"); }
 
   if(!_au){
     _au=document.createElement("audio");
@@ -2573,7 +2603,18 @@ function audioApply(){
   }
   _au.loop = (_auList.length===1);   /* קובץ יחיד — לולאה של הדפדפן */
   if(_au.getAttribute("data-src")!==direct){
-    _au.setAttribute("data-src",direct); _au.src=direct;
+    _au.setAttribute("data-src",direct);
+    /* 12.10: קובץ מהאחסון שלנו נטען במלואו לזיכרון לפני הניגון — כך
+       אין עצירות/קפיצות כשהאינטרנט מאט באמצע שיר. אחרת (דרייב וכו') — רגיל. */
+    var blobU=nsfAudBlob(direct);
+    if(blobU){ _au.src=blobU; }
+    else if(nsfAudCanBlob(direct)){
+      _auState="טוען מוזיקה...";
+      nsfAudFetch(direct).then(function(){ if(_au && _au.getAttribute("data-src")===direct){ _au.removeAttribute("data-src"); audioApply(); } });
+      try{ musIndicator(); }catch(e){}
+      return;
+    }
+    else _au.src=direct;
     _au.onerror=function(){
       /* קובץ פגום או חסום — מדלגים לבא בתור במקום להישאר תקוע */
       if(_auList.length>1){ _auIdx=(_auIdx+1)%_auList.length;
@@ -2591,6 +2632,7 @@ function audioApply(){
       }catch(e){}
     };
   }
+  if(!_au.getAttribute("src")){ try{ musIndicator(); }catch(e){} return; }   /* עדיין נטען לזיכרון */
   if(Math.abs((_au.volume||0)-vol)>0.005) _au.volume=vol;
   /* אחרי רענון — ממשיכים מאותו מקום, כדי שהמעבר לא יישמע */
   if(!_au._resumed){
@@ -2615,6 +2657,8 @@ function audioApply(){
         document.addEventListener("touchstart",go,{once:true});
       });
   } else { _auState="מנגן "+(_auIdx+1)+"/"+_auList.length+" · עוצמה "+Math.round(vol*100)+"%"; }
+  /* השיר הבא נטען מראש ברקע — המעבר בין שירים בלי הפסקה */
+  if(_auList.length>1){ var nd=nsfAudDirect(_auList[(_auIdx+1)%_auList.length]); if(nsfAudCanBlob(nd) && !_audBl[nd]) nsfAudFetch(nd); }
   try{ musIndicator(); }catch(e){}
 }
 
@@ -3171,8 +3215,18 @@ var _pdfState = { timer:null, doc:null, token:0 };
 /* ---- רשימת מסמכים ----
    display_config.pdf_list = [{url:"...", sec:20}, {url:"...", sec:10}]
    כל מסמך מוצג למשך שהוגדר לו, ואז עובר לבא. בסוף חוזר לראשון. */
-var _docList=[], _docIdx=0, _docTimer=null;
-function stopDocs(){ if(_docTimer){ clearTimeout(_docTimer); _docTimer=null; } }
+var _docList=[], _docIdx=0, _docTimer=null, _docGen=0;
+function stopDocs(){ _docGen++; if(_docTimer){ clearTimeout(_docTimer); _docTimer=null; } }
+/* תמונות שכבר נטענו נשמרות (עד 20) — לא מורידים אותן שוב בכל סבב */
+var _imgPre={}, _imgPreK=[];
+function nsfPreImg(url){
+  var im=_imgPre[url];
+  if(!im){
+    im=new Image(); im.decoding="async"; im.src=url; _imgPre[url]=im; _imgPreK.push(url);
+    if(_imgPreK.length>20){ delete _imgPre[_imgPreK.shift()]; }
+  }
+  return im;
+}
 function startDocs(list, secPerPage, cols, animPdf){
   stopDocs();
   _docList=(list||[]).filter(function(x){return x && x.url && x.url.trim();});
@@ -3185,13 +3239,28 @@ function startDocs(list, secPerPage, cols, animPdf){
       stopPdf._keepDocs=true; stopPdf(); stopPdf._keepDocs=false;
       var st=document.getElementById("st-text"); st.className="";
       var u=String(it.url).replace(/"/g,"&quot;");
-      st.innerHTML = adIsVideo(it.url)
-        ? '<video src="'+u+'" muted autoplay loop playsinline style="max-width:100%;max-height:100%;object-fit:contain;display:block;margin:auto"></video>'
-        : '<img src="'+u+'" alt="" style="max-width:100%;max-height:100%;object-fit:contain;display:block;margin:auto">';
+      if(adIsVideo(it.url)){
+        st.innerHTML='<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:1.5vh 1.5vw;box-sizing:border-box;"><video src="'+u+'" muted autoplay loop playsinline style="max-width:100%;max-height:100%;object-fit:contain;display:block"></video></div>';
+      }else{
+        /* 12.10: התמונה מפוענחת ברקע ורק אז מוחלפת — בלי הבהוב ובלי ציור חלקי */
+        var im=nsfPreImg(it.url), myIdx=_docIdx, myGen=_docGen;
+        /* התמונה ממלאת את לוח המודעות בלבד (קודם היא יכלה לגלוש מעל הכותרת) */
+        im.style.cssText="max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;display:block;border-radius:6px;box-shadow:0 8px 30px rgba(0,0,0,0.6)";
+        var put=function(){
+          if(myIdx!==_docIdx || myGen!==_docGen) return;
+          st.className=""; st.innerHTML='<div class="pdf-anim-fade" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:1.5vh 1.5vw;box-sizing:border-box;"></div>';
+          st.firstChild.appendChild(im);
+        };
+        (im.decode ? im.decode() : Promise.resolve()).then(put, put);
+      }
     }else{
       startPdf(it.url, secPerPage, cols, animPdf);
     }
     if(_docList.length>1){
+      /* טוענים מראש את הקובץ הבא, כדי שהמעבר יהיה מיידי */
+      var nx=_docList[(_docIdx+1) % _docList.length];
+      if(nx && nsfIsImgUrl(nx.url)) nsfPreImg(nx.url);
+      else if(nx && !adIsVideo(nx.url)) nsfOpenDoc(nx.url).catch(function(){});
       var ms=Math.max(3,(+it.sec||20))*1000;
       _docTimer=setTimeout(function(){ _docIdx++; step(); }, ms);
     }
@@ -3232,10 +3301,39 @@ function startPdfOrList(pdfUrl, secPerPage, cols, animPdf, listOverride){
    כך שאותו קוד מציג גם PDF וגם תמונה — במצב PDF ובמצב גלילה+PDF.
    קובץ שהועלה לאחסון שלנו נטען ישירות; קישור חיצוני/דרייב — דרך GAS. */
 /* צפיפות הציור של PDF: לפחות פי 2, עד פי 3 במסכים צפופים */
-function nsfPdfOS(){ return Math.min(3, Math.max(2, window.devicePixelRatio||1)); }
+/* 12.10: בדיוק פי 2 במסך רגיל (הקטנה נקייה של חצי), ובמסך צפוף — לפי צפיפות המסך.
+   קודם עד פי 3 — והקטנה של פי 3 בכרטיס המסך יוצרת "רעש" בטקסט קטן. */
+function nsfPdfOS(){ var d=window.devicePixelRatio||1; return d<1.25 ? 2 : Math.min(3, d); }
+/* מגבלת גודל לקנבס — מסכי טלוויזיה חלשים נתקעים מקנבסים ענקיים */
+function nsfCapOS(w,h,os){ var mx=Math.max(w,h)*os, px=w*h*os*os; if(mx>4096) os=os*4096/mx; if(w*h*os*os>12e6) os=Math.sqrt(12e6/(w*h)); return os; }
 /* כמה קבצים בהודעה אחת: הכתובות נשמרות ב-pdf_url מופרדות ברווח */
 function nsfUrls(u){ return String(u||"").split(/\s+/).filter(function(x){ return !!x; }); }
 function nsfIsImgUrl(u){ return /\.(jpe?g|png|webp|gif|avif|bmp)(\?|#|$)/i.test(String(u||"")); }
+/* ציור תמונה מוקטנת בחדות: מקטינים בשלבים של חצי עם החלקה איכותית.
+   הקטנה ישירה של תמונה גדולה (drawImage רגיל) מוחקת פרטים ונראית "מרוחה". */
+function nsfDrawSharp(cx, im, W, H, tw, th){
+  tw=Math.round(tw); th=Math.round(th);
+  cx.imageSmoothingEnabled=true; try{ cx.imageSmoothingQuality="high"; }catch(e){}
+  var src=im, sw=W, sh=H;
+  while(sw/2>=tw && sh/2>=th){
+    var nw=Math.round(sw/2), nh=Math.round(sh/2), t=document.createElement("canvas");
+    t.width=nw; t.height=nh; var tc=t.getContext("2d");
+    tc.imageSmoothingEnabled=true; try{ tc.imageSmoothingQuality="high"; }catch(e){}
+    tc.drawImage(src,0,0,sw,sh,0,0,nw,nh); src=t; sw=nw; sh=nh;
+  }
+  cx.drawImage(src,0,0,sw,sh,0,0,tw,th);
+}
+/* 12.10: תמונה מוצגת כתמונה (לא מצוירת על קנבס): הדפדפן מקטין אותה באיכות
+   הגבוהה ביותר ומפענח אותה ברקע — חד יותר ובלי תקיעות */
+function nsfImgSwap(doc, canvas, cssW, cssH){
+  var im=document.createElement("img");
+  im.src=doc.src; im.alt=""; im.decoding="async";
+  im.id=canvas.id; im.style.cssText=canvas.style.cssText;
+  im.style.width=Math.floor(cssW)+"px"; im.style.height=Math.floor(cssH)+"px"; im.style.display="block";
+  im.style.objectFit="contain";
+  var put=function(){ if(canvas.parentNode) canvas.parentNode.replaceChild(im, canvas); };
+  return (im.decode ? im.decode() : Promise.resolve()).then(put, put);
+}
 function nsfImgDoc(src){
   return new Promise(function(res,rej){
     var im=new Image();
@@ -3246,18 +3344,39 @@ function nsfImgDoc(src){
         render:function(o){
           var cx=o.canvasContext, vp=o.viewport;
           cx.fillStyle="#fff"; cx.fillRect(0,0,vp.width,vp.height);
-          cx.drawImage(im,0,0,vp.width,vp.height);
+          var tw=Math.max(1,Math.round(vp.width)), th=Math.max(1,Math.round(vp.height));
+          nsfDrawSharp(cx, im, W, H, tw, th);
           return {promise:Promise.resolve()};
         }
       };
-      res({numPages:1, isImage:true, getPage:function(){ return Promise.resolve(pg); }});
+      res({numPages:1, isImage:true, img:im, src:src, getPage:function(){ return Promise.resolve(pg); }});
     };
     im.onerror=function(){ rej(new Error("התמונה לא נטענה")); };
+    im.decoding="async";
     im.src=src;
   });
 }
+/* 12.10: מטמון מסמכים — כל קובץ נטען פעם אחת ולא בכל סבב.
+   קודם כל סבב פתח את הקבצים מחדש (הורדה + פענוח), והזיכרון רק גדל
+   — אחרי כמה שעות מכשיר המסך נעשה איטי. מקסימום 12 קבצים בזיכרון. */
+var _docCache=[];
 function nsfOpenDoc(url){
   url=String(url||"").trim();
+  for(var i=0;i<_docCache.length;i++){
+    if(_docCache[i].u===url){ var hit=_docCache.splice(i,1)[0]; _docCache.push(hit); return hit.p; }
+  }
+  var p=nsfOpenDoc0(url);
+  var ent={u:url,p:p}; _docCache.push(ent);
+  p.catch(function(){ var k=_docCache.indexOf(ent); if(k>-1) _docCache.splice(k,1); });
+  while(_docCache.length>12){
+    var old=_docCache.shift();
+    old.p.then(function(d){ setTimeout(function(){
+      if(d && d.destroy && _pdfState.doc!==d && !_docCache.some(function(e){ return e.u===old.u; })){ try{ d.destroy(); }catch(e){} }
+    },120000); }).catch(function(){});
+  }
+  return p;
+}
+function nsfOpenDoc0(url){
   if(!url) return Promise.reject(new Error("לא הוגדר קובץ"));
   if(nsfIsImgUrl(url)) return nsfImgDoc(url);
   if(typeof pdfjsLib==="undefined") return Promise.reject(new Error("ספריית PDF טרם נטענה — בדוק חיבור אינטרנט"));
@@ -3313,7 +3432,8 @@ function startPdf(pdfUrl, secPerPage, cols, animPdf){
           /* חדות: מציירים בצפיפות כפולה (או לפי המסך) ומקטינים בתצוגה.
              קודם הקנבס צויר בגודל התצוגה בדיוק — ובמסך עם צפיפות גבוהה
              או בהגדלה של הדפדפן הטקסט יצא מטושטש. */
-          var os=nsfPdfOS();
+          if(doc.isImage && doc.src) return nsfImgSwap(doc, canvas, v1.width*scale, v1.height*scale);
+          var os=nsfCapOS(v1.width*scale, v1.height*scale, nsfPdfOS());
           var vp=pg.getViewport({scale:scale*os});
           canvas.width=Math.round(vp.width); canvas.height=Math.round(vp.height);
           canvas.style.width=Math.floor(vp.width/os)+"px"; canvas.style.height=Math.floor(vp.height/os)+"px";
@@ -3401,7 +3521,9 @@ function startCombo(msg, coLogo, pdfUrl, secPerPage, cols, animPdf, showSec){
   function renderPageTo(doc, pageNum, canvas){
     return doc.getPage(pageNum).then(function(pg){
       if(myT!==_comboState.token) return;
-      var os=nsfPdfOS();
+      var v1=pg.getViewport({scale:1});
+      if(doc.isImage && doc.src) return nsfImgSwap(doc, canvas, v1.width*renderScale, v1.height*renderScale);
+      var os=nsfCapOS(v1.width*renderScale, v1.height*renderScale, nsfPdfOS());
       var vp=pg.getViewport({scale:renderScale*os});
       canvas.width=Math.round(vp.width); canvas.height=Math.round(vp.height);
       canvas.style.width=Math.floor(vp.width/os)+"px"; canvas.style.height=Math.floor(vp.height/os)+"px";
@@ -4427,6 +4549,10 @@ function gzm2(n){
 }
 
 /* ---- Update display ---- */
+/* כותבים למסך רק כשהטקסט באמת השתנה — upd רץ כל שנייה */
+function _sT(id,t){ var e=document.getElementById(id); t=String(t); if(e && e.textContent!==t) e.textContent=t; return e; }
+function _sH(e,h){ if(e && e.__h2!==h){ e.__h2=h; e.innerHTML=h; } }
+function _sD(e,v){ if(e && e.style.display!==v) e.style.display=v; }
 function upd(){
   if(!ok)return;
   var now=new Date(),tm=gzm2(now),cur=now.getHours()+now.getMinutes()/60;
@@ -4438,26 +4564,28 @@ function upd(){
 
   (function(){
     var _p2=function(x){return (x<10?"0":"")+x;};
-    document.getElementById("timer").innerHTML =
-      _p2(now.getHours())+":"+_p2(now.getMinutes())+
-      '<span class="sec">'+_p2(now.getSeconds())+'</span>';
+    var te=document.getElementById("timer"), hm=_p2(now.getHours())+":"+_p2(now.getMinutes());
+    var se=te.__sec;
+    if(te.__hm!==hm || !se || !se.isConnected){
+      te.__hm=hm; te.innerHTML=hm+'<span class="sec">'+_p2(now.getSeconds())+'</span>';
+      te.__sec=se=te.querySelector(".sec");
+    }else{ se.textContent=_p2(now.getSeconds()); }
   })();
-  document.getElementById("dg").textContent=now.toLocaleDateString("he-IL",{day:"numeric",month:"long",year:"numeric"});
-  document.getElementById("dow").textContent="יום "+["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"][now.getDay()];
-  document.getElementById("dh").textContent=gdl(hdDisp.day)+" ב"+hdDisp.month+" "+gdy(hdDisp.year);
+  _sT("dg",now.toLocaleDateString("he-IL",{day:"numeric",month:"long",year:"numeric"}));
+  _sT("dow","יום "+["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"][now.getDay()]);
+  _sT("dh",gdl(hdDisp.day)+" ב"+hdDisp.month+" "+gdy(hdDisp.year));
   var rchEl=document.getElementById("rch");
   var rchTxt=hc_roshChodesh(now.getFullYear(),now.getMonth()+1,now.getDate());
-  if(rchTxt){rchEl.textContent=rchTxt;rchEl.style.display="block";}else{rchEl.style.display="none";}
+  if(rchTxt){_sT("rch",rchTxt);_sD(rchEl,"block");}else{_sD(rchEl,"none");}
   /* חג קודם: כשהשבת הקרובה היא יום טוב אין פרשת שבוע, ו-Hebcal
    מחזיר בכל זאת את הפרשה הבאה במחזור — מה שהציג "בראשית"
    בשבוע של שמחת תורה. */
-  document.getElementById("par").textContent=
-    chagParashaLabel()||gwp()||gwpChag()||"פרשת השבוע";
+  _sT("par", chagParashaLabel()||gwp()||gwpChag()||"פרשת השבוע");
 
   var ch=ghol()||gjh(hd.month,hd.day);
   var ec=gec(hd.month,hd.day);
   var minorLbl=gjml(hd.month,hd.day);
-  document.getElementById("ie").textContent=ch||ec||minorLbl||"";
+  _sT("ie", ch||ec||minorLbl||"");
   // ברכת חג בכותרת העליונה
   var gEl=document.getElementById("chag-greet");
   if(gEl){
@@ -4469,8 +4597,8 @@ function upd(){
                (nowD.getDay()===5 && isRestNow(nowD));
     if(isShab) parts2.push("שבת שלום");
     if(gTxt) parts2.push(gTxt);
-    if(parts2.length){ gEl.textContent=parts2.join(" · "); gEl.style.display="block"; }
-    else gEl.style.display="none";
+    if(parts2.length){ _sT("chag-greet",parts2.join(" · ")); _sD(gEl,"block"); }
+    else _sD(gEl,"none");
   }
 
   var fn=gfi(hd.month,hd.day,new Date().getDay());
@@ -4479,17 +4607,17 @@ function upd(){
   if(fn){
     /* ארבעת הצומות הקלים מתחילים בעלות השחר של אותו יום.
        תשעה באב מתחיל בערב שלפניו, ולכן מוצג אחרת. */
-    spb.style.display="block";
-    document.getElementById("spt").textContent="צום: "+fn;
+    _sD(spb,"block");
+    _sT("spt","צום: "+fn);
     var _spc;
     if(fn.indexOf("תשעה באב")>-1){
       _spc = "החל מהערב שעבר · צאת הצום: "+fmt(tm.tz,"tz");
     }else{
       _spc = "כניסה: "+fmt(tm.alot,"alot")+"  ·  יציאה: "+fmt(tm.tz,"tz");
     }
-    document.getElementById("spc").textContent=_spc;
+    _sT("spc",_spc);
   }
-  else{spb.style.display="none";}
+  else{_sD(spb,"none");}
 
   /* הזמן הקרוב הבא מודגש (צהוב, מעט גדול). בזמנים ההלכתיים החשובים —
      ק"ש, חצות, שקיעה, צאת הכוכבים — חצי שעה לפני הוא הופך לכתום
@@ -4517,7 +4645,7 @@ function upd(){
   if(hd.month==="אייר")od=15+hd.day;
   if(hd.month==="סיוון"&&hd.day<=5)od=44+hd.day;
   var ob=document.getElementById("ob");
-  if(od>0&&od<=49){ob.style.display="block";ob.textContent=got(od);}else{ob.style.display="none";}
+  if(od>0&&od<=49){_sD(ob,"block");_sT("ob",got(od));}else{_sD(ob,"none");}
 
   var shIn=tm.sunset-((window._shabbatOffset||20)/60);
   var isWE=(now.getDay()===4&&cur>=tm.tz)||now.getDay()===5||now.getDay()===6;
@@ -4537,13 +4665,13 @@ function upd(){
     }else{
       _lblT="זמני שבת קודש";         _lblIn="כניסת שבת";        _lblOut="יציאת שבת";
     }
-    document.getElementById("sht").textContent=_lblT;
-    document.getElementById("li").textContent=_lblIn;
-    document.getElementById("lo").textContent=_lblOut;
-    document.getElementById("si").textContent=fmt(shIn);document.getElementById("so2").textContent=fmt(tm.tz,"tz");document.getElementById("rt").textContent=fmt(tm.rt,"rt");
-    document.getElementById("sho-in").textContent=fmt(shIn);document.getElementById("sho-out").textContent=fmt(tm.tz,"tz");document.getElementById("sho-rt").textContent=fmt(tm.rt,"rt");
+    _sT("sht",_lblT);
+    _sT("li",_lblIn);
+    _sT("lo",_lblOut);
+    _sT("si",fmt(shIn));_sT("so2",fmt(tm.tz,"tz"));_sT("rt",fmt(tm.rt,"rt"));
+    _sT("sho-in",fmt(shIn));_sT("sho-out",fmt(tm.tz,"tz"));_sT("sho-rt",fmt(tm.rt,"rt"));
     if(mev && DC && DC.zmanim){
-      mevEl.innerHTML='<span class="mev-t">✡ שבת מברכים ✡</span><span class="mev-r">'+hc_mevRosh(mev)+'</span><span class="mev-m">'+hc_mevMolad(mev)+'</span>';
+      _sH(mevEl,'<span class="mev-t">✡ שבת מברכים ✡</span><span class="mev-r">'+hc_mevRosh(mev)+'</span><span class="mev-m">'+hc_mevMolad(mev)+'</span>');
       mevEl.style.display="block";
     }else{ mevEl.style.display="none"; }
   }else{document.getElementById("shb").style.display="none";scc.className="sc";mevEl.style.display="none";}
@@ -4568,21 +4696,21 @@ function upd(){
     /* שעון + תאריך עברי במרכז למעלה */
     var _hh=String(now.getHours()).padStart(2,"0"), _mm=String(now.getMinutes()).padStart(2,"0"), _ss=String(now.getSeconds()).padStart(2,"0");
     var _bl=(now.getSeconds()%2===0)?"sc-colon":"sc-colon sc-off";
-    document.getElementById("sho-time").innerHTML=_hh+'<span class="'+_bl+'">:</span>'+_mm+'<span class="sc-sec">'+_ss+'</span>';
-    document.getElementById("sho-date").textContent=gdl(hdDisp.day)+" ב"+hdDisp.month+" "+gdy(hdDisp.year);
+    _sH(document.getElementById("sho-time"),_hh+'<span class="'+_bl+'">:</span>'+_mm+'<span class="sc-sec">'+_ss+'</span>');
+    _sT("sho-date",gdl(hdDisp.day)+" ב"+hdDisp.month+" "+gdy(hdDisp.year));
     /* שורת שם החג — מוצגת רק בחג (כולל חול המועד), לא בשבת רגילה */
     var _chagEl=document.getElementById("sho-chag");
     var _chagName=gjh(hd.month,hd.day);  // רק יו"ט אמיתי — לא חול המועד
     if(isCh && _chagName){ _chagEl.textContent=_chagName; _chagEl.style.display="block"; }
     else{ _chagEl.style.display="none"; }
-    document.getElementById("sho-greeting").textContent=isSh?"שבת שלום":"חג שמח";
-    document.getElementById("sho-card-title").textContent=isSh?"זמני שבת קודש":"זמני החג";
-    document.getElementById("sho-lbl-in").textContent=isSh?"כניסת שבת":"כניסת החג";
-    document.getElementById("sho-lbl-out").textContent=isSh?"צאת שבת":"צאת החג";
+    _sT("sho-greeting",isSh?"שבת שלום":"חג שמח");
+    _sT("sho-card-title",isSh?"זמני שבת קודש":"זמני החג");
+    _sT("sho-lbl-in",isSh?"כניסת שבת":"כניסת החג");
+    _sT("sho-lbl-out",isSh?"צאת שבת":"צאת החג");
     var smInfo=gsmi();
     var moladEl=document.getElementById("sho-molad");
     if(isSh&&smInfo){
-      moladEl.innerHTML='<b style="color:#ffcc00;">'+hc_mevTitle()+'</b><br>'+hc_mevRosh(smInfo)+'<br>'+hc_mevMolad(smInfo);
+      _sH(moladEl,'<b style="color:#ffcc00;">'+hc_mevTitle()+'</b><br>'+hc_mevRosh(smInfo)+'<br>'+hc_mevMolad(smInfo));
       moladEl.style.display="block";
     }else{moladEl.style.display="none";}
   sho.style.display="flex";
@@ -5156,7 +5284,7 @@ setInterval(fitTimer, 60000);
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.9 · 13.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.10 · 13.10.26</div>
 <script>
 /* ---- עדכון אוטומטי מ-GitHub · 13.10.26 ----
    כל 3 דקות המסך בודק (בקשת HEAD קטנה, בלי להוריד את הקובץ) אם הקובץ שלו
@@ -5164,10 +5292,12 @@ setInterval(fitTimer, 60000);
    בלי כפתור. המוזיקה ממשיכה מאותו מקום. */
 (function(){
   if(window.__nsfAutoUpd) return; window.__nsfAutoUpd=1;
-  var sig=null, busy=false;
+  var sig=null, busy=false, cand=null;
   function key(r){
     var e=r.headers.get("etag")||"", l=r.headers.get("last-modified")||"", n=r.headers.get("content-length")||"";
-    return e ? e : (l+"|"+n);
+    /* 12.10: תאריך הפרסום + גודל הקובץ קודמים (זהים בכל שרתי GitHub);
+       ה-ETag רק כגיבוי — הוא עלול להשתנות בין שרתים ולגרום לרענון מיותר */
+    return l ? (l+"|"+n) : e.replace(/^W\//,"");
   }
   function reload(){
     try{
@@ -5185,7 +5315,10 @@ setInterval(fitTimer, 60000);
         if(!r.ok) return;
         var k=key(r); if(!k || k==="|") return;
         if(sig===null){ sig=k; return; }
-        if(k!==sig) reload();
+        if(k===sig){ cand=null; return; }
+        /* שינוי — מאמתים בבדיקה נוספת אחרי 30 שניות לפני שמרעננים */
+        if(cand===k) reload();
+        else { cand=k; setTimeout(probe, 30000); }
       }).catch(function(){}).then(function(){ busy=false; });
   }
   setTimeout(probe, 20000);
