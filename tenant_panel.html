@@ -485,6 +485,26 @@ input:focus,select:focus{border-color:#58a6ff;}
         </div>
       </div>
 
+      <!-- מוזיקה במסך — הלקוח שולט בעצמו (בהרשאת "שליטה במוזיקה", פעילה כברירת מחדל) -->
+      <div class="field" id="t-music-sec" style="display:none;border:1px solid #30363d;border-radius:10px;padding:14px;">
+        <div style="font-size:14px;color:#ffcc00;font-weight:700;margin-bottom:8px;">🎵 מוזיקה במסך</div>
+        <label style="display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer;margin-bottom:10px;">
+          <input type="checkbox" id="t-mus-on" style="width:20px;height:20px;accent-color:#ffcc00"> מוזיקה פועלת
+        </label>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <span style="font-size:13px;color:#8b949e;min-width:52px">עוצמה</span>
+          <input type="range" id="t-mus-vol" min="0" max="100" step="5" value="40" style="flex:1"
+                 oninput="document.getElementById('t-mus-vol-v').textContent=this.value">
+          <span id="t-mus-vol-v" style="font-size:13px;min-width:28px;text-align:center">40</span>
+        </div>
+        <div style="font-size:13px;color:#8b949e;margin-bottom:6px;">מה מתנגן (אפשר לבחור כמה — מתנגנים ברצף):</div>
+        <div id="t-mus-list" style="max-height:240px;overflow:auto;border:1px solid #30363d;border-radius:8px;background:#0d1117"></div>
+        <div class="hint" style="margin-top:6px">בשבת ובחג המוזיקה מושתקת אוטומטית.</div>
+        <div style="display:flex;justify-content:flex-end;margin-top:10px;">
+          <button class="btn-save" style="padding:10px 18px;" onclick="tMusSave()">שמור מוזיקה</button>
+        </div>
+      </div>
+
       <div class="field" id="tenant-minyan-sec" style="display:none;border:1px solid #30363d;border-radius:10px;padding:14px;">
         <label style="color:#ffcc00;font-weight:800;">תצוגת המניינים</label>
         <select id="t-minyan-view" style="margin-top:8px;">
@@ -675,10 +695,10 @@ input:focus,select:focus{border-color:#58a6ff;}
              מהם נשבר, ולרוב ההרשאות נשכחו והמסך הציג ריק. -->
         <div id="pdf-drop" class="pdf-drop" onclick="document.getElementById('pdf-file').click()">
           <div class="pd-ic">&#128206;</div>
-          <div class="pd-t">לחצו להעלאת קובץ</div>
+          <div class="pd-t">לחצו להעלאת קבצים — אפשר כמה יחד</div>
           <div class="pd-s">PDF · JPG · PNG · WEBP · GIF &nbsp;·&nbsp; עד 20 מגה</div>
         </div>
-        <input type="file" id="pdf-file" accept="application/pdf,image/jpeg,image/png,image/webp,image/gif,.pdf,.jpg,.jpeg,.png,.webp,.gif"
+        <input type="file" id="pdf-file" multiple accept="application/pdf,image/jpeg,image/png,image/webp,image/gif,.pdf,.jpg,.jpeg,.png,.webp,.gif"
                style="display:none" onchange="pdfPick(this)">
 
         <div id="pdf-have" style="display:none;align-items:center;gap:10px;
@@ -731,7 +751,7 @@ input:focus,select:focus{border-color:#58a6ff;}
             </select>
           </div>
         </div>
-        <div class="hint">אם ל-PDF יש כמה עמודים — כל כמה שניות מתחלף עמוד.</div>
+        <div class="hint">כל כמה שניות מתחלף עמוד ב-PDF — או הקובץ הבא, כשהועלו כמה קבצים.</div>
       </div>
 
       <!-- משך הצגת PDF במצב גלילה+PDF -->
@@ -805,10 +825,10 @@ input:focus,select:focus{border-color:#58a6ff;}
               <div id="sf-pdf-drop" class="pdf-drop"
                    onclick="document.getElementById('sf-pdf-file').click()">
                 <div class="pd-ic">&#128206;</div>
-                <div class="pd-t">לחצו להעלאת קובץ</div>
+                <div class="pd-t">לחצו להעלאת קבצים — אפשר כמה יחד</div>
                 <div class="pd-s">PDF · JPG · PNG · WEBP · GIF &nbsp;·&nbsp; עד 20 מגה</div>
               </div>
-              <input type="file" id="sf-pdf-file"
+              <input type="file" id="sf-pdf-file" multiple
                      accept="application/pdf,image/jpeg,image/png,image/webp,image/gif,.pdf,.jpg,.jpeg,.png,.webp,.gif"
                      style="display:none" onchange="pdfPick(this,'sf-')">
 
@@ -860,7 +880,7 @@ input:focus,select:focus{border-color:#58a6ff;}
                   </select>
                 </div>
               </div>
-              <div class="hint">אם ל-PDF יש כמה עמודים — כל כמה שניות מתחלף עמוד.</div>
+              <div class="hint">כל כמה שניות מתחלף עמוד ב-PDF — או הקובץ הבא, כשהועלו כמה קבצים.</div>
             </div>
 
             <div class="field" id="sf-pdf-show-sec" style="display:none;">
@@ -1445,6 +1465,9 @@ var PERM_DEFS_T=[
   {cat:'עיצוב רקע',items:[
     {id:'bg_brightness',label:'בהירות תמונת הרקע'},
     {id:'bg_images',label:'החלפת תמונות רקע'}
+  ]},
+  {cat:'מוזיקה',items:[
+    {id:'music',label:'שליטה במוזיקה'}
   ]},
   {cat:'כללי',items:[
     {id:'building_name',label:'עריכת שם הבניין'},
@@ -2091,6 +2114,7 @@ function applyTenantDisplaySection(raw){
   tPdfDraw();
   _tBg = Array.isArray(cfg.bg_images) ? cfg.bg_images.slice() : (cfg.bg_url?[cfg.bg_url]:[]);
   tBgDraw();
+  try{ tMusLoad(cfg); }catch(e){}
   var _tbs=document.getElementById("t-bg-sec"); if(_tbs) _tbs.value = cfg.bg_sec || 10;
   // מהירות גלילה
   var sp=(cfg.scrollSpeed>0)?cfg.scrollSpeed:80;
@@ -2139,6 +2163,8 @@ function applyTenantPerms(){
   // תמונות רקע — רק אם האדמין סימן "החלפת תמונות רקע" (כבוי כברירת מחדל)
   _tShow('t-bg-outer', !!P.bg_images);
   _tShow('t-pdf-outer', false);
+  /* מוזיקה — פעילה אלא אם האדמין כיבה (גם ללקוחות קיימים) */
+  _tShow('t-music-sec', P.music!==false && _tPurpose==="main");
 }
 function _tenantBaseDC(){
   /* בסיס לשמירה: העתקה מלאה של הקונפיג הקיים.
@@ -2268,6 +2294,54 @@ function tBgSave(silent){
     .then(function(){ toast(silent?"תמונות הרקע נשמרו ✓":"תמונות הרקע עודכנו ✓ — יופיעו במסך תוך דקה"); })
     .catch(function(){ toast("השמירה נכשלה"); });
 }
+/* ===== מוזיקה במסך — שליטת הלקוח =====
+   אותה ספריית מוזיקה שבאדמין (screen-media/audio/library). הבחירה
+   נשמרת בהגדרות המסך, והמסך מתעדכן תוך כחצי דקה — בלי רענון. */
+var _tMus=[];
+function tMusName(n){ return String(n||"").replace(/^\d+_/,"").replace(/\.[a-z0-9]+$/i,"").replace(/[_-]+/g," "); }
+function tMusLoad(cfg){
+  var on=document.getElementById("t-mus-on"); if(!on) return;
+  on.checked=!!cfg.audio_enabled;
+  var v=(cfg.audio_volume!=null?+cfg.audio_volume:40);
+  document.getElementById("t-mus-vol").value=v; document.getElementById("t-mus-vol-v").textContent=v;
+  _tMus=Array.isArray(cfg.audio_list)?cfg.audio_list.slice():(cfg.audio_url?[cfg.audio_url]:[]);
+  tMusDraw();
+}
+function tMusDraw(){
+  var box=document.getElementById("t-mus-list"); if(!box) return;
+  box.innerHTML='<div style="padding:10px;color:#8b949e;font-size:13px">טוען את הספרייה...</div>';
+  fetch(SUPA_BASE+"/storage/v1/object/list/screen-media",{method:"POST",
+    headers:{apikey:SUPA_KEY,Authorization:"Bearer "+SUPA_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({prefix:"audio/library",limit:200,sortBy:{column:"name",order:"asc"}})})
+  .then(function(r){ return r.json(); }).then(function(rows){
+    rows=(Array.isArray(rows)?rows:[]).filter(function(o){ return o && o.name && /\.(mp3|m4a|aac|ogg|wav|opus)$/i.test(o.name); });
+    var base=SUPA_BASE+"/storage/v1/object/public/screen-media/audio/library/";
+    if(!rows.length){ box.innerHTML='<div style="padding:10px;color:#8b949e;font-size:13px">אין עדיין קבצי מוזיקה בספרייה.</div>'; return; }
+    box.innerHTML=rows.map(function(o){
+      var url=base+o.name, ck=_tMus.indexOf(url)>-1;
+      return '<label style="display:flex;gap:10px;align-items:center;padding:9px 10px;border-bottom:1px solid #21262d;cursor:pointer;font-size:14px">'+
+        '<input type="checkbox" class="t-mus-ck" data-url="'+url.replace(/"/g,"&quot;")+'"'+(ck?' checked':'')+' style="width:18px;height:18px;accent-color:#ffcc00">'+
+        '<span style="flex:1">'+tMusName(o.name).replace(/</g,"&lt;")+'</span></label>';
+    }).join("");
+  }).catch(function(){ box.innerHTML='<div style="padding:10px;color:#ff7b72;font-size:13px">טעינת הספרייה נכשלה</div>'; });
+}
+function tMusSave(){
+  var P=CURRENT_PERMS||{};
+  if(P.music===false){ toast("אין הרשאה"); return; }
+  var picked=Array.prototype.map.call(document.querySelectorAll(".t-mus-ck:checked"),function(c){ return c.getAttribute("data-url"); });
+  /* קישורים שאינם מהספרייה (רדיו / יוטיוב שהאדמין הגדיר) נשמרים כמו שהם */
+  var keep=_tMus.filter(function(u){ return String(u).indexOf("/audio/library/")===-1; });
+  var list=keep.concat(picked);
+  var on=document.getElementById("t-mus-on").checked;
+  if(on && !list.length){ toast("בחר לפחות שיר אחד"); return; }
+  var out=_tenantBaseDC();
+  out.audio_enabled=on;
+  out.audio_list=list;
+  out.audio_url=list[0]||"";
+  out.audio_volume=parseInt(document.getElementById("t-mus-vol").value,10)||0;
+  _tenantSaveDC(out).then(function(){ _tMus=list; toast("המוזיקה עודכנה ✓ — תוך חצי דקה במסך"); })
+    .catch(function(){ toast("השמירה נכשלה"); });
+}
 function tBgMove(i,d){ var j=i+d; if(j<0||j>=_tBg.length)return; var t=_tBg[i]; _tBg[i]=_tBg[j]; _tBg[j]=t; tBgDraw(); }
 function tBgAdd(){ _tBg.push(""); tBgDraw(); }
 
@@ -2291,6 +2365,7 @@ function tApplyPurpose(){
   /* תמונות הרקע רלוונטיות לכל סוגי המסכים */
   show("t-bg-outer", !!(CURRENT_PERMS&&CURRENT_PERMS.bg_images));   /* רק בהרשאת אדמין */
   show("t-pdf-outer", false);   /* הוסר — הקובץ מוצג דרך ההודעה */
+  show("t-music-sec", isBuilding && !!(CURRENT_PERMS && CURRENT_PERMS.music!==false));
 }
 
 function saveMinyanView(){
@@ -2532,7 +2607,7 @@ function userPermGridHtml(perms){
   perms=perms||{};
   return grantablePermDefs().map(function(g){
     var rows=g.items.map(function(it){
-      var ck=perms[it.id]?' checked':'';
+      var ck=(perms[it.id] || (it.id==='music' && perms[it.id]===undefined))?' checked':'';   /* מוזיקה — פעילה כברירת מחדל */
       return '<label class="td-chk" style="display:flex;align-items:center;gap:6px;">'+
         '<input type="checkbox" id="uperm-'+it.id+'"'+ck+' onchange="applyUserPermDeps()"> '+it.label+'</label>';
     }).join('');
@@ -2661,7 +2736,9 @@ function setType(t){
   document.getElementById("pdf-show-sec").style.display=t==="scrollpdf"?"block":"none";
 }
 
-function drvUrl(u){var m=u.match(/file\/d\/([^/]+)/);return m?"https://drive.google.com/file/d/"+m[1]+"/preview":u;}
+function drvUrl1(u){var m=u.match(/file\/d\/([^/]+)/);return m?"https://drive.google.com/file/d/"+m[1]+"/preview":u;}
+/* כמה קבצים בהודעה — מופרדים ברווח; כל אחד מומר בנפרד */
+function drvUrl(u){return String(u||"").split(/\s+/).filter(Boolean).map(drvUrl1).join(" ");}
 
 /* ============ הפצת מודעה לכמה מסכים ============ */
 function bcastToggle(){
@@ -3225,7 +3302,7 @@ window.addEventListener("load",function(){
   }
 });
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.4</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.5 · 13.10.26</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון/טופס פתוח במקום לצאת מהאפליקציה */
 (function(){
@@ -3326,43 +3403,73 @@ function pdfClear(p){
   var u=document.getElementById(p+"pdf-url"); if(u) u.value="";
   pdfErr("",p);
 }
+/* העלאת קובץ אחד או כמה (למשל 5 תמונות) להודעה.
+   כמה קבצים — מוצגים במסך אחד אחרי השני, כל אחד לפי "שניות לכל עמוד".
+   הכתובות נשמרות באותו שדה, מופרדות ברווח. תמונה ענקית מהטלפון
+   מוקטנת ל-2400 פיקסלים — חדה על המסך וקלה למכשיר. */
+function pdfShrink(f){
+  if(!/^image\/(jpeg|png|webp)$/.test(f.type)) return Promise.resolve({blob:f,type:f.type});
+  return new Promise(function(res){
+    var u=URL.createObjectURL(f), im=new Image();
+    im.onload=function(){
+      var W=im.naturalWidth, H=im.naturalHeight, k=Math.min(1,2400/Math.max(W,H));
+      if(k===1){ URL.revokeObjectURL(u); res({blob:f,type:f.type}); return; }
+      var cv=document.createElement("canvas"); cv.width=Math.round(W*k); cv.height=Math.round(H*k);
+      var cx=cv.getContext("2d"); cx.fillStyle="#fff"; cx.fillRect(0,0,cv.width,cv.height); cx.drawImage(im,0,0,cv.width,cv.height);
+      URL.revokeObjectURL(u);
+      cv.toBlob(function(bl){ res(bl?{blob:bl,type:"image/jpeg"}:{blob:f,type:f.type}); },"image/jpeg",0.9);
+    };
+    im.onerror=function(){ URL.revokeObjectURL(u); res({blob:f,type:f.type}); };
+    im.src=u;
+  });
+}
 function pdfPick(inp,p){
   p=p||"";
-  var f=inp.files && inp.files[0];
-  if(!f) return;
+  var files=Array.prototype.slice.call(inp.files||[]);
+  if(!files.length) return;
   pdfErr("",p);
-  if(PDF_OK.indexOf(f.type)===-1){ pdfErr("סוג קובץ לא נתמך. PDF או תמונה (JPG / PNG / WEBP / GIF).",p); pdfClear(p); return; }
-  if(f.size>PDF_MAX){ pdfErr("הקובץ גדול מ-20 מגה.",p); pdfClear(p); return; }
+  for(var i=0;i<files.length;i++){
+    var f=files[i];
+    if(PDF_OK.indexOf(f.type)===-1){ pdfErr("סוג קובץ לא נתמך: "+f.name+". PDF או תמונה (JPG / PNG / WEBP / GIF).",p); pdfClear(p); return; }
+    if(f.size>PDF_MAX){ pdfErr("הקובץ "+f.name+" גדול מ-20 מגה.",p); pdfClear(p); return; }
+  }
+  if(files.length>20){ pdfErr("אפשר עד 20 קבצים בהודעה אחת.",p); return; }
 
   var have=document.getElementById(p+"pdf-have");
-  document.getElementById(p+"pdf-have-n").textContent =
-    f.name+"  ("+Math.round(f.size/1024)+" KB)";
+  document.getElementById(p+"pdf-have-n").textContent = files.length===1
+    ? files[0].name+"  ("+Math.round(files[0].size/1024)+" KB)"
+    : files.length+" קבצים: "+files.map(function(f){ return f.name; }).join(", ");
   have.style.display="flex";
 
   var bar=document.getElementById(p+"pdf-bar");
   var bi=document.getElementById(p+"pdf-bar-i");
-  bar.style.display="block"; bi.style.width="30%";
+  bar.style.display="block"; bi.style.width="10%";
 
-  /* הסיומת נקבעת לפי סוג הקובץ — המסך מזהה תמונה לפי הסיומת */
-  var ext={"application/pdf":"pdf","image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"}[f.type]||"bin";
   var u0=document.getElementById(p+"pdf-url"); if(u0) u0.value="";
   _pdfBusy=true;
-  var key=(sid||"screen")+"/"+Date.now().toString(36)+"-"+
-          Math.random().toString(36).slice(2,8)+"."+ext;
-
-  fetch(SUPA_BASE+"/storage/v1/object/screen-media/"+key,{
-    method:"POST",
-    headers:{apikey:SUPA_KEY,Authorization:"Bearer "+SUPA_KEY,
-             "Content-Type":f.type,"x-upsert":"false"},
-    body:f
-  }).then(function(r){
-    if(!r.ok) throw new Error("upload "+r.status);
-    bi.style.width="100%";
-    _pdfUp = SUPA_BASE+"/storage/v1/object/public/screen-media/"+key;
+  var urls=[], chain=Promise.resolve();
+  files.forEach(function(f,idx){
+    chain=chain.then(function(){ return pdfShrink(f); }).then(function(x){
+      /* הסיומת נקבעת לפי סוג הקובץ — המסך מזהה תמונה לפי הסיומת */
+      var ext={"application/pdf":"pdf","image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"}[x.type]||"bin";
+      var key=(sid||"screen")+"/"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8)+"."+ext;
+      return fetch(SUPA_BASE+"/storage/v1/object/screen-media/"+key,{
+        method:"POST",
+        headers:{apikey:SUPA_KEY,Authorization:"Bearer "+SUPA_KEY,"Content-Type":x.type,"x-upsert":"false"},
+        body:x.blob
+      }).then(function(r){
+        if(!r.ok) throw new Error("upload "+r.status);
+        urls.push(SUPA_BASE+"/storage/v1/object/public/screen-media/"+key);
+        bi.style.width=Math.round(10+90*(idx+1)/files.length)+"%";
+      });
+    });
+  });
+  chain.then(function(){
+    _pdfUp=urls.join(" ");
     var u=document.getElementById(p+"pdf-url");
     if(u) u.value=_pdfUp;     /* אותו שדה ממשיך לשמש את השמירה */
     _pdfBusy=false;
-    toast("הקובץ הועלה — לחץ שמור");
+    toast(urls.length>1 ? ("הועלו "+urls.length+" קבצים — לחץ שמור") : "הקובץ הועלה — לחץ שמור");
   }).catch(function(){
     _pdfBusy=false;
     pdfErr("ההעלאה נכשלה. נסה שוב.",p);
@@ -3388,7 +3495,7 @@ function pdfPick(inp,p){
     d.addEventListener("drop",function(ev){
       if(ev.dataTransfer.files && ev.dataTransfer.files[0]){
         var inp=document.getElementById(p+"pdf-file");
-        inp.files=ev.dataTransfer.files;
+        inp.files=ev.dataTransfer.files;   /* גם כמה קבצים בגרירה אחת */
         pdfPick(inp,p);
       }
     });

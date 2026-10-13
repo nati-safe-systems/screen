@@ -3636,6 +3636,9 @@ var PERM_DEFS=[
     {id:'bg_brightness',label:'בהירות תמונת הרקע'},
     {id:'bg_images',label:'החלפת תמונות רקע (מהפאנל של הלקוח)'}
   ]},
+  {cat:'מוזיקה',items:[
+    {id:'music',label:'שליטה במוזיקה מהפאנל של הלקוח (פעיל כברירת מחדל)'}
+  ]},
   {cat:'כללי',items:[
     {id:'building_name',label:'עריכת שם הבניין'},
     {id:'manage_users',label:'ניהול משתמשי משנה (הלקוח מקים בעצמו)'}
@@ -3682,7 +3685,8 @@ function migrateOldPerms(perms){
 function permGridHtml(prefix,perms){
   return PERM_DEFS.map(function(g){
     var items=g.items.map(function(it){
-      var ck=(perms&&perms[it.id])?' checked':'';
+      /* "מוזיקה" פעילה גם ללקוח שנשמר לפני שההרשאה נוספה */
+      var ck=(perms&&(perms[it.id] || (it.id==='music' && perms[it.id]===undefined)))?' checked':'';
       return '<label class="dc-chk"><input type="checkbox" id="'+prefix+it.id+'"'+ck+' onchange="applyPermDeps(\''+prefix+'\')"> '+escH(it.label)+'</label>';
     }).join('');
     return '<div style="margin-top:8px;"><div style="color:#ffcc00;font-size:11px;font-weight:700;margin-bottom:4px;">'+escH(g.cat)+'</div>'+
@@ -3868,7 +3872,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.4 · 11.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.5 · 13.10.26</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){

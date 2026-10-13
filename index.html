@@ -3214,6 +3214,12 @@ function startPdfOrList(pdfUrl, secPerPage, cols, animPdf, listOverride){
   /* הקובץ שנבחר בהודעה עצמה קודם לכל. רשימת הקבצים הישנה (pdf_list)
      משמשת רק כשאין להודעה קובץ — כך הן כבר לא דורסות זו את זו. */
   if(Array.isArray(listOverride) && listOverride.length) return startDocs(listOverride, secPerPage, cols, animPdf);
+  /* כמה קבצים (למשל 5 תמונות) — מוצגים אחד אחרי השני, כל אחד לפי "שניות לכל עמוד" */
+  var many=nsfUrls(pdfUrl);
+  if(many.length>1){
+    var per=(+secPerPage>0)?+secPerPage:10;
+    return startDocs(many.map(function(u){ return {url:u, sec:per}; }), secPerPage, cols, animPdf);
+  }
   if(String(pdfUrl||"").trim()){ stopDocs(); return startPdf(pdfUrl, secPerPage, cols, animPdf); }
   var lst=(DC && Array.isArray(DC.pdf_list)) ? DC.pdf_list : [];
   if(lst.length) return startDocs(lst, secPerPage, cols, animPdf);
@@ -3225,6 +3231,10 @@ function startPdfOrList(pdfUrl, secPerPage, cols, animPdf, listOverride){
    מחזיר אובייקט בממשק של pdf.js (numPages / getPage / getViewport / render),
    כך שאותו קוד מציג גם PDF וגם תמונה — במצב PDF ובמצב גלילה+PDF.
    קובץ שהועלה לאחסון שלנו נטען ישירות; קישור חיצוני/דרייב — דרך GAS. */
+/* צפיפות הציור של PDF: לפחות פי 2, עד פי 3 במסכים צפופים */
+function nsfPdfOS(){ return Math.min(3, Math.max(2, window.devicePixelRatio||1)); }
+/* כמה קבצים בהודעה אחת: הכתובות נשמרות ב-pdf_url מופרדות ברווח */
+function nsfUrls(u){ return String(u||"").split(/\s+/).filter(function(x){ return !!x; }); }
 function nsfIsImgUrl(u){ return /\.(jpe?g|png|webp|gif|avif|bmp)(\?|#|$)/i.test(String(u||"")); }
 function nsfImgDoc(src){
   return new Promise(function(res,rej){
@@ -3300,8 +3310,13 @@ function startPdf(pdfUrl, secPerPage, cols, animPdf){
           var v1=pg.getViewport({scale:1});
           var scale=Math.min(avW/v1.width, avH/v1.height);
           if(!(scale>0)||!isFinite(scale)) scale=1;
-          var vp=pg.getViewport({scale:scale});
-          canvas.width=vp.width; canvas.height=vp.height;
+          /* חדות: מציירים בצפיפות כפולה (או לפי המסך) ומקטינים בתצוגה.
+             קודם הקנבס צויר בגודל התצוגה בדיוק — ובמסך עם צפיפות גבוהה
+             או בהגדלה של הדפדפן הטקסט יצא מטושטש. */
+          var os=nsfPdfOS();
+          var vp=pg.getViewport({scale:scale*os});
+          canvas.width=Math.round(vp.width); canvas.height=Math.round(vp.height);
+          canvas.style.width=Math.floor(vp.width/os)+"px"; canvas.style.height=Math.floor(vp.height/os)+"px";
           return pg.render({canvasContext:canvas.getContext("2d"), viewport:vp}).promise;
         });
       }
@@ -3377,15 +3392,18 @@ function startCombo(msg, coLogo, pdfUrl, secPerPage, cols, animPdf, showSec){
 
   /* קודם המצב המשולב טען תמיד דרך GAS — ולכן קובץ שהועלה בכפתור ההעלאה
      (אחסון Supabase) לא הוצג, ורק קישור דרייב עבד. עכשיו — אותו טוען של מצב PDF. */
-  function loadDoc(){ return nsfOpenDoc(pdfUrl); }
+  /* כמה קבצים — בכל סבב גלילה מוצג הקובץ הבא */
+  var cbUrls=nsfUrls(pdfUrl), cbIdx=0;
+  function loadDoc(){ return nsfOpenDoc(cbUrls.length ? cbUrls[cbIdx % cbUrls.length] : pdfUrl); }
   var docP = loadDoc().catch(function(){ return null; });
 
   function renderPageTo(doc, pageNum, canvas){
     return doc.getPage(pageNum).then(function(pg){
       if(myT!==_comboState.token) return;
-      var vp=pg.getViewport({scale:renderScale});
-      canvas.width=vp.width; canvas.height=vp.height;
-      canvas.style.width=vp.width+"px"; canvas.style.height=vp.height+"px";
+      var os=nsfPdfOS();
+      var vp=pg.getViewport({scale:renderScale*os});
+      canvas.width=Math.round(vp.width); canvas.height=Math.round(vp.height);
+      canvas.style.width=Math.floor(vp.width/os)+"px"; canvas.style.height=Math.floor(vp.height/os)+"px";
       return pg.render({canvasContext:canvas.getContext("2d"), viewport:vp}).promise;
     });
   }
@@ -3477,6 +3495,7 @@ function startCombo(msg, coLogo, pdfUrl, secPerPage, cols, animPdf, showSec){
       if(fired) return; fired=true;
       try{ layer.removeEventListener("transitionend", onFade); }catch(e){}
       if(myT!==_comboState.token) return;
+      if(cbUrls.length>1){ cbIdx++; docP=loadDoc().catch(function(){ return null; }); }
       docP.then(function(doc){ if(myT===_comboState.token) cycle(doc); });
     }
     var onFade=function(){ next(); };
@@ -5093,6 +5112,6 @@ setInterval(fitTimer, 60000);
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.6 · 08.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.7 · 13.10.26</div>
 </body>
 </html>
