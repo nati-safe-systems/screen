@@ -3392,8 +3392,9 @@ function startCombo(msg, coLogo, pdfUrl, secPerPage, cols, animPdf, showSec){
 
   /* קודם המצב המשולב טען תמיד דרך GAS — ולכן קובץ שהועלה בכפתור ההעלאה
      (אחסון Supabase) לא הוצג, ורק קישור דרייב עבד. עכשיו — אותו טוען של מצב PDF. */
-  /* כמה קבצים — בכל סבב גלילה מוצג הקובץ הבא */
-  var cbUrls=nsfUrls(pdfUrl), cbIdx=0;
+  /* כמה קבצים: אחרי כל גלילה מוצגים כל הקבצים ברצף, אחד אחרי השני
+     (כל אחד לפי "שניות לכל עמוד", כפול מספר העמודים), ורק אז הגלילה חוזרת. */
+  var cbUrls=nsfUrls(pdfUrl), cbIdx=0, multi=cbUrls.length>1, nextP=null;
   function loadDoc(){ return nsfOpenDoc(cbUrls.length ? cbUrls[cbIdx % cbUrls.length] : pdfUrl); }
   var docP = loadDoc().catch(function(){ return null; });
 
@@ -3472,20 +3473,63 @@ function startCombo(msg, coLogo, pdfUrl, secPerPage, cols, animPdf, showSec){
   function holdAndFlip(doc, total){
     if(myT!==_comboState.token) return;
     var startTs=Date.now(), page=1;
+    var holdMs = multi ? Math.max(secMs, secMs*Math.ceil(total/cols)) : showSec*1000;
+    var more = multi && cbIdx < cbUrls.length-1;
+    /* טוענים מראש את הקובץ הבא, כדי שהמעבר יהיה מיידי */
+    nextP = more ? nsfOpenDoc(cbUrls[cbIdx+1]).catch(function(){ return null; }) : null;
+    function done(){ if(more) nextFile(); else fadeOut(); }
     function flip(){
       if(myT!==_comboState.token) return;
-      var left=showSec*1000-(Date.now()-startTs);
-      if(left<=0){ fadeOut(); return; }
-      if(total<=cols){ _comboState.timer=setTimeout(function(){ fadeOut(); }, left); return; }
+      var left=holdMs-(Date.now()-startTs);
+      if(left<=0){ done(); return; }
+      if(total<=cols){ _comboState.timer=setTimeout(function(){ done(); }, left); return; }
       _comboState.timer=setTimeout(function(){
         if(myT!==_comboState.token) return;
         page+=cols; if(page>total) page=1;
         var jobs=[];
         for(var c=0;c<cols;c++){ var pn=page+c, cv=document.getElementById("pdf-cv-"+c); if(!cv) continue; if(pn<=total){ cv.style.display=""; jobs.push(renderPageTo(doc,pn,cv)); } else { cv.style.display="none"; } }
-        Promise.all(jobs).then(function(){ if(myT!==_comboState.token) return; if(Date.now()-startTs>=showSec*1000){ fadeOut(); } else { flip(); } });
+        Promise.all(jobs).then(function(){ if(myT!==_comboState.token) return; if(Date.now()-startTs>=holdMs){ done(); } else { flip(); } });
       }, Math.min(secMs, left));
     }
     flip();
+  }
+
+  /* הקובץ הבא באותו סבב — מתחלף במקום (בלי גלילת טקסט ביניהם) */
+  function nextFile(){
+    if(myT!==_comboState.token) return;
+    cbIdx++;
+    var p=nextP||nsfOpenDoc(cbUrls[cbIdx]).catch(function(){ return null; });
+    layer.style.transition="opacity 0.6s ease"; layer.style.opacity="0";
+    _comboState.timer=setTimeout(function(){
+      p.then(function(doc){
+        if(myT!==_comboState.token) return;
+        if(!doc){ if(cbIdx<cbUrls.length-1) nextFile(); else fadeOut(); return; }
+        showInPlace(doc);
+      });
+    },650);
+  }
+  function showInPlace(doc){
+    var H=mqWrap.clientHeight||600, W=mqWrap.clientWidth||800;
+    doc.getPage(1).then(function(pg){
+      if(myT!==_comboState.token) return;
+      var u=pg.getViewport({scale:1});
+      renderScale=Math.min(W*(cols===2?0.48:0.9)/u.width, H*0.92/u.height);
+      if(!(renderScale>0)||!isFinite(renderScale)) renderScale=1;
+      var ph='<div id="cb-pdf" style="position:absolute;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:1.5vw;">';
+      for(var c=0;c<cols;c++){ ph+='<canvas id="pdf-cv-'+c+'" style="background:#fff;border-radius:6px;box-shadow:0 8px 30px rgba(0,0,0,0.6);"></canvas>'; }
+      ph+='</div>';
+      layer.style.transition="none"; layer.style.opacity="0"; layer.innerHTML=ph;
+      var total=doc.numPages, jobs=[];
+      for(var c2=0;c2<cols;c2++){ var cv=document.getElementById("pdf-cv-"+c2); if(1+c2<=total&&cv) jobs.push(renderPageTo(doc,1+c2,cv)); else if(cv) cv.style.display="none"; }
+      Promise.all(jobs).then(function(){
+        if(myT!==_comboState.token) return;
+        var b=document.getElementById("cb-pdf");
+        b.style.transform="translateY("+Math.round(H/2-b.offsetHeight/2)+"px)";
+        void layer.offsetHeight;
+        layer.style.transition="opacity 0.6s ease"; layer.style.opacity="1";
+        holdAndFlip(doc,total);
+      });
+    }).catch(function(){ if(myT===_comboState.token){ if(cbIdx<cbUrls.length-1) nextFile(); else fadeOut(); } });
   }
 
   function fadeOut(){
@@ -3495,7 +3539,7 @@ function startCombo(msg, coLogo, pdfUrl, secPerPage, cols, animPdf, showSec){
       if(fired) return; fired=true;
       try{ layer.removeEventListener("transitionend", onFade); }catch(e){}
       if(myT!==_comboState.token) return;
-      if(cbUrls.length>1){ cbIdx++; docP=loadDoc().catch(function(){ return null; }); }
+      if(multi){ cbIdx=0; docP=loadDoc().catch(function(){ return null; }); }   /* סבב חדש — מהקובץ הראשון */
       docP.then(function(doc){ if(myT===_comboState.token) cycle(doc); });
     }
     var onFade=function(){ next(); };
@@ -5112,6 +5156,6 @@ setInterval(fitTimer, 60000);
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.7 · 13.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.8 · 13.10.26</div>
 </body>
 </html>
