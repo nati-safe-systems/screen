@@ -1781,7 +1781,20 @@ function needPdfJs(){
     document.head.appendChild(sc);
   });
 }
-function canvasBlob(cv){ return new Promise(function(res){ cv.toBlob(function(b){ res(b); },"image/jpeg",0.88); }); }
+/* 2.6: איכות גבוהה — 2800 פיקסל בצד הארוך, JPEG 0.93 (חד גם במסך 4K) */
+var UP_MAX=2800;
+function canvasBlob(cv){ return new Promise(function(res){ cv.toBlob(function(b){ res(b); },"image/jpeg",0.93); }); }
+/* הקטנה בשלבים עם החלקה איכותית — שומר על פרטים וטקסט קטן */
+function drawSharp(cx, im, W, H, tw, th){
+  cx.imageSmoothingEnabled=true; try{ cx.imageSmoothingQuality="high"; }catch(e){}
+  var src=im, sw=W, sh=H;
+  while(sw/2>=tw && sh/2>=th){
+    var t=document.createElement("canvas"); t.width=Math.round(sw/2); t.height=Math.round(sh/2);
+    var tc=t.getContext("2d"); tc.imageSmoothingEnabled=true; try{ tc.imageSmoothingQuality="high"; }catch(e){}
+    tc.drawImage(src,0,0,sw,sh,0,0,t.width,t.height); src=t; sw=t.width; sh=t.height;
+  }
+  cx.drawImage(src,0,0,sw,sh,0,0,tw,th);
+}
 /* מחזיר מערך תמונות (Blob) מקובץ: PDF — עמוד לתמונה, תמונה — מוקטנת אם ענקית */
 function fileToImages(f){
   var isPdf=(f.type==="application/pdf"||/\.pdf$/i.test(f.name));
@@ -1791,7 +1804,7 @@ function fileToImages(f){
       var n=Math.min(doc.numPages,10), out=[], chain=Promise.resolve();
       for(var i=1;i<=n;i++)(function(pn){
         chain=chain.then(function(){ return doc.getPage(pn).then(function(pg){
-          var v1=pg.getViewport({scale:1}), sc=Math.min(3, 2000/Math.max(v1.width,v1.height));
+          var v1=pg.getViewport({scale:1}), sc=Math.min(5, UP_MAX/Math.max(v1.width,v1.height));
           var vp=pg.getViewport({scale:sc}), cv=document.createElement("canvas");
           cv.width=Math.round(vp.width); cv.height=Math.round(vp.height);
           var cx=cv.getContext("2d"); cx.fillStyle="#fff"; cx.fillRect(0,0,cv.width,cv.height);
@@ -1806,10 +1819,11 @@ function fileToImages(f){
   return new Promise(function(res,rej){
     var u=URL.createObjectURL(f), im=new Image();
     im.onload=function(){
-      var W=im.naturalWidth, H=im.naturalHeight, k=Math.min(1, 2000/Math.max(W,H));
-      if(k===1 && f.size<2.5*1024*1024 && /jpe?g|png|webp/i.test(f.type)){ URL.revokeObjectURL(u); res([f]); return; }
+      var W=im.naturalWidth, H=im.naturalHeight, k=Math.min(1, UP_MAX/Math.max(W,H));
+      /* תמונה שכבר בגודל סביר — עולה כמו שהיא, בלי שום איבוד איכות */
+      if(k===1 && f.size<6*1024*1024 && /jpe?g|png|webp/i.test(f.type)){ URL.revokeObjectURL(u); res([f]); return; }
       var cv=document.createElement("canvas"); cv.width=Math.round(W*k); cv.height=Math.round(H*k);
-      var cx=cv.getContext("2d"); cx.fillStyle="#fff"; cx.fillRect(0,0,cv.width,cv.height); cx.drawImage(im,0,0,cv.width,cv.height);
+      var cx=cv.getContext("2d"); cx.fillStyle="#fff"; cx.fillRect(0,0,cv.width,cv.height); drawSharp(cx,im,W,H,cv.width,cv.height);
       URL.revokeObjectURL(u); canvasBlob(cv).then(function(b){ res([b]); });
     };
     im.onerror=function(){ URL.revokeObjectURL(u); rej(new Error("התמונה לא נפתחה: "+f.name)); };
@@ -2037,4 +2051,4 @@ function goBackPanel(){
   location.href="https://nati-safe-systems.github.io/screen/tenant_panel.html"
     + (co?("?co="+encodeURIComponent(co)):"");
 }
-</script><div id="app-version" style="position:fixed;left:8px;bottom:6px;font-size:11px;color:#8b949e;opacity:.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול בית הכנסת · גרסה 2.5 · 14.10.26</div></body></html>
+</script><div id="app-version" style="position:fixed;left:8px;bottom:6px;font-size:11px;color:#8b949e;opacity:.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול בית הכנסת · גרסה 2.6 · 14.10.26</div></body></html>

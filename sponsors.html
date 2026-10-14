@@ -532,7 +532,7 @@ body.merkaz #nsf-slide::after{top:var(--mk-gap) !important}
 .sfz{position:relative;flex:1;min-height:0;min-width:0}
 body.merkaz .mkwrap > .sfz{position:relative !important;flex:1;min-height:0;margin:calc(var(--mk-crown-h,12vh) * .5) .4vw .6vh}
 </style>
-<script src="nsf-files.js?v=1.0-111026"></script>
+<script src="nsf-files.js?v=2.0-141026"></script>
 </head><body>
 <div id="mk-sweep"></div>
 
@@ -2519,6 +2519,7 @@ function load(){
     for(var k2 in (opts||{})) if(opts[k2]!=null) O[k2]=opts[k2];
 
     var items=[], sig="", pages=[], idx=0, timer=null, raf=null, stage=null;
+    var mq=null, lastWH="";   /* 5.6: מצב הנסיעה — לאיפוס להתחלה ולחישוב משך סבב */
 
     host.classList.add("nsp-stage");
     host.style.setProperty("--nsp-fade", O.fadeMs+"ms");
@@ -2587,7 +2588,9 @@ function load(){
         return;
       }
       var W=host.clientWidth, H=host.clientHeight;
-      if(W<40||H<40){ setTimeout(render,180); return; }
+      mq=null;
+      if(W<40||H<40){ lastWH=""; setTimeout(function(){ if(host.clientWidth>=40) render(); },400); return; }
+      lastWH=W+"x"+H;
       var gapPx=px(O.gap);
 
       /* ---------- מעט פרנסים: המסך עומד ----------
@@ -2728,7 +2731,23 @@ function load(){
       }
       place();
 
+      /* 5.6: הפרנס הראשון מתחיל צמוד לצד ימין של המסך (ולא מאמצע הרשימה) */
+      function toStart(){
+        if(!horiz){ pos=0; place(); return; }
+        pos=0; place();
+        var f=track.firstElementChild;
+        if(f){
+          var hr=host.getBoundingClientRect(), fr=f.getBoundingClientRect();
+          pos=(((hr.right-fr.right)%cycle)+cycle)%cycle; place();
+        }
+        last=0;
+      }
+      toStart();
+      mq={restart:toStart, sec:cycle/pps};
+
       function step(ts){
+        /* מוסתר (בזמן שהקבצים מוצגים) — לא מזיזים ולא מבזבזים מעבד */
+        if(host.offsetParent===null){ last=0; raf=requestAnimationFrame(step); return; }
         if(!last) last=ts;
         pos += pps*((ts-last)/1000); last=ts;
         if(pos>=cycle) pos-=cycle;        /* איפוס במקום הזהה — בלי קפיצה */
@@ -2750,7 +2769,13 @@ function load(){
     try{
       ro=new ResizeObserver(function(){
         clearTimeout(host.__nspRz);
-        host.__nspRz=setTimeout(render,220);
+        host.__nspRz=setTimeout(function(){
+          /* הוסתר והופיע שוב באותו גודל — לא מציירים מחדש (קודם זה התחיל מאמצע) */
+          var W=host.clientWidth, H=host.clientHeight;
+          if(W<40||H<40) return;
+          if(W+"x"+H===lastWH) return;
+          render();
+        },220);
       });
       ro.observe(host);
     }catch(e){
@@ -2775,6 +2800,9 @@ function load(){
         return ch;
       },
       refresh:render,
+      /* משך סבב נסיעה מלא בשניות (0 = עומד) והתחלה מחדש מהפרנס הראשון */
+      cycleSec:function(){ return mq ? mq.sec : 0; },
+      restart:function(){ if(host.clientWidth>=40 && (host.clientWidth+"x"+host.clientHeight)!==lastWH) render(); else if(mq) mq.restart(); },
       count:function(){ return items.length; },
       destroy:function(){
         clearTimers();
@@ -2840,8 +2868,13 @@ function draw(){
   /* setItems מרנדר רק כשהתוכן באמת השתנה */
   SPCTL.setItems(texts.length||!files.length ? texts : []);
   if(fb && window.NatiFiles){
-    NatiFiles.render(fb, files.map(function(s){ return normImg(s.image_url); }), {max:8, speed:+((typeof DC!=="undefined"&&DC&&DC.sponsors_speed)||60)});
-    if(files.length && texts.length) NatiFiles.alternate("spon", fb, g, +((typeof DC!=="undefined"&&DC&&DC.sponsors_swap_sec)||20));
+    NatiFiles.render(fb, files.map(function(s){ return normImg(s.image_url); }), {max:8, speed:+((typeof DC!=="undefined"&&DC&&DC.sponsors_files_speed)||55)});
+    /* 5.6: כל תצוגה נשארת עד שסיימה סבב מלא — הטקסט לא נקטע באמצע הנסיעה */
+    if(files.length && texts.length) NatiFiles.alternate("spon", fb, g, +((typeof DC!=="undefined"&&DC&&DC.sponsors_swap_sec)||20), {
+      secA:function(){ return NatiFiles.cycleSec(fb); },
+      secB:function(){ var c=SPCTL&&SPCTL.cycleSec(); return c ? c+1.5 : 0; },
+      onB:function(){ setTimeout(function(){ try{ SPCTL&&SPCTL.restart(); }catch(e){} },30); }
+    });
     else if(files.length) NatiFiles.single("spon", fb, g);
     else NatiFiles.single("spon", g, fb);
   }
@@ -2930,7 +2963,7 @@ NatiGuard.check(function(){ load(); tick(); });
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot);
   else boot();
 })();
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · פרנסים · גרסה 5.5 · 13.10.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · פרנסים · גרסה 5.6 · 14.10.26</div>
 <!-- ===== נתי SAFE · סימן מים מוזהב + רענון נתונים חכם (משותף לכל מסכי בית הכנסת) ===== -->
 <style id="nsf-wm-css">
 /* הלוגו ברקע כל לוח ממוסגר. סימן המים הישן (.mk-mark) נמחק בחלק מהמסכים
