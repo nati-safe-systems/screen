@@ -72,6 +72,11 @@ button.dz:hover{color:#ff6b6b}
   border-radius:6px;padding:6px 10px;margin-bottom:12px;line-height:1.5}
 /* העלאת קבצים (פרנסים / הודעות) */
 .upbar{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 10px}
+/* 2.4: כפתור העלאת קבצים גלוי בכותרת — בלי לפתוח את המגירה */
+.hbtns{float:left;display:inline-flex;gap:6px;align-items:center}
+.hbtns button{background:#21262d !important;border:1px solid #30363d !important;color:#ffcc00 !important;border-radius:6px;cursor:pointer;font-size:12px !important;padding:3px 9px !important;font-weight:700}
+.hfile{background:#ffcc00;color:#161b22;border-radius:6px;cursor:pointer;font-size:12px;padding:3px 10px;font-weight:800;display:inline-flex;align-items:center}
+.hfile input{display:none}
 .upbar .ub{flex:1;min-width:140px;display:flex;align-items:center;justify-content:center;gap:6px;
   padding:12px 10px;border-radius:9px;font:inherit;font-size:14px;font-weight:800;cursor:pointer;border:0}
 .upbar .ub.t{background:#21262d;color:#ffcc00;border:1px solid #30363d}
@@ -137,12 +142,12 @@ button.dz:hover{color:#ff6b6b}
 </details>
 
 <details class="card drw" id="annCard">
-  <summary><h2 style="margin:0">הודעות לציבור <button onclick="addAnn()" style="float:left;background:#21262d;border:1px solid #30363d;color:#ffcc00;border-radius:4px;cursor:pointer;font-size:11px;padding:1px 7px">+ הודעה</button></h2></summary>
+  <summary><h2 style="margin:0">הודעות לציבור <span class="hbtns"><button onclick="addAnn()">+ הודעה</button><label class="hfile" onclick="event.stopPropagation()">📎 קבצים<input type="file" multiple accept="application/pdf,.pdf,image/*" onchange="addFiles('announcements',this)"></label></span></h2></summary>
   <div id="anns"></div>
 </details>
 
 <details class="card drw" id="sponCard">
-  <summary><h2 style="margin:0">פרנסים ותורמים <button onclick="addSpon()">+ פרנס</button></h2></summary>
+  <summary><h2 style="margin:0">פרנסים ותורמים <span class="hbtns"><button onclick="addSpon()">+ פרנס</button><label class="hfile" onclick="event.stopPropagation()">📎 קבצים<input type="file" multiple accept="application/pdf,.pdf,image/*" onchange="addFiles('sponsors',this)"></label></span></h2></summary>
   <div id="spons"></div>
 </details>
 
@@ -1678,5 +1683,5 @@ function stLogin(){
     }).observe(document.body,{childList:true,subtree:true});
   }catch(e){}
 })();
-</script><div id="app-version" style="position:fixed;left:8px;bottom:6px;font-size:11px;color:#8b949e;opacity:.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול בית הכנסת · גרסה 2.3 · 11.10.26</div>
+</script><div id="app-version" style="position:fixed;left:8px;bottom:6px;font-size:11px;color:#8b949e;opacity:.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול בית הכנסת · גרסה 2.4 · 14.10.26</div>
 </body></html>
