@@ -1,5 +1,5 @@
 /* =====================================================================
-   נתי SAFE — התראות פיקוד העורף  ·  v1.0
+   נתי SAFE — התראות פיקוד העורף  ·  v2.0 · 15.10.26
    ---------------------------------------------------------------------
    תצוגה משלימה בלבד. אין להסתמך על המסך כאמצעי התרעה.
    המסך מציג חיווי חיבור גלוי — אם הקשר נופל, רואים את זה.
@@ -14,7 +14,8 @@
 (function (root) {
   'use strict';
 
-  var CFG = { supa:'', key:'', areas:[], seconds:60 };
+  var CFG = { supa:'', key:'', areas:[], seconds:60, loc:null, radius:5 };
+  var inited = false;
   /* שני מסלולים עצמאיים. החיווי מציג את הטוב מביניהם — קודם הם דרסו זה את זה. */
   var state = { wsOk:false, apiOk:false, sbOk:false, rtOk:false, sbMsg:'', wsWhy:'',
                 last:null, active:null, hideT:null };
@@ -125,15 +126,75 @@
     state.active = null;
   }
 
-  /* ---------- האם ההתראה נוגעת לנו ---------- */
-  function relevant(areas){
-    if (!CFG.areas.length) return true;              /* לא הוגדרו אזורים — מציגים הכל */
-    if (!areas || !areas.length) return false;
-    for (var i=0;i<areas.length;i++)
-      for (var j=0;j<CFG.areas.length;j++)
-        if (String(areas[i]).indexOf(CFG.areas[j]) > -1 ||
-            CFG.areas[j].indexOf(String(areas[i])) > -1) return true;
-    return false;
+  /* ---------- האם ההתראה נוגעת לנו (v2.0) ----------
+     לפי מיקום המסך (קו רוחב / קו אורך): מוצגת רק התראה על אזור שנמצא
+     עד כמה ק"מ מהמסך (ברירת מחדל 5), או האזור הקרוב ביותר למסך.
+     בנוסף — שמות אזורים שהוגדרו ידנית (alert_areas) תמיד נחשבים.
+     מחזיר את רשימת האזורים הרלוונטיים בלבד (ריקה = לא נוגע לנו). */
+  function val(v){ try{ return (typeof v === 'function') ? v() : v; }catch(e){ return null; } }
+  function norm(t){ return String(t||'').replace(/["'״׳`]/g,'').replace(/\s*-\s*/g,' - ').replace(/\s+/g,' ').trim(); }
+  function base(t){ return norm(t).split(' - ')[0]; }
+  var CITY = null, CITY_N = null, cityLoading = false, cityFailed = false;
+  function loadCities(){
+    if (CITY || cityLoading) return;
+    if (root.NSF_OREF){ indexCities(root.NSF_OREF); return; }
+    cityLoading = true;
+    var sc = document.createElement('script');
+    sc.src = 'oref-cities.js?v=1.0-151026';
+    sc.onload = function(){ cityLoading = false; if (root.NSF_OREF) indexCities(root.NSF_OREF); else cityFailed = true; };
+    sc.onerror = function(){ cityLoading = false; cityFailed = true; setTimeout(function(){ cityFailed=false; loadCities(); }, 60000); };
+    document.head.appendChild(sc);
+  }
+  function indexCities(o){ CITY = o; CITY_N = {}; for (var k in o) CITY_N[norm(k)] = o[k]; }
+  function myLoc(){
+    var l = val(CFG.loc);
+    if (!l) return null;
+    var la = +l.lat, ln = +(l.lng != null ? l.lng : l.lon);
+    return (isFinite(la) && isFinite(ln) && la && ln) ? { lat:la, lng:ln } : null;
+  }
+  function km(a, b){
+    var R = 6371, r = Math.PI/180, dLa = (b[0]-a.lat)*r, dLn = (b[1]-a.lng)*r;
+    var x = Math.sin(dLa/2)*Math.sin(dLa/2) + Math.cos(a.lat*r)*Math.cos(b[0]*r)*Math.sin(dLn/2)*Math.sin(dLn/2);
+    return 2*R*Math.asin(Math.sqrt(x));
+  }
+  var near = { key:'', names:{}, bases:{} };
+  function nearby(L, R){
+    var key = L.lat.toFixed(4)+','+L.lng.toFixed(4)+','+R;
+    if (near.key === key) return near;
+    var names = {}, bases = {}, best = null, bd = 1e9;
+    for (var k in CITY_N){
+      var d = km(L, CITY_N[k]);
+      if (d < bd){ bd = d; best = k; }
+      if (d <= R){ names[k] = 1; bases[base(k)] = 1; }
+    }
+    if (best && bd <= 15){ names[best] = 1; bases[base(best)] = 1; }   /* האזור שהמסך יושב בו */
+    near = { key:key, names:names, bases:bases };
+    return near;
+  }
+  function localAreas(areas){
+    areas = areas || [];
+    var manual = val(CFG.areas) || [];
+    var L = myLoc(), R = Math.max(1, +val(CFG.radius) || 5);
+    var useGeo = !!(L && CITY_N);
+    /* אין מיקום ואין אזורים ידניים — התנהגות קודמת: כל ההתראות */
+    if (!useGeo && !manual.length){
+      if (L && !cityFailed) loadCities();
+      return areas.slice();                      /* (עד שרשימת המיקומים נטענת — לא מפספסים) */
+    }
+    var out = [], nb = useGeo ? nearby(L, R) : null;
+    for (var i=0;i<areas.length;i++){
+      var a = String(areas[i]), n = norm(a), hit = false;
+      for (var j=0;j<manual.length && !hit;j++){
+        var m = norm(manual[j]);
+        if (m && (n === m || base(n) === m || n.indexOf(m+' - ') === 0)) hit = true;
+      }
+      if (!hit && nb){
+        if (CITY_N[n]) hit = !!nb.names[n];
+        else hit = !!nb.bases[base(n)];          /* שם שלא מופיע ברשימה — לפי שם היישוב */
+      }
+      if (hit) out.push(a);
+    }
+    return out;
   }
 
   function handle(payload){
@@ -143,7 +204,8 @@
     var id = (payload.id || '') + '|' + areas.join(',');
     if (id === state.last) return;                   /* אותה התראה שוב */
     state.last = id;
-    if (relevant(areas)) show(areas, title);
+    var mine = localAreas(areas);
+    if (mine.length) show(mine, title);
   }
 
   /* ---------- מסלול 1: חיבור ישיר ---------- */
@@ -264,10 +326,16 @@
 
   function init(opt){
     opt = opt || {};
-    CFG.supa  = opt.supa || '';
-    CFG.key   = opt.key  || '';
+    CFG.supa  = opt.supa || CFG.supa || '';
+    CFG.key   = opt.key  || CFG.key  || '';
     CFG.areas = opt.areas || [];
     CFG.seconds = opt.seconds || 60;
+    if (opt.loc) CFG.loc = opt.loc;
+    if (opt.radius) CFG.radius = opt.radius;
+    loadCities();
+    /* קריאה חוזרת (למשל בכל טעינת נתונים) רק מעדכנת הגדרות — לא פותחת חיבורים נוספים */
+    if (inited) return;
+    inited = true;
     ensureDom();
     state.sbMsg='מתחבר...'; renderConn();
     connectRealtime();
@@ -317,5 +385,5 @@
     }catch(e){}
   }
 
-  root.NatiAlerts = { init:init, show:show, hide:hide, state:state };
+  root.NatiAlerts = { init:init, show:show, hide:hide, state:state, localAreas:localAreas, VERSION:'2.0' };
 })(typeof window !== 'undefined' ? window : globalThis);
