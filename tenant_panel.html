@@ -3302,7 +3302,7 @@ window.addEventListener("load",function(){
   }
 });
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.5 · 13.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.6 · 16.10.26</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון/טופס פתוח במקום לצאת מהאפליקציה */
 (function(){
@@ -3407,17 +3407,26 @@ function pdfClear(p){
    כמה קבצים — מוצגים במסך אחד אחרי השני, כל אחד לפי "שניות לכל עמוד".
    הכתובות נשמרות באותו שדה, מופרדות ברווח. תמונה ענקית מהטלפון
    מוקטנת ל-2400 פיקסלים — חדה על המסך וקלה למכשיר. */
+/* 3.6: בדיקת איכות — הסיבה הנפוצה לטשטוש היא קובץ קטן או תמונה שעברה בוואטסאפ */
+var _upWarn=[];
+function upQualityWarn(f,W,H){
+  if(/^IMG-\d{8}-WA\d+/i.test(f.name) || /whatsapp/i.test(f.name))
+    _upWarn.push(f.name+": תמונה שעברה בוואטסאפ — וואטסאפ מקטין ומכווץ תמונות והטקסט נעשה מטושטש. עדיף לשלוח כ\"מסמך\" או להעלות את ה-PDF המקורי.");
+  else if(Math.max(W,H)<1500)
+    _upWarn.push(f.name+": התמונה קטנה ("+W+"×"+H+") ותיראה מטושטשת במסך. מומלץ 2000 פיקסלים ומעלה, או PDF מקורי.");
+}
 function pdfShrink(f){
   if(!/^image\/(jpeg|png|webp)$/.test(f.type)) return Promise.resolve({blob:f,type:f.type});
   return new Promise(function(res){
     var u=URL.createObjectURL(f), im=new Image();
     im.onload=function(){
-      var W=im.naturalWidth, H=im.naturalHeight, k=Math.min(1,2400/Math.max(W,H));
+      var W=im.naturalWidth, H=im.naturalHeight, k=Math.min(1,2800/Math.max(W,H));
+      upQualityWarn(f,W,H);
       if(k===1){ URL.revokeObjectURL(u); res({blob:f,type:f.type}); return; }
       var cv=document.createElement("canvas"); cv.width=Math.round(W*k); cv.height=Math.round(H*k);
       var cx=cv.getContext("2d"); cx.fillStyle="#fff"; cx.fillRect(0,0,cv.width,cv.height); cx.drawImage(im,0,0,cv.width,cv.height);
       URL.revokeObjectURL(u);
-      cv.toBlob(function(bl){ res(bl?{blob:bl,type:"image/jpeg"}:{blob:f,type:f.type}); },"image/jpeg",0.9);
+      cv.toBlob(function(bl){ res(bl?{blob:bl,type:"image/jpeg"}:{blob:f,type:f.type}); },"image/jpeg",0.93);
     };
     im.onerror=function(){ URL.revokeObjectURL(u); res({blob:f,type:f.type}); };
     im.src=u;
@@ -3446,7 +3455,7 @@ function pdfPick(inp,p){
   bar.style.display="block"; bi.style.width="10%";
 
   var u0=document.getElementById(p+"pdf-url"); if(u0) u0.value="";
-  _pdfBusy=true;
+  _pdfBusy=true; _upWarn=[];
   var urls=[], chain=Promise.resolve();
   files.forEach(function(f,idx){
     chain=chain.then(function(){ return pdfShrink(f); }).then(function(x){
@@ -3470,6 +3479,7 @@ function pdfPick(inp,p){
     if(u) u.value=_pdfUp;     /* אותו שדה ממשיך לשמש את השמירה */
     _pdfBusy=false;
     toast(urls.length>1 ? ("הועלו "+urls.length+" קבצים — לחץ שמור") : "הקובץ הועלה — לחץ שמור");
+    if(_upWarn.length) setTimeout(function(){ alert("שים לב לאיכות:\n\n"+_upWarn.join("\n\n")); }, 300);
   }).catch(function(){
     _pdfBusy=false;
     pdfErr("ההעלאה נכשלה. נסה שוב.",p);

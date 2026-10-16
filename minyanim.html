@@ -1799,9 +1799,12 @@ function drawSharp(cx, im, W, H, tw, th){
 function fileToImages(f){
   var isPdf=(f.type==="application/pdf"||/\.pdf$/i.test(f.name));
   if(isPdf){
-    return needPdfJs().then(function(lib){ return f.arrayBuffer().then(function(buf){ return lib.getDocument({data:buf}).promise; }); })
+    return needPdfJs().then(function(lib){ return f.arrayBuffer().then(function(buf){ return lib.getDocument({data:buf,
+        cMapUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/", cMapPacked:true,
+        standardFontDataUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/"}).promise; }); })
     .then(function(doc){
       var n=Math.min(doc.numPages,10), out=[], chain=Promise.resolve();
+      out.pdf=f; out.warn=[];
       for(var i=1;i<=n;i++)(function(pn){
         chain=chain.then(function(){ return doc.getPage(pn).then(function(pg){
           var v1=pg.getViewport({scale:1}), sc=Math.min(5, UP_MAX/Math.max(v1.width,v1.height));
@@ -1809,7 +1812,12 @@ function fileToImages(f){
           cv.width=Math.round(vp.width); cv.height=Math.round(vp.height);
           var cx=cv.getContext("2d"); cx.fillStyle="#fff"; cx.fillRect(0,0,cv.width,cv.height);
           return pg.render({canvasContext:cx,viewport:vp}).promise.then(function(){ return canvasBlob(cv); })
-            .then(function(b){ out.push(b); });
+            .then(function(b){ out.push(b); return pg.getTextContent(); })
+            .then(function(tc){
+              /* PDF בלי טקסט = תמונה שנשמרה כ-PDF. החדות תלויה בתמונה המקורית */
+              if(pn===1 && tc && tc.items && !tc.items.length)
+                out.warn.push(f.name+": ה-PDF הזה הוא תמונה (לא טקסט). אם הוא נראה מטושטש — בקש מהמעצב את קובץ ה-PDF המקורי.");
+            }).catch(function(){});
         }); });
       })(i);
       return chain.then(function(){ return out; });
@@ -1820,15 +1828,28 @@ function fileToImages(f){
     var u=URL.createObjectURL(f), im=new Image();
     im.onload=function(){
       var W=im.naturalWidth, H=im.naturalHeight, k=Math.min(1, UP_MAX/Math.max(W,H));
+      var warn=[];
+      /* 2.7: בדיקת איכות המקור — הסיבה הנפוצה לטשטוש היא קובץ קטן מלכתחילה */
+      if(/^IMG-\d{8}-WA\d+/i.test(f.name) || /whatsapp/i.test(f.name))
+        warn.push(f.name+": תמונה שעברה בוואטסאפ — וואטסאפ מקטין ומכווץ תמונות והטקסט נעשה מטושטש. בקש לשלוח את הקובץ כ\"מסמך\" או את ה-PDF המקורי.");
+      else if(Math.max(W,H)<1500)
+        warn.push(f.name+": התמונה קטנה ("+W+"×"+H+") ותיראה מטושטשת במסך. מומלץ קובץ של 2000 פיקסלים ומעלה, או PDF מקורי.");
       /* תמונה שכבר בגודל סביר — עולה כמו שהיא, בלי שום איבוד איכות */
-      if(k===1 && f.size<6*1024*1024 && /jpe?g|png|webp/i.test(f.type)){ URL.revokeObjectURL(u); res([f]); return; }
+      if(k===1 && f.size<6*1024*1024 && /jpe?g|png|webp/i.test(f.type)){ URL.revokeObjectURL(u); var o1=[f]; o1.warn=warn; res(o1); return; }
       var cv=document.createElement("canvas"); cv.width=Math.round(W*k); cv.height=Math.round(H*k);
       var cx=cv.getContext("2d"); cx.fillStyle="#fff"; cx.fillRect(0,0,cv.width,cv.height); drawSharp(cx,im,W,H,cv.width,cv.height);
-      URL.revokeObjectURL(u); canvasBlob(cv).then(function(b){ res([b]); });
+      URL.revokeObjectURL(u); canvasBlob(cv).then(function(b){ var o2=[b]; o2.warn=warn; res(o2); });
     };
     im.onerror=function(){ URL.revokeObjectURL(u); rej(new Error("התמונה לא נפתחה: "+f.name)); };
     im.src=u;
   });
+}
+/* 2.7: קובץ ה-PDF המקורי נשמר גם הוא — המסך מצייר ממנו את הטקסט בחדות מלאה */
+function upPdf(file, folder){
+  var path="sites/"+SITE.id+"/"+folder+"/"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8)+".pdf";
+  return fetch(SB+"/storage/v1/object/screen-media/"+path,{method:"POST",
+    headers:{apikey:SK,Authorization:"Bearer "+SK,"Content-Type":"application/pdf","x-upsert":"false"},body:file})
+  .then(function(r){ if(!r.ok) throw new Error("pdf "+r.status); return SB+"/storage/v1/object/public/screen-media/"+path; });
 }
 function upImage(blob, folder){
   var ext=(blob.type==="image/png")?"png":(blob.type==="image/webp"?"webp":"jpg");
@@ -1843,18 +1864,23 @@ function addFiles(kind, inp){
   if(!SITE){ say("בחר אתר",1); return; }
   var files=Array.prototype.slice.call(inp.files||[]); inp.value="";
   if(!files.length) return;
-  var made=0, failed=0, jobs=[];
+  var made=0, failed=0, jobs=[], warns=[];
   say("מכין קבצים…");
   var chain=Promise.resolve();
   files.forEach(function(f){
     chain=chain.then(function(){
       return fileToImages(f).then(function(blobs){
         var base=f.name.replace(/\.[^.]+$/,"");
-        var c2=Promise.resolve();
+        var folder=kind==="sponsors"?"sponsors":"board";
+        if(blobs.warn) warns=warns.concat(blobs.warn);
+        /* PDF: שומרים קודם את המקור. אם זה נכשל — ממשיכים עם התמונות בלבד */
+        var pdfUrl=null;
+        var c2=blobs.pdf ? upPdf(blobs.pdf, folder).then(function(u){ pdfUrl=u; }).catch(function(){ pdfUrl=null; }) : Promise.resolve();
         blobs.forEach(function(b,i){
           c2=c2.then(function(){
             say("מעלה "+(made+failed+1)+"…");
-            return upImage(b, kind==="sponsors"?"sponsors":"board").then(function(url){
+            return upImage(b, folder).then(function(url){
+              if(pdfUrl) url += "#pdf="+encodeURIComponent(pdfUrl)+"&p="+(i+1);
               var name=base+(blobs.length>1?" · עמוד "+(i+1):"");
               var row = kind==="sponsors"
                 ? {site_id:SITE.id,category:"פרנס היום",name:name,priority:3,scope:"all",date_from:today(),date_to:addDays(6),image_url:url}
@@ -1875,6 +1901,7 @@ function addFiles(kind, inp){
     if(kind==="sponsors"){ try{ document.getElementById("sponCard").open=true; }catch(e){} }
     else { try{ document.getElementById("annCard").open=true; }catch(e){} }
     say(failed ? ("הועלו "+made+", נכשלו "+failed) : ("הועלו "+made+" ✓ — מוצגים שבוע מהיום. אפשר לשנות תאריכים"), !!failed);
+    if(warns.length) setTimeout(function(){ alert("שים לב לאיכות:\n\n"+warns.join("\n\n")); }, 300);
     pickSite();
   });
 }
@@ -2051,4 +2078,4 @@ function goBackPanel(){
   location.href="https://nati-safe-systems.github.io/screen/tenant_panel.html"
     + (co?("?co="+encodeURIComponent(co)):"");
 }
-</script><div id="app-version" style="position:fixed;left:8px;bottom:6px;font-size:11px;color:#8b949e;opacity:.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול בית הכנסת · גרסה 2.6 · 14.10.26</div></body></html>
+</script><div id="app-version" style="position:fixed;left:8px;bottom:6px;font-size:11px;color:#8b949e;opacity:.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול בית הכנסת · גרסה 2.7 · 16.10.26</div></body></html>

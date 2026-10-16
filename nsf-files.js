@@ -1,5 +1,5 @@
 /* =====================================================================
-   נתי SAFE — תצוגת קבצים (PDF שהומרו לתמונה / תמונות)  ·  NatiFiles v2.0 · 14.10.26
+   נתי SAFE — תצוגת קבצים (PDF שהומרו לתמונה / תמונות)  ·  NatiFiles v2.1 · 16.10.26
    ---------------------------------------------------------------------
    משמש את מסך הפרנסים, חדר הקפה ולוח ההודעות במסך הראשי.
 
@@ -30,19 +30,124 @@
     " width:max-content;will-change:transform;backface-visibility:hidden;"+
     " animation:nfzMq var(--nfz-d,60s) linear infinite}"+
     "@keyframes nfzMq{from{transform:translate3d(var(--nfz-a),0,0)}to{transform:translate3d(var(--nfz-b),0,0)}}"+
+    ".nfz-cell canvas.nfz-pdf{display:block;border-radius:.5vh;box-shadow:0 .6vh 2vh rgba(0,0,0,.55)}"+
+    ".nfz-diag{position:absolute;left:4px;bottom:4px;z-index:5;background:rgba(0,0,0,.8);color:#7ee787;font:700 12px Arial;padding:2px 6px;border-radius:4px;direction:rtl}"+
+    "#nfz-scr{position:fixed;top:6px;left:6px;z-index:2147483000;background:rgba(0,0,0,.85);color:#ffcc00;font:700 14px Arial;padding:6px 10px;border-radius:6px;direction:rtl;line-height:1.5}"+
     ".nfz-in{animation:nfzIn .8s ease both}"+
     "@keyframes nfzIn{from{opacity:0}to{opacity:1}}";
   document.head.appendChild(css);
 
   var ASPECT={};   /* url -> רוחב/גובה */
+  var SRC={};      /* url -> [רוחב, גובה] של קובץ המקור */
+
+  /* ---------- 2.1: PDF מקורי — מצויר על המסך ברזולוציה המדויקת של המסך ----------
+     קובץ PDF שהועלה נשמר גם כמקור. בכתובת התמונה מופיע:  ...jpg#pdf=<כתובת ה-PDF>&p=<עמוד>
+     התמונה (JPG) מוצגת מיד; ברגע שה-PDF מוכן הוא מצויר מחדש בדיוק בגודל
+     שבו הוא מוצג — טקסט חד לגמרי, בכל מסך (גם 4K). אם משהו נכשל — נשארת התמונה. */
+  function parse(u){
+    u=String(u||"");
+    var h=u.indexOf("#"), base=h>-1?u.slice(0,h):u, frag=h>-1?u.slice(h+1):"";
+    var m=frag.match(/(?:^|&)pdf=([^&]+)/), pm=frag.match(/(?:^|&)p=(\d+)/);
+    if(m) return {img:base, pdf:decodeURIComponent(m[1]), page:pm?+pm[1]:1};
+    if(/\.pdf(\?|$)/i.test(base)){ var pp=frag.match(/page=(\d+)/); return {img:null, pdf:base, page:pp?+pp[1]:1}; }
+    return {img:base, pdf:null, page:1};
+  }
+  var PDFJS="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+  var libP=null, DOCS={};
+  function pdfLib(){
+    if(root.pdfjsLib) return Promise.resolve(root.pdfjsLib);
+    if(libP) return libP;
+    libP=new Promise(function(res,rej){
+      var sc=document.createElement("script"); sc.src=PDFJS+"pdf.min.js";
+      sc.onload=function(){ root.pdfjsLib ? res(root.pdfjsLib) : rej(new Error("pdf.js")); };
+      sc.onerror=function(){ libP=null; rej(new Error("pdf.js")); };
+      document.head.appendChild(sc);
+    });
+    return libP;
+  }
+  function pdfDoc(url){
+    if(DOCS[url]) return DOCS[url];
+    DOCS[url]=pdfLib().then(function(L){
+      L.GlobalWorkerOptions.workerSrc=PDFJS+"pdf.worker.min.js";
+      return L.getDocument({url:url, cMapUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/", cMapPacked:true,
+        standardFontDataUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/",
+        disableFontFace:true, useSystemFonts:false}).promise;   /* מצייר את האותיות מהקובץ עצמו — עברית תקינה */
+    });
+    DOCS[url].catch(function(){ delete DOCS[url]; });
+    return DOCS[url];
+  }
+  function pdfPage(url,n){ return pdfDoc(url).then(function(d){ return d.getPage(Math.min(Math.max(1,n||1), d.numPages)); }); }
+
+  /* ציור ה-PDF בדיוק בגודל התצוגה (פיקסלים אמיתיים של המסך). נשמר בזיכרון לפי קובץ+גודל. */
+  var RENDERED={}, RKEYS=[];
+  function renderPdfTo(P, cw, ch){
+    var dpr=Math.max(1, root.devicePixelRatio||1);
+    var key=P.pdf+"|"+P.page+"|"+Math.round(cw)+"x"+Math.round(ch)+"|"+dpr;
+    if(RENDERED[key]) return RENDERED[key];
+    RENDERED[key]=pdfPage(P.pdf,P.page).then(function(pg){
+      var v=pg.getViewport({scale:1});
+      var sc=Math.min(cw/v.width, ch/v.height)*dpr;
+      /* לא חורגים מגבולות קנבס סבירים */
+      sc=Math.min(sc, 4096/Math.max(v.width,v.height));
+      var vp=pg.getViewport({scale:sc});
+      var cv=document.createElement("canvas");
+      cv.width=Math.round(vp.width); cv.height=Math.round(vp.height);
+      var cx=cv.getContext("2d"); cx.fillStyle="#fff"; cx.fillRect(0,0,cv.width,cv.height);
+      return pg.render({canvasContext:cx, viewport:vp}).promise.then(function(){ return cv; });
+    });
+    RENDERED[key].catch(function(){ delete RENDERED[key]; });
+    RKEYS.push(key); while(RKEYS.length>40){ delete RENDERED[RKEYS.shift()]; }
+    return RENDERED[key];
+  }
+  /* אחרי הציור: כל קובץ שיש לו PDF מקורי מוחלף בציור חד בגודל המדויק */
+  function sharpen(host, sig){
+    var imgs=host.querySelectorAll(".nfz-cell img[data-u]");
+    Array.prototype.forEach.call(imgs, function(im){
+      var P=parse(im.getAttribute("data-u"));
+      if(!P.pdf) return;
+      var cell=im.parentNode, cw=cell.clientWidth, ch=cell.clientHeight;
+      if(!cw||!ch) return;
+      renderPdfTo(P, cw, ch).then(function(src){
+        if(host.__nfzSig!==sig || !im.parentNode) return;
+        var dpr=Math.max(1, root.devicePixelRatio||1);
+        var cv=document.createElement("canvas"); cv.width=src.width; cv.height=src.height;
+        cv.getContext("2d").drawImage(src,0,0);
+        cv.className="nfz-pdf";
+        cv.style.width=(src.width/dpr)+"px"; cv.style.height=(src.height/dpr)+"px";
+        im.parentNode.replaceChild(cv, im);
+        diagCell(cell, P, src, dpr, true);
+      }).catch(function(){});
+      diagCell(cell, P, null, 0, false, im);
+    });
+  }
+  /* בדיקת איכות: הוסיפו ?diag=1 לכתובת המסך */
+  var DIAG=false; try{ DIAG=/[?&]diag=1/.test(location.search); }catch(e){}
+  function diagCell(cell, P, cv, dpr, isPdf, im){
+    if(!DIAG || !cell) return;
+    var d=cell.querySelector(".nfz-diag"); if(!d){ d=document.createElement("div"); d.className="nfz-diag"; cell.appendChild(d); }
+    var dp=Math.max(1, root.devicePixelRatio||1);
+    var shown=Math.round(cell.clientWidth*dp)+"×"+Math.round(cell.clientHeight*dp);
+    var L=function(t){ return "\u2066"+t+"\u2069"; };
+    shown=L(shown);
+    if(isPdf) d.textContent="PDF מקורי ✓ · מצויר "+L(cv.width+"×"+cv.height)+" · תא "+shown;
+    else {
+      var s=im&&im.naturalWidth? L(im.naturalWidth+"×"+im.naturalHeight) : "?";
+      d.textContent=(P.pdf?"ממתין ל-PDF · ":"תמונה בלבד · ")+"מקור "+s+" · תא "+shown;
+    }
+  }
   function loadAspects(urls){
     return Promise.all(urls.map(function(u){
       if(ASPECT[u]) return Promise.resolve();
+      var P=parse(u);
+      if(!P.img && P.pdf){
+        return pdfPage(P.pdf,P.page).then(function(pg){ var v=pg.getViewport({scale:1}); ASPECT[u]=v.width/v.height; })
+          .catch(function(){ ASPECT[u]=0.707; });
+      }
       return new Promise(function(res){
         var im=new Image();
-        im.onload=function(){ ASPECT[u]=(im.naturalWidth||707)/(im.naturalHeight||1000); res(); };
+        im.onload=function(){ ASPECT[u]=(im.naturalWidth||707)/(im.naturalHeight||1000); SRC[u]=[im.naturalWidth,im.naturalHeight]; res(); };
         im.onerror=function(){ ASPECT[u]=0.707; res(); };
-        im.src=u;
+        im.src=P.img;
       });
     }));
   }
@@ -66,11 +171,11 @@
      קובץ לרוחב  — שניים אחד מעל השני באותה עמודה.
      אם הכל נכנס — עומד במרכז. אם לא — נוסע ברצף משמאל לימין. */
   var LAND=1.15;
-  function columns(urls, W, H, g){
+  function columns(urls, W, H, g, noPair){
     var out=[], pend=null;
     urls.forEach(function(u){
       var a=ASPECT[u]||0.707;
-      if(a<LAND){ out.push({items:[u]}); }
+      if(a<LAND || noPair){ out.push({items:[u]}); }
       else if(pend){ pend.items.push(u); pend=null; }
       else { pend={items:[u]}; out.push(pend); }
     });
@@ -89,18 +194,32 @@
     return '<div class="nfz-col" style="width:'+Math.floor(c.w)+'px;gap:'+g+'px">'+
       c.items.map(function(u){
         return '<div class="nfz-cell" style="width:'+Math.floor(c.w)+'px;height:'+Math.floor(c.h)+'px">'+
-               '<img src="'+String(u).replace(/"/g,"&quot;")+'" alt="" decoding="async"></div>';
+               imgTag(u)+'</div>';
       }).join("")+'</div>';
   }
-  function cell(u){ return '<div class="nfz-cell"><img src="'+String(u).replace(/"/g,"&quot;")+'" alt="" decoding="async"></div>'; }
+  function imgTag(u){
+    var P=parse(u), q=function(x){ return String(x).replace(/"/g,"&quot;"); };
+    /* PDF בלבד (בלי תמונה) — מקום ריק לבן עד שהציור מוכן */
+    var src=P.img || "data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==";
+    return '<img src="'+q(src)+'" data-u="'+q(u)+'" alt="" decoding="async"'+(P.img?'':' style="width:100%;height:100%;background:#fff"')+'>';
+  }
+  function cell(u){ return '<div class="nfz-cell">'+imgTag(u)+'</div>'; }
 
   function draw(host, urls, o){
     var W=host.clientWidth, H=host.clientHeight;
     if(!W||!H) return false;
     var g=Math.round(window.innerHeight*GAP_VH/100);
     var n=urls.length, html, moving=false;
-    var cols=columns(urls,W,H,g);
-    var totW=cols.reduce(function(s,c){ return s+c.w; },0)+g*(cols.length-1);
+    /* 2.1: יש מקום — כל קובץ לרוחב בגובה מלא (הכי גדול). אין מקום — שניים אחד מעל השני */
+    var wOf=function(cs){ return cs.reduce(function(s,c){ return s+c.w; },0)+g*(cs.length-1); };
+    var cols=columns(urls,W,H,g,true), wU=wOf(cols);
+    if(wU>W+1){
+      /* כמעט נכנס — מקטינים מעט את כולם ומשאירים כל קובץ בשורה אחת (גדול יותר משניים אחד מעל השני) */
+      var k=(W-g*(cols.length-1))/(wU-g*(cols.length-1));
+      if(k>=0.6) cols.forEach(function(c){ c.w*=k; c.h*=k; });
+      else cols=columns(urls,W,H,g,false);
+    }
+    var totW=wOf(cols);
     var area=cols.reduce(function(s,c){ return s+c.items.length*c.w*c.h; },0)/n;
     /* כל הקבצים באותו כיוון — בודקים גם רשת אחידה, ולוקחים את הגדולה מבין השתיים */
     var asp=urls.map(function(u){ return ASPECT[u]||0.707; });
@@ -128,9 +247,21 @@
     }
     if(!moving) host.__nfzCycle=0;
     host.innerHTML='<div class="nfz nfz-in">'+html+'</div>';
+    try{ sharpen(host, host.__nfzSig); }catch(e){}
+    if(DIAG) try{ diagScreen(); Array.prototype.forEach.call(host.querySelectorAll(".nfz-cell img[data-u]"),function(im){
+      var f=function(){ diagCell(im.parentNode, parse(im.getAttribute("data-u")), null, 0, false, im); };
+      if(im.complete) f(); else im.addEventListener("load",f,{once:true}); }); }catch(e){}
     return true;
   }
 
+  function diagScreen(){
+    var e=document.getElementById("nfz-scr"); if(!e){ e=document.createElement("div"); e.id="nfz-scr"; document.body.appendChild(e); }
+    var dp=root.devicePixelRatio||1, sw=screen.width, sh=screen.height;
+    var L=function(t){ return "\u2066"+t+"\u2069"; };
+    e.innerHTML="בדיקת איכות · מסך "+L(sw+"×"+sh)+" · צפיפות "+dp+"<br>חלון "+L(innerWidth+"×"+innerHeight)+
+      " · פיקסלים אמיתיים "+L(Math.round(innerWidth*dp)+"×"+Math.round(innerHeight*dp))+
+      (Math.round(sw*dp)<1900 ? '<br><span style="color:#ff7b72">⚠ המחשב מוציא למסך פחות מ-Full HD — זו סיבת הטשטוש</span>' : "");
+  }
   function render(host, urls, o){
     if(!host) return;
     o=o||{};
@@ -205,5 +336,5 @@
   }
   function stop(key){ var s=ALT[key]; if(s){ if(s.t) clearTimeout(s.t); delete ALT[key]; } }
 
-  root.NatiFiles={render:render, alternate:alternate, single:single, stop:stop, cycleSec:cycleSec, VERSION:"2.0"};
+  root.NatiFiles={render:render, alternate:alternate, single:single, stop:stop, cycleSec:cycleSec, parse:parse, VERSION:"2.1"};
 })(window);

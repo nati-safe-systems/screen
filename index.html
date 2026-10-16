@@ -5374,7 +5374,7 @@ setInterval(fitTimer, 60000);
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.12 · 15.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.13 · 16.10.26</div>
 <script>
 /* ---- עדכון אוטומטי מ-GitHub · 13.10.26 ----
    כל 3 דקות המסך בודק (בקשת HEAD קטנה, בלי להוריד את הקובץ) אם הקובץ שלו
@@ -5413,6 +5413,31 @@ setInterval(fitTimer, 60000);
   }
   setTimeout(probe, 20000);
   setInterval(probe, 180000);
+})();
+</script>
+<script>
+/* ---- בדיקת איכות: הוסיפו ?diag=1 לכתובת המסך · 16.10.26 ----
+   מציג את רזולוציית המסך בפועל ואת גודל הציור של כל קובץ — כדי לדעת בוודאות מה גורם לטשטוש */
+(function(){
+  if(!/[?&]diag=1/.test(location.search)) return;
+  var L=function(t){ return "\u2066"+t+"\u2069"; };
+  var e=document.createElement("div");
+  e.style.cssText="position:fixed;top:6px;left:6px;z-index:2147483000;background:rgba(0,0,0,.85);color:#ffcc00;font:700 14px Arial;padding:6px 10px;border-radius:6px;direction:rtl;line-height:1.6;max-width:46vw";
+  document.addEventListener("DOMContentLoaded",function(){ document.body.appendChild(e); });
+  setInterval(function(){
+    var dp=window.devicePixelRatio||1, h="בדיקת איכות · מסך "+L(screen.width+"×"+screen.height)+" · צפיפות "+dp+
+      "<br>פיקסלים אמיתיים "+L(Math.round(innerWidth*dp)+"×"+Math.round(innerHeight*dp));
+    if(Math.round(screen.width*dp)<1900) h+='<br><span style="color:#ff7b72">⚠ המחשב מוציא למסך פחות מ-Full HD — זו סיבת הטשטוש</span>';
+    var st=document.getElementById("st-text");
+    if(st){
+      st.querySelectorAll("canvas").forEach(function(c){ var r=c.getBoundingClientRect();
+        h+="<br>PDF: מצויר "+L(c.width+"×"+c.height)+" · מוצג "+L(Math.round(r.width*dp)+"×"+Math.round(r.height*dp)); });
+      st.querySelectorAll("img").forEach(function(i){ var r=i.getBoundingClientRect();
+        h+="<br>תמונה: מקור "+L(i.naturalWidth+"×"+i.naturalHeight)+" · מוצג "+L(Math.round(r.width*dp)+"×"+Math.round(r.height*dp))+
+          (Math.max(i.naturalWidth,i.naturalHeight)<1500?' <span style="color:#ff7b72">קטנה מדי</span>':''); });
+    }
+    e.innerHTML=h;
+  },2000);
 })();
 </script>
 </body>
