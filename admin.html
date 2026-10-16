@@ -2371,9 +2371,13 @@ function loadRoomKeys(){
           '<button class="btn-sm blue" onclick="rkCopy(this.previousElementSibling.value)">העתק</button>'+
           '<button class="btn-sm" onclick="window.open(\''+app+'\',\'_blank\')">פתח</button></div>'+
         '<div style="margin-bottom:4px">חדרי תפילה (המספר = הכפתור בשלט). מופיע רק חדר שיש לו מסך "מעל דלת חדר":</div>'+rooms+
-        '<div style="margin:10px 0 4px">כתובת ל-Shelly (במקום N — מספר החדר):</div>'+
+        '<div style="margin:10px 0 4px">כתובת ל-Shelly — <b>לחיצה קצרה</b> (במקום N — מספר החדר):</div>'+
         '<div style="display:flex;gap:6px;flex-wrap:wrap">'+
           '<input readonly value="'+esc2(RK_SHELLY+x.key+'&room=N')+'" dir="ltr" style="flex:1;min-width:200px;font-size:12px">'+
+          '<button class="btn-sm blue" onclick="rkCopy(this.previousElementSibling.value)">העתק</button></div>'+
+        '<div style="margin:10px 0 4px">כתובת ל-Shelly — <b>לחיצה ארוכה = ביטול</b> (במקום N — מספר החדר):</div>'+
+        '<div style="display:flex;gap:6px;flex-wrap:wrap">'+
+          '<input readonly value="'+esc2(RK_SHELLY+x.key+'&room=N&p=cancel')+'" dir="ltr" style="flex:1;min-width:200px;font-size:12px">'+
           '<button class="btn-sm blue" onclick="rkCopy(this.previousElementSibling.value)">העתק</button></div>'+
         '<div style="margin-top:10px"><button class="btn-sm" style="color:#ff8a8a" '+
           'onclick="rkRekey(\''+x.key+'\')">החלף קוד (אם הקישור דלף)</button></div>'+
@@ -3880,7 +3884,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.6 · 13.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.7 · 16.10.26</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){

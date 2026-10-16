@@ -38,6 +38,12 @@ body{padding:calc(env(safe-area-inset-top,0px) + 14px) 14px calc(env(safe-area-i
 .rb.sent{border-color:#3fb950;background:linear-gradient(160deg,#0f8a3a,#0a5f29)}
 .rb.sent .st{color:#d7ffe2;font-weight:700}
 .rb.err{border-color:#f85149}
+/* 1.3: הודעה פעילה — כפתור ביטול נפרד (לא על החדר עצמו, כדי שלא יבוטל בטעות) */
+.cell{display:flex;flex-direction:column;gap:6px}
+.cx{display:none;padding:9px;border-radius:10px;border:1px solid #f85149;background:#3a1416;color:#ffb4ae;font:800 14px Heebo,Arial,sans-serif}
+.cell.live .cx{display:block}
+.cell.live .rb{border-color:#3fb950;background:linear-gradient(160deg,#0f8a3a,#0a5f29)}
+.cell.live .rb .st{color:#d7ffe2;font-weight:700}
 .msg{margin-top:16px;text-align:center;color:#8fa0b5;font-size:13px;line-height:1.7}
 .big{margin-top:40px;text-align:center;font-size:16px;line-height:1.8}
 input{width:100%;padding:12px;border-radius:10px;border:1px solid #2a3441;background:#141b25;color:#fff;
@@ -120,9 +126,38 @@ function render(site, rooms){
       return '<button data-v="'+o[0]+'" class="'+(PRAYER===o[0]?'on':'')+'">'+o[1]+'</button>'; }).join("")+'</div>'+
     '<div class="hint" id="hint"></div>'+
     '<div class="grid'+(rooms.length===1?' one':'')+'" id="grid">'+rooms.map(function(r){
-      return '<button class="rb" data-id="'+r.id+'"><span class="n">'+r.no+'</span>'+
-        '<span class="nm">'+esc(r.name)+'</span><span class="st"></span></button>'; }).join("")+'</div>'+
-    '<div class="msg">לחיצה על חדר מקפיצה על המסך שמעל הדלת שלו<br>"תפילת … מתחילה כאן עכשיו", ובמסך הראשי — באיזה שטיבל.<br>משך ההצגה נקבע בניהול בית הכנסת.</div>';
+      return '<div class="cell" data-cell="'+r.id+'"><button class="rb" data-id="'+r.id+'"><span class="n">'+r.no+'</span>'+
+        '<span class="nm">'+esc(r.name)+'</span><span class="st"></span></button>'+
+        '<button class="cx" data-cx="'+r.id+'" data-nm="'+esc(r.name)+'">✕ ביטול ההודעה</button></div>'; }).join("")+'</div>'+
+    '<div class="msg">לחיצה על חדר מקפיצה על המסך שמעל הדלת שלו<br>"תפילת … תתחיל כאן בעוד 3 דקות" עם ספירה לאחור,<br>ואז "מתחילה כאן עכשיו". במסך הראשי — באיזה שטיבל.<br>לחיצה נוספת לא משנה כלום. לביטול — הכפתור האדום.</div>';
+  /* חדרים שההודעה שלהם רצה עכשיו (נשמר בטלפון) */
+  var LIVE={}; try{ LIVE=JSON.parse(localStorage.getItem("nsf_gabbai_live")||"{}")||{}; }catch(x){}
+  function saveLive(){ try{ localStorage.setItem("nsf_gabbai_live",JSON.stringify(LIVE)); }catch(x){} }
+  function paintLive(){
+    var now=Date.now();
+    [].forEach.call(document.querySelectorAll(".cell"),function(c){
+      var id=c.getAttribute("data-cell"), on=LIVE[id] && LIVE[id].until>now;
+      if(!on && LIVE[id]){ delete LIVE[id]; saveLive(); }
+      c.classList.toggle("live",!!on);
+      var st=c.querySelector(".rb .st");
+      if(on){ var left=Math.max(0,Math.ceil((LIVE[id].until-now)/60000)); st.textContent="✓ מוצג · "+shown(LIVE[id].pr)+" · עוד כ-"+left+" דק'"; }
+      else if(!c.querySelector(".rb").disabled && !c.querySelector(".rb").classList.contains("err")) st.textContent="";
+    });
+  }
+  paintLive(); setInterval(paintLive,5000);
+  document.getElementById("grid").addEventListener("click",function(e){
+    var x=e.target.closest(".cx"); if(!x) return;
+    e.stopPropagation();
+    var id=x.getAttribute("data-cx");
+    if(!confirm("לבטל את ההודעה ב"+x.getAttribute("data-nm")+"?\nהיא תיעלם מהמסכים מיד.")) return;
+    x.disabled=true; x.textContent="מבטל…";
+    rpc("nsf_room_call",{p_key:CODE,p_room:id,p_prayer:"ביטול"}).then(function(r){
+      if(!r||!r.ok) throw new Error("x");
+      delete LIVE[id]; saveLive(); paintLive();
+      try{ navigator.vibrate&&navigator.vibrate(120); }catch(y){}
+    }).catch(function(){ alert("הביטול לא נשלח — בדקו חיבור ונסו שוב"); })
+      .then(function(){ x.disabled=false; x.textContent="✕ ביטול ההודעה"; });
+  },true);
   function hint(){
     document.getElementById("hint").textContent = PRAYER==="auto"
       ? "יוצג עכשיו: תפילת "+shown(autoName())+" (לפי השעה)" : "יוצג: תפילת "+shown(PRAYER);
@@ -137,14 +172,18 @@ function render(site, rooms){
   document.getElementById("grid").onclick=function(e){
     var b=e.target.closest(".rb"); if(!b || b.disabled) return;
     var pr=PRAYER==="auto"?autoName():PRAYER;
+    var rid=b.getAttribute("data-id");
+    /* כבר מוצג — לחיצה נוספת לא שולחת שוב */
+    if(LIVE[rid] && LIVE[rid].until>Date.now()){ try{ navigator.vibrate&&navigator.vibrate(30); }catch(x){} return; }
     var st=b.querySelector(".st");
     b.disabled=true; b.classList.remove("err"); st.textContent="שולח…";
     try{ navigator.vibrate&&navigator.vibrate(40); }catch(x){}
     rpc("nsf_room_call",{p_key:CODE,p_room:b.getAttribute("data-id"),p_prayer:pr}).then(function(r){
       if(!r||!r.ok) throw new Error((r&&r.err)||"שגיאה");
-      b.classList.add("sent"); st.textContent="✓ נשלח · "+shown(pr);
       try{ navigator.vibrate&&navigator.vibrate([60,60,60]); }catch(x){}
-      setTimeout(function(){ b.classList.remove("sent"); st.textContent=""; b.disabled=false; }, 6000);
+      /* 3 דק' ספירה + עד 5 דק' "מתחילה עכשיו" (לפי הגדרת בית הכנסת) */
+      LIVE[rid]={until:Date.now()+((+SITE.call_seconds||180)+180)*1000, pr:pr}; saveLive();
+      b.disabled=false; paintLive();
     }).catch(function(err){
       b.classList.add("err"); st.textContent="לא נשלח — נסו שוב"; b.disabled=false;
     });
@@ -156,12 +195,12 @@ function load(){
   rpc("nsf_room_site",{p_key:CODE}).then(function(d){
     if(!d||!d.ok){ askCode("קוד לא מוכר"); return; }
     if(!d.rooms||!d.rooms.length){ app.innerHTML=head(d.site)+'<div class="big">אין עדיין חדרי תפילה עם מסך דלת<br>בבית הכנסת הזה.</div>'; return; }
-    SITE={nusach:d.nusach||"sefard",lat:d.lat,lng:d.lng};
+    SITE={nusach:d.nusach||"sefard",lat:d.lat,lng:d.lng,call_seconds:d.call_seconds};
     render(d.site, d.rooms);
   }).catch(function(){ app.innerHTML=head("")+'<div class="big">אין חיבור לרשת. נסו שוב.</div>'; setTimeout(load,5000); });
 }
 load();
 </script>
-<div style="position:fixed;left:8px;bottom:6px;font-size:10px;color:#8b949e;opacity:.6;pointer-events:none">גרסה 1.2 · 11.10.26</div>
+<div style="position:fixed;left:8px;bottom:6px;font-size:10px;color:#8b949e;opacity:.6;pointer-events:none">גרסה 1.3 · 16.10.26</div>
 </body>
 </html>

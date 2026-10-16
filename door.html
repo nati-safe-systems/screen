@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>נתי SAFE — מסך כניסה</title>
-<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;800;900&family=Heebo:wght@300;400;500;700;800;900&family=Rubik:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,900&family=Suez+One&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bellefair&family=Frank+Ruhl+Libre:wght@500;700;800;900&family=Heebo:wght@300;400;500;700;800;900&family=Rubik:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,900&family=Suez+One&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
@@ -55,6 +55,21 @@ body{font-family:Assistant,Arial,sans-serif;background:#05070e;color:#e6edf3;dir
 .cdline{color:var(--nsf-gold,#ffcc00);font-size:4.6vh;font-weight:900;margin-top:.8vh;font-variant-numeric:tabular-nums}
 
 /* מצב ספירה לאחור */
+/* 3.11: הזמן ההלכתי הבא — כשאין מניין קבוע. זהב, אותיות ספר, ספרות ברוחב קבוע */
+.zc{text-align:center;position:relative}
+.zc .zc-l{font-family:Bellefair,"Frank Ruhl Libre",serif !important;color:#f3ead2 !important;font-size:min(6.4vh,8.4vw) !important;
+  font-weight:400 !important;line-height:1.1 !important;letter-spacing:.04em;text-shadow:0 .4vh 1.2vh rgba(0,0,0,.6)}
+.zc .zc-o{display:block;margin:1.6vh auto 0;width:min(46vw,40vh);height:2.4vh}
+.zc .zc-t{font-family:"Frank Ruhl Libre",serif !important;font-weight:700 !important;font-size:min(21vh,27vw) !important;line-height:1 !important;
+  margin-top:1.2vh;direction:ltr;filter:drop-shadow(0 .8vh 1.4vh rgba(0,0,0,.7)) drop-shadow(0 0 3vh rgba(240,200,90,.28))}
+.zc .zc-t i,.zc .zc-n b i{display:inline-block;width:.6em;font-style:normal;text-align:center;
+  background:linear-gradient(180deg,#fff7d6 0%,#f6dc86 30%,#d4a943 55%,#b8862a 70%,#f3dc92 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.zc .zc-t i.cl,.zc .zc-n b i.cl{width:.3em}
+.zc .zc-c{font-family:Bellefair,serif !important;color:#e9e1c8 !important;font-size:min(4.8vh,6.4vw) !important;margin-top:2.2vh;letter-spacing:.02em}
+.zc .zc-c .num{font-family:"Frank Ruhl Libre",serif;font-weight:700;color:#f6dc86;font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+.zc .zc-n{display:inline-flex;gap:2.4vw;align-items:baseline;margin-top:5vh;padding:2vh 4vw 0;border-top:1px solid rgba(243,215,122,.35)}
+.zc .zc-n span{font-family:Bellefair,serif;color:#cfc6ad;font-size:min(4.2vh,5.6vw);letter-spacing:.03em}
+.zc .zc-n b{font-family:"Frank Ruhl Libre",serif;font-weight:700;font-size:min(6vh,8vw);direction:ltr;filter:drop-shadow(0 .4vh .8vh rgba(0,0,0,.6))}
 .cdwrap{text-align:center}
 .cdwrap .pray{color:var(--nsf-gold,#ffcc00);font-family:"Frank Ruhl Libre",serif;font-size:12vh;font-weight:900;
   line-height:1;letter-spacing:.02em;text-shadow:0 .4vh 1.6vh rgba(0,0,0,.7)}
@@ -2549,6 +2564,14 @@ function render(now,nowMin){
     return;
   }
 
+  /* 3.11: אחרי שחרית — בלי זמני מניינים. מנחה ומעריב מתחילים רק בלחיצת הגבאי,
+     ובינתיים מוצג בגדול הזמן ההלכתי הבא: שקיעה, צאת הכוכבים, חצות הלילה,
+     עלות השחר, הנץ. בבוקר — זמני מניני שחרית כרגיל. */
+  var morning = nx && !nx.rolling && /^(selichot|shacharit|mussaf)$/.test(nx.prayer||"")
+                && !(nowMin < Z.chatzotLayla-1440);      /* עד חצות הלילה — עדיין זמני הלילה */
+  if(!morning && now.getDay()!==5){ b.innerHTML=zmanCard(now,nowMin); return; }
+  if(!morning && now.getDay()===5) nx=null;   /* ערב שבת — כרטיס הדלקת הנרות */
+
   if(!nx){
     if(now.getDay()===5){        /* ערב שבת */
       var cd=cdSec(Z.candleLighting,now);
@@ -2619,6 +2642,35 @@ function render(now,nowMin){
       return '<div class="li '+cls+'">'+x.time+'</div>';
     }).join("")+'</div>'+
     '<div class="cdline">'+(cs2?('בעוד '+blink(cs2.t)+' '+cs2.u):'')+'</div>';
+}
+
+/* הזמן ההלכתי הבא בגדול, והזמן שאחריו בקטן */
+function zmanCard(now,nowMin){
+  var L=[], add=function(t,l,k){ if(typeof t==="number" && isFinite(t)) L.push({t:t,l:l,k:k}); };
+  add(Z.chatzotLayla-1440,"חצות הלילה","chatzot");        /* חצות של הלילה שעבר (אחרי 00:00) */
+  add(Z.alotHashachar,"עלות השחר","alot");
+  add(Z.netz,"הנץ החמה","netz");
+  add(Z.shkia,"שקיעת החמה","shkia");
+  add(Z.tzeitHakochavim,"צאת הכוכבים","tz");
+  add(Z.chatzotLayla,"חצות הלילה","chatzot");
+  add(Z.alotHashachar+1440,"עלות השחר","alot");             /* מחר בבוקר — להצגת "הבא" אחרי חצות */
+  L.sort(function(a,b){ return a.t-b.t; });
+  var i=0; while(i<L.length && L[i].t<=nowMin) i++;
+  if(i>=L.length) return '<div class="empty">'+'</div>';
+  var a=L[i], nx2=L[i+1];
+  var tm=function(x){ var m=((Math.round(x.t)%1440)+1440)%1440; return NatiMinyan.fmt(m,{key:x.k}); };
+  var cs=cdSec(a.t,now);
+  var dg=function(t){ return String(t).split("").map(function(ch){ return ch===":"?'<i class="cl">:</i>':"<i>"+ch+"</i>"; }).join(""); };
+  var orn='<svg class="zc-o" viewBox="0 0 400 24" aria-hidden="true"><defs><linearGradient id="zcG" x1="0" x2="1">'+
+    '<stop offset="0" stop-color="#b8862a" stop-opacity="0"/><stop offset=".5" stop-color="#f7e08a"/><stop offset="1" stop-color="#b8862a" stop-opacity="0"/></linearGradient></defs>'+
+    '<path d="M10 12 H170 M230 12 H390" stroke="url(#zcG)" stroke-width="2"/><path d="M200 2 L210 12 L200 22 L190 12 Z" fill="#f3d77a"/>'+
+    '<circle cx="178" cy="12" r="2.6" fill="#f3d77a"/><circle cx="222" cy="12" r="2.6" fill="#f3d77a"/></svg>';
+  return '<div class="zc">'+
+    '<div class="zc-l">'+a.l+'</div>'+orn+
+    '<div class="zc-t">'+dg(tm(a))+'</div>'+
+    (cs?'<div class="zc-c">בעוד <span class="num">'+cs.t+'</span> '+cs.u+'</div>':'')+
+    (nx2?'<div class="zc-n"><span>'+nx2.l+'</span><b>'+dg(tm(nx2))+'</b></div>':'')+
+  '</div>';
 }
 
 function p2(n){return (n<10?"0":"")+n;}
@@ -2730,9 +2782,9 @@ NatiGuard.check(function(){ load(); tick(); });
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot);
   else boot();
 })();
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך כניסה · גרסה 3.10 · 15.10.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך כניסה · גרסה 3.11 · 16.10.26</div>
 <!-- "תפילת ___ מתחילה כאן עכשיו" — לחיצת גבאי בשלט / באפליקציה -->
-<script src="room-call.js?v=2.3-111026"></script>
+<script src="room-call.js?v=2.4-161026"></script>
 <!-- ===== נתי SAFE · סימן מים מוזהב + רענון נתונים חכם (משותף לכל מסכי בית הכנסת) ===== -->
 <style id="nsf-wm-css">
 /* הלוגו ברקע כל לוח ממוסגר. סימן המים הישן (.mk-mark) נמחק בחלק מהמסכים
