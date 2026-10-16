@@ -1257,7 +1257,11 @@ function rpc(fn,args){
     headers:{apikey:SK,Authorization:"Bearer "+SK,"Content-Type":"application/json"},
     body:JSON.stringify(args||{})
   }).then(function(r){
-    if(!r.ok) throw new Error("rpc "+fn+" "+r.status);
+    /* 2.8: מציגים את הסיבה האמיתית מהשרת, לא רק מספר שגיאה */
+    if(!r.ok) return r.text().then(function(t){
+      var m=""; try{ var j=JSON.parse(t); m=j.message||j.hint||j.details||""; }catch(x){ m=t; }
+      throw new Error("rpc "+fn+" "+r.status+(m?" · "+String(m).slice(0,160):""));
+    });
     return r.json();
   }).then(function(res){
     if(res && res.ok===false){ var e=new Error(res.err||"נדחה"); e.rpc=true; throw e; }
@@ -2078,4 +2082,4 @@ function goBackPanel(){
   location.href="https://nati-safe-systems.github.io/screen/tenant_panel.html"
     + (co?("?co="+encodeURIComponent(co)):"");
 }
-</script><div id="app-version" style="position:fixed;left:8px;bottom:6px;font-size:11px;color:#8b949e;opacity:.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול בית הכנסת · גרסה 2.7 · 16.10.26</div></body></html>
+</script><div id="app-version" style="position:fixed;left:8px;bottom:6px;font-size:11px;color:#8b949e;opacity:.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול בית הכנסת · גרסה 2.8 · 16.10.26</div></body></html>
