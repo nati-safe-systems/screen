@@ -317,7 +317,7 @@ body.merkaz.mk-wine{
    פס אחד שחוצה את כל הרוחב ועובר מעל כל המסגרות יחד.
    התנועה ב-transform ולא ב-left, ולכן חלקה; והמחזור רציף,
    כך שאין עצירה באמצע ואין קפיצה בחזרה. */
-#mk-sweep{position:fixed;inset:0;z-index:70;pointer-events:none;
+#mk-sweep{position:fixed;inset:0;z-index:7600;pointer-events:none;/* מעל שקופיות ההודעות (7500) */
   overflow:hidden;display:none}
 body.merkaz #mk-sweep{display:block}
 #mk-sweep::before{
@@ -507,8 +507,8 @@ body.merkaz .col.r,body.merkaz .col.l,body.merkaz .center{
 body.merkaz .list,body.merkaz #zlist,body.merkaz #mlist{
   flex:1 1 0 !important;min-height:0 !important;overflow:hidden !important;
 }
-body.merkaz .zr{padding:.12vh 0 !important;font-size:1.85vh !important}
-body.merkaz .zr b{font-size:1.95vh !important}
+body.merkaz .zr{padding:calc(var(--zms,1)*.12vh) 0 !important;font-size:calc(var(--zms,1)*1.85vh) !important}
+body.merkaz .zr b{font-size:calc(var(--zms,1)*1.95vh) !important}
 body.merkaz .warn{font-size:1.15vh !important;margin:.2vh 0 0 !important;
   flex:0 0 auto}
 body.merkaz #clock{font-size:5.8vh !important}
@@ -682,7 +682,8 @@ body.merkaz #mk-orn .gem svg{width:100%;height:100%;display:block}
 .ann-f{position:relative;align-self:stretch;width:100%;flex:1;min-height:0}
 body.merkaz .ann > .ann-f{position:relative !important;flex:1;align-self:stretch;width:100%}
 </style>
-<script src="nsf-files.js?v=2.1-161026"></script>
+<script src="nsf-files.js?v=2.2-181026"></script>
+<script src="nsf-zmsel.js?v=1.0-181026"></script>
 </head><body>
 <div id="mk-sweep"></div>
 <div id="mk-orn" aria-hidden="true"><div class="vr"></div>
@@ -2614,6 +2615,7 @@ function resolveSite(cb){
   else if(SCREEN_ID) q=sf("screens?screen_id=eq."+encodeURIComponent(SCREEN_ID)+"&select=site_id,display_config")
       .then(function(r){ if(!r||!r[0])return null;
         try{var dc=r[0].display_config; if(typeof dc==="string")dc=JSON.parse(dc); if(dc){ window.NSF_ALERT_SEC=(dc.alert_custom && +dc.alert_seconds>=5) ? +dc.alert_seconds : 10; }
+             NatiZmSel.setFrom(dc); var _zl0=document.getElementById("zlist"); if(_zl0) _zl0.__lastHtml="";
             if(dc){var im=Array.isArray(dc.bg_images)?dc.bg_images:(dc.bg_url?[dc.bg_url]:[]);
                    if(im.length) setBg(im,dc.bg_sec);}}catch(e){}
         return r[0].site_id; });
@@ -2935,12 +2937,8 @@ function tick(){
   /* המפתח השלישי קובע את כיוון העיגול: זמן שמותר עד אליו מקוצץ,
      זמן שאסור לפניו מעוגל. ראו NatiZmanFmt. */
   var _zNextDone=false;
-  var _zHtml=[["עלות השחר",Z.alotHashachar,"alot"],["נץ החמה",Z.netz,"sunrise"],
-     ['סו"ז ק"ש מג"א',Z.sofZmanShmaMGA,"szM"],['סו"ז ק"ש גר"א',Z.sofZmanShmaGRA,"szG"],
-     ['סו"ז תפילה',Z.sofZmanTfilaGRA,"tfG"],["חצות",Z.chatzot,"noon"],
-     ["מנחה גדולה",Z.minchaGedola,"mincha"],["פלג המנחה",Z.plagHamincha,"plag"],
-     ["שקיעה",Z.shkia,"shkia"],["צאת הכוכבים",Z.tzeitHakochavim,"tz"],
-     ["רבינו תם",Z.tzeitRT,"rt"]]
+  /* 4.19: הזמנים שמוצגים נבחרים לכל מסך באדמין (display_config.zm_show) */
+  var _zHtml=NatiZmSel.fromZ(Z,"main")
     .map(function(x){
       var left = (typeof x[1]==="number") ? (x[1]-nowMin) : null;
       var cls  = "zr";
@@ -2954,9 +2952,9 @@ function tick(){
         else if(left<=30) cls+=" zr-soon";
       }
       return '<div class="'+cls+'"><span>'+x[0]+'</span><b>'+
-             NatiMinyan.fmt(x[1],{key:x[2]})+'</b></div>';
+             NatiMinyan.fmt(x[1]%1440,{key:x[2]})+'</b></div>';
     }).join("");
-  if(_zl.__lastHtml!==_zHtml){ _zl.__lastHtml=_zHtml; _zl.innerHTML=_zHtml; }
+  if(_zl.__lastHtml!==_zHtml){ _zl.__lastHtml=_zHtml; _zl.innerHTML=_zHtml; NatiZmSel.fit(_zl,"y",0.5); }
   drawMinyanim(now,nowMin);
   if(new URLSearchParams(location.search).get("mdebug")==="1"){
     if(!window._mdt||Date.now()-window._mdt>5000){ window._mdt=Date.now(); try{ mdebug(now); }catch(e){} }
@@ -3181,7 +3179,7 @@ setInterval(mkNextMinyan, 20000);
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot);
   else boot();
 })();
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 4.18 · 16.10.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך ראשי · גרסה 4.19 · 18.10.26</div>
 <!-- ===== נתי SAFE · סימן מים מוזהב + רענון נתונים חכם (משותף לכל מסכי בית הכנסת) ===== -->
 <style id="nsf-wm-css">
 /* הלוגו ברקע כל לוח ממוסגר. סימן המים הישן (.mk-mark) נמחק בחלק מהמסכים
@@ -3194,7 +3192,7 @@ body.merkaz .mk-mark{display:none !important}
 .nsf-wm::before,.nsf-wm::after{content:"";position:absolute;inset:10% 9%;
   background:var(--mkl) center/contain no-repeat}
 /* הבסיס — עדין, תמיד נראה */
-.nsf-wm::before,.nsf-wm-sl::before{opacity:.06;filter:sepia(.35) saturate(1.5) brightness(1.1)}
+.nsf-wm::before,.nsf-wm-sl::before{opacity:.11;filter:sepia(.35) saturate(1.5) brightness(1.1)}
 /* ההבלטה — עותק מוזהב שנדלק כשפס הזוהר חולף מעליו.
    רק שקיפות מונפשת — הכרטיס הגרפי מבצע לבד, בלי ציור מחדש. */
 .nsf-wm::after,.nsf-wm-sl::after{opacity:0;will-change:opacity;
@@ -3219,7 +3217,7 @@ body.merkaz #nsf-slide.nsf-al .bgw{display:none !important}
 body.merkaz #nsf-slide.nsf-al::after{
   top:var(--crT) !important;left:var(--crX) !important;height:var(--crH) !important;
   transform:translate(-50%,0) !important}
-@keyframes nsfWmGlow{0%,38%{opacity:0}45%{opacity:.07}50%{opacity:.13}55%{opacity:.07}62%,100%{opacity:0}}
+@keyframes nsfWmGlow{0%,38%{opacity:0}45%{opacity:.14}50%{opacity:.28}55%{opacity:.14}62%,100%{opacity:0}}
 </style>
 <script>
 /* ---- סימן מים: מוסיף ללוחות הממוסגרים, ומסנכרן את ההבלטה עם פס הזוהר ----

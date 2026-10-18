@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>נתי SAFE — מקווה</title>
-<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;800;900&family=Heebo:wght@300;400;500;700;800;900&family=Rubik:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,900&family=Suez+One&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bellefair&family=Frank+Ruhl+Libre:wght@500;700;800;900&family=Heebo:wght@300;400;500;700;800;900&family=Rubik:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,900&family=Suez+One&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
@@ -249,7 +249,7 @@ body.merkaz.mk-wine{
    פס אחד שחוצה את כל הרוחב ועובר מעל כל המסגרות יחד.
    התנועה ב-transform ולא ב-left, ולכן חלקה; והמחזור רציף,
    כך שאין עצירה באמצע ואין קפיצה בחזרה. */
-#mk-sweep{position:fixed;inset:0;z-index:70;pointer-events:none;
+#mk-sweep{position:fixed;inset:0;z-index:7600;pointer-events:none;/* מעל שקופיות ההודעות (7500) */
   overflow:hidden;display:none}
 body.merkaz #mk-sweep{display:block}
 #mk-sweep::before{
@@ -549,7 +549,53 @@ body.merkaz #mk-orn2 .rule.r{right:8vw;transform:scaleX(-1)}
 body.merkaz #mk-orn2 .rule svg{width:100%;height:100%;display:block;overflow:visible}
 body.merkaz #mk-orn2 .gem{position:absolute;top:.2vh;width:1.6vh;height:1.6vh}
 body.merkaz #mk-orn2 .gem svg{width:100%;height:100%;display:block}
-</style></head><body>
+
+/* ===== 3.8: זמני התפילות במקווה — קוביות זהב יוקרתיות ===== */
+body.merkaz .mid .mgrid{gap:2.2vh 1.6vw !important;padding:1vh .6vw 1.4vh}
+body.merkaz .mid .mcard{
+  position:relative;overflow:hidden;justify-content:center !important;gap:calc(var(--mks,1)*.9vh) !important;
+  padding:calc(var(--mks,1)*2.2vh) 1.4vw calc(var(--mks,1)*2vh) !important;border-bottom:0 !important;
+  border:.55vh solid #c9a227 !important;
+  border-image:linear-gradient(135deg,#7d5d18 0%,#f7e08a 22%,#b8902f 42%,#fff3b8 60%,#9b7724 80%,#f0d27a 100%) 1 !important;
+  background:radial-gradient(ellipse at 50% -15%,rgba(120,88,24,.55) 0%,rgba(30,22,8,.92) 55%,rgba(12,9,4,.96) 100%) !important;
+  box-shadow:0 0 0 .2vh #120c03,0 0 0 .38vh rgba(232,199,102,.65),0 1.2vh 3vh rgba(0,0,0,.6) !important}
+body.merkaz .mid .mcard::before{content:"";position:absolute;inset:.8vh;border:1px solid rgba(247,224,138,.3);pointer-events:none}
+body.merkaz .mid .mcard.soon{animation:mkvBeat 2.4s ease-in-out infinite}
+@keyframes mkvBeat{0%,100%{box-shadow:0 0 0 .2vh #120c03,0 0 0 .38vh rgba(232,199,102,.65),0 1.2vh 3vh rgba(0,0,0,.6)}
+  50%{box-shadow:0 0 0 .2vh #120c03,0 0 0 .38vh rgba(255,226,140,1),0 0 4vh rgba(240,200,90,.55),0 1.2vh 3vh rgba(0,0,0,.6)}}
+body.merkaz .mid .mcard .rn{border:0 !important;padding:0 !important;width:auto !important;
+  font-family:"Frank Ruhl Libre",serif;font-weight:900;font-size:calc(var(--mks,1)*4.6vh) !important;line-height:1.05;
+  background:linear-gradient(180deg,#fff7d6 0%,#f6dc86 32%,#d4a943 58%,#b8862a 72%,#f3dc92 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent !important;
+  filter:drop-shadow(0 .3vh .6vh rgba(0,0,0,.7));text-shadow:none !important}
+body.merkaz .mid .mcard .mko{width:42%;height:1.2vh;display:block;margin:-.2vh auto .2vh}
+body.merkaz .mid .mcard .pray{font-family:Bellefair,"Frank Ruhl Libre",serif !important;font-weight:400 !important;
+  color:#efe4c4 !important;font-size:calc(var(--mks,1)*3vh) !important;letter-spacing:.06em}
+body.merkaz .mid .mcard .times{gap:1vh 1.1vw !important;align-items:center}
+body.merkaz .mid .mcard .times span{font-family:"Frank Ruhl Libre",serif;font-weight:700;color:#e6dcc0 !important;
+  font-size:calc(var(--mks,1)*3vh) !important;opacity:.85;padding:.3vh .7vw;border:1px solid rgba(232,199,102,.28);background:rgba(0,0,0,.25)}
+body.merkaz .mid .mcard .times span.past{opacity:.3 !important;text-decoration:line-through;text-decoration-color:rgba(232,199,102,.5)}
+/* המניין הבא — מדליון זהב */
+body.merkaz .mid .mcard .times span.next{opacity:1 !important;animation:none !important;
+  font-size:calc(var(--mks,1)*5.6vh) !important;font-weight:900;color:#1a1204 !important;text-shadow:0 1px 0 rgba(255,245,210,.6) !important;
+  padding:.4vh 1.4vw;border:.3vh solid #fff1b8;
+  background:linear-gradient(180deg,#fff3c4 0%,#f3d77a 35%,#d4a943 70%,#b8862a 100%);
+  box-shadow:0 0 0 .2vh #6b4d16,0 0 3vh rgba(240,200,90,.55),inset 0 .3vh .6vh rgba(255,255,255,.5)}
+body.merkaz .mid .mcard .mcd{font-family:Bellefair,serif;color:#e9dcb4;font-size:calc(var(--mks,1)*2.4vh);letter-spacing:.03em;margin-top:.4vh}
+body.merkaz .mid .mcard .mcd b{font-family:"Frank Ruhl Libre",serif;color:#f6dc86;font-weight:700;direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums}
+
+/* בחירת זמנים לכל מסך: כל הזמנים בשורה אחת, הטקסט מצטמצם עד שהכל נכנס */
+.zwrap{flex-wrap:nowrap !important;min-width:0;max-width:100%;overflow:hidden}
+/* הרבה זמנים — שתי שורות שוות (כמה שבחרת), הטקסט מצטמצם עד שנכנס */
+.zwrap.zw2{display:grid !important;grid-template-columns:repeat(var(--zcols,8),minmax(0,1fr));gap:.8vh .6vw !important;width:100%}
+.zwrap.zw2 .zc{min-width:0 !important}
+.zwrap .zc{flex:0 1 auto;min-width:calc(var(--zms,1)*9vw) !important;padding:calc(var(--zms,1)*.9vh) calc(var(--zms,1)*1.4vw) !important}
+.zwrap .zc small{font-size:calc(var(--zms,1)*1.5vh) !important;white-space:nowrap}
+.zwrap .zc b{font-size:calc(var(--zms,1)*3.6vh) !important}
+.zwrap .zc.next b{font-size:calc(var(--zms,1)*4.3vh) !important}
+.zwrap .zc .cd{font-size:calc(var(--zms,1)*1.45vh) !important;white-space:nowrap}
+</style><script src="nsf-zmsel.js?v=1.0-181026"></script>
+</head><body>
 <div id="mk-sweep"></div>
 
 <div class="hdr">בס"ד &nbsp;·&nbsp; <span id="siteName"></span></div>
@@ -2594,6 +2640,7 @@ function load(){
                        .then(function(r){
                          if(!r||!r[0])return null;
                          try{ var dc=r[0].display_config; if(typeof dc==="string") dc=JSON.parse(dc); if(dc){ window.NSF_ALERT_SEC=(dc.alert_custom && +dc.alert_seconds>=5) ? +dc.alert_seconds : 10; }
+                              NatiZmSel.setFrom(dc); var _zw0=document.getElementById("zwrap"); if(_zw0) _zw0.__h="";
                               if(dc){ var im=Array.isArray(dc.bg_images)?dc.bg_images:(dc.bg_url?[dc.bg_url]:[]);
                                       if(im.length) setBg(im, dc.bg_sec); } }catch(e){}
                          return r[0].site_id;
@@ -2647,23 +2694,25 @@ function zmans(now){
 /* זמנים בולטים — נעלמים ברגע שעברו */
 function drawZmanim(now,nowMin){
   if(!Z)return;
-  var items=[
-    ["סוף זמן ק\"ש מג\"א", Z.sofZmanShmaMGA],
-    ["סוף זמן ק\"ש גר\"א", Z.sofZmanShmaGRA],
-    ["סוף זמן תפילה",       Z.sofZmanTfilaGRA],
-    ["חצות היום",           Z.chatzot],
-    ["שקיעה",               Z.shkia],
-    ["צאת הכוכבים",         Z.tzeitHakochavim]
-  ];   /* במקווה מציגים את כל זמני היום, גם מה שכבר עבר */
-  document.getElementById("zwrap").innerHTML=items.map(function(x,i){
+  /* הזמנים שמוצגים נבחרים לכל מסך באדמין (display_config.zm_show) */
+  var items=NatiZmSel.fromZ(Z,"mikveh");   /* במקווה מציגים את כל זמני היום, גם מה שכבר עבר */
+  var _zw=document.getElementById("zwrap");
+  var _zh=items.map(function(x,i){
     var left=Math.round(x[1]-nowMin);
     var passed=(x[1]<=nowMin);
     /* הזמן הקרוב הבא — מודגש תמיד (צהוב וגדול). חצי שעה לפני: כתום. 10 דקות לפני: אדום */
     var isNext=(!passed && left>0 && !items.slice(0,i).some(function(y){return y[1]>nowMin;}));
     var lvl=isNext ? (left<=10?" hot":(left<=30?" soon":"")) : "";
-    return '<div class="zc'+(isNext?" next":"")+lvl+(passed?" past":"")+'"><small>'+x[0]+'</small><b>'+NatiMinyan.fmt(x[1])+'</b>'+
+    return '<div class="zc'+(isNext?" next":"")+lvl+(passed?" past":"")+'"><small>'+x[0]+'</small><b>'+NatiMinyan.fmt(x[1]%1440,{key:x[2]})+'</b>'+
            (isNext && left<=45?'<span class="cd">נותרו '+left+' דק\'</span>':'')+'</div>';
   }).join("")||'<div class="zc"><small>זמני היום</small><b>הסתיימו</b></div>';
+  if(_zw.__h!==_zh){ _zw.__h=_zh; _zw.innerHTML=_zh;
+    var _two=items.length>8;
+    _zw.classList.toggle("zw2",_two); _zw.style.setProperty("--zcols", Math.ceil(items.length/2));
+    if(_two){ /* בשתי שורות: מקטינים עד שאף כרטיס לא גולש */
+      var _s=1,_n=0,_ov=function(){ return [].some.call(_zw.children,function(c){ return c.scrollWidth>c.clientWidth+1; }); };
+      _zw.style.setProperty("--zms",_s); while(_ov() && _s>0.5 && _n++<12){ _s=Math.round((_s-0.05)*100)/100; _zw.style.setProperty("--zms",_s); }
+    } else NatiZmSel.fit(_zw,"x",0.45); }
 }
 
 /* ספירה לאחור לכל שטיבל */
@@ -2764,7 +2813,7 @@ function drawMinyanim(now,nowMin){
   var g=document.getElementById("mgrid");
   var cnt=shuls.length||1;
   var pt=(window.innerHeight>window.innerWidth);
-  var cols= pt ? (cnt<=3?1:2) : (cnt<=2?cnt:(cnt<=4?2:3));
+  var cols= pt ? (cnt<=3?1:2) : (cnt<=3?cnt:(cnt<=4?2:3));   /* 3.8: עד 3 חדרים — שורה אחת, קוביות גבוהות */
   g.style.gridTemplateColumns="repeat("+cols+",minmax(0,1fr))";
   g.innerHTML=shuls.map(function(r){
     /* מניין ללא חדר = "כל החדרים", ולכן חל גם כאן */
@@ -2796,10 +2845,28 @@ function drawMinyanim(now,nowMin){
           return '<span class="'+cls+'">'+x.time+'</span>';
         }).join("")+'</div>';
     });
+    /* 3.8: קובייה יוקרתית — שם החדר, עיטור, השעות, והמניין הבא בולט עם ספירה לאחור */
+    var cdn = nx ? cdSec(nx.minutes, now) : null;
     return '<div class="mcard'+(soon?" soon":"")+'">'+
-      '<div class="rn">'+esc(title)+'</div>'+blocks+'</div>';
+      '<div class="rn">'+esc(title)+'</div>'+
+      '<svg class="mko" viewBox="0 0 200 12" aria-hidden="true"><path d="M8 6 H86 M114 6 H192" stroke="#d9b65a" stroke-width="1.4" opacity=".85"/>'+
+        '<path d="M100 1 L106 6 L100 11 L94 6 Z" fill="#f3d77a"/></svg>'+
+      blocks+
+      (cdn ? '<div class="mcd">המניין הבא בעוד <b>'+cdn.t+'</b> '+cdn.u+'</div>' : '')+
+      '</div>';
 
   }).join("")||'<div class="mcard"><div class="none">לא הוגדרו בתי כנסת באתר</div></div>';
+  mkFit(g, cnt+"|"+cols+"|"+innerWidth+"x"+innerHeight);
+}
+/* 3.8: מקטינים את הטקסט בקוביות עד שהכל נכנס — שום שורה לא נחתכת */
+function mkFit(g, key){
+  if(g.__mkk!==key){ g.__mkk=key; g.__mks=1; }
+  var sc=g.__mks||1;
+  g.style.setProperty("--mks", sc);
+  var over=function(){ var c=g.querySelectorAll(".mcard"); for(var i=0;i<c.length;i++){ if(c[i].scrollHeight>c[i].clientHeight+1 || c[i].scrollWidth>c[i].clientWidth+1) return true; } return false; };
+  var n=0;
+  while(over() && sc>0.45 && n++<14){ sc=Math.round((sc-0.05)*100)/100; g.style.setProperty("--mks", sc); }
+  g.__mks=sc;
 }
 
 function p2(n){return (n<10?"0":"")+n;}
@@ -2904,7 +2971,7 @@ NatiGuard.check(function(){ load(); tick(); });
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot);
   else boot();
 })();
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מקווה · גרסה 3.7 · 15.10.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מקווה · גרסה 3.8 · 18.10.26</div>
 <!-- ===== נתי SAFE · סימן מים מוזהב + רענון נתונים חכם (משותף לכל מסכי בית הכנסת) ===== -->
 <style id="nsf-wm-css">
 /* הלוגו ברקע כל לוח ממוסגר. סימן המים הישן (.mk-mark) נמחק בחלק מהמסכים
@@ -2917,7 +2984,7 @@ body.merkaz .mk-mark{display:none !important}
 .nsf-wm::before,.nsf-wm::after{content:"";position:absolute;inset:10% 9%;
   background:var(--mkl) center/contain no-repeat}
 /* הבסיס — עדין, תמיד נראה */
-.nsf-wm::before,.nsf-wm-sl::before{opacity:.06;filter:sepia(.35) saturate(1.5) brightness(1.1)}
+.nsf-wm::before,.nsf-wm-sl::before{opacity:.11;filter:sepia(.35) saturate(1.5) brightness(1.1)}
 /* ההבלטה — עותק מוזהב שנדלק כשפס הזוהר חולף מעליו.
    רק שקיפות מונפשת — הכרטיס הגרפי מבצע לבד, בלי ציור מחדש. */
 .nsf-wm::after,.nsf-wm-sl::after{opacity:0;will-change:opacity;
@@ -2942,7 +3009,7 @@ body.merkaz #nsf-slide.nsf-al .bgw{display:none !important}
 body.merkaz #nsf-slide.nsf-al::after{
   top:var(--crT) !important;left:var(--crX) !important;height:var(--crH) !important;
   transform:translate(-50%,0) !important}
-@keyframes nsfWmGlow{0%,38%{opacity:0}45%{opacity:.07}50%{opacity:.13}55%{opacity:.07}62%,100%{opacity:0}}
+@keyframes nsfWmGlow{0%,38%{opacity:0}45%{opacity:.14}50%{opacity:.28}55%{opacity:.14}62%,100%{opacity:0}}
 </style>
 <script>
 /* ---- סימן מים: מוסיף ללוחות הממוסגרים, ומסנכרן את ההבלטה עם פס הזוהר ----
@@ -3142,4 +3209,5 @@ body.merkaz #nsf-slide.nsf-al::after{
   setInterval(probe, 180000);
 })();
 </script>
+<script src="nsf-goldband.js?v=1.0-181026"></script>
 </body></html>

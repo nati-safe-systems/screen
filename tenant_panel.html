@@ -242,6 +242,7 @@ input:focus,select:focus{border-color:#58a6ff;}
 .pdf-drop .pd-t{font-weight:700;font-size:14px}
 .pdf-drop .pd-s{color:#8b949e;font-size:12px;margin-top:4px}
 </style>
+<script src="nsf-zmsel.js?v=1.0-181026"></script>
 </head>
 <body>
 
@@ -453,6 +454,16 @@ input:focus,select:focus{border-color:#58a6ff;}
         <button type="button" onclick="tPdfAdd()" style="background:#21262d;border:1px solid #30363d;color:#ffcc00;border-radius:6px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer;margin-top:4px;">+ קובץ</button>
         <div style="display:flex;justify-content:flex-end;margin-top:10px;">
           <button class="btn-save" style="padding:10px 18px;" onclick="saveDisplayConfig()">שמור</button>
+        </div>
+      </div>
+
+      <div class="field" id="t-zm-outer" style="display:none;border:1px solid #30363d;border-radius:10px;padding:14px;">
+        <div style="font-size:14px;color:#ffcc00;font-weight:700;margin-bottom:4px;">זמני היום שמוצגים במסך</div>
+        <div class="hint" style="margin-bottom:8px;">סמן אילו זמנים יופיעו. ככל שמסמנים יותר, הטקסט במסך מצטמצם לבד כדי שהכל ייכנס.</div>
+        <div id="t-zm-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 10px;"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+          <button class="btn-save" style="padding:9px 18px;" onclick="tZmSave()">שמור זמנים</button>
+          <button type="button" onclick="tZmDefault()" style="background:#21262d;border:1px solid #30363d;color:#ffcc00;border-radius:6px;padding:7px 14px;font:inherit;font-size:13px;cursor:pointer;">ברירת מחדל</button>
         </div>
       </div>
 
@@ -1456,6 +1467,7 @@ var PERM_DEFS_T=[
   {cat:'רכיבי המסך',items:[
     {id:'disp_clock',label:'שעון + תאריך'},
     {id:'disp_zmanim',label:'זמני הלכה'},
+    {id:'zm_select',label:'בחירת זמני היום שמוצגים במסך'},
     {id:'disp_parasha',label:'פרשת שבוע / חגים'},
     {id:'disp_board',label:'לוח מודעות'},
     {id:'disp_news',label:'מבזקי חדשות'}
@@ -1478,7 +1490,7 @@ var PERM_IDS_T=[]; PERM_DEFS_T.forEach(function(g){g.items.forEach(function(it){
 var PERM_LABELS_T={}; PERM_DEFS_T.forEach(function(g){g.items.forEach(function(it){PERM_LABELS_T[it.id]=it.label;});});
 function allPermsT(){ var o={}; PERM_IDS_T.forEach(function(id){o[id]=true;}); return o; }
 /* ברירת מחדל ללקוח: רכיבים מתקדמים כבויים עד שהאדמין מאשר אותם במפורש */
-var PERM_DEFAULT_OFF_T=['disp_news','disp_ads','ads_manage','manage_users','bg_images'];
+var PERM_DEFAULT_OFF_T=['disp_news','disp_ads','ads_manage','manage_users','bg_images','zm_select'];
 function defaultClientPerms(){ var o={}; PERM_IDS_T.forEach(function(id){o[id]=PERM_DEFAULT_OFF_T.indexOf(id)<0;}); return o; }
 function migratePermsT(perms){
   if(!perms||typeof perms!=='object') return null;
@@ -2114,6 +2126,8 @@ function applyTenantDisplaySection(raw){
   tPdfDraw();
   _tBg = Array.isArray(cfg.bg_images) ? cfg.bg_images.slice() : (cfg.bg_url?[cfg.bg_url]:[]);
   tBgDraw();
+  _tZm = (Array.isArray(cfg.zm_show) && cfg.zm_show.length) ? cfg.zm_show.slice() : null;
+  try{ tZmDraw(); }catch(e){}
   try{ tMusLoad(cfg); }catch(e){}
   var _tbs=document.getElementById("t-bg-sec"); if(_tbs) _tbs.value = cfg.bg_sec || 10;
   // מהירות גלילה
@@ -2162,6 +2176,7 @@ function applyTenantPerms(){
   _tShow('tbright-sec', !!P.bg_brightness);
   // תמונות רקע — רק אם האדמין סימן "החלפת תמונות רקע" (כבוי כברירת מחדל)
   _tShow('t-bg-outer', !!P.bg_images);
+  _tShow('t-zm-outer', !!P.zm_select && _tPurpose!=='door' && _tPurpose!=='sponsors');
   _tShow('t-pdf-outer', false);
   /* מוזיקה — פעילה אלא אם האדמין כיבה (גם ללקוחות קיימים) */
   _tShow('t-music-sec', P.music!==false && _tPurpose==="main");
@@ -2342,6 +2357,25 @@ function tMusSave(){
   _tenantSaveDC(out).then(function(){ _tMus=list; toast("המוזיקה עודכנה ✓ — תוך חצי דקה במסך"); })
     .catch(function(){ toast("השמירה נכשלה"); });
 }
+/* ===== 3.7: בחירת זמני היום שמוצגים במסך (בהרשאת אדמין) ===== */
+var _tZm=null;
+function tZmDef(){ var p=_tPurpose||"main"; return p==="main"?"building":(p==="lobby"?"main":p); }
+function tZmDraw(){
+  var g=document.getElementById("t-zm-grid"); if(!g||!window.NatiZmSel) return;
+  var cur=_tZm || (NatiZmSel.DEF[tZmDef()]||NatiZmSel.DEF.main);
+  g.innerHTML=NatiZmSel.ALL.map(function(d){
+    return '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">'+
+      '<input type="checkbox" data-zk="'+d.k+'"'+(cur.indexOf(d.k)>-1?' checked':'')+'> '+d.l+'</label>'; }).join("");
+}
+function tZmDefault(){ _tZm=null; tZmDraw(); }
+function tZmSave(){
+  if(!(CURRENT_PERMS&&CURRENT_PERMS.zm_select)){ toast("אין הרשאה"); return; }
+  var ks=[].map.call(document.querySelectorAll('#t-zm-grid input[data-zk]:checked'),function(i){ return i.getAttribute('data-zk'); });
+  if(!ks.length){ toast("סמן לפחות זמן אחד"); return; }
+  var out=_tenantBaseDC(); out.zm_show=ks;
+  _tenantSaveDC(out).then(function(){ _tZm=ks; toast("הזמנים עודכנו ✓ — יופיעו במסך תוך דקה"); })
+    .catch(function(){ toast("השמירה נכשלה"); });
+}
 function tBgMove(i,d){ var j=i+d; if(j<0||j>=_tBg.length)return; var t=_tBg[i]; _tBg[i]=_tBg[j]; _tBg[j]=t; tBgDraw(); }
 function tBgAdd(){ _tBg.push(""); tBgDraw(); }
 
@@ -2364,6 +2398,8 @@ function tApplyPurpose(){
   var mv=document.getElementById("t-minyan-view"); if(mv) mv.value=_tMinyanView||"list";
   /* תמונות הרקע רלוונטיות לכל סוגי המסכים */
   show("t-bg-outer", !!(CURRENT_PERMS&&CURRENT_PERMS.bg_images));   /* רק בהרשאת אדמין */
+  show("t-zm-outer", !!(CURRENT_PERMS&&CURRENT_PERMS.zm_select) && !isDoor && p!=="sponsors");
+  try{ tZmDraw(); }catch(e){}
   show("t-pdf-outer", false);   /* הוסר — הקובץ מוצג דרך ההודעה */
   show("t-music-sec", isBuilding && !!(CURRENT_PERMS && CURRENT_PERMS.music!==false));
 }
@@ -3302,7 +3338,7 @@ window.addEventListener("load",function(){
   }
 });
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.6 · 16.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.7 · 18.10.26</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון/טופס פתוח במקום לצאת מהאפליקציה */
 (function(){

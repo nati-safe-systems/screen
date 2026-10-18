@@ -1,5 +1,5 @@
 /* =====================================================================
-   נתי SAFE — תצוגת קבצים (PDF שהומרו לתמונה / תמונות)  ·  NatiFiles v2.1 · 16.10.26
+   נתי SAFE — תצוגת קבצים (PDF שהומרו לתמונה / תמונות)  ·  NatiFiles v2.2 · 18.10.26
    ---------------------------------------------------------------------
    משמש את מסך הפרנסים, חדר הקפה ולוח ההודעות במסך הראשי.
 
@@ -24,13 +24,20 @@
     ".nfz-row{position:absolute;inset:0;display:flex;flex-direction:row;justify-content:center;align-items:center}"+
     ".nfz-col{display:flex;flex-direction:column;justify-content:center;align-items:center;flex:0 0 auto}"+
     ".nfz-cell{position:relative;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center}"+
-    ".nfz-cell img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;display:block;"+
+    ".nfz-cell > img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;display:block;"+
     " border-radius:.5vh;box-shadow:0 .6vh 2vh rgba(0,0,0,.55);image-rendering:auto}"+
     ".nfz-track{position:absolute;top:0;bottom:0;left:0;display:flex;flex-direction:row;align-items:center;direction:ltr;"+
     " width:max-content;will-change:transform;backface-visibility:hidden;"+
     " animation:nfzMq var(--nfz-d,60s) linear infinite}"+
     "@keyframes nfzMq{from{transform:translate3d(var(--nfz-a),0,0)}to{transform:translate3d(var(--nfz-b),0,0)}}"+
-    ".nfz-cell canvas.nfz-pdf{display:block;border-radius:.5vh;box-shadow:0 .6vh 2vh rgba(0,0,0,.55)}"+
+    /* 2.2: מסגרת זהב יוקרתית סביב כל קובץ — זהב מדורג, פספרטו כהה ופס זהב דק בחוץ */
+    ".nfz-fr{position:relative;box-sizing:border-box;width:100%;height:100%;display:flex;align-items:center;justify-content:center;"+
+    " padding:.45vh;background:#0b0905;border:.75vh solid #c9a227;"+
+    " border-image:linear-gradient(135deg,#7d5d18 0%,#f7e08a 22%,#b8902f 42%,#fff3b8 60%,#9b7724 80%,#f0d27a 100%) 1;"+
+    " box-shadow:0 0 0 .22vh #120c03,0 0 0 .42vh rgba(232,199,102,.85),0 1.2vh 3vh rgba(0,0,0,.65)}"+
+    ".nfz-fr img{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;object-fit:contain;"+
+    " border-radius:0!important;box-shadow:none!important;display:block}"+
+    ".nfz-cell canvas.nfz-pdf,.nfz-fr canvas.nfz-pdf{display:block}"+
     ".nfz-diag{position:absolute;left:4px;bottom:4px;z-index:5;background:rgba(0,0,0,.8);color:#7ee787;font:700 12px Arial;padding:2px 6px;border-radius:4px;direction:rtl}"+
     "#nfz-scr{position:fixed;top:6px;left:6px;z-index:2147483000;background:rgba(0,0,0,.85);color:#ffcc00;font:700 14px Arial;padding:6px 10px;border-radius:6px;direction:rtl;line-height:1.5}"+
     ".nfz-in{animation:nfzIn .8s ease both}"+
@@ -101,14 +108,16 @@
   }
   /* אחרי הציור: כל קובץ שיש לו PDF מקורי מוחלף בציור חד בגודל המדויק */
   function sharpen(host, sig){
-    var imgs=host.querySelectorAll(".nfz-cell img[data-u]");
+    var imgs=host.querySelectorAll("img[data-u]");
     Array.prototype.forEach.call(imgs, function(im){
       var P=parse(im.getAttribute("data-u"));
       if(!P.pdf) return;
-      var cell=im.parentNode, cw=cell.clientWidth, ch=cell.clientHeight;
+      var cell=im.parentNode, cs=getComputedStyle(cell);
+      var cw=cell.clientWidth-(parseFloat(cs.paddingLeft)||0)-(parseFloat(cs.paddingRight)||0),
+          ch=cell.clientHeight-(parseFloat(cs.paddingTop)||0)-(parseFloat(cs.paddingBottom)||0);
       if(!cw||!ch) return;
       renderPdfTo(P, cw, ch).then(function(src){
-        if(host.__nfzSig!==sig || !im.parentNode) return;
+        if((sig!==null && host.__nfzSig!==sig) || !im.parentNode) return;
         var dpr=Math.max(1, root.devicePixelRatio||1);
         var cv=document.createElement("canvas"); cv.width=src.width; cv.height=src.height;
         cv.getContext("2d").drawImage(src,0,0);
@@ -194,7 +203,7 @@
     return '<div class="nfz-col" style="width:'+Math.floor(c.w)+'px;gap:'+g+'px">'+
       c.items.map(function(u){
         return '<div class="nfz-cell" style="width:'+Math.floor(c.w)+'px;height:'+Math.floor(c.h)+'px">'+
-               imgTag(u)+'</div>';
+               '<div class="nfz-fr">'+imgTag(u)+'</div></div>';
       }).join("")+'</div>';
   }
   function imgTag(u){
@@ -203,7 +212,7 @@
     var src=P.img || "data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==";
     return '<img src="'+q(src)+'" data-u="'+q(u)+'" alt="" decoding="async"'+(P.img?'':' style="width:100%;height:100%;background:#fff"')+'>';
   }
-  function cell(u){ return '<div class="nfz-cell">'+imgTag(u)+'</div>'; }
+  function cell(u,w,h){ return '<div class="nfz-cell"><div class="nfz-fr"'+(w?' style="width:'+Math.floor(w)+'px;height:'+Math.floor(h)+'px"':'')+'>'+imgTag(u)+'</div></div>'; }
 
   function draw(host, urls, o){
     var W=host.clientWidth, H=host.clientHeight;
@@ -231,7 +240,7 @@
     var useGrid = G && (fits ? (G.area>area*1.05) : (G.area>=area*0.75));
     if(useGrid){
       html='<div class="nfz-grid" style="grid-template-columns:repeat('+G.c+','+Math.floor(G.cw)+'px);'+
-           'grid-template-rows:repeat('+G.r+','+Math.floor(G.ch)+'px);gap:'+g+'px">'+urls.map(cell).join("")+'</div>';
+           'grid-template-rows:repeat('+G.r+','+Math.floor(G.ch)+'px);gap:'+g+'px">'+urls.map(function(u){ return cell(u,G.w,G.h); }).join("")+'</div>';
     }else if(fits){
       html='<div class="nfz-row" style="gap:'+g+'px">'+cols.map(function(c){ return colHtml(c,g); }).join("")+'</div>';
     }else{
@@ -279,7 +288,7 @@
     }
     var sig=urls.join("|")+"#"+(o.max||8)+"#"+(o.speed||"");
     if(sig===host.__nfzSig) return;           /* אין שינוי — לא נוגעים */
-    host.__nfzSig=sig; host.__nfzUrls=urls; host.__nfzO=o;
+    host.__nfzSig=sig; host.__nfzUrls=urls; host.__nfzO=o; host.__nfzMixed=null;
     if(!urls.length){ host.innerHTML=""; host.__nfzCycle=0; return; }
     loadAspects(urls).then(function(){
       if(host.__nfzSig!==sig) return;
@@ -336,5 +345,133 @@
   }
   function stop(key){ var s=ALT[key]; if(s){ if(s.t) clearTimeout(s.t); delete ALT[key]; } }
 
-  root.NatiFiles={render:render, alternate:alternate, single:single, stop:stop, cycleSec:cycleSec, parse:parse, VERSION:"2.1"};
+
+  /* =====================================================================
+     2.2: סרט נע אחד — קבצים ופרנסים בטקסט יחד, ברצף אחד שחוזר חלילה.
+     NatiFiles.mixed(host, [urls], [{cat,name,ded,pr}], {speed, rows})
+     קודם הקבצים (בגדול, במסגרת זהב), אחריהם הפרנסים בטקסט: פרנס בולט
+     (עדיפות 1–2) בכרטיס בגובה מלא, השאר בעמודות של 3 כרטיסים.
+     נכנס הכל — עומד במרכז. לא נכנס — נוסע בלי הפסקה ובלי קפיצה.
+     ===================================================================== */
+  (function(){ var l=document.createElement("link"); l.rel="stylesheet";
+    l.href="https://fonts.googleapis.com/css2?family=Bellefair&family=Frank+Ruhl+Libre:wght@500;700;900&display=swap";
+    document.head.appendChild(l); })();
+  var css2=document.createElement("style");
+  css2.textContent=
+    ".nfx-col{display:flex;flex-direction:column;justify-content:center;flex:0 0 auto}"+
+    ".nfx-card{position:relative;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;"+
+    " text-align:center;direction:rtl;padding:1.4vh 1.2vw;border:.6vh solid #c9a227;"+
+    " border-image:linear-gradient(135deg,#7d5d18 0%,#f7e08a 22%,#b8902f 42%,#fff3b8 60%,#9b7724 80%,#f0d27a 100%) 1;"+
+    " background:radial-gradient(ellipse at 50% -10%,#17482f 0%,#0b2c1d 55%,#061a11 100%);"+
+    " box-shadow:0 0 0 .2vh #120c03,0 0 0 .38vh rgba(232,199,102,.7),0 1vh 2.6vh rgba(0,0,0,.6)}"+
+    ".nfx-card::before{content:'';position:absolute;inset:.7vh;border:1px solid rgba(247,224,138,.32);pointer-events:none}"+
+    ".nfx-card.big{background:radial-gradient(ellipse at 50% -10%,#6b4c14 0%,#3a2908 55%,#1c1304 100%)}"+
+    ".nfx-cat{font-family:Bellefair,'Frank Ruhl Libre',serif;color:#e9c96a;letter-spacing:.04em;line-height:1.1}"+
+    ".nfx-nm{font-family:'Frank Ruhl Libre',serif;font-weight:900;line-height:1.08;margin:.25em 0;"+
+    " background:linear-gradient(180deg,#fff7d6 0%,#f6dc86 32%,#d4a943 58%,#b8862a 72%,#f3dc92 100%);"+
+    " -webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 .3vh .5vh rgba(0,0,0,.6))}"+
+    ".nfx-dd{font-family:Bellefair,'Frank Ruhl Libre',serif;color:#f1e9d2;line-height:1.15}"+
+    ".nfx-orn{width:40%;height:1.1vh;margin:.2em auto;display:block}";
+  document.head.appendChild(css2);
+  var ORN='<svg class="nfx-orn" viewBox="0 0 200 12" aria-hidden="true"><path d="M5 6 H86 M114 6 H195" stroke="#d9b65a" stroke-width="1.4" opacity=".8"/>'+
+          '<path d="M100 1 L106 6 L100 11 L94 6 Z" fill="#f3d77a"/></svg>';
+  function esc(t){ return String(t==null?"":t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;"); }
+  function cardHtml(t, w, h){
+    return '<div class="nfx-card'+(t.big?' big':'')+'" style="width:'+Math.floor(w)+'px;height:'+Math.floor(h)+'px">'+
+      (t.cat?'<div class="nfx-cat">'+esc(t.cat)+'</div>':'')+
+      '<div class="nfx-nm">'+esc(t.name)+'</div>'+
+      (t.ded?ORN+'<div class="nfx-dd">'+esc(t.ded)+'</div>':'')+'</div>';
+  }
+  /* מקטינים את הטקסט עד שהוא נכנס בכרטיס — אף פעם לא נחתך */
+  function fitCards(host){
+    var cards=host.querySelectorAll(".nfx-card"), n=cards.length/2|0;
+    for(var i=0;i<(n||cards.length);i++){
+      var c=cards[i], h=c.clientHeight, w=c.clientWidth, big=c.classList.contains("big");
+      var nm=c.querySelector(".nfx-nm"), ct=c.querySelector(".nfx-cat"), dd=c.querySelector(".nfx-dd");
+      var fs=Math.min(h*(big?0.2:0.26), w*(big?0.16:0.18));
+      for(var k=0;k<24;k++){
+        nm.style.fontSize=fs+"px"; if(ct) ct.style.fontSize=(fs*0.48)+"px"; if(dd) dd.style.fontSize=(fs*0.5)+"px";
+        if(c.scrollHeight<=h+1 && nm.scrollWidth<=nm.clientWidth+1 && c.scrollWidth<=w+1) break;
+        fs*=0.92;
+      }
+      if(n && cards[i+n]){ var c2=cards[i+n];
+        var q=function(sel){ return c2.querySelector(sel); };
+        q(".nfx-nm").style.fontSize=nm.style.fontSize; if(ct&&q(".nfx-cat")) q(".nfx-cat").style.fontSize=ct.style.fontSize;
+        if(dd&&q(".nfx-dd")) q(".nfx-dd").style.fontSize=dd.style.fontSize; }
+    }
+  }
+  function drawMixed(host, urls, texts, o){
+    var W=host.clientWidth, H=host.clientHeight;
+    if(!W||!H) return false;
+    var g=Math.round(window.innerHeight*GAP_VH/100), rows=Math.max(1,o.rows||3);
+    var items=[];
+    /* קבצים — אותה פריסה כמו בתצוגת הקבצים (לרוחב: שניים אחד מעל השני) */
+    var fc=columns(urls,W,H,g,false);
+    if(!texts.length){
+      /* קבצים בלבד — כמו בתצוגת הקבצים: אם כמעט נכנס, כל קובץ בגובה (כמעט) מלא */
+      var wOf=function(cs){ return cs.reduce(function(a,c){ return a+c.w; },0)+g*(cs.length-1); };
+      var un=columns(urls,W,H,g,true), wU=wOf(un);
+      if(wU<=W+1) fc=un;
+      else { var k=(W-g*(un.length-1))/(wU-g*(un.length-1)); if(k>=0.6){ un.forEach(function(c){ c.w*=k; c.h*=k; }); fc=un; } }
+    }
+    fc.forEach(function(c){ items.push({w:c.w, html:colHtml(c,g)}); });
+    /* טקסטים */
+    var bigW=Math.min(W*0.42, H*1.05), smW=Math.min(W*0.32, H*0.95), smH=(H-g*(rows-1))/rows, buf=[];
+    function flush(){
+      if(!buf.length) return;
+      items.push({w:smW, html:'<div class="nfx-col" style="width:'+Math.floor(smW)+'px;height:'+H+'px;gap:'+g+'px">'+
+        buf.map(function(t){ return cardHtml(t,smW,smH); }).join("")+'</div>'});
+      buf=[];
+    }
+    texts.forEach(function(t){
+      if(t.big){ flush(); items.push({w:bigW, html:'<div class="nfx-col" style="width:'+Math.floor(bigW)+'px;height:'+H+'px">'+cardHtml(t,bigW,H)+'</div>'}); }
+      else { buf.push(t); if(buf.length>=rows) flush(); }
+    });
+    flush();
+    if(!items.length){ host.innerHTML=""; host.__nfzCycle=0; return true; }
+    var tot=items.reduce(function(a,x){ return a+x.w; },0)+g*(items.length-1), html;
+    if(tot<=W+1){
+      host.__nfzCycle=0;
+      html='<div class="nfz-row" style="gap:'+g+'px">'+items.map(function(x){ return x.html; }).join("")+'</div>';
+    }else{
+      var rev=items.slice().reverse().map(function(x){ return x.html; }).join("");
+      var C=tot+g, dur=Math.max(12, C/(o.speed||55));
+      host.__nfzCycle=dur;
+      html='<div class="nfz-track" style="gap:'+g+'px;padding-right:'+g+'px;--nfz-a:'+(W-2*C).toFixed(1)+'px;--nfz-b:'+(W-C).toFixed(1)+'px;--nfz-d:'+dur.toFixed(2)+'s">'+rev+rev+'</div>';
+    }
+    host.innerHTML='<div class="nfz nfz-in">'+html+'</div>';
+    try{ fitCards(host); }catch(e){}
+    if(document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ try{ fitCards(host); }catch(e){} });
+    try{ sharpen(host, host.__nfzSig); }catch(e){}
+    return true;
+  }
+  function mixed(host, urls, texts, o){
+    if(!host) return;
+    o=o||{}; urls=(urls||[]).filter(Boolean);
+    texts=(texts||[]).filter(function(t){ return t && (t.name||"").trim(); }).map(function(t){
+      return {cat:t.cat||"", name:t.name||"", ded:t.ded||"", big:(+t.pr||3)<=2}; });
+    host.__nfzMixed={u:urls,t:texts,o:o};
+    if(!host.__nfxRO && root.ResizeObserver){
+      host.__nfxRO=new ResizeObserver(function(){
+        clearTimeout(host.__nfxT);
+        host.__nfxT=setTimeout(function(){
+          if(host.clientWidth<40 || !host.__nfzMixed || String(host.__nfzSig).indexOf("M|")!==0) return;
+          var k=host.clientWidth+"x"+host.clientHeight;
+          if(k!==host.__nfzSize){ host.__nfzSize=k; var m=host.__nfzMixed; drawMixed(host,m.u,m.t,m.o); }
+        },250);
+      });
+      host.__nfxRO.observe(host);
+    }
+    var sig="M|"+urls.join("|")+"#"+JSON.stringify(texts)+"#"+(o.speed||"");
+    if(sig===host.__nfzSig) return;
+    host.__nfzSig=sig; host.__nfzUrls=null;
+    loadAspects(urls).then(function(){
+      if(host.__nfzSig!==sig) return;
+      var go=function(){ if(host.__nfzSig!==sig) return;
+        if(drawMixed(host,urls,texts,o)) host.__nfzSize=host.clientWidth+"x"+host.clientHeight; else setTimeout(go,400); };
+      go();
+    });
+  }
+
+  root.NatiFiles={render:render, mixed:mixed, alternate:alternate, single:single, stop:stop, cycleSec:cycleSec, parse:parse, VERSION:"2.2"};
 })(window);

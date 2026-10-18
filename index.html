@@ -835,6 +835,7 @@ body.ads-bottom .ad-slide video.ad-vid{width:auto;height:17vh;max-width:60%;obje
 .adqr-mb .adqr-m{margin-top:.5vh !important;}
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;800;900&family=Heebo:wght@300;400;500;700;800;900&family=Rubik:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,900&family=Suez+One&display=swap" rel="stylesheet">
+<script src="nsf-zmsel.js?v=1.0-181026"></script>
 </head>
 <body>
 <!-- מודעה על כל המסך — מצב ads_mode="full" -->
@@ -2028,6 +2029,7 @@ function parseDisplayConfig(raw){
     pdf_list: Array.isArray(c.pdf_list) ? c.pdf_list : [],
     bg_images: Array.isArray(c.bg_images) ? c.bg_images : (c.bg_url ? [c.bg_url] : []),  // תמונות רקע ללוח (אדמין / לקוח עם הרשאה)
     bg_sec: (+c.bg_sec>=3) ? +c.bg_sec : 10,
+    zm_show: (Array.isArray(c.zm_show) && c.zm_show.length) ? c.zm_show : null,   // זמני היום שנבחרו לתצוגה
     pdf_show_sec: c.pdf_show_sec,
     sho_images: Array.isArray(c.sho_images)&&c.sho_images.length?c.sho_images:SHO_DEFAULT_IMAGES,  // תמונות רקע למסך שבת/חג
     sho_layout: c.sho_layout||"card",                          // card | float | bar
@@ -4433,6 +4435,7 @@ function zmEngineTimes(dt){
     _tfG:    riseM+4*shaa,
     _mk:     riseM+9.5*shaa,
     _plag:   riseM+10.75*shaa,
+    _mish:   dg(11.5,true),           /* משיכיר 11.5° — גיבוי אם Hebcal לא החזיר */
     _candle: zm_q(setE-c.candle,15),
     _setMishor: setM
   };
@@ -4596,10 +4599,17 @@ function gzm2(n){
     mincha:  gzm("minchaGedola"),
     sunset:  gzm("sunset"),
     tz:      gzm("tzeit85deg"),
-    rt:      gzm("tzeit72min")
+    rt:      gzm("tzeit72min"),
+    /* 12.14: זמנים נוספים לבחירה באדמין */
+    mish:    gzm("misheyakir"),
+    tfM:     gzm("sofZmanTfillaMGA19Point8"),
+    tfG:     gzm("sofZmanTfilla"),
+    mk:      gzm("minchaKetana"),
+    plag:    gzm("plagHaMincha")
   };
   var E=null;
   try{ E=zmEngineTimes(n||new Date()); }catch(e){ E=null; }
+  if(E){ E.tfM=E._tfM; E.tfG=E._tfG; E.mk=E._mk; E.plag=E._plag; E.mish=E._mish; }
   window._zmH=H; window._zmE=E;
   try{ zmShadowLog(H,E); }catch(e){}
   /* מקור פעיל: hebcal (ברירת מחדל) או engine — נקבע מ-display_config */
@@ -4713,10 +4723,16 @@ function upd(){
      ק"ש, חצות, שקיעה, צאת הכוכבים — חצי שעה לפני הוא הופך לכתום
      ו-10 דקות לפני לאדום. עלות השחר, הנץ, מנחה גדולה ור"ת רק מודגשים.
      (קודם מג"א ושקיעה היו צהובים קבוע, כל היום.) */
-  var _zr=[["עלות השחר",tm.alot,"alot",0],["נץ החמה",tm.sunrise,"sunrise",0],
-    ['סו"ז קר"ש מג"א',tm.szM,"szM",1],['סו"ז קר"ש גר"א',tm.szG,"szG",1],
-    ["חצות",tm.noon,"noon",1],["מנחה גדולה",tm.mincha,"mincha",0],
-    ["שקיעה",tm.sunset,"sunset",1],["צאת הכוכבים",tm.tz,"tz",1],["רבינו תם",tm.rt,"rt",0]];
+  /* 12.14: הזמנים שמוצגים נבחרים לכל מסך באדמין (display_config.zm_show) */
+  try{ NatiZmSel.setFrom(window.DC); }catch(e){}
+  var _ZM={alot:[tm.alot,"alot"],mish:[tm.mish,"alot"],netz:[tm.sunrise,"sunrise"],szM:[tm.szM,"szM"],szG:[tm.szG,"szG"],
+    tfM:[tm.tfM,"szG"],tfG:[tm.tfG,"szG"],chatzot:[tm.noon,"noon"],mg:[tm.mincha,"mincha"],mk:[tm.mk,"mincha"],
+    plag:[tm.plag,"mincha"],shkia:[tm.sunset,"sunset"],tz:[tm.tz,"tz"],rt:[tm.rt,"rt"],
+    chl:[(typeof tm.noon==="number")?tm.noon+12:NaN,"noon"]};
+  var _zLbl={}, _zCrit={}; NatiZmSel.ALL.forEach(function(d){ _zLbl[d.k]=d.l.replace('ק"ש','קר"ש'); _zCrit[d.k]=d.crit?1:0; });
+  _zLbl.chatzot="חצות";
+  var _zr=NatiZmSel.keys("building").map(function(k){ var v=_ZM[k]; return v?[_zLbl[k],v[0],v[1],_zCrit[k]]:null; })
+    .filter(function(x){ return x && typeof x[1]==="number" && isFinite(x[1]); });
   var zh="", _nx=false;
   _zr.forEach(function(x){
     var cls="zr", left=(typeof x[1]==="number" && isFinite(x[1])) ? (x[1]-cur)*60 : null;
@@ -4868,7 +4884,7 @@ function fitSidebar(){
   if(!avail){ return; }
 
   /* חיפוש בינארי אחר קנה-המידה הגדול ביותר שעדיין נכנס */
-  var lo=0.55, hi=1.35, best=lo;   /* תקרה נמוכה יותר — במסך גדול הטקסט יצא גדול מדי */
+  var lo=0.4, hi=1.35, best=lo;   /* תקרה נמוכה יותר — במסך גדול הטקסט יצא גדול מדי */
   for(var k=0;k<12;k++){
     var mid=(lo+hi)/2;
     sb.style.setProperty("--sbs", mid.toFixed(4));
@@ -5374,7 +5390,7 @@ setInterval(fitTimer, 60000);
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.13 · 16.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.14 · 18.10.26</div>
 <script>
 /* ---- עדכון אוטומטי מ-GitHub · 13.10.26 ----
    כל 3 דקות המסך בודק (בקשת HEAD קטנה, בלי להוריד את הקובץ) אם הקובץ שלו

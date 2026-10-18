@@ -236,7 +236,7 @@ body.merkaz.mk-wine{
    פס אחד שחוצה את כל הרוחב ועובר מעל כל המסגרות יחד.
    התנועה ב-transform ולא ב-left, ולכן חלקה; והמחזור רציף,
    כך שאין עצירה באמצע ואין קפיצה בחזרה. */
-#mk-sweep{position:fixed;inset:0;z-index:70;pointer-events:none;
+#mk-sweep{position:fixed;inset:0;z-index:7600;pointer-events:none;/* מעל שקופיות ההודעות (7500) */
   overflow:hidden;display:none}
 body.merkaz #mk-sweep{display:block}
 #mk-sweep::before{
@@ -2782,7 +2782,7 @@ NatiGuard.check(function(){ load(); tick(); });
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot);
   else boot();
 })();
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך כניסה · גרסה 3.11 · 16.10.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך כניסה · גרסה 3.12 · 18.10.26</div>
 <!-- "תפילת ___ מתחילה כאן עכשיו" — לחיצת גבאי בשלט / באפליקציה -->
 <script src="room-call.js?v=2.4-161026"></script>
 <!-- ===== נתי SAFE · סימן מים מוזהב + רענון נתונים חכם (משותף לכל מסכי בית הכנסת) ===== -->
@@ -2797,7 +2797,7 @@ body.merkaz .mk-mark{display:none !important}
 .nsf-wm::before,.nsf-wm::after{content:"";position:absolute;inset:10% 9%;
   background:var(--mkl) center/contain no-repeat}
 /* הבסיס — עדין, תמיד נראה */
-.nsf-wm::before,.nsf-wm-sl::before{opacity:.06;filter:sepia(.35) saturate(1.5) brightness(1.1)}
+.nsf-wm::before,.nsf-wm-sl::before{opacity:.11;filter:sepia(.35) saturate(1.5) brightness(1.1)}
 /* ההבלטה — עותק מוזהב שנדלק כשפס הזוהר חולף מעליו.
    רק שקיפות מונפשת — הכרטיס הגרפי מבצע לבד, בלי ציור מחדש. */
 .nsf-wm::after,.nsf-wm-sl::after{opacity:0;will-change:opacity;
@@ -2822,7 +2822,7 @@ body.merkaz #nsf-slide.nsf-al .bgw{display:none !important}
 body.merkaz #nsf-slide.nsf-al::after{
   top:var(--crT) !important;left:var(--crX) !important;height:var(--crH) !important;
   transform:translate(-50%,0) !important}
-@keyframes nsfWmGlow{0%,38%{opacity:0}45%{opacity:.07}50%{opacity:.13}55%{opacity:.07}62%,100%{opacity:0}}
+@keyframes nsfWmGlow{0%,38%{opacity:0}45%{opacity:.14}50%{opacity:.28}55%{opacity:.14}62%,100%{opacity:0}}
 </style>
 <script>
 /* ---- סימן מים: מוסיף ללוחות הממוסגרים, ומסנכרן את ההבלטה עם פס הזוהר ----
@@ -3002,4 +3002,5 @@ body.merkaz #nsf-slide.nsf-al::after{
   setInterval(probe, 180000);
 })();
 </script>
+<script src="nsf-goldband.js?v=1.0-181026"></script>
 </body></html>
