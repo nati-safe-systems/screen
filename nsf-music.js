@@ -1,5 +1,5 @@
 /* =====================================================================
-   נתי SAFE — נגן ספריות מוזיקה · NatiMusic v1.5 · 21.10.26
+   נתי SAFE — נגן ספריות מוזיקה · NatiMusic v1.6 · 21.10.26
    ---------------------------------------------------------------------
    כל ספריה היא תיקיה בגוגל דרייב (בתוך "נתי SAFE מוזיקה").
    באדמין בוחרים לכל מסך מאילו ספריות לנגן — נשמר ב-display_config:
@@ -101,9 +101,13 @@
       else if((isM(h,"תמוז") && h.d>=17) || (isM(h,"אב") && h.d<=9)) return true;
       if(isM(h,"אב") && h.d===10 && new Date(d.getFullYear(),d.getMonth(),d.getDate()-1).getDay()===6) return true;
     }
-    var oc=c.omer_custom||"pesach-lag";
+    var oc=c.omer_custom||"full";
     if(oc!=="none"){
-      if(oc==="rc-iyar"){ if(isM(h,"אייר")) return true; if((isM(h,"סיון")||isM(h,"סיוון")) && h.d<=5) return true; }
+      if(oc==="full"){   /* 1.6: כל הספירה — מכ״ג בניסן ועד ב׳ בסיוון */
+        if(isM(h,"ניסן") && h.d>=23) return true;
+        if(isM(h,"אייר")) return true;
+        if((isM(h,"סיון")||isM(h,"סיוון")) && h.d<=2) return true;
+      }else if(oc==="rc-iyar"){ if(isM(h,"אייר")) return true; if((isM(h,"סיון")||isM(h,"סיוון")) && h.d<=5) return true; }
       else { if(isM(h,"ניסן") && h.d>=16) return true; if(isM(h,"אייר") && h.d<=17) return true; }
     }
     return false;
@@ -476,5 +480,5 @@
     now:function(){ var t=trackOf(curId); if(t) return {lib:t.lib,name:nice(t.n)}; var o=otherInfo(); return (o&&o.p)?{lib:o.lib+" (חלון 2)",name:o.n}:null; },
     count:function(){ return TRACKS.length; },
     error:function(){ return lastErr; },
-    _muted:defaultMuted, VERSION:"1.5"};
+    _muted:defaultMuted, VERSION:"1.6"};
 })(window);
