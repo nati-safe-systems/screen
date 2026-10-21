@@ -820,6 +820,26 @@ th.sc-sort .ar{font-size:10px;opacity:.85;margin-inline-start:4px;}
           <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:14px;color:#e6edf3;">
             <input type="checkbox" id="edit-sc-audio" onchange="markCustom()"> הפעל מוזיקת רקע
           </label>
+          <!-- 4.9: ספריות מוזיקה — תיקיות בגוגל דרייב. המסך מנגן מהן לבד, בערבוב. -->
+          <div id="mlib-box" style="border:1px solid rgba(255,204,0,.35);border-radius:8px;padding:10px 12px;margin-top:10px;background:rgba(255,204,0,.04);">
+            <div style="color:#ffcc00;font-weight:800;font-size:14px;">🎵 ספריות מוזיקה (גוגל דרייב)</div>
+            <div style="font-size:12px;color:#8b949e;margin:3px 0 8px;line-height:1.5;">
+              סמן מאילו ספריות המסך ינגן. שירים שתוסיף או תמחק בתיקיה בדרייב יתעדכנו במסך לבד.
+              כשנבחרה ספריה — רשימת הקבצים הבודדים שלמטה לא מתנגנת.
+            </div>
+            <div id="mlib-list" style="display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;"></div>
+            <label style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px;color:#e6edf3;">
+              <input type="checkbox" id="mlib-shuffle" checked onchange="markCustom()" style="width:16px;height:16px;flex:0 0 auto;accent-color:#ffcc00"> ערבוב (בלי חזרה על שיר עד שכל הספריה התנגנה)
+            </label>
+            <details id="mlib-adv" style="margin-top:8px;">
+              <summary style="font-size:12px;color:#58a6ff;cursor:pointer;">כתובת סקריפט המוזיקה</summary>
+              <div style="display:flex;gap:6px;margin-top:6px;">
+                <input id="mlib-gas" placeholder="https://script.google.com/macros/s/.../exec" style="flex:1;direction:ltr;font-size:12px;">
+                <button type="button" onclick="mlibFetch(true)" style="background:#21262d;border:1px solid #58a6ff;color:#58a6ff;border-radius:6px;padding:6px 12px;font:inherit;font-size:12px;cursor:pointer;white-space:nowrap;">טען ספריות</button>
+              </div>
+              <div style="font-size:11px;color:#8b949e;margin-top:4px;">מדביקים פעם אחת — נשמר בדפדפן הזה ובכל מסך שנשמר.</div>
+            </details>
+          </div>
           <div id="audList" style="margin-top:6px;"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;align-items:center;">
             <label style="background:#ffcc00;color:#161b22;border-radius:6px;padding:6px 14px;font-size:13px;font-weight:800;cursor:pointer;">
@@ -2837,6 +2857,9 @@ function readDisplayConfig(){
     audio_list: _audList.filter(function(u){return u && u.trim();}),
     audio_url: (_audList[0]||'').trim(),
     audio_volume: parseInt((document.getElementById('edit-sc-audiovol')||{}).value,10)||40,
+    audio_libs: mlibPicked(),
+    audio_gas: mlibGas(),
+    audio_shuffle: !!(document.getElementById('mlib-shuffle')||{checked:true}).checked,
     /* תקופות אבלות — משפיעות על המוזיקה בלבד */
     omer_custom:     (document.getElementById('dc-omer')||{}).value || 'pesach-lag',
     metzarim_custom: (document.getElementById('dc-metzarim')||{}).value || 'tammuz17',
@@ -3139,6 +3162,57 @@ function audLibrary(){
   });
 }
 
+/* ===== 4.9: ספריות מוזיקה מגוגל דרייב ===== */
+var _mlibSel=[], _mlibLibs=null;
+function mlibGas(){
+  var v=((document.getElementById('mlib-gas')||{}).value||'').trim();
+  if(v){ try{ localStorage.setItem('nsf_music_gas',v); }catch(e){} }
+  return v;
+}
+function mlibPicked(){
+  var b=document.querySelectorAll('#mlib-list input[data-lib]');
+  if(!b.length) return _mlibSel.slice();          /* הספריות לא נטענו — שומרים את הקיים */
+  var out=[]; for(var i=0;i<b.length;i++) if(b[i].checked) out.push(b[i].getAttribute('data-lib'));
+  /* ספריה שנבחרה ונמחקה מהדרייב — נשארת בבחירה (אולי זמנית) */
+  _mlibSel.forEach(function(n){ if(out.indexOf(n)<0 && !(_mlibLibs||[]).some(function(l){ return l.name===n; })) out.push(n); });
+  return out;
+}
+function mlibLoad(cfg){
+  _mlibSel=Array.isArray(cfg.audio_libs)?cfg.audio_libs.slice():[];
+  var g=document.getElementById('mlib-gas'), ls='';
+  try{ ls=localStorage.getItem('nsf_music_gas')||''; }catch(e){}
+  if(g) g.value=cfg.audio_gas||ls||'';
+  var sh=document.getElementById('mlib-shuffle'); if(sh) sh.checked=(cfg.audio_shuffle!==false);
+  mlibFetch(false);
+}
+function mlibDraw(msg){
+  var box=document.getElementById('mlib-list'); if(!box) return;
+  if(msg){ box.innerHTML='<div style="grid-column:1/-1;font-size:12px;color:#8b949e;">'+msg+'</div>'; return; }
+  var L=_mlibLibs||[];
+  if(!L.length){ box.innerHTML='<div style="grid-column:1/-1;font-size:12px;color:#d29922;">אין עדיין תיקיות בתוך "נתי SAFE מוזיקה" בדרייב.</div>'; return; }
+  box.innerHTML=L.map(function(l){
+    var n=String(l.name).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+    var ck=_mlibSel.indexOf(l.name)>-1;
+    return '<label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;">'+
+      '<input type="checkbox" data-lib="'+n+'"'+(ck?' checked':'')+' onchange="markCustom()" style="width:16px;height:16px;accent-color:#ffcc00"> '+n+
+      ' <span style="color:#8b949e;font-size:11px;">('+(l.files||[]).length+' שירים)</span></label>';
+  }).join('')+
+  _mlibSel.filter(function(n){ return !L.some(function(l){ return l.name===n; }); }).map(function(n){
+    return '<div style="grid-column:1/-1;font-size:12px;color:#ff7b72;">הספריה "'+String(n).replace(/</g,'&lt;')+'" מסומנת אבל לא נמצאה בדרייב (נמחקה או שונה שמה)</div>'; }).join('');
+}
+function mlibFetch(fresh){
+  var g=mlibGas();
+  if(!g){ mlibDraw('עוד לא הוגדרה כתובת סקריפט המוזיקה — פתח "כתובת סקריפט המוזיקה" והדבק אותה.'); var a=document.getElementById('mlib-adv'); if(a) a.open=true; return; }
+  mlibDraw('טוען ספריות מהדרייב...');
+  fetch(g+(g.indexOf('?')>-1?'&':'?')+'action=libs'+(fresh?'&fresh=1':''),{cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(!d||!d.ok){ mlibDraw('<span style="color:#ff7b72">'+((d&&d.error)||'הסקריפט החזיר שגיאה')+'</span>'); return; }
+      _mlibLibs=d.libs||[]; mlibDraw();
+    })
+    .catch(function(){ mlibDraw('<span style="color:#ff7b72">לא הצלחתי להתחבר לסקריפט. בדוק שהכתובת נכונה ושהפריסה היא "כל אחד" (Anyone).</span>'); });
+}
+
 function audLibApply(){
   var box=document.getElementById('audLib'); if(!box)return;
   var boxes=box.querySelectorAll('input[type=checkbox]');
@@ -3252,6 +3326,7 @@ function fillDisplayConfig(cfg){
     _as.value = cfg.alert_custom ? (cfg.alert_seconds || 60)
               : ((((document.getElementById('edit-sc-kind')||{}).value)==='synagogue') ? 10 : (cfg.alert_seconds || 60)); }
   var _ae=document.getElementById('edit-sc-audio');    if(_ae) _ae.checked = !!cfg.audio_enabled;
+  try{ mlibLoad(cfg); }catch(e){}
   _audList = Array.isArray(cfg.audio_list) ? cfg.audio_list.slice() : (cfg.audio_url?[cfg.audio_url]:[]);
   audDraw();
   var _av=document.getElementById('edit-sc-audiovol');  if(_av){ _av.value = (cfg.audio_volume!=null?cfg.audio_volume:40);
@@ -3930,7 +4005,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.8 · 18.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.9 · 21.10.26</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){

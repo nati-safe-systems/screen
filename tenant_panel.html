@@ -508,7 +508,11 @@ input:focus,select:focus{border-color:#58a6ff;}
                  oninput="document.getElementById('t-mus-vol-v').textContent=this.value">
           <span id="t-mus-vol-v" style="font-size:13px;min-width:28px;text-align:center">40</span>
         </div>
-        <div style="font-size:13px;color:#8b949e;margin-bottom:6px;">מה מתנגן (אפשר לבחור כמה — מתנגנים ברצף):</div>
+        <div id="t-mlib-sec" style="display:none;margin-bottom:12px;">
+          <div style="font-size:13px;color:#8b949e;margin-bottom:6px;">ספריות מוזיקה — המסך מנגן מהן בערבוב, ומתעדכן לבד כשנוספים שירים:</div>
+          <div id="t-mlib-list" style="display:flex;flex-direction:column;gap:2px;border:1px solid #30363d;border-radius:8px;background:#0d1117;padding:4px 0;"></div>
+        </div>
+        <div style="font-size:13px;color:#8b949e;margin-bottom:6px;">או קבצים בודדים (מתנגנים ברצף, רק כשלא נבחרה ספריה):</div>
         <div id="t-mus-list" style="max-height:240px;overflow:auto;border:1px solid #30363d;border-radius:8px;background:#0d1117"></div>
         <div class="hint" style="margin-top:6px">בשבת ובחג המוזיקה מושתקת אוטומטית.</div>
         <div style="display:flex;justify-content:flex-end;margin-top:10px;">
@@ -2179,7 +2183,7 @@ function applyTenantPerms(){
   _tShow('t-zm-outer', !!P.zm_select && _tPurpose!=='door' && _tPurpose!=='sponsors');
   _tShow('t-pdf-outer', false);
   /* מוזיקה — פעילה אלא אם האדמין כיבה (גם ללקוחות קיימים) */
-  _tShow('t-music-sec', P.music!==false && _tPurpose==="main");
+  _tShow('t-music-sec', P.music!==false);   /* 3.8: בכל סוגי המסכים */
 }
 function _tenantBaseDC(){
   /* בסיס לשמירה: העתקה מלאה של הקונפיג הקיים.
@@ -2321,6 +2325,27 @@ function tMusLoad(cfg){
   document.getElementById("t-mus-vol").value=v; document.getElementById("t-mus-vol-v").textContent=v;
   _tMus=Array.isArray(cfg.audio_list)?cfg.audio_list.slice():(cfg.audio_url?[cfg.audio_url]:[]);
   tMusDraw();
+  tMlibLoad(cfg);
+}
+/* 3.8: ספריות מוזיקה מגוגל דרייב (הכתובת מוגדרת באדמין) */
+var _tMlibOk=false, _tMlibSel=[];
+function tMlibLoad(cfg){
+  var sec=document.getElementById("t-mlib-sec"), box=document.getElementById("t-mlib-list");
+  _tMlibOk=false; _tMlibSel=Array.isArray(cfg.audio_libs)?cfg.audio_libs.slice():[];
+  var g=String(cfg.audio_gas||"").trim();
+  if(!sec||!box||!g){ if(sec) sec.style.display="none"; return; }
+  sec.style.display="";
+  box.innerHTML='<div style="padding:8px 10px;color:#8b949e;font-size:13px">טוען ספריות...</div>';
+  fetch(g+(g.indexOf("?")>-1?"&":"?")+"action=libs",{cache:"no-store"}).then(function(r){ return r.json(); }).then(function(d){
+    if(!d||!d.ok||!(d.libs||[]).length){ sec.style.display="none"; return; }
+    _tMlibOk=true;
+    box.innerHTML=d.libs.map(function(l){
+      var n=String(l.name).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+      return '<label style="display:flex;gap:10px;align-items:center;padding:8px 10px;cursor:pointer;font-size:14px">'+
+        '<input type="checkbox" class="t-mlib-ck" data-lib="'+n+'"'+(_tMlibSel.indexOf(l.name)>-1?' checked':'')+' style="width:18px;height:18px;accent-color:#ffcc00">'+
+        '<span style="flex:1">'+n+'</span><span style="font-size:12px;color:#8b949e">'+(l.files||[]).length+' שירים</span></label>';
+    }).join("");
+  }).catch(function(){ sec.style.display="none"; });
 }
 function tMusDraw(){
   var box=document.getElementById("t-mus-list"); if(!box) return;
@@ -2348,12 +2373,14 @@ function tMusSave(){
   var keep=_tMus.filter(function(u){ return String(u).indexOf("/audio/library/")===-1; });
   var list=keep.concat(picked);
   var on=document.getElementById("t-mus-on").checked;
-  if(on && !list.length){ toast("בחר לפחות שיר אחד"); return; }
+  var _nLib=_tMlibOk ? document.querySelectorAll(".t-mlib-ck:checked").length : ((_tMlibSel||[]).length);
+  if(on && !list.length && !_nLib){ toast("בחר ספריה או לפחות שיר אחד"); return; }
   var out=_tenantBaseDC();
   out.audio_enabled=on;
   out.audio_list=list;
   out.audio_url=list[0]||"";
   out.audio_volume=parseInt(document.getElementById("t-mus-vol").value,10)||0;
+  if(_tMlibOk){ out.audio_libs=[].map.call(document.querySelectorAll(".t-mlib-ck:checked"),function(c){ return c.getAttribute("data-lib"); }); }
   _tenantSaveDC(out).then(function(){ _tMus=list; toast("המוזיקה עודכנה ✓ — תוך חצי דקה במסך"); })
     .catch(function(){ toast("השמירה נכשלה"); });
 }
@@ -2401,7 +2428,7 @@ function tApplyPurpose(){
   show("t-zm-outer", !!(CURRENT_PERMS&&CURRENT_PERMS.zm_select) && !isDoor && p!=="sponsors");
   try{ tZmDraw(); }catch(e){}
   show("t-pdf-outer", false);   /* הוסר — הקובץ מוצג דרך ההודעה */
-  show("t-music-sec", isBuilding && !!(CURRENT_PERMS && CURRENT_PERMS.music!==false));
+  show("t-music-sec", !!(CURRENT_PERMS && CURRENT_PERMS.music!==false));   /* 3.8: בכל סוגי המסכים */
 }
 
 function saveMinyanView(){
@@ -3338,7 +3365,7 @@ window.addEventListener("load",function(){
   }
 });
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.7 · 18.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.8 · 21.10.26</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון/טופס פתוח במקום לצאת מהאפליקציה */
 (function(){

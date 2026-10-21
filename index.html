@@ -836,6 +836,7 @@ body.ads-bottom .ad-slide video.ad-vid{width:auto;height:17vh;max-width:60%;obje
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;800;900&family=Heebo:wght@300;400;500;700;800;900&family=Rubik:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,900&family=Suez+One&display=swap" rel="stylesheet">
 <script src="nsf-zmsel.js?v=1.0-181026"></script>
+<script src="nsf-music.js?v=1.0-211026"></script>
 </head>
 <body>
 <!-- מודעה על כל המסך — מצב ads_mode="full" -->
@@ -2044,6 +2045,12 @@ function parseDisplayConfig(raw){
     audio_url: c.audio_url || "",
     audio_list: Array.isArray(c.audio_list) ? c.audio_list : [],
     audio_volume: (c.audio_volume>=0 && c.audio_volume<=100) ? c.audio_volume : 40,
+    audio_libs: Array.isArray(c.audio_libs) ? c.audio_libs : [],
+    audio_gas: c.audio_gas || "",
+    audio_shuffle: c.audio_shuffle!==false,
+    /* 12.15: מנהג ההשתקה בספירה ובבין המצרים — נשמר באדמין אבל לא הגיע למסך עד עכשיו */
+    omer_custom: c.omer_custom || "pesach-lag",
+    metzarim_custom: c.metzarim_custom || "tammuz17",
     /* הגדרות הפרסום. הפונקציה הזו מעבירה רק שדות שמופיעים כאן,
        ולכן ads_promo / ads_mode נשמרו באדמין אבל לא הגיעו למסך מעולם —
        זו הסיבה שכרטיס "שטח פרסום פנוי" ומצבי תחתון / מסך מלא לא עבדו. */
@@ -2525,6 +2532,12 @@ function musIndicator(){
      הבדיקה הקודמת נשענה רק על השניים הראשונים. getPlayerState
      מחזיר -1 או undefined בזמן האתחול, והחיווי נפל ל"מושתק"
      בזמן שהמוזיקה כבר נשמעה. */
+  if(window.NatiMusic && NatiMusic.active(DC)){
+    var _np=NatiMusic.playing(), _nw=NatiMusic.now();
+    e.className=_np?"on":"off";
+    if(t) t.textContent=_np ? ("מוזיקה"+(_nw?" · "+_nw.lib:"")) : "מוזיקה מושתקת";
+    return;
+  }
   var playing = !!(_au && !_au.paused && !_au.ended);
   if(!playing && window._ytPlayer){
     var st=null;
@@ -2588,6 +2601,18 @@ function nsfAudDirect(cur){
   return cur;
 }
 function audioApply(){
+  /* 12.15: ספריות מוזיקה מגוגל דרייב — נגן נפרד (nsf-music.js) */
+  if(window.NatiMusic){
+    if(NatiMusic.active(DC)){
+      if(_au){ _au.pause(); _au.remove(); _au=null; }
+      try{ if(window._ytPlayer && window._ytPlayer.stopVideo) window._ytPlayer.stopVideo(); }catch(e){}
+      var _yf=document.getElementById("yt-audio"); if(_yf){ _yf.remove(); window._ytPlayer=null; }
+      NatiMusic.apply(DC,{muted:isMusicMuted});
+      _auState=NatiMusic.state(); try{ musIndicator(); }catch(e){}
+      return;
+    }
+    if(NatiMusic.playing()) NatiMusic.stop("עבר לרשימה רגילה");
+  }
   var on   = !!(DC && DC.audio_enabled);
   /* רשימת השמעה: מנגן קובץ אחרי קובץ, ובסוף חוזר לראשון */
   var list = (DC && Array.isArray(DC.audio_list)) ? DC.audio_list.filter(function(u){return u && u.trim();}) : [];
@@ -5390,7 +5415,7 @@ setInterval(fitTimer, 60000);
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.14 · 18.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.15 · 21.10.26</div>
 <script>
 /* ---- עדכון אוטומטי מ-GitHub · 13.10.26 ----
    כל 3 דקות המסך בודק (בקשת HEAD קטנה, בלי להוריד את הקובץ) אם הקובץ שלו
