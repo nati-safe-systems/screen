@@ -1,5 +1,5 @@
 /* =====================================================================
-   נתי SAFE — נגן ספריות מוזיקה · NatiMusic v1.2 · 21.10.26
+   נתי SAFE — נגן ספריות מוזיקה · NatiMusic v1.3 · 21.10.26
    ---------------------------------------------------------------------
    כל ספריה היא תיקיה בגוגל דרייב (בתוך "נתי SAFE מוזיקה").
    באדמין בוחרים לכל מסך מאילו ספריות לנגן — נשמר ב-display_config:
@@ -36,7 +36,7 @@
   var Q=null;          /* {key, order:[ids], i} */
   var au=null, curId="", state="", nextTry=0, fading=false, lastErr="";
   var BIG=30*1048576, CH=3*1048576, STREAM=null, heads={};
-  var ours=false, pauses=0, lastPause=0, resumeT=null;   /* 1.2: עצירות שלא אנחנו גרמנו */
+  var ours=false, pauses=0, lastPause=0, resumeT=null, cause="";   /* 1.2: עצירות שלא אנחנו גרמנו */
   function ourPause(fn){ ours=true; try{ fn(); }catch(e){} setTimeout(function(){ ours=false; }, 300); }
   var blobs={}, busy={}, fail={};
 
@@ -300,6 +300,12 @@
     au.addEventListener("pause",function(){
       if(ours || !curId || au.ended) return;
       pauses++; lastPause=Date.now();
+      /* 1.3: מה קרה ברגע העצירה — לאבחון (מוצג בחיווי ליד ⟳) */
+      var c=[];
+      try{ var vs=document.querySelectorAll("video"); for(var i=0;i<vs.length;i++) if(!vs[i].paused){ c.push("וידאו"); break; } }catch(e){}
+      try{ if(document.hidden) c.push("מוסתר"); }catch(e){}
+      try{ if(au.readyState<3) c.push("טעינה"); }catch(e){}
+      cause=c.join("+")||"לא ידוע";
       clearTimeout(resumeT);
       resumeT=setTimeout(function(){
         if(!au || !curId || !au.paused || ours) return;
@@ -418,10 +424,10 @@
 
   root.NatiMusic={apply:apply, auto:auto, active:active, stop:stop,
     playing:function(){ return !!(au && curId && !au.paused); },
-    diag:function(){ return {pauses:pauses, lastPause:lastPause, track:curId, paused:au?au.paused:null, t:au?Math.round(au.currentTime):0}; },
+    diag:function(){ return {pauses:(pauses?pauses+" · "+cause:0), n:pauses, cause:cause, lastPause:lastPause, track:curId, paused:au?au.paused:null, t:au?Math.round(au.currentTime):0}; },
     state:function(){ return state; },
     now:function(){ var t=trackOf(curId); return t?{lib:t.lib,name:nice(t.n)}:null; },
     count:function(){ return TRACKS.length; },
     error:function(){ return lastErr; },
-    _muted:defaultMuted, VERSION:"1.2"};
+    _muted:defaultMuted, VERSION:"1.3"};
 })(window);
