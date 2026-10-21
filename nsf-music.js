@@ -1,5 +1,5 @@
 /* =====================================================================
-   נתי SAFE — נגן ספריות מוזיקה · NatiMusic v1.6 · 21.10.26
+   נתי SAFE — נגן ספריות מוזיקה · NatiMusic v1.7 · 22.10.26
    ---------------------------------------------------------------------
    כל ספריה היא תיקיה בגוגל דרייב (בתוך "נתי SAFE מוזיקה").
    באדמין בוחרים לכל מסך מאילו ספריות לנגן — נשמר ב-display_config:
@@ -475,10 +475,13 @@
 
   root.NatiMusic={apply:apply, auto:auto, active:active, stop:stop,
     playing:function(){ if(au && curId && !au.paused) return true; var o=otherInfo(); return !!(o && o.p && CFG && CFG.audio_enabled); },
-    diag:function(){ return {pauses:(pauses?pauses+" · "+cause:0), n:pauses, cause:cause, lastPause:lastPause, track:curId, paused:au?au.paused:null, t:au?Math.round(au.currentTime):0}; },
+    /* 1.7: ⟳ מוצג רק כשיש עצירות חוזרות עכשיו (3+ בעשר הדקות האחרונות) — לא היסטוריה */
+    diag:function(){ var n10=recent.filter(function(t){ return Date.now()-t<600000; }).length;
+      return {pauses:(n10>=3?n10+" · "+cause:0), n:pauses, cause:cause, lastPause:lastPause, track:curId, paused:au?au.paused:null, t:au?Math.round(au.currentTime):0}; },
     state:function(){ return state; },
-    now:function(){ var t=trackOf(curId); if(t) return {lib:t.lib,name:nice(t.n)}; var o=otherInfo(); return (o&&o.p)?{lib:o.lib+" (חלון 2)",name:o.n}:null; },
+    /* 1.7: החיווי פשוט — "מוזיקה · קלאסי", גם כשהמוזיקה יוצאת מהחלון השני של הנגן */
+    now:function(){ var t=trackOf(curId); if(t) return {lib:t.lib,name:nice(t.n)}; var o=otherInfo(); return (o&&o.p)?{lib:o.lib,name:o.n}:null; },
     count:function(){ return TRACKS.length; },
     error:function(){ return lastErr; },
-    _muted:defaultMuted, VERSION:"1.6"};
+    _muted:defaultMuted, VERSION:"1.7"};
 })(window);
