@@ -892,6 +892,7 @@ th.sc-sort .ar{font-size:10px;opacity:.85;margin-inline-start:4px;}
                border-top:1px solid rgba(255,255,255,.1);">
             <label>ספירת העומר — מתי המוזיקה מושתקת</label>
             <select id="dc-omer">
+              <option value="full">כל הספירה — ממחרת אסרו חג פסח ועד שלושת ימי הגבלה</option>
               <option value="pesach-lag">מאסרו חג פסח ועד ל״ג בעומר</option>
               <option value="rc-iyar">מראש חודש אייר ועד ערב שבועות</option>
               <option value="none">בלי השתקה בספירה</option>
@@ -2861,7 +2862,7 @@ function readDisplayConfig(){
     audio_gas: mlibGas(),
     audio_shuffle: !!(document.getElementById('mlib-shuffle')||{checked:true}).checked,
     /* תקופות אבלות — משפיעות על המוזיקה בלבד */
-    omer_custom:     (document.getElementById('dc-omer')||{}).value || 'pesach-lag',
+    omer_custom:     (document.getElementById('dc-omer')||{}).value || 'full',
     metzarim_custom: (document.getElementById('dc-metzarim')||{}).value || 'tammuz17',
     /* מסך הפרנסים */
     sponsors_dir:        (document.getElementById('sp-dir')||{}).value || 'x',
@@ -3301,7 +3302,7 @@ function fillDisplayConfig(cfg){
   document.getElementById('dc-bg-bright-val').textContent = cfg.bgBrightness || 100;
   document.getElementById('edit-sc-rss').value  = cfg.rss_url || '';
   /* תקופות אבלות */
-  var _om=document.getElementById('dc-omer');     if(_om) _om.value = cfg.omer_custom     || 'pesach-lag';
+  var _om=document.getElementById('dc-omer');     if(_om) _om.value = cfg.omer_custom     || 'full';
   var _mz=document.getElementById('dc-metzarim'); if(_mz) _mz.value = cfg.metzarim_custom || 'tammuz17';
   /* מסך הפרנסים */
   var _sd=document.getElementById('sp-dir');    if(_sd) _sd.value = cfg.sponsors_dir || 'x';
@@ -4013,7 +4014,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.11 · 21.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.12 · 21.10.26</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){

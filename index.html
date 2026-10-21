@@ -836,7 +836,7 @@ body.ads-bottom .ad-slide video.ad-vid{width:auto;height:17vh;max-width:60%;obje
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;800;900&family=Heebo:wght@300;400;500;700;800;900&family=Rubik:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,900&family=Suez+One&display=swap" rel="stylesheet">
 <script src="nsf-zmsel.js?v=1.0-181026"></script>
-<script src="nsf-music.js?v=1.2-211026"></script>
+<script src="nsf-music.js?v=1.6-211026"></script>
 </head>
 <body>
 <!-- מודעה על כל המסך — מצב ads_mode="full" -->
@@ -2049,7 +2049,7 @@ function parseDisplayConfig(raw){
     audio_gas: c.audio_gas || "",
     audio_shuffle: c.audio_shuffle!==false,
     /* 12.15: מנהג ההשתקה בספירה ובבין המצרים — נשמר באדמין אבל לא הגיע למסך עד עכשיו */
-    omer_custom: c.omer_custom || "pesach-lag",
+    omer_custom: c.omer_custom || "full",
     metzarim_custom: c.metzarim_custom || "tammuz17",
     /* הגדרות הפרסום. הפונקציה הזו מעבירה רק שדות שמופיעים כאן,
        ולכן ads_promo / ads_mode נשמרו באדמין אבל לא הגיעו למסך מעולם —
@@ -2426,7 +2426,8 @@ function zmForDate(d){
    המנהגים חלוקים, ולכן שתי התקופות ניתנות לשינוי מהאדמין:
 
      display_config.omer_custom
-       "pesach-lag"   ברירת מחדל — מט״ז בניסן ועד ל״ג בעומר
+       "full"         ברירת מחדל (12.18) — כל הספירה: מכ״ג בניסן (ממחרת אסרו חג) ועד ב׳ בסיוון
+       "pesach-lag"   מט״ז בניסן ועד ל״ג בעומר
        "rc-iyar"      מר״ח אייר ועד ערב שבועות
        "none"         בלי השתקה בספירה
 
@@ -2459,9 +2460,14 @@ function isMourningNow(now){
     }
 
     /* ---- ספירת העומר ---- */
-    var oc = (DC && DC.omer_custom) || "pesach-lag";
+    var oc = (DC && DC.omer_custom) || "full";
     if(oc !== "none"){
-      if(oc === "rc-iyar"){
+      if(oc === "full"){
+        /* כל הספירה — ממחרת אסרו חג פסח ועד שלושת ימי הגבלה (ג׳ בסיוון ואילך מותר) */
+        if(m===1 && d>=23) return true;
+        if(m===2) return true;
+        if(m===3 && d<=2) return true;
+      }else if(oc === "rc-iyar"){
         if(m===2) return true;
         if(m===3 && d<=5) return true;
       }else{
@@ -5419,7 +5425,7 @@ setInterval(fitTimer, 60000);
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.17 · 21.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.18 · 21.10.26</div>
 <script>
 /* ---- עדכון אוטומטי מ-GitHub · 13.10.26 ----
    כל 3 דקות המסך בודק (בקשת HEAD קטנה, בלי להוריד את הקובץ) אם הקובץ שלו
