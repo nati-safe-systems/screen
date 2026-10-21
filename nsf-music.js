@@ -1,5 +1,5 @@
 /* =====================================================================
-   נתי SAFE — נגן ספריות מוזיקה · NatiMusic v1.4 · 21.10.26
+   נתי SAFE — נגן ספריות מוזיקה · NatiMusic v1.5 · 21.10.26
    ---------------------------------------------------------------------
    כל ספריה היא תיקיה בגוגל דרייב (בתוך "נתי SAFE מוזיקה").
    באדמין בוחרים לכל מסך מאילו ספריות לנגן — נשמר ב-display_config:
@@ -25,6 +25,9 @@
      (למשל חלון שנטען מראש), שני העותקים "נלחמו" על הרמקול ועצרו זה את זה
      כל כמה שניות. עכשיו רק עותק אחד מנגן, והשני ממתין בשקט.
      ואם המכשיר בכל זאת עוצר שוב ושוב — ההמשך האוטומטי מאט ולא נלחם.
+   - 1.5: החלון שמוצג על המסך מקבל עדיפות. חלון מוסתר, או חלון שלא
+     מצליח לנגן 15 שניות, מוותר — והחלון הגלוי מנגן. החיווי בחלון הגלוי
+     מראה מה מתנגן בפועל בחלון השני.
 
    שימוש:
      מסך הבניין:  NatiMusic.apply(DC, {muted: isMusicMuted})  — בכל עדכון הגדרות
@@ -44,21 +47,31 @@
   /* ---- 1.4: נעילה — רק עותק אחד של הדף מנגן במכשיר ---- */
   var ME=Math.random().toString(36).slice(2,10), LK="nsf_mus_lock";
   function lockRead(){ try{ return LS ? JSON.parse(LS.getItem(LK)||"null") : null; }catch(e){ return null; } }
+  var notPlayingSince=0;
+  function hid(){ try{ return !!document.hidden; }catch(e){ return false; } }
+  function lockWrite(){
+    var t=trackOf(curId), pl=!!(au && curId && !au.paused);
+    if(pl) notPlayingSince=0; else if(!notPlayingSince) notPlayingSince=Date.now();
+    try{ LS.setItem(LK, JSON.stringify({id:ME, at:Date.now(), hid:hid(), p:pl, ps:notPlayingSince,
+      lib:t?t.lib:"", n:t?nice(t.n):""})); }catch(e){}
+  }
   function haveLock(){
     if(!LS) return true;
     var l=lockRead(), now=Date.now();
-    if(!l || l.id===ME || now-l.at>7000){
-      try{ LS.setItem(LK, JSON.stringify({id:ME, at:now})); }catch(e){ return true; }
-      var c=lockRead(); return !c || c.id===ME;
-    }
-    return false;
+    var take = !l || l.id===ME || now-l.at>7000 ||
+               (l.hid && !hid()) ||                                     /* העדיפות לחלון הגלוי */
+               (!hid() && !l.p && l.ps && now-l.ps>15000);             /* החלון השני לא מצליח לנגן */
+    if(!take) return false;
+    lockWrite();
+    var c=lockRead(); return !c || c.id===ME;
   }
   function others(){ var l=lockRead(); return !!(l && l.id!==ME && Date.now()-l.at<7000); }
+  function otherInfo(){ var l=lockRead(); return (l && l.id!==ME && Date.now()-l.at<7000) ? l : null; }
   setInterval(function(){
     if(!LS) return;
     var l=lockRead();
-    if(l && l.id===ME){ try{ LS.setItem(LK, JSON.stringify({id:ME, at:Date.now()})); }catch(e){} }   /* מחדשים כל 2 שניות */
-    else if(au && curId && !au.paused && l && Date.now()-l.at<7000){ stop("מתנגן בחלון אחר של המכשיר"); }
+    if(l && l.id===ME) lockWrite();                                     /* מחדשים כל 2 שניות */
+    else if(au && curId && l && Date.now()-l.at<7000){ stop("מתנגן בחלון אחר של המכשיר"); }
   }, 2000);
   function releaseLock(){ var l=lockRead(); if(l && l.id===ME){ try{ LS.removeItem(LK); }catch(e){} } }   /* 1.2: עצירות שלא אנחנו גרמנו */
   function ourPause(fn){ ours=true; try{ fn(); }catch(e){} setTimeout(function(){ ours=false; }, 300); }
@@ -390,7 +403,12 @@
     if(m){ stop("מושתק — שבת, חג או ימי אבלות"); return; }
     loadList(false);
     if(!TRACKS.length){ if(!LIST_BUSY && LIBS.length) setState("הספריות שנבחרו ריקות"); else if(!state) setState("טוען ספריות..."); return; }
-    if(!haveLock()){ if(au && curId) stop("מתנגן בחלון אחר של המכשיר"); else setState("מתנגן בחלון אחר של המכשיר"); return; }
+    if(!haveLock()){
+      var o=otherInfo();
+      var msg = !o ? "מתנגן בחלון אחר של המכשיר" : (o.p ? "מנגן · "+o.lib+" · "+o.n+" (חלון 2)" : "החלון השני מנסה לנגן...");
+      if(au && curId) stop("מתנגן בחלון אחר של המכשיר");
+      setState(msg); setTimeout(tick, 5000); return;
+    }
     if(LIST_KEY!==libsOf(CFG).join("|")+"#"+(CFG.audio_shuffle===false?"o":"s")) build();
     if(au && curId && !au.paused){                    /* מתנגן — רק עוצמה */
       var v=vol(); if(!fading && Math.abs(au.volume-v)>0.01) au.volume=v;
@@ -452,11 +470,11 @@
   root.addEventListener("beforeunload", savePos);
 
   root.NatiMusic={apply:apply, auto:auto, active:active, stop:stop,
-    playing:function(){ return !!(au && curId && !au.paused); },
+    playing:function(){ if(au && curId && !au.paused) return true; var o=otherInfo(); return !!(o && o.p && CFG && CFG.audio_enabled); },
     diag:function(){ return {pauses:(pauses?pauses+" · "+cause:0), n:pauses, cause:cause, lastPause:lastPause, track:curId, paused:au?au.paused:null, t:au?Math.round(au.currentTime):0}; },
     state:function(){ return state; },
-    now:function(){ var t=trackOf(curId); return t?{lib:t.lib,name:nice(t.n)}:null; },
+    now:function(){ var t=trackOf(curId); if(t) return {lib:t.lib,name:nice(t.n)}; var o=otherInfo(); return (o&&o.p)?{lib:o.lib+" (חלון 2)",name:o.n}:null; },
     count:function(){ return TRACKS.length; },
     error:function(){ return lastErr; },
-    _muted:defaultMuted, VERSION:"1.4"};
+    _muted:defaultMuted, VERSION:"1.5"};
 })(window);
