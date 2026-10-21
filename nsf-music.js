@@ -1,5 +1,5 @@
 /* =====================================================================
-   נתי SAFE — נגן ספריות מוזיקה · NatiMusic v1.0 · 21.10.26
+   נתי SAFE — נגן ספריות מוזיקה · NatiMusic v1.1 · 21.10.26
    ---------------------------------------------------------------------
    כל ספריה היא תיקיה בגוגל דרייב (בתוך "נתי SAFE מוזיקה").
    באדמין בוחרים לכל מסך מאילו ספריות לנגן — נשמר ב-display_config:
@@ -16,6 +16,9 @@
    - כל שיר נטען במלואו לזיכרון לפני שמתנגן, והבא בתור נטען מראש
      ברקע — בלי עצירות באמצע ובלי שקט בין שירים.
    - שבת, חג וימי אבלות — מושתק (כמו במסך הבניין).
+   - 1.1: קובץ ארוך (פלייליסט של שעה ומעלה, mp3) — מתנגן בהזרמה:
+     חלק של 3MB בכל פעם, החלקים שכבר נשמעו נמחקים מהזיכרון.
+     ההודעה בחיווי המוזיקה אומרת מה בדיוק קורה כשלא מתנגן.
 
    שימוש:
      מסך הבניין:  NatiMusic.apply(DC, {muted: isMusicMuted})  — בכל עדכון הגדרות
@@ -29,10 +32,11 @@
 
   var CFG=null, OPT={}, GAS="", LIBS=[], TRACKS=[], LIST_AT=0, LIST_BUSY=false, LIST_KEY="";
   var Q=null;          /* {key, order:[ids], i} */
-  var au=null, curId="", state="", nextTry=0, fading=false;
+  var au=null, curId="", state="", nextTry=0, fading=false, lastErr="";
+  var BIG=30*1048576, CH=3*1048576, STREAM=null, heads={};
   var blobs={}, busy={}, fail={};
 
-  function setState(s){ state=s; }
+  function setState(s){ if(s!==state){ try{ console.info("[NatiMusic] "+s); }catch(e){} } state=s; }
   function vol(){ var v=CFG && +CFG.audio_volume; return Math.max(0, Math.min(100, isFinite(v)&&v>=0 ? v : 40))/100; }
   function libsOf(c){ return (c && Array.isArray(c.audio_libs)) ? c.audio_libs.filter(function(x){ return x && String(x).trim(); }) : []; }
 
@@ -162,7 +166,7 @@
     var p=fetch(GAS+(GAS.indexOf("?")>-1?"&":"?")+"action=file&id="+encodeURIComponent(id),{cache:"no-store",signal:ctl?ctl.signal:undefined})
       .then(function(r){ return r.json(); })
       .then(function(d){
-        if(!d || !d.ok || !d.b64) throw new Error(d&&d.big?"big":"bad");
+        if(!d || !d.ok || !d.b64){ lastErr=(d&&d.error)||""; throw new Error(d&&d.big?"big":"bad"); }
         return fetch("data:"+(d.mime||"audio/mpeg")+";base64,"+d.b64).then(function(r){ return r.blob(); });
       })
       .then(function(b){
@@ -171,7 +175,9 @@
       })
       .catch(function(e){
         clearTimeout(to); delete busy[id];
-        fail[id]={at:Date.now(), big:(e&&e.message)==="big"}; return null;
+        var m=(e&&e.message)||"";
+        if(m!=="bad" && m!=="big") lastErr=(m.indexOf("abort")>-1||(e&&e.name)==="AbortError")?"הורדת השיר לקחה יותר מדי זמן":"אין חיבור לסקריפט המוזיקה";
+        fail[id]={at:Date.now(), big:m==="big"}; return null;
       });
     busy[id]=p; return p;
   }
@@ -185,30 +191,129 @@
   }
   function failed(id){ var f=fail[id]; return !!(f && Date.now()-f.at < (f.big?6*3600000:30*60000)); }
 
+  /* ---------------- 1.1: הזרמה של קובץ ארוך ---------------- */
+  function isBig(t){ return !!(t && +t.s > BIG); }
+  function canStream(t){
+    try{ return !!(t && /\.mp3$/i.test(t.n) && root.MediaSource && MediaSource.isTypeSupported && MediaSource.isTypeSupported("audio/mpeg")); }catch(e){ return false; }
+  }
+  function b64Bytes(b){ var s=atob(b||""), a=new Uint8Array(s.length); for(var i=0;i<s.length;i++) a[i]=s.charCodeAt(i); return a; }
+  function chunk(id, from, tries){
+    return fetch(GAS+(GAS.indexOf("?")>-1?"&":"?")+"action=chunk&id="+encodeURIComponent(id)+"&from="+from+"&len="+CH,{cache:"no-store"})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(!d || !d.ok){ lastErr=(d&&d.error)||"שגיאה בהזרמה"; if(/Unknown action|chunk/i.test(lastErr)) lastErr="יש להדביק את הסקריפט המעודכן (1.1) בגוגל"; throw new Error("chunk"); }
+        return b64Bytes(d.b64);
+      })
+      .catch(function(e){
+        if((tries||0) < 2) return new Promise(function(ok){ setTimeout(ok, 4000); }).then(function(){ return chunk(id, from, (tries||0)+1); });
+        throw e;
+      });
+  }
+  function killStream(){ if(STREAM){ STREAM.dead=true; clearTimeout(STREAM.tm); STREAM=null; } }
+  function streamFail(S){
+    if(S.dead) return; S.dead=true; clearTimeout(S.tm);
+    fail[S.id]={at:Date.now()};
+    if(STREAM===S) STREAM=null;
+    if(curId===S.id){ try{ au.pause(); }catch(e){} advance(); curId=""; setTimeout(tick, 1500); }
+  }
+  function pump(S){
+    if(S.dead || S.busy || !S.sb || S.sb.updating) return;
+    var a=au, b=null, ahead=0;
+    try{ b=S.sb.buffered; if(b.length) ahead=b.end(b.length-1)-a.currentTime; }catch(e){}
+    if(S.pos>=S.size){ try{ if(S.ms.readyState==="open") S.ms.endOfStream(); }catch(e){} return; }
+    /* מה שכבר נשמע — יוצא מהזיכרון */
+    try{ if(b && b.length && a.currentTime-b.start(0) > 60){ S.busy=true; S.sb.remove(b.start(0), a.currentTime-15); return; } }catch(e){ S.busy=false; }
+    if(S.pos>0 && ahead>120){ clearTimeout(S.tm); S.tm=setTimeout(function(){ pump(S); }, 10000); return; }
+    S.busy=true;
+    var src=(S.pos===0 && heads[S.id]) ? Promise.resolve(heads[S.id]) : chunk(S.id, S.pos, 0);
+    delete heads[S.id];
+    src.then(function(bytes){
+      if(S.dead) return;
+      if(!bytes.length){ S.pos=S.size; S.busy=false; pump(S); return; }
+      try{ S.sb.appendBuffer(bytes); S.pos+=bytes.length; }
+      catch(e){
+        S.busy=false;
+        if(e && e.name==="QuotaExceededError"){           /* הזיכרון מלא — מפנים ומנסים שוב */
+          try{ var bb=S.sb.buffered; if(bb.length && a.currentTime-bb.start(0)>5){ S.busy=true; S.sb.remove(bb.start(0), a.currentTime-3); } }catch(x){}
+          heads[S.id]=null; S.retry=bytes; clearTimeout(S.tm); S.tm=setTimeout(function(){ pump2(S); }, 5000); return;
+        }
+        streamFail(S);
+      }
+    }).catch(function(){ streamFail(S); });
+  }
+  /* אחרי שהזיכרון התפנה — מוסיפים את החלק שלא נכנס */
+  function pump2(S){
+    if(S.dead) return;
+    if(!S.retry){ pump(S); return; }
+    if(S.busy || S.sb.updating){ S.tm=setTimeout(function(){ pump2(S); }, 3000); return; }
+    var bytes=S.retry; S.retry=null;
+    try{ S.busy=true; S.sb.appendBuffer(bytes); S.pos+=bytes.length; }
+    catch(e){ S.busy=false; S.retry=bytes; S.tm=setTimeout(function(){ pump2(S); }, 8000); }
+  }
+  function playStream(id, t){
+    var a=ensureAu(), v=vol();
+    killStream(); curId=id;
+    try{ sessionStorage.removeItem("nsf_mus_pos"); }catch(e){}
+    var S={id:id, pos:0, size:+t.s||0, dead:false, busy:false};
+    S.ms=new MediaSource(); STREAM=S;
+    S.ms.addEventListener("sourceopen",function(){
+      if(S.dead) return;
+      try{ S.sb=S.ms.addSourceBuffer("audio/mpeg"); }catch(e){ lastErr="המכשיר לא תומך בהזרמה"; streamFail(S); return; }
+      S.sb.addEventListener("updateend",function(){ S.busy=false; if(S.retry) pump2(S); else pump(S); });
+      S.sb.addEventListener("error",function(){ streamFail(S); });
+      pump(S);
+    },{once:true});
+    a.src=URL.createObjectURL(S.ms);
+    fadeIn(v);
+    setState("טוען (קובץ ארוך): "+nice(t.n)+"...");
+    a.play().then(function(){ setState("מנגן · "+t.lib+" · "+nice(t.n)); })
+      .catch(function(){
+        if(S.dead) return;
+        setState("הניגון נחסם — ממתין למגע במסך");
+        var go=function(){ if(au) au.play().catch(function(){}); };
+        document.addEventListener("click",go,{once:true}); document.addEventListener("touchstart",go,{once:true});
+      });
+    prefetchNext();
+  }
+  /* השיר הבא: קובץ רגיל — נטען כולו; קובץ ארוך — רק החלק הראשון */
+  function prefetchNext(){
+    var nx=peekNext(); if(!nx || failed(nx)) return;
+    var t=trackOf(nx);
+    setTimeout(function(){
+      if(peekNext()!==nx) return;
+      if(isBig(t)){ if(canStream(t) && !heads[nx]) chunk(nx,0,0).then(function(b){ Object.keys(heads).forEach(function(k){ delete heads[k]; }); heads[nx]=b; }).catch(function(){}); }
+      else fetchTrack(nx);
+    }, 20000);
+  }
+
   /* ---------------- הנגן ---------------- */
   function ensureAu(){
     if(au) return au;
     au=document.createElement("audio"); au.preload="auto"; au.style.display="none";
     au.setAttribute("data-nsf","music");
-    au.onended=function(){ advance(); curId=""; tick(); };
-    au.onerror=function(){ if(curId){ fail[curId]={at:Date.now()}; try{ URL.revokeObjectURL(blobs[curId]); }catch(e){} delete blobs[curId]; }
-      advance(); curId=""; setTimeout(tick, 1500); };
-    au.ontimeupdate=function(){ if(au && curId && Math.floor(au.currentTime)%5===0) savePos(); };
+    au.onended=function(){ killStream(); advance(); curId=""; tick(); };
+    au.onerror=function(){
+      if(!curId) return;                                   /* ניקוי מכוון של הנגן — לא שגיאה */
+      lastErr="הקובץ לא מתנגן במכשיר (פגום או בפורמט לא נתמך)";
+      fail[curId]={at:Date.now()}; try{ URL.revokeObjectURL(blobs[curId]); }catch(e){} delete blobs[curId];
+      killStream(); advance(); curId=""; setTimeout(tick, 1500); };
+    au.ontimeupdate=function(){ if(au && curId && !STREAM && Math.floor(au.currentTime)%5===0) savePos(); };
     document.body.appendChild(au);
     return au;
   }
   function stop(why){
+    killStream(); curId="";
     if(au){ try{ au.pause(); }catch(e){} try{ au.removeAttribute("src"); au.load(); }catch(e){} }
     curId=""; setState(why||"כבוי");
   }
-  function savePos(){ try{ if(au && curId && !au.paused) sessionStorage.setItem("nsf_mus_pos", JSON.stringify({id:curId, t:au.currentTime})); }catch(e){} }
+  function savePos(){ try{ if(au && curId && !STREAM && !au.paused) sessionStorage.setItem("nsf_mus_pos", JSON.stringify({id:curId, t:au.currentTime})); }catch(e){} }
   function fadeIn(v){
     if(!au) return; var a=au, s=0; a.volume=0; fading=true;
     var iv=setInterval(function(){ s++; try{ a.volume=Math.min(v, v*s/15); }catch(e){} if(s>=15){ clearInterval(iv); fading=false; } },100);
   }
   function play(id, url){
     var a=ensureAu(), v=vol(), pos=null;
-    curId=id;
+    killStream(); curId=id;
     try{ pos=JSON.parse(sessionStorage.getItem("nsf_mus_pos")||"null"); sessionStorage.removeItem("nsf_mus_pos"); }catch(e){}
     a.src=url;
     if(pos && pos.id===id && pos.t>2){
@@ -222,7 +327,7 @@
         var go=function(){ if(au) au.play().catch(function(){}); };
         document.addEventListener("click",go,{once:true}); document.addEventListener("touchstart",go,{once:true});
       });
-    var nx=peekNext(); if(nx && !failed(nx)) setTimeout(function(){ fetchTrack(nx); }, 8000);
+    prefetchNext();
   }
   function nice(n){ return String(n||"").replace(/\.[a-z0-9]+$/i,"").replace(/[_]+/g," "); }
 
@@ -240,14 +345,21 @@
       var v=vol(); if(!fading && Math.abs(au.volume-v)>0.01) au.volume=v;
       return;
     }
-    if(au && curId && au.paused && au.getAttribute("src")){ au.play().catch(function(){}); return; }
+    if(au && curId && au.paused && au.getAttribute("src")){
+      au.play().catch(function(){ setState("הניגון נחסם — ממתין למגע במסך"); }); return; }
     if(loading || Date.now()<nextTry) return;
     /* מחפשים את השיר הבא שאפשר לנגן */
     var tries=0;
     while(tries<Q.order.length && failed(curQid())){ advance(); tries++; }
-    if(tries>=Q.order.length && Q.order.length){ setState("לא ניתן לטעון אף שיר — בודק שוב בעוד דקה"); nextTry=Date.now()+60000; return; }
+    if(tries>=Q.order.length && Q.order.length){ setState("לא ניתן לטעון אף שיר"+(lastErr?" — "+lastErr:"")+" · בודק שוב בעוד דקה"); nextTry=Date.now()+60000; return; }
     var id=curQid(); if(!id) return;
-    loading=true; var t=trackOf(id);
+    var t=trackOf(id);
+    if(isBig(t)){
+      if(canStream(t)){ playStream(id,t); return; }
+      lastErr=/\.mp3$/i.test(t.n)?"המכשיר לא תומך בהזרמה של קובץ ארוך":"קובץ ארוך שאינו mp3 — יש להמיר ל-mp3 או לחלק";
+      fail[id]={at:Date.now(), big:true}; advance(); setTimeout(tick, 300); return;
+    }
+    loading=true;
     setState("טוען: "+(t?nice(t.n):"")+"...");
     fetchTrack(id).then(function(u){
       loading=false;
@@ -293,5 +405,6 @@
     state:function(){ return state; },
     now:function(){ var t=trackOf(curId); return t?{lib:t.lib,name:nice(t.n)}:null; },
     count:function(){ return TRACKS.length; },
-    _muted:defaultMuted, VERSION:"1.0"};
+    error:function(){ return lastErr; },
+    _muted:defaultMuted, VERSION:"1.1"};
 })(window);

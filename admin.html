@@ -3195,10 +3195,17 @@ function mlibDraw(msg){
     var ck=_mlibSel.indexOf(l.name)>-1;
     return '<label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;">'+
       '<input type="checkbox" data-lib="'+n+'"'+(ck?' checked':'')+' onchange="markCustom()" style="width:16px;height:16px;accent-color:#ffcc00"> '+n+
-      ' <span style="color:#8b949e;font-size:11px;">('+(l.files||[]).length+' שירים)</span></label>';
+      ' <span style="color:#8b949e;font-size:11px;">('+(l.files||[]).length+' קבצים)</span>'+mlibWarn(l)+'</label>';
   }).join('')+
   _mlibSel.filter(function(n){ return !L.some(function(l){ return l.name===n; }); }).map(function(n){
     return '<div style="grid-column:1/-1;font-size:12px;color:#ff7b72;">הספריה "'+String(n).replace(/</g,'&lt;')+'" מסומנת אבל לא נמצאה בדרייב (נמחקה או שונה שמה)</div>'; }).join('');
+}
+/* קבצים ארוכים (מעל 30MB) מתנגנים בהזרמה — רק mp3. אחרים לא יתנגנו */
+function mlibWarn(l){
+  var big=(l.files||[]).filter(function(f){ return +f.s>30*1048576; });
+  var bad=big.filter(function(f){ return !/\.mp3$/i.test(f.n||''); }).length;
+  if(bad) return ' <span style="color:#ff7b72;font-size:11px;">· '+bad+' ארוכים שאינם mp3 — לא יתנגנו</span>';
+  return big.length ? ' <span style="color:#3fb950;font-size:11px;">· '+big.length+' ארוכים (בהזרמה)</span>' : '';
 }
 function mlibFetch(fresh){
   var g=mlibGas();
@@ -4005,7 +4012,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.9 · 21.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.10 · 21.10.26</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){

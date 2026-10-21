@@ -836,7 +836,7 @@ body.ads-bottom .ad-slide video.ad-vid{width:auto;height:17vh;max-width:60%;obje
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;800;900&family=Heebo:wght@300;400;500;700;800;900&family=Rubik:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,900&family=Suez+One&display=swap" rel="stylesheet">
 <script src="nsf-zmsel.js?v=1.0-181026"></script>
-<script src="nsf-music.js?v=1.0-211026"></script>
+<script src="nsf-music.js?v=1.1-211026"></script>
 </head>
 <body>
 <!-- מודעה על כל המסך — מצב ads_mode="full" -->
@@ -2535,7 +2535,9 @@ function musIndicator(){
   if(window.NatiMusic && NatiMusic.active(DC)){
     var _np=NatiMusic.playing(), _nw=NatiMusic.now();
     e.className=_np?"on":"off";
-    if(t) t.textContent=_np ? ("מוזיקה"+(_nw?" · "+_nw.lib:"")) : "מוזיקה מושתקת";
+    /* 12.16: כשלא מתנגן — כתוב בדיוק למה (טוען / נחסם / שגיאה / שבת) */
+    var _st=String(NatiMusic.state()||"").replace(/^מושתק — /,"");
+    if(t) t.textContent=_np ? ("מוזיקה"+(_nw?" · "+_nw.lib:"")) : ("מוזיקה: "+(_st.length>46?_st.slice(0,45)+"…":_st||"מושתקת"));
     return;
   }
   var playing = !!(_au && !_au.paused && !_au.ended);
@@ -5415,7 +5417,7 @@ setInterval(fitTimer, 60000);
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.15 · 21.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.16 · 21.10.26</div>
 <script>
 /* ---- עדכון אוטומטי מ-GitHub · 13.10.26 ----
    כל 3 דקות המסך בודק (בקשת HEAD קטנה, בלי להוריד את הקובץ) אם הקובץ שלו
