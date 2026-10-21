@@ -3043,17 +3043,18 @@ function pushRefresh(){
   /* קודם הכתיבה הייתה ישירה לטבלה. כשהטבלה חסומה לכתיבה היא נכשלה בשקט,
      והכפתור הציג "פורסם" בלי שדבר קרה. עכשיו — דרך פונקציה מאובטחת,
      ובדיקה אמיתית שהאות נכתב. */
-  rpc('nsf_push_refresh',{p_token:NSF_TOKEN,p_note:'רענון ידני'}).then(function(r){
-    if(r && r.ok){ say('פורסם ✓ — המסכים יתעדכנו תוך דקה','#3fb950'); return; }
-    throw new Error((r&&r.err)||'נדחה');
-  }).catch(function(e){
-    /* גיבוי: כתיבה ישירה, עם בדיקה שהשורה באמת עודכנה */
-    sf('app_refresh?id=eq.1',{method:'PATCH',body:JSON.stringify({token:String(Date.now())})})
-      .then(function(rows){
-        if(Array.isArray(rows) && rows.length) say('פורסם ✓ — המסכים יתעדכנו תוך דקה','#3fb950');
-        else say('לא פורסם — צריך להריץ את push_refresh.sql ב-Supabase','#ff6b6b');
-      }).catch(function(){ say('לא פורסם — צריך להריץ את push_refresh.sql ב-Supabase','#ff6b6b'); });
-  });
+  /* 4.11: מציג את הסיבה האמיתית כשנכשל — לא הודעה כללית */
+  fetch(SB+"/rest/v1/rpc/nsf_push_refresh",{method:"POST",
+    headers:{"apikey":SK,"Authorization":"Bearer "+SK,"Content-Type":"application/json"},
+    body:JSON.stringify({p_token:NSF_TOKEN,p_note:'רענון ידני'})})
+  .then(function(r){ return r.text().then(function(t){ var j=null; try{ j=JSON.parse(t); }catch(e){} return {st:r.status, j:j, t:t}; }); })
+  .then(function(x){
+    if(x.st<300 && x.j && x.j.ok){ say('פורסם ✓ — המסכים יתעדכנו תוך דקה','#3fb950'); return; }
+    var why=(x.j&&(x.j.err||x.j.message))||x.t||('HTTP '+x.st);
+    if(x.j && x.j.err==='רק מנהל') say('לא פורסם — החיבור לאדמין פג. צא והתחבר מחדש, ואז נסה שוב.','#ff6b6b');
+    else if(/nsf_me|does not exist|Could not find/i.test(why)) say('לא פורסם — צריך להריץ את fix_login_check.sql ב-Supabase (פעם אחת). פירוט: '+String(why).slice(0,140),'#ff6b6b');
+    else say('לא פורסם — '+String(why).slice(0,180),'#ff6b6b');
+  }).catch(function(){ say('לא פורסם — אין חיבור לשרת. בדוק אינטרנט ונסה שוב.','#ff6b6b'); });
 }
 
 /* פותח את ממשק הלקוח בלי סיסמה, במצב קריאה בלבד */
@@ -4012,7 +4013,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.10 · 21.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.11 · 21.10.26</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){
