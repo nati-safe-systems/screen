@@ -1,5 +1,5 @@
 /* =====================================================================
-   נתי SAFE — נגן ספריות מוזיקה · NatiMusic v1.1 · 21.10.26
+   נתי SAFE — נגן ספריות מוזיקה · NatiMusic v1.2 · 21.10.26
    ---------------------------------------------------------------------
    כל ספריה היא תיקיה בגוגל דרייב (בתוך "נתי SAFE מוזיקה").
    באדמין בוחרים לכל מסך מאילו ספריות לנגן — נשמר ב-display_config:
@@ -19,6 +19,8 @@
    - 1.1: קובץ ארוך (פלייליסט של שעה ומעלה, mp3) — מתנגן בהזרמה:
      חלק של 3MB בכל פעם, החלקים שכבר נשמעו נמחקים מהזיכרון.
      ההודעה בחיווי המוזיקה אומרת מה בדיוק קורה כשלא מתנגן.
+   - 1.2: אם המכשיר עוצר את הנגינה מעצמו (מודעת וידאו, מערכת ההפעלה) —
+     הנגן מזהה את זה וממשיך מיד מאותו מקום. החיווי מראה רק מה שבאמת קורה.
 
    שימוש:
      מסך הבניין:  NatiMusic.apply(DC, {muted: isMusicMuted})  — בכל עדכון הגדרות
@@ -34,6 +36,8 @@
   var Q=null;          /* {key, order:[ids], i} */
   var au=null, curId="", state="", nextTry=0, fading=false, lastErr="";
   var BIG=30*1048576, CH=3*1048576, STREAM=null, heads={};
+  var ours=false, pauses=0, lastPause=0, resumeT=null;   /* 1.2: עצירות שלא אנחנו גרמנו */
+  function ourPause(fn){ ours=true; try{ fn(); }catch(e){} setTimeout(function(){ ours=false; }, 300); }
   var blobs={}, busy={}, fail={};
 
   function setState(s){ if(s!==state){ try{ console.info("[NatiMusic] "+s); }catch(e){} } state=s; }
@@ -214,7 +218,7 @@
     if(S.dead) return; S.dead=true; clearTimeout(S.tm);
     fail[S.id]={at:Date.now()};
     if(STREAM===S) STREAM=null;
-    if(curId===S.id){ try{ au.pause(); }catch(e){} advance(); curId=""; setTimeout(tick, 1500); }
+    if(curId===S.id){ ourPause(function(){ au.pause(); }); advance(); curId=""; setTimeout(tick, 1500); }
   }
   function pump(S){
     if(S.dead || S.busy || !S.sb || S.sb.updating) return;
@@ -292,6 +296,18 @@
     au=document.createElement("audio"); au.preload="auto"; au.style.display="none";
     au.setAttribute("data-nsf","music");
     au.onended=function(){ killStream(); advance(); curId=""; tick(); };
+    /* 1.2: המכשיר עצר את הנגינה בלי שביקשנו — ממשיכים מיד */
+    au.addEventListener("pause",function(){
+      if(ours || !curId || au.ended) return;
+      pauses++; lastPause=Date.now();
+      clearTimeout(resumeT);
+      resumeT=setTimeout(function(){
+        if(!au || !curId || !au.paused || ours) return;
+        au.play().catch(function(){ setState("המכשיר עצר את הנגינה וחוסם המשך"); });
+      }, 800);
+    });
+    au.addEventListener("playing",function(){ var t=trackOf(curId); if(t) setState("מנגן · "+t.lib+" · "+nice(t.n)); });
+    au.addEventListener("waiting",function(){ if(curId) setState("ממתין לנתונים..."); });
     au.onerror=function(){
       if(!curId) return;                                   /* ניקוי מכוון של הנגן — לא שגיאה */
       lastErr="הקובץ לא מתנגן במכשיר (פגום או בפורמט לא נתמך)";
@@ -303,7 +319,7 @@
   }
   function stop(why){
     killStream(); curId="";
-    if(au){ try{ au.pause(); }catch(e){} try{ au.removeAttribute("src"); au.load(); }catch(e){} }
+    if(au){ ourPause(function(){ au.pause(); }); try{ au.removeAttribute("src"); au.load(); }catch(e){} }
     curId=""; setState(why||"כבוי");
   }
   function savePos(){ try{ if(au && curId && !STREAM && !au.paused) sessionStorage.setItem("nsf_mus_pos", JSON.stringify({id:curId, t:au.currentTime})); }catch(e){} }
@@ -402,9 +418,10 @@
 
   root.NatiMusic={apply:apply, auto:auto, active:active, stop:stop,
     playing:function(){ return !!(au && curId && !au.paused); },
+    diag:function(){ return {pauses:pauses, lastPause:lastPause, track:curId, paused:au?au.paused:null, t:au?Math.round(au.currentTime):0}; },
     state:function(){ return state; },
     now:function(){ var t=trackOf(curId); return t?{lib:t.lib,name:nice(t.n)}:null; },
     count:function(){ return TRACKS.length; },
     error:function(){ return lastErr; },
-    _muted:defaultMuted, VERSION:"1.1"};
+    _muted:defaultMuted, VERSION:"1.2"};
 })(window);
