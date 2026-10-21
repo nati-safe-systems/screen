@@ -1,5 +1,5 @@
 /* =====================================================================
-   נתי SAFE — נגן ספריות מוזיקה · NatiMusic v1.3 · 21.10.26
+   נתי SAFE — נגן ספריות מוזיקה · NatiMusic v1.4 · 21.10.26
    ---------------------------------------------------------------------
    כל ספריה היא תיקיה בגוגל דרייב (בתוך "נתי SAFE מוזיקה").
    באדמין בוחרים לכל מסך מאילו ספריות לנגן — נשמר ב-display_config:
@@ -21,6 +21,10 @@
      ההודעה בחיווי המוזיקה אומרת מה בדיוק קורה כשלא מתנגן.
    - 1.2: אם המכשיר עוצר את הנגינה מעצמו (מודעת וידאו, מערכת ההפעלה) —
      הנגן מזהה את זה וממשיך מיד מאותו מקום. החיווי מראה רק מה שבאמת קורה.
+   - 1.4: נגן אחד בלבד בכל מכשיר. אם תוכנת השילוט מחזיקה את הדף פעמיים
+     (למשל חלון שנטען מראש), שני העותקים "נלחמו" על הרמקול ועצרו זה את זה
+     כל כמה שניות. עכשיו רק עותק אחד מנגן, והשני ממתין בשקט.
+     ואם המכשיר בכל זאת עוצר שוב ושוב — ההמשך האוטומטי מאט ולא נלחם.
 
    שימוש:
      מסך הבניין:  NatiMusic.apply(DC, {muted: isMusicMuted})  — בכל עדכון הגדרות
@@ -36,7 +40,27 @@
   var Q=null;          /* {key, order:[ids], i} */
   var au=null, curId="", state="", nextTry=0, fading=false, lastErr="";
   var BIG=30*1048576, CH=3*1048576, STREAM=null, heads={};
-  var ours=false, pauses=0, lastPause=0, resumeT=null, cause="";   /* 1.2: עצירות שלא אנחנו גרמנו */
+  var ours=false, pauses=0, lastPause=0, resumeT=null, cause="", recent=[];
+  /* ---- 1.4: נעילה — רק עותק אחד של הדף מנגן במכשיר ---- */
+  var ME=Math.random().toString(36).slice(2,10), LK="nsf_mus_lock";
+  function lockRead(){ try{ return LS ? JSON.parse(LS.getItem(LK)||"null") : null; }catch(e){ return null; } }
+  function haveLock(){
+    if(!LS) return true;
+    var l=lockRead(), now=Date.now();
+    if(!l || l.id===ME || now-l.at>7000){
+      try{ LS.setItem(LK, JSON.stringify({id:ME, at:now})); }catch(e){ return true; }
+      var c=lockRead(); return !c || c.id===ME;
+    }
+    return false;
+  }
+  function others(){ var l=lockRead(); return !!(l && l.id!==ME && Date.now()-l.at<7000); }
+  setInterval(function(){
+    if(!LS) return;
+    var l=lockRead();
+    if(l && l.id===ME){ try{ LS.setItem(LK, JSON.stringify({id:ME, at:Date.now()})); }catch(e){} }   /* מחדשים כל 2 שניות */
+    else if(au && curId && !au.paused && l && Date.now()-l.at<7000){ stop("מתנגן בחלון אחר של המכשיר"); }
+  }, 2000);
+  function releaseLock(){ var l=lockRead(); if(l && l.id===ME){ try{ LS.removeItem(LK); }catch(e){} } }   /* 1.2: עצירות שלא אנחנו גרמנו */
   function ourPause(fn){ ours=true; try{ fn(); }catch(e){} setTimeout(function(){ ours=false; }, 300); }
   var blobs={}, busy={}, fail={};
 
@@ -306,11 +330,15 @@
       try{ if(document.hidden) c.push("מוסתר"); }catch(e){}
       try{ if(au.readyState<3) c.push("טעינה"); }catch(e){}
       cause=c.join("+")||"לא ידוע";
+      if(others()){ cause="חלון נוסף"; stop("מתנגן בחלון אחר של המכשיר"); return; }
+      /* עצירות רצופות — מאטים את ההמשך במקום להילחם במכשיר */
+      var now=Date.now(); recent=recent.filter(function(t){ return now-t<60000; }); recent.push(now);
+      var wait = recent.length>6 ? 20000 : (recent.length>3 ? 4000 : 800);
       clearTimeout(resumeT);
       resumeT=setTimeout(function(){
         if(!au || !curId || !au.paused || ours) return;
         au.play().catch(function(){ setState("המכשיר עצר את הנגינה וחוסם המשך"); });
-      }, 800);
+      }, wait);
     });
     au.addEventListener("playing",function(){ var t=trackOf(curId); if(t) setState("מנגן · "+t.lib+" · "+nice(t.n)); });
     au.addEventListener("waiting",function(){ if(curId) setState("ממתין לנתונים..."); });
@@ -324,7 +352,7 @@
     return au;
   }
   function stop(why){
-    killStream(); curId="";
+    killStream(); curId=""; if(why!=="מתנגן בחלון אחר של המכשיר") releaseLock();
     if(au){ ourPause(function(){ au.pause(); }); try{ au.removeAttribute("src"); au.load(); }catch(e){} }
     curId=""; setState(why||"כבוי");
   }
@@ -362,6 +390,7 @@
     if(m){ stop("מושתק — שבת, חג או ימי אבלות"); return; }
     loadList(false);
     if(!TRACKS.length){ if(!LIST_BUSY && LIBS.length) setState("הספריות שנבחרו ריקות"); else if(!state) setState("טוען ספריות..."); return; }
+    if(!haveLock()){ if(au && curId) stop("מתנגן בחלון אחר של המכשיר"); else setState("מתנגן בחלון אחר של המכשיר"); return; }
     if(LIST_KEY!==libsOf(CFG).join("|")+"#"+(CFG.audio_shuffle===false?"o":"s")) build();
     if(au && curId && !au.paused){                    /* מתנגן — רק עוצמה */
       var v=vol(); if(!fading && Math.abs(au.volume-v)>0.01) au.volume=v;
@@ -419,7 +448,7 @@
   }
 
   setInterval(function(){ try{ tick(); }catch(e){} }, 20000);
-  root.addEventListener("pagehide", savePos);
+  root.addEventListener("pagehide", function(){ savePos(); releaseLock(); });
   root.addEventListener("beforeunload", savePos);
 
   root.NatiMusic={apply:apply, auto:auto, active:active, stop:stop,
@@ -429,5 +458,5 @@
     now:function(){ var t=trackOf(curId); return t?{lib:t.lib,name:nice(t.n)}:null; },
     count:function(){ return TRACKS.length; },
     error:function(){ return lastErr; },
-    _muted:defaultMuted, VERSION:"1.3"};
+    _muted:defaultMuted, VERSION:"1.4"};
 })(window);
