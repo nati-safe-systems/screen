@@ -3772,7 +3772,10 @@ var PERM_DEFS=[
     {id:'type_scroll',label:'סוג: גוללת'},
     {id:'type_static',label:'סוג: קבועה'},
     {id:'type_pdf',label:'סוג: PDF / תמונה'},
-    {id:'scroll_speed',label:'שליטה במהירות הגלילה'}
+    {id:'scroll_speed',label:'שליטה במהירות הגלילה'},
+    {id:'schedule',label:'תזמון מודעות לתאריכים'},
+    {id:'highlights',label:'הודעות בולטות (שמחות / הודעות חשובות)'},
+    {id:'broadcast',label:'שליחת מודעה לכמה מסכים יחד'}
   ]},
   {cat:'רכיבי המסך',items:[
     {id:'disp_clock',label:'שעון + תאריך'},
@@ -3793,11 +3796,24 @@ var PERM_DEFS=[
   {cat:'מוזיקה',items:[
     {id:'music',label:'שליטה במוזיקה מהפאנל של הלקוח (פעיל כברירת מחדל)'}
   ]},
+  {cat:'בית כנסת',items:[
+    {id:'shul_manage',label:'כניסה לניהול בית הכנסת'},
+    {id:'shul_minyanim',label:'לוח מניינים וחדרים'},
+    {id:'shul_ann',label:'הודעות לציבור'},
+    {id:'shul_spon',label:'פרנסים ותורמים'},
+    {id:'shul_site',label:'הגדרות האתר (שם, נוסח, הדלקת נרות)'},
+    {id:'shul_call',label:'הגדרות הודעת "התפילה מתחילה"'},
+    {id:'minyan_view',label:'תצוגת המניינים במסך שמעל הדלת'},
+    {id:'gabbai_remote',label:'שלט גבאי (כפתור לכל חדר)'}
+  ]},
   {cat:'כללי',items:[
     {id:'building_name',label:'עריכת שם הבניין'},
     {id:'manage_users',label:'ניהול משתמשי משנה (הלקוח מקים בעצמו)'}
   ]}
 ];
+/* 4.17: הרשאות שנוספו אחרי שהלקוחות הוקמו — ללקוח שלא נשמר לו ערך הן מסומנות
+   (כמו שעבד עד היום), כדי ששמירה של הלקוח לא תכבה לו אותן בטעות. */
+var PERM_NEW_ON=['schedule','highlights','broadcast','shul_manage','shul_minyanim','shul_ann','shul_spon','shul_site','shul_call','minyan_view','gabbai_remote'];
 var PERM_IDS=[]; PERM_DEFS.forEach(function(g){g.items.forEach(function(it){PERM_IDS.push(it.id);});});
 var PERM_LABELS={}; PERM_DEFS.forEach(function(g){g.items.forEach(function(it){PERM_LABELS[it.id]=it.label;});});
 /* תלויות: הרשאה-בת ניתנת לסימון רק אם ההרשאה-האב מסומנת */
@@ -3805,7 +3821,9 @@ var PERM_DEPS={
   type_scroll:'edit_message',
   type_static:'edit_message',
   type_pdf:'edit_message',
-  ads_manage:'disp_ads'
+  ads_manage:'disp_ads',
+  schedule:'edit_message', broadcast:'edit_message',
+  shul_minyanim:'shul_manage', shul_ann:'shul_manage', shul_spon:'shul_manage', shul_site:'shul_manage', shul_call:'shul_manage'
 };
 function applyPermDeps(prefix){
   PERM_IDS.forEach(function(id){
@@ -3840,7 +3858,8 @@ function permGridHtml(prefix,perms){
   return PERM_DEFS.map(function(g){
     var items=g.items.map(function(it){
       /* "מוזיקה" פעילה גם ללקוח שנשמר לפני שההרשאה נוספה */
-      var ck=(perms&&(perms[it.id] || (it.id==='music' && perms[it.id]===undefined)))?' checked':'';
+      var undef=!perms || perms[it.id]===undefined;
+      var ck=((perms&&perms[it.id]) || (it.id==='music' && undef) || (prefix==='coperm-' && undef && PERM_NEW_ON.indexOf(it.id)>-1))?' checked':'';
       return '<label class="dc-chk"><input type="checkbox" id="'+prefix+it.id+'"'+ck+' onchange="applyPermDeps(\''+prefix+'\')"> '+escH(it.label)+'</label>';
     }).join('');
     return '<div style="margin-top:8px;"><div style="color:#ffcc00;font-size:11px;font-weight:700;margin-bottom:4px;">'+escH(g.cat)+'</div>'+
@@ -4038,7 +4057,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.16 · 23.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.17 · 23.10.26</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){

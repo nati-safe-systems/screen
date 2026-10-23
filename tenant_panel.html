@@ -1566,7 +1566,10 @@ var PERM_DEFS_T=[
     {id:'type_scroll',label:'סוג: גוללת'},
     {id:'type_static',label:'סוג: קבועה'},
     {id:'type_pdf',label:'סוג: PDF / תמונה'},
-    {id:'scroll_speed',label:'שליטה במהירות הגלילה'}
+    {id:'scroll_speed',label:'שליטה במהירות הגלילה'},
+    {id:'schedule',label:'תזמון מודעות לתאריכים'},
+    {id:'highlights',label:'הודעות בולטות (שמחות / הודעות חשובות)'},
+    {id:'broadcast',label:'שליחת מודעה לכמה מסכים יחד'}
   ]},
   {cat:'רכיבי המסך',items:[
     {id:'disp_clock',label:'שעון + תאריך'},
@@ -1585,11 +1588,36 @@ var PERM_DEFS_T=[
   {cat:'מוזיקה',items:[
     {id:'music',label:'שליטה במוזיקה'}
   ]},
+  {cat:'בית כנסת',items:[
+    {id:'shul_manage',label:'כניסה לניהול בית הכנסת'},
+    {id:'shul_minyanim',label:'לוח מניינים וחדרים'},
+    {id:'shul_ann',label:'הודעות לציבור'},
+    {id:'shul_spon',label:'פרנסים ותורמים'},
+    {id:'shul_site',label:'הגדרות האתר (שם, נוסח, הדלקת נרות)'},
+    {id:'shul_call',label:'הגדרות הודעת "התפילה מתחילה"'},
+    {id:'minyan_view',label:'תצוגת המניינים במסך שמעל הדלת'},
+    {id:'gabbai_remote',label:'שלט גבאי (כפתור לכל חדר)'}
+  ]},
   {cat:'כללי',items:[
     {id:'building_name',label:'עריכת שם הבניין'},
     {id:'manage_users',label:'ניהול משתמשי משנה'}
   ]}
 ];
+/* 3.14: הרשאות שנוספו אחרי שהלקוחות כבר הוקמו. ללקוח (משתמש ראשי) שלא נשמר
+   לו ערך — פעילות, כדי שכלום לא ייעלם לו. למשתמש-משנה — כבויות עד שהלקוח מסמן. */
+var PERM_NEW_ON=['schedule','highlights','broadcast','shul_manage','shul_minyanim','shul_ann','shul_spon','shul_site','shul_call','minyan_view','gabbai_remote'];
+/* למשתמש-משנה ותיק: תזמון / הודעות בולטות / שליחה לכמה מסכים — כמו "עריכת ההודעה" שהייתה לו */
+var PERM_INHERIT={schedule:'edit_message', highlights:'edit_message', broadcast:'edit_message'};
+function permOn(id, P){
+  P=P||CURRENT_PERMS||{};
+  if(IS_ADMIN) return true;
+  if(P[id]===true) return true;
+  if(P[id]===false) return false;
+  if(PERM_NEW_ON.indexOf(id)<0) return false;
+  var master=(typeof isMasterUser==="function") ? isMasterUser() : false;
+  if(master || PREVIEW_MODE) return true;
+  return !!(PERM_INHERIT[id] && P[PERM_INHERIT[id]]===true);
+}
 var PERM_IDS_T=[]; PERM_DEFS_T.forEach(function(g){g.items.forEach(function(it){PERM_IDS_T.push(it.id);});});
 var PERM_LABELS_T={}; PERM_DEFS_T.forEach(function(g){g.items.forEach(function(it){PERM_LABELS_T[it.id]=it.label;});});
 function allPermsT(){ var o={}; PERM_IDS_T.forEach(function(id){o[id]=true;}); return o; }
@@ -1849,7 +1877,7 @@ function loadMe(){
     return gabbaiRoute().then(function(isG){
       if(isG) return;
       enterApp();
-      var gb=document.getElementById("btn-gabbai"); if(gb) gb.style.display=_gabbaiSites.length?"":"none";
+      var gb=document.getElementById("btn-gabbai"); if(gb) gb.style.display=(_gabbaiSites.length && permOn('gabbai_remote'))?"":"none";
     });
   });
 }
@@ -2265,7 +2293,8 @@ function applyTenantPerms(){
   _tShow('building-sec', !!P.building_name);
   // עריכת הודעה
   _tShow('txt-sec', !!P.edit_message);
-  _tShow('sched-sec', !!P.edit_message);
+  _tShow('sched-sec', !!P.edit_message && permOn('schedule'));
+  _tShow('bcast-wrap', !!P.edit_message && permOn('broadcast'));
   _tShow('btn-save-msg', !!P.edit_message);
   _tShow('btn-del-msg', !!P.edit_message);
   if(!P.edit_message){ _tShow('pdf-sec',false); _tShow('pdf-anim-sec',false); _tShow('pdf-page-sec',false); _tShow('pdf-show-sec',false); }
@@ -2297,7 +2326,7 @@ function applyTenantPerms(){
   _tShow('t-pdf-outer', false);
   /* מוזיקה — פעילה אלא אם האדמין כיבה (גם ללקוחות קיימים) */
   _tShow('t-music-sec', P.music!==false);   /* 3.8: בכל סוגי המסכים */
-  _tShow('t-hl-outer', !!P.edit_message && (_tPurpose||"main")==="main");   /* 3.10: מסכי בניין */
+  _tShow('t-hl-outer', permOn('highlights') && (_tPurpose||"main")==="main");   /* 3.10: מסכי בניין */
 }
 function _tenantBaseDC(){
   /* בסיס לשמירה: העתקה מלאה של הקונפיג הקיים.
@@ -2570,7 +2599,7 @@ function tHlLoad(cfg){
   tHlDraw();
 }
 function tHlSave(){
-  if(!(CURRENT_PERMS&&CURRENT_PERMS.edit_message)){ toast("אין הרשאה"); return; }
+  if(!permOn('highlights')){ toast("אין הרשאה"); return; }
   tHlCollect();
   var list=_tHl.filter(function(h){ return String(h.title||"").trim()||String(h.text||"").trim(); });
   for(var i=0;i<list.length;i++){ if(list[i].from && list[i].to && list[i].to<list[i].from){ toast("בהודעה "+(i+1)+" — תאריך הסיום לפני תאריך ההתחלה"); return; } }
@@ -2617,7 +2646,7 @@ function tApplyPurpose(){
      if(!isBuilding) show(id,false);
   });
   /* מסך מעל דלת — רק בחירת תצוגת מניינים */
-  show("tenant-minyan-sec", isDoor);
+  show("tenant-minyan-sec", isDoor && permOn('minyan_view'));
   var mv=document.getElementById("t-minyan-view"); if(mv) mv.value=_tMinyanView||"list";
   /* תמונות הרקע רלוונטיות לכל סוגי המסכים */
   show("t-bg-outer", !!(CURRENT_PERMS&&CURRENT_PERMS.bg_images));   /* רק בהרשאת אדמין */
@@ -2625,7 +2654,7 @@ function tApplyPurpose(){
   try{ tZmDraw(); }catch(e){}
   show("t-pdf-outer", false);   /* הוסר — הקובץ מוצג דרך ההודעה */
   show("t-music-sec", !!(CURRENT_PERMS && CURRENT_PERMS.music!==false));   /* 3.8: בכל סוגי המסכים */
-  show("t-hl-outer", isBuilding && !!(CURRENT_PERMS && CURRENT_PERMS.edit_message));   /* 3.10 */
+  show("t-hl-outer", isBuilding && permOn('highlights'));   /* 3.10 */
 }
 
 function saveMinyanView(){
@@ -2840,7 +2869,9 @@ var PERM_DEPS_T={
   type_scroll:'edit_message',
   type_static:'edit_message',
   type_pdf:'edit_message',
-  ads_manage:'disp_ads'
+  ads_manage:'disp_ads',
+  schedule:'edit_message', broadcast:'edit_message',
+  shul_minyanim:'shul_manage', shul_ann:'shul_manage', shul_spon:'shul_manage', shul_site:'shul_manage', shul_call:'shul_manage'
 };
 function applyUserPermDeps(){
   PERM_IDS_T.forEach(function(id){
@@ -2858,7 +2889,7 @@ function grantablePermDefs(){
   return PERM_DEFS_T.map(function(g){
     var items=g.items.filter(function(it){
       if(it.id==='manage_users') return false; // משתמש-משנה לא מקים משתמשים
-      return allowAll || !!P[it.id];
+      return allowAll || (it.id==='music' ? P.music!==false : permOn(it.id,P));
     });
     return {cat:g.cat,items:items};
   }).filter(function(g){return g.items.length;});
@@ -2927,11 +2958,12 @@ function gabbaiRoute(){
       location.replace("gabbai.html?app=1&_="+Date.now());
       return true;
     }
-    if(r.role==="master" && r.sites && r.sites.length){ _gabbaiSites=r.sites; }
+    if((r.role==="master"||r.role==="remote") && r.sites && r.sites.length){ _gabbaiSites=r.sites; }
     return false;
   }).catch(function(){ return false; });   /* הפונקציה עוד לא הותקנה בשרת — ממשיכים כרגיל */
 }
 function openGabbai(){
+  if(!permOn('gabbai_remote')){ toast("אין הרשאה"); return; }
   if(!_gabbaiSites.length){ toast("אין בית כנסת עם חדרי תפילה"); return; }
   gabbaiStore(_gabbaiSites, false);
   location.href="gabbai.html?app=1&back=1&_="+Date.now();
@@ -3647,7 +3679,7 @@ window.addEventListener("load",function(){
   }
 });
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.13 · 23.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.14 · 23.10.26</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון/טופס פתוח במקום לצאת מהאפליקציה */
 (function(){
@@ -3697,6 +3729,7 @@ function openShul(){
     try{ cid = localStorage.getItem("nsf_co") || ""; }catch(e){}
   }
   if(!cid){ toast("לא זוהתה חברה. התחבר מחדש."); return; }
+  if(!permOn('shul_manage')){ toast("אין הרשאה לניהול בית הכנסת"); return; }
   if(!NSF_TOKEN){ toast("ההפעלה פגה. התחבר מחדש."); return; }
   /* הטוקן עובר בכתובת כי שני המסכים שומרים אותו במפתח אחר
      ב-sessionStorage. פונקציות השמירה בשרת מוודאות שהחברה
@@ -3723,7 +3756,7 @@ function updateShulCta(){
     return !!r.site_id || SHUL_PURPOSES.indexOf(r.purpose)>-1;
   });
   var b=document.getElementById("btn-shul"); if(b) b.style.display="none";
-  var c=document.getElementById("shul-cta"); if(c) c.style.display=has?"flex":"none";
+  var c=document.getElementById("shul-cta"); if(c) c.style.display=(has && permOn('shul_manage'))?"flex":"none";
 }
 
 /* ---- העלאת קובץ להודעה ----
