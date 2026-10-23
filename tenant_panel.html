@@ -1061,13 +1061,13 @@ input:focus,select:focus{border-color:#58a6ff;}
       <div class="field" id="t-hl-outer" style="display:none;border:1px solid #6b5a1a;border-radius:12px;padding:14px;background:linear-gradient(135deg,#231d0b,#161b22 70%);">
         <div style="font-size:16px;color:#ffcc00;font-weight:800;margin-bottom:4px;">✨ הודעות בולטות — שמחות והודעות חשובות</div>
         <div class="hint" style="margin-bottom:10px;line-height:1.6">
-          מופיעות במרכז המסך ככרטיס מודגש וזוהר, בסוף כל גלילה של ההודעה הרגילה — כך שאף אחד לא מפספס.
-          למשל: "נולדה בת למשפחת כהן — הקידוש בשבת בבית הכנסת".
+          בסוף כל גלילה של ההודעה הרגילה, <b>כל</b> ההודעות הבולטות מוצגות ברצף במרכז המסך — עד 4 יחד באותו מסך,
+          כדי שמי שמחכה למעלית יספיק לקרוא הכל. הודעות חשובות מוצגות ראשונות.
         </div>
         <div id="t-hl-list" style="display:flex;flex-direction:column;gap:12px;"></div>
         <button type="button" class="hl-add" onclick="tHlAdd()">+ הודעה בולטת חדשה</button>
         <div style="display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap;">
-          <span style="font-size:13px;color:#8b949e;">כל הודעה מוצגת</span>
+          <span style="font-size:13px;color:#8b949e;">זמן תצוגה בסיסי (מתווספות 4 שניות לכל הודעה נוספת באותו מסך)</span>
           <select id="t-hl-sec" style="width:auto;min-width:110px;">
             <option value="8">8 שניות</option><option value="12">12 שניות</option><option value="15">15 שניות</option>
             <option value="20">20 שניות</option><option value="30">30 שניות</option>
@@ -3615,7 +3615,7 @@ window.addEventListener("load",function(){
   }
 });
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.10 · 23.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.11 · 23.10.26</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון/טופס פתוח במקום לצאת מהאפליקציה */
 (function(){
