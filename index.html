@@ -46,6 +46,7 @@ body,html{height:100vh;width:100vw;overflow:hidden;background:#000;display:flex;
 .sho-clock .sc-sec{font-size:0.45em;color:#ffd36b;margin-right:0.15em;vertical-align:0.55em;letter-spacing:1px;text-shadow:0 0 18px rgba(255,200,90,0.5);}
 .sho-clock .sc-date{font-family:"Frank Ruhl Libre",serif;font-weight:700;font-size:2.5vw;color:#ffcc00;margin-top:0.4vh;letter-spacing:1px;text-shadow:0 3px 16px rgba(0,0,0,0.8);}
 .sho-clock .sc-chag{font-family:"Frank Ruhl Libre",serif;font-weight:700;font-size:1.7vw;color:#ffe0a0;margin-top:0.4vh;letter-spacing:2px;text-shadow:0 0 14px rgba(255,200,90,0.4),0 3px 12px rgba(0,0,0,0.8);}
+.sho-parasha{font-family:"Frank Ruhl Libre",serif;font-weight:700;font-size:3.4vw;color:#ffe9b8;letter-spacing:3px;margin:-1.5vh 0 3vh;text-shadow:0 0 22px rgba(255,200,90,0.35),0 4px 18px rgba(0,0,0,0.85);}
 .sho-greeting{font-size:10vw;font-family:"Frank Ruhl Libre",serif;font-weight:900;color:#ffcc00;text-shadow:0 0 50px rgba(255,190,70,0.4),0 8px 40px rgba(0,0,0,0.85);margin-bottom:3vh;line-height:1;margin-top:11vh;}
 .sho-card{background:rgba(6,10,22,0.62);border:2px solid rgba(255,204,0,0.85);border-radius:26px;padding:3vh 5vw;backdrop-filter:blur(14px);min-width:40vw;box-shadow:0 20px 70px rgba(0,0,0,0.6),inset 0 0 40px rgba(255,204,0,0.06);}
 .sho-card-title{font-size:1.8vw;color:#ffcc00;font-weight:800;text-align:center;margin-bottom:14px;border-bottom:1px solid rgba(255,204,0,0.4);padding-bottom:10px;}
@@ -876,6 +877,7 @@ body.ads-bottom .ad-slide video.ad-vid{width:auto;height:17vh;max-width:60%;obje
     <div class="sc-chag" id="sho-chag" style="display:none;"></div>
   </div>
   <div class="sho-greeting" id="sho-greeting">שבת שלום</div>
+  <div class="sho-parasha" id="sho-parasha" style="display:none;"></div>
   <div class="sho-card">
     <div class="sho-card-title" id="sho-card-title">זמני שבת קודש</div>
     <div class="sho-row"><span id="sho-lbl-in">כניסת שבת</span><span class="sho-val" id="sho-in">--:--</span></div>
@@ -4851,6 +4853,15 @@ function upd(){
     if(isCh && _chagName){ _chagEl.textContent=_chagName; _chagEl.style.display="block"; }
     else{ _chagEl.style.display="none"; }
     _sT("sho-greeting",isSh?"שבת שלום":"חג שמח");
+    /* פרשת השבוע — בשבת רגילה מתחת ל"שבת שלום" */
+    var _parEl=document.getElementById("sho-parasha");
+    var _parTxt="";
+    if(isSh && !isCh){
+      try{ _parTxt=chagParashaLabel()||gwp()||gwpChag()||""; }catch(e){ _parTxt=""; }
+      if(_parTxt && _parTxt.indexOf("פרשת")===0) _parTxt="שבת "+_parTxt;
+    }
+    if(_parTxt){ _parEl.textContent=_parTxt; _parEl.style.display="block"; }
+    else{ _parEl.style.display="none"; }
     _sT("sho-card-title",isSh?"זמני שבת קודש":"זמני החג");
     _sT("sho-lbl-in",isSh?"כניסת שבת":"כניסת החג");
     _sT("sho-lbl-out",isSh?"צאת שבת":"צאת החג");
@@ -5431,7 +5442,7 @@ setInterval(fitTimer, 60000);
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.20 · 23.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.21 · 23.10.26</div>
 <script>
 /* ---- עדכון אוטומטי מ-GitHub · 13.10.26 ----
    כל 3 דקות המסך בודק (בקשת HEAD קטנה, בלי להוריד את הקובץ) אם הקובץ שלו
