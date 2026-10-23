@@ -3741,7 +3741,9 @@ function openEditCompany(cid){
     document.getElementById('co-logo-hint').textContent='לחץ להעלאת לוגו';
   }
   subUsers=(Array.isArray(c.sub_users)?c.sub_users.slice():[]).map(function(su){
-    var o={username:su.username,password:su.password,label:su.label,perms:migrateOldPerms(su.perms)};
+    var o={username:su.username,label:su.label,perms:migrateOldPerms(su.perms)};
+    if(su.password) o.password=su.password;
+    if(su.password_hash) o.password_hash=su.password_hash;   /* 4.16: הסיסמה המוצפנת נשמרת כמו שהיא */
     if(su.role) o.role=su.role;   /* 4.13: סוג המשתמש (גבאי) נשמר */
     return o; });
   coPerms=(c.perms&&Object.keys(c.perms).length)?migrateOldPerms(c.perms):defaultAllPerms();
@@ -3876,7 +3878,7 @@ function renderSubUsers(){
 function resetSubUserForm(){
   editingSubIndex=null;
   document.getElementById('su-user').value='';
-  document.getElementById('su-pass').value='';
+  document.getElementById('su-pass').value=''; document.getElementById('su-pass').placeholder='סיסמה';
   document.getElementById('su-label').value='';
   renderSuPermsForm({edit_message:true});
   var _g=document.getElementById('su-gabbai'); if(_g){ _g.checked=false; suGabbaiChanged(); }
@@ -3887,7 +3889,8 @@ function editSubUser(i){
   var u=subUsers[i]; if(!u)return;
   editingSubIndex=i;
   document.getElementById('su-user').value=u.username||'';
-  document.getElementById('su-pass').value=u.password||'';
+  document.getElementById('su-pass').value='';
+  document.getElementById('su-pass').placeholder='השאר ריק כדי לא לשנות';
   document.getElementById('su-label').value=u.label||'';
   renderSuPermsForm(u.perms||{});
   var _g=document.getElementById('su-gabbai'); if(_g){ _g.checked=!!(u.role==='gabbai'||(u.perms&&u.perms.gabbai_role)); suGabbaiChanged(); }
@@ -3903,12 +3906,14 @@ function addSubUser(){
   var u=document.getElementById('su-user').value.trim().toLowerCase();
   var p=document.getElementById('su-pass').value.trim();
   var label=document.getElementById('su-label').value.trim();
-  if(!u||!p){ toast('מלא שם משתמש וסיסמה'); return; }
+  /* 4.16: בעריכה — סיסמה ריקה = נשארת הקיימת (שמורה מוצפנת) */
+  if(!u || (!p && editingSubIndex===null)){ toast('מלא שם משתמש וסיסמה'); return; }
   var master=document.getElementById('co-user').value.trim();
   if(u.toLowerCase()===master.toLowerCase()){ toast('שם המשתמש זהה למשתמש הראשי'); return; }
   if(subUsers.some(function(x,idx){return idx!==editingSubIndex && (x.username||'').toLowerCase()===u.toLowerCase();})){ toast('שם המשתמש כבר קיים'); return; }
   var _isG=!!(document.getElementById('su-gabbai')||{}).checked;
-  var obj={username:u,password:p,label:label,perms:_isG?{gabbai_role:true}:readPermGrid('superm-')};
+  var obj={username:u,label:label,perms:_isG?{gabbai_role:true}:readPermGrid('superm-')};
+  if(p) obj.password=p;
   if(_isG) obj.role='gabbai';
   if(editingSubIndex!==null && subUsers[editingSubIndex]){ subUsers[editingSubIndex]=obj; toast('המשתמש עודכן'); }
   else { subUsers.push(obj); }
@@ -4033,7 +4038,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.15 · 23.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.16 · 23.10.26</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){

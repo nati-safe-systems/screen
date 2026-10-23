@@ -2955,6 +2955,7 @@ function resetUserForm(){
   _editingUserIdx=null;
   document.getElementById("user-uname").value="";
   document.getElementById("user-pass").value="";
+  document.getElementById("user-pass").placeholder="סיסמה";
   document.getElementById("user-label").value="";
   document.getElementById("user-form-title").textContent="הוספת משתמש חדש";
   document.getElementById("user-save-btn").textContent="הוסף משתמש";
@@ -2967,7 +2968,8 @@ function editUser(i){
   var su=_coSubUsers[i]; if(!su)return;
   _editingUserIdx=i;
   document.getElementById("user-uname").value=su.username||"";
-  document.getElementById("user-pass").value=su.password||"";
+  document.getElementById("user-pass").value="";
+  document.getElementById("user-pass").placeholder="השאר ריק כדי לא לשנות";
   document.getElementById("user-label").value=su.label||"";
   document.getElementById("user-form-title").textContent="עריכת משתמש";
   document.getElementById("user-save-btn").textContent="עדכן משתמש";
@@ -2989,7 +2991,8 @@ function addOrUpdateUser(){
   var pw=document.getElementById("user-pass").value.trim();
   var lb=document.getElementById("user-label").value.trim();
   if(!un){toast("הזן שם משתמש");return;}
-  if(!pw){toast("הזן סיסמה");return;}
+  /* 3.13: בעריכה — סיסמה ריקה = נשארת הסיסמה הקיימת (היא שמורה מוצפנת ולא ניתן להציג אותה) */
+  if(!pw && _editingUserIdx===null){toast("הזן סיסמה");return;}
   // בדיקת כפילות שם משתמש (לא רגיש לאותיות), לא כולל המשתמש בעריכה
   var dup=_coSubUsers.some(function(s,idx){
     return idx!==_editingUserIdx && (s.username||"").toLowerCase()===un.toLowerCase();
@@ -3000,7 +3003,8 @@ function addOrUpdateUser(){
   var role=(document.getElementById("user-role")||{}).value==="gabbai" && (document.getElementById("user-role-wrap")||{style:{}}).style.display!=="none" ? "gabbai" : "user";
   var perms = role==="gabbai" ? {gabbai_role:true} : readUserPermGrid();
   if(role!=="gabbai") delete perms.gabbai_role;
-  var rec={username:un,password:pw,label:lb,perms:perms};
+  var rec={username:un,label:lb,perms:perms};
+  if(pw) rec.password=pw;
   if(role==="gabbai") rec.role="gabbai";
   if(_editingUserIdx!==null){ _coSubUsers[_editingUserIdx]=rec; }
   else { _coSubUsers.push(rec); }
@@ -3643,7 +3647,7 @@ window.addEventListener("load",function(){
   }
 });
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.12 · 23.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.13 · 23.10.26</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון/טופס פתוח במקום לצאת מהאפליקציה */
 (function(){
