@@ -1801,7 +1801,12 @@ function login(){
   if(!u||!p)return;
   document.getElementById("login-err").style.display="none";
 
+  /* 3.12: אם נכשל ובשם יש אותיות גדולות — מנסים שוב באותיות קטנות (משתמשי-משנה נשמרים כך) */
   rpc("nsf_login",{p_user:u,p_pass:p}).then(function(res){
+    if((!res||!res.ok) && u!==u.toLowerCase()){ u=u.toLowerCase(); return rpc("nsf_login",{p_user:u,p_pass:p}); }
+    if((!res||!res.ok) && p!==p.trim()){ return rpc("nsf_login",{p_user:u,p_pass:p.trim()}); }
+    return res;
+  }).then(function(res){
     if(!res || !res.ok){
       document.getElementById("login-err").style.display="block";
       return;
@@ -2979,8 +2984,9 @@ function delUser(i){
   saveUsers();
 }
 function addOrUpdateUser(){
-  var un=document.getElementById("user-uname").value.trim();
-  var pw=document.getElementById("user-pass").value;
+  /* 3.12: שם משתמש באותיות קטנות ובלי רווחים (כמו באדמין) — כך הכניסה לא נכשלת בגלל אות גדולה */
+  var un=document.getElementById("user-uname").value.trim().toLowerCase();
+  var pw=document.getElementById("user-pass").value.trim();
   var lb=document.getElementById("user-label").value.trim();
   if(!un){toast("הזן שם משתמש");return;}
   if(!pw){toast("הזן סיסמה");return;}
@@ -3002,13 +3008,35 @@ function addOrUpdateUser(){
 }
 function saveUsers(){
   if(!(isMasterUser()||IS_ADMIN)){toast("אין הרשאה");return;}
-  /* ההרשאה נבדקת שוב בשרת — בדיקה בדפדפן אינה הרשאה. */
-  rpc("nsf_save_sub_users",{p_token:NSF_TOKEN,p_subs:_coSubUsers}).then(function(res){
+  /* ההרשאה נבדקת שוב בשרת — בדיקה בדפדפן אינה הרשאה.
+     3.12: בצפייה של המנהל (preview) האסימון שייך למנהל ולא ללקוח — פונקציית
+     השמירה של הלקוח לא ידעה לאיזה לקוח לשמור, והמשתמשים "נשמרו" רק על המסך.
+     עכשיו המנהל שומר דרך פונקציית המנהל, ובכל מקרה נבדק מהשרת שהמשתמשים באמת נשמרו. */
+  var subs=_coSubUsers.slice();
+  var save = (PREVIEW_MODE||IS_ADMIN)
+    ? (function(){
+        var row={company_name:co.company_name, username:co.username, sub_users:subs};
+        if(co.perms && typeof co.perms==="object" && Object.keys(co.perms).length) row.perms=co.perms;
+        return rpc("nsf_save_company",{p_token:NSF_TOKEN,p_orig:co.company_id,p_row:row}).then(function(r){ return (r&&r.ok===false)?r:{ok:true}; });
+      })()
+    : rpc("nsf_save_sub_users",{p_token:NSF_TOKEN,p_subs:subs});
+  save.then(function(res){
     if(!res||!res.ok){ toast((res&&res.err)||"שמירה נכשלה"); return; }
-    co.sub_users=_coSubUsers.slice();
-    renderUsersList();
-    resetUserForm();
-    toast("נשמר");
+    /* אימות מהשרת */
+    var chk = (PREVIEW_MODE||IS_ADMIN)
+      ? rpc("nsf_admin_company",{p_token:NSF_TOKEN,p_cid:co.company_id}).then(function(r){ return r&&r.company; })
+      : rpc("nsf_me",{p_token:NSF_TOKEN}).then(function(r){ return r&&r.company; });
+    return chk.then(function(c2){
+      var got=(c2 && Array.isArray(c2.sub_users)) ? c2.sub_users : null;
+      var miss = got ? subs.filter(function(s){ return !got.some(function(g){ return (g.username||"").toLowerCase()===(s.username||"").toLowerCase(); }); }) : [];
+      if(miss.length){ toast("שים לב: השרת לא שמר את "+miss.map(function(m){return m.username;}).join(", ")+" — נסה שוב או שמור מהאדמין"); return; }
+      co.sub_users=got||subs.slice(); _coSubUsers=co.sub_users.map(function(x){ return Object.assign({},x); });
+      renderUsersList();
+      resetUserForm();
+      toast("נשמר ✓ — אפשר להתחבר עם המשתמש");
+    }).catch(function(){
+      co.sub_users=subs; renderUsersList(); resetUserForm(); toast("נשמר");
+    });
   }).catch(function(){ toast("שמירה נכשלה"); });
 }
 function openUsersModal(){
@@ -3615,7 +3643,7 @@ window.addEventListener("load",function(){
   }
 });
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.11 · 23.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.12 · 23.10.26</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון/טופס פתוח במקום לצאת מהאפליקציה */
 (function(){
