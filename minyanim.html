@@ -1421,7 +1421,7 @@ function mnyLogin(){
   if(!NSF_TOKEN){ return; }
   rpc("nsf_me",{p_token:NSF_TOKEN}).then(function(res){
     if(res&&res.ok){
-      setAdminOnly(!!res.is_admin);
+      setAdminOnly(!!res.is_admin); mnyPerms(res);
       document.getElementById("mny-login").style.display="none";
       boot();
     }else{ setMnyToken(''); }
@@ -1446,8 +1446,42 @@ function setAdminOnly(on){
   MNY_ADMIN=!!on;
   document.body.classList.toggle("is-admin", MNY_ADMIN);
 }
+/* ===== 2.9: הרשאות מפורטות — הלקוח קובע למשתמש-משנה מה מותר לו כאן =====
+   משתמש ראשי ומנהל — הכל (אלא אם האדמין כיבה ללקוח במפורש).
+   משתמש-משנה — רק מה שסומן לו. */
+var MNY_P=null;
+function mnyCan(id){
+  if(MNY_ADMIN || !MNY_P) return true;
+  var P=MNY_P.perms||{};
+  if(P[id]===true) return true;
+  if(P[id]===false) return false;
+  return MNY_P.master;
+}
+function mnyPerms(res){
+  if(!res || res.is_admin){ MNY_P=null; return; }
+  var cu=((res.company||{}).username||"").toLowerCase(), u=(res.username||"").toLowerCase();
+  MNY_P={perms:res.perms||{}, master:(!!u && u===cu)};
+  if(!mnyCan("shul_manage")){
+    document.body.innerHTML='<div style="max-width:420px;margin:80px auto;padding:24px;text-align:center;direction:rtl;font-family:Heebo,Arial,sans-serif;color:#e6edf3;background:#161b22;border:1px solid #30363d;border-radius:14px">'+
+      '<div style="font-size:40px">🔒</div><div style="font-size:18px;font-weight:800;margin:8px 0">אין לך הרשאה לניהול בית הכנסת</div>'+
+      '<div style="color:#8b949e;font-size:14px">אפשר לבקש מהמשתמש הראשי להוסיף את ההרשאה.</div>'+
+      '<button onclick="history.back()" style="margin-top:16px;padding:10px 20px;border-radius:8px;border:1px solid #30363d;background:#21262d;color:#e6edf3;font:inherit;cursor:pointer">חזרה</button></div>';
+    return;
+  }
+  function hide(id,ok){ var e=document.getElementById(id); if(e && !ok) e.style.display="none"; }
+  hide("callCard", mnyCan("shul_call"));
+  hide("roomsCard", mnyCan("shul_minyanim"));
+  hide("minCard", mnyCan("shul_minyanim"));
+  hide("annCard", mnyCan("shul_ann"));
+  hide("sponCard", mnyCan("shul_spon"));
+  if(!mnyCan("shul_site")){
+    ["s_name","s_candle","s_nusach"].forEach(function(id){ var e=document.getElementById(id); if(e){ e.disabled=true; e.style.opacity=.6; } });
+    [].forEach.call(document.querySelectorAll('#siteCfg button'),function(b){ b.style.display="none"; });
+    var nr=document.getElementById("newSiteRow"); if(nr) nr.style.display="none";
+  }
+}
 function boot(){
-  if(!MNY_ADMIN) rpc("nsf_me",{p_token:NSF_TOKEN}).then(function(r){ if(r&&r.ok) setAdminOnly(!!r.is_admin); }).catch(function(){});
+  if(!MNY_ADMIN) rpc("nsf_me",{p_token:NSF_TOKEN}).then(function(r){ if(r&&r.ok){ setAdminOnly(!!r.is_admin); mnyPerms(r); } }).catch(function(){});
   sf("sites?select=*&order=name").then(function(r){
   SITES=Array.isArray(r)?r:[];
   if(ONLY_CO){
@@ -2082,4 +2116,4 @@ function goBackPanel(){
   location.href="https://nati-safe-systems.github.io/screen/tenant_panel.html"
     + (co?("?co="+encodeURIComponent(co)):"");
 }
-</script><div id="app-version" style="position:fixed;left:8px;bottom:6px;font-size:11px;color:#8b949e;opacity:.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול בית הכנסת · גרסה 2.8 · 16.10.26</div></body></html>
+</script><div id="app-version" style="position:fixed;left:8px;bottom:6px;font-size:11px;color:#8b949e;opacity:.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול בית הכנסת · גרסה 2.9 · 23.10.26</div></body></html>
