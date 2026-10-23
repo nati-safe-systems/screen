@@ -2,8 +2,17 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>נתי SAFE - ניהול לוח מודעות</title>
+<!-- 3.9: התקנה כאפליקציה — אייפון ("הוסף למסך הבית") ואנדרואיד -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="נתי SAFE">
+<link rel="apple-touch-icon" href="app-icon-180.png">
+<link rel="icon" type="image/png" href="app-icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -313,6 +322,7 @@ input:focus,select:focus{border-color:#58a6ff;}
     <div class="topbar-btns">
       <button class="btn-top" onclick="showChPass(false)">החלף סיסמה</button>
       <button class="btn-top" id="btn-manage-users" onclick="openUsersModal()" style="display:none;">ניהול משתמשים</button>
+      <button class="btn-top gold" id="btn-gabbai" onclick="openGabbai(false)" style="display:none;">שלט גבאי</button>
       <button class="btn-top gold" id="btn-shul" onclick="openShul()"
               style="display:none;">ניהול בית הכנסת</button>
       <button class="btn-top red" onclick="logout()">יציאה</button>
@@ -399,7 +409,18 @@ input:focus,select:focus{border-color:#58a6ff;}
           <div class="hint">כינוי / תיאור (לא חובה)</div>
           <input type="text" id="user-label" placeholder="לדוגמה: גבאי ראשי" style="width:100%;">
         </div>
-        <div style="margin-top:12px;">
+        <!-- 3.9: סוג משתמש — רק ללקוח שיש לו מסכי בית כנסת -->
+        <div id="user-role-wrap" style="margin-top:10px;display:none;">
+          <div class="hint">סוג משתמש</div>
+          <select id="user-role" onchange="userRoleChanged()" style="width:100%;">
+            <option value="user">משתמש רגיל — ממשק הלקוח</option>
+            <option value="gabbai">גבאי — שלט גבאי בלבד</option>
+          </select>
+          <div class="hint" id="user-role-hint" style="display:none;margin-top:6px;color:#3fb950;">
+            משתמש גבאי רואה רק את שלט הגבאי: כפתור לכל חדר תפילה שמקפיץ "התפילה מתחילה כאן" על המסך שמעל הדלת. הוא לא יכול לשנות שום דבר אחר.
+          </div>
+        </div>
+        <div style="margin-top:12px;" id="user-perms-sec">
           <div class="hint" style="margin-bottom:6px;">מה מותר למשתמש הזה:</div>
           <div style="margin-bottom:8px;display:flex;gap:8px;">
             <button type="button" class="btn-top" onclick="setAllUserPerms(true)">סמן הכל</button>
@@ -1740,7 +1761,12 @@ function loadMe(){
     co=res.company||{};
     CURRENT_PERMS=res.perms||{};
     CURRENT_USER=res.username||CURRENT_USER;
-    enterApp();
+    /* 3.9: גבאי — ישר לשלט הגבאי; אחרים — ממשק הלקוח */
+    return gabbaiRoute().then(function(isG){
+      if(isG) return;
+      enterApp();
+      var gb=document.getElementById("btn-gabbai"); if(gb) gb.style.display=_gabbaiSites.length?"":"none";
+    });
   });
 }
 
@@ -2692,6 +2718,53 @@ function setAllUserPerms(v){
   });});
   applyUserPermDeps();
 }
+/* ===== 3.9: משתמש גבאי ===== */
+function hasShul(){
+  return (allScreens||[]).some(function(r){ return !!r.site_id || SHUL_PURPOSES.indexOf(r.purpose)>-1; });
+}
+function isGabbaiRec(su){ return !!(su && (su.role==="gabbai" || (su.perms && su.perms.gabbai_role))); }
+function userRoleChanged(){
+  var g=(document.getElementById("user-role")||{}).value==="gabbai";
+  var ps=document.getElementById("user-perms-sec"); if(ps) ps.style.display=g?"none":"";
+  var h=document.getElementById("user-role-hint"); if(h) h.style.display=g?"":"none";
+}
+function setUserRole(v){
+  var w=document.getElementById("user-role-wrap"), sel=document.getElementById("user-role");
+  /* בחירת "גבאי" — רק ללקוח שיש לו בית כנסת, או למשתמש שכבר הוגדר גבאי */
+  if(w) w.style.display=(hasShul()||v==="gabbai")?"":"none";
+  if(sel) sel.value=v||"user";
+  userRoleChanged();
+}
+/* אחרי התחברות: גבאי עובר לשלט הגבאי. משתמש ראשי מקבל כפתור "שלט גבאי". */
+function gabbaiStore(sites, mode){
+  try{
+    localStorage.setItem("nsf_gabbai_sites", JSON.stringify(sites||[]));
+    localStorage.setItem("nsf_gabbai_mode", mode?"1":"0");
+    localStorage.setItem("nsf_gabbai_user", CURRENT_USER||"");
+    var cur=localStorage.getItem("nsf_gabbai_k")||"";
+    var ok=(sites||[]).some(function(x){ return x.key===cur; });
+    if(!ok && sites && sites.length) localStorage.setItem("nsf_gabbai_k", sites[0].key);
+  }catch(e){}
+}
+var _gabbaiSites=[];
+function gabbaiRoute(){
+  if(IS_ADMIN || PREVIEW_MODE) return Promise.resolve(false);
+  return rpc("nsf_gabbai_sites",{p_token:NSF_TOKEN}).then(function(r){
+    if(!r || !r.ok) return false;
+    if(r.role==="gabbai"){
+      gabbaiStore(r.sites, true);
+      location.replace("gabbai.html?app=1&_="+Date.now());
+      return true;
+    }
+    if(r.role==="master" && r.sites && r.sites.length){ _gabbaiSites=r.sites; }
+    return false;
+  }).catch(function(){ return false; });   /* הפונקציה עוד לא הותקנה בשרת — ממשיכים כרגיל */
+}
+function openGabbai(){
+  if(!_gabbaiSites.length){ toast("אין בית כנסת עם חדרי תפילה"); return; }
+  gabbaiStore(_gabbaiSites, false);
+  location.href="gabbai.html?app=1&back=1&_="+Date.now();
+}
 function renderUsersList(){
   var wrap=document.getElementById("users-list");
   if(!wrap)return;
@@ -2700,7 +2773,7 @@ function renderUsersList(){
     var nm=(su.label||su.username||"").replace(/</g,"&lt;");
     var un=(su.username||"").replace(/</g,"&lt;");
     return '<div style="display:flex;align-items:center;gap:8px;background:#161b22;border:1px solid #30363d;border-radius:8px;padding:8px 12px;">'+
-      '<div style="flex:1;"><div style="font-weight:700;">'+nm+'</div>'+
+      '<div style="flex:1;"><div style="font-weight:700;">'+nm+(isGabbaiRec(su)?' <span style="background:#1f6feb;color:#fff;border-radius:6px;padding:1px 7px;font-size:11px;">גבאי</span>':'')+'</div>'+
         '<div class="hint" style="margin:0;">שם משתמש: '+un+'</div></div>'+
       '<button class="btn-top" type="button" onclick="editUser('+i+')">ערוך</button>'+
       '<button class="btn-top red" type="button" onclick="delUser('+i+')">מחק</button>'+
@@ -2717,6 +2790,7 @@ function resetUserForm(){
   document.getElementById("user-cancel-btn").style.display="none";
   document.getElementById("user-perms-grid").innerHTML=userPermGridHtml({edit_message:true});
   applyUserPermDeps();
+  setUserRole("user");
 }
 function editUser(i){
   var su=_coSubUsers[i]; if(!su)return;
@@ -2729,6 +2803,7 @@ function editUser(i){
   document.getElementById("user-cancel-btn").style.display="";
   document.getElementById("user-perms-grid").innerHTML=userPermGridHtml(migratePermsT(su.perms)||{});
   applyUserPermDeps();
+  setUserRole(isGabbaiRec(su)?"gabbai":"user");
 }
 function delUser(i){
   var su=_coSubUsers[i]; if(!su)return;
@@ -2750,8 +2825,11 @@ function addOrUpdateUser(){
   if(dup){toast("שם המשתמש כבר קיים");return;}
   // לא להתנגש עם שם המשתמש הראשי של החברה
   if((co.username||"").toLowerCase()===un.toLowerCase()){toast("שם זה שמור למשתמש הראשי");return;}
-  var perms=readUserPermGrid();
+  var role=(document.getElementById("user-role")||{}).value==="gabbai" && (document.getElementById("user-role-wrap")||{style:{}}).style.display!=="none" ? "gabbai" : "user";
+  var perms = role==="gabbai" ? {gabbai_role:true} : readUserPermGrid();
+  if(role!=="gabbai") delete perms.gabbai_role;
   var rec={username:un,password:pw,label:lb,perms:perms};
+  if(role==="gabbai") rec.role="gabbai";
   if(_editingUserIdx!==null){ _coSubUsers[_editingUserIdx]=rec; }
   else { _coSubUsers.push(rec); }
   saveUsers();
@@ -3320,6 +3398,12 @@ document.getElementById("rte-editor").addEventListener("input",updatePreview);
 // נקה תיבות בטעינה
 window.addEventListener("load",function(){
   try{ if(tryAdminPreview()) return; }catch(e){}
+  /* 3.9: מכשיר של גבאי — נפתח ישר בשלט הגבאי (היציאה משם מחזירה לכאן) */
+  try{
+    if(!sessionStorage.getItem("nati_token") && localStorage.getItem("nsf_gabbai_mode")==="1" && localStorage.getItem("nsf_gabbai_k")){
+      location.replace("gabbai.html?app=1&_="+Date.now()); return;
+    }
+  }catch(e){}
   initPickers();
   document.getElementById("uname").value="";
   document.getElementById("upass").value="";
@@ -3365,7 +3449,7 @@ window.addEventListener("load",function(){
   }
 });
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.8 · 21.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.9 · 23.10.26</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון/טופס פתוח במקום לצאת מהאפליקציה */
 (function(){

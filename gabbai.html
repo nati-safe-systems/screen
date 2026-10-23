@@ -9,7 +9,9 @@
 <meta name="apple-mobile-web-app-title" content="שלט גבאי">
 <title>שלט גבאי · נתי SAFE</title>
 <link rel="icon" href="natisafe-logo.png">
-<link rel="apple-touch-icon" href="natisafe-logo.png">
+<link rel="apple-touch-icon" href="app-icon-180.png">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -49,6 +51,11 @@ body{padding:calc(env(safe-area-inset-top,0px) + 14px) 14px calc(env(safe-area-i
 input{width:100%;padding:12px;border-radius:10px;border:1px solid #2a3441;background:#141b25;color:#fff;
   font:16px Heebo,Arial,sans-serif;margin:10px 0;direction:ltr;text-align:center}
 .go{width:100%;padding:13px;border:none;border-radius:10px;background:#1f6feb;color:#fff;font:800 16px Heebo,Arial,sans-serif}
+/* 1.4: כניסה עם משתמש — בחירת בית כנסת ויציאה */
+.out{margin-inline-start:auto;padding:7px 12px;border-radius:9px;border:1px solid #2a3441;background:#141b25;color:#cfd8e3;font:700 13px Heebo,Arial,sans-serif;white-space:nowrap}
+.sites{display:flex;gap:7px;flex-wrap:wrap;margin:-4px 0 12px}
+.sites button{flex:1 1 auto;padding:9px 8px;border-radius:10px;border:1px solid #2a3441;background:#141b25;color:#cfd8e3;font:700 14px Heebo,Arial,sans-serif}
+.sites button.on{background:#7a5c12;border-color:#ffcc00;color:#fff}
 </style>
 </head>
 <body>
@@ -103,15 +110,44 @@ function rpc(fn,args){
     body:JSON.stringify(args)}).then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); });
 }
 function esc(t){ return String(t==null?"":t).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+/* 1.4: נכנסו דרך האפליקציה עם שם משתמש — רשימת בתי הכנסת של הלקוח */
+var APP=qp.get("app")==="1", BACK=qp.get("back")==="1", SITES=[];
+try{ SITES=JSON.parse(localStorage.getItem("nsf_gabbai_sites")||"[]")||[]; }catch(e){ SITES=[]; }
+var GMODE=false; try{ GMODE=localStorage.getItem("nsf_gabbai_mode")==="1"; }catch(e){}
 function head(sub){
+  var btn = BACK ? '<button class="out" id="outb">חזרה לממשק</button>'
+          : ((APP||GMODE) ? '<button class="out" id="outb">יציאה</button>' : '');
   return '<div class="top"><img src="'+document.querySelector("link[rel=icon]").href+'" alt="">'+
-    '<div class="t">שלט גבאי<small>'+esc(sub||"")+'</small></div></div>';
+    '<div class="t">שלט גבאי<small>'+esc(sub||"")+'</small></div>'+btn+'</div>'+
+    (SITES.length>1 ? '<div class="sites" id="sites">'+SITES.map(function(x){
+      return '<button data-k="'+esc(x.key)+'" class="'+(x.key===CODE?'on':'')+'">'+esc(x.name)+'</button>'; }).join("")+'</div>' : '');
+}
+function wireHead(){
+  var o=document.getElementById("outb");
+  if(o) o.onclick=function(){
+    if(BACK){ location.href="tenant_panel.html"; return; }
+    if(!confirm("לצאת מהשלט?\nבכניסה הבאה יידרשו שם משתמש וסיסמה.")) return;
+    try{
+      ["nsf_gabbai_k","nsf_gabbai_sites","nsf_gabbai_mode","nsf_gabbai_user","nsf_gabbai_live"].forEach(function(k){ localStorage.removeItem(k); });
+      var t=sessionStorage.getItem("nati_token");
+      if(t) rpc("nsf_logout",{p_token:t}).catch(function(){});
+      sessionStorage.clear();
+    }catch(e){}
+    location.replace("tenant_panel.html?_="+Date.now());
+  };
+  var st=document.getElementById("sites");
+  if(st) st.onclick=function(e){
+    var b=e.target.closest("button"); if(!b) return;
+    CODE=b.getAttribute("data-k"); try{ localStorage.setItem("nsf_gabbai_k",CODE); }catch(x){}
+    load();
+  };
 }
 function askCode(err){
   app.innerHTML=head("נתי SAFE")+
     '<div class="big">'+(err?'<b style="color:#f85149">'+esc(err)+'</b><br>':'')+
     'פתחו את הקישור שקיבלתם מנתי SAFE,<br>או הקלידו את קוד בית הכנסת:</div>'+
     '<input id="kin" placeholder="קוד" autocomplete="off"><button class="go" id="kgo">כניסה</button>';
+  wireHead();
   document.getElementById("kgo").onclick=function(){
     CODE=(document.getElementById("kin").value||"").trim();
     try{ localStorage.setItem("nsf_gabbai_k",CODE); }catch(e){}
@@ -130,6 +166,7 @@ function render(site, rooms){
         '<span class="nm">'+esc(r.name)+'</span><span class="st"></span></button>'+
         '<button class="cx" data-cx="'+r.id+'" data-nm="'+esc(r.name)+'">✕ ביטול ההודעה</button></div>'; }).join("")+'</div>'+
     '<div class="msg">לחיצה על חדר מקפיצה על המסך שמעל הדלת שלו<br>"תפילת … תתחיל כאן בעוד 3 דקות" עם ספירה לאחור,<br>ואז "מתחילה כאן עכשיו". במסך הראשי — באיזה שטיבל.<br>לחיצה נוספת לא משנה כלום. לביטול — הכפתור האדום.</div>';
+  wireHead();
   /* חדרים שההודעה שלהם רצה עכשיו (נשמר בטלפון) */
   var LIVE={}; try{ LIVE=JSON.parse(localStorage.getItem("nsf_gabbai_live")||"{}")||{}; }catch(x){}
   function saveLive(){ try{ localStorage.setItem("nsf_gabbai_live",JSON.stringify(LIVE)); }catch(x){} }
@@ -191,16 +228,16 @@ function render(site, rooms){
 }
 function load(){
   if(!CODE){ askCode(); return; }
-  app.innerHTML=head("טוען…");
+  app.innerHTML=head("טוען…"); wireHead();
   rpc("nsf_room_site",{p_key:CODE}).then(function(d){
     if(!d||!d.ok){ askCode("קוד לא מוכר"); return; }
-    if(!d.rooms||!d.rooms.length){ app.innerHTML=head(d.site)+'<div class="big">אין עדיין חדרי תפילה עם מסך דלת<br>בבית הכנסת הזה.</div>'; return; }
+    if(!d.rooms||!d.rooms.length){ app.innerHTML=head(d.site)+'<div class="big">אין עדיין חדרי תפילה עם מסך דלת<br>בבית הכנסת הזה.</div>'; wireHead(); return; }
     SITE={nusach:d.nusach||"sefard",lat:d.lat,lng:d.lng,call_seconds:d.call_seconds};
     render(d.site, d.rooms);
-  }).catch(function(){ app.innerHTML=head("")+'<div class="big">אין חיבור לרשת. נסו שוב.</div>'; setTimeout(load,5000); });
+  }).catch(function(){ app.innerHTML=head("")+'<div class="big">אין חיבור לרשת. נסו שוב.</div>'; wireHead(); setTimeout(load,5000); });
 }
 load();
 </script>
-<div style="position:fixed;left:8px;bottom:6px;font-size:10px;color:#8b949e;opacity:.6;pointer-events:none">גרסה 1.3 · 16.10.26</div>
+<div style="position:fixed;left:8px;bottom:6px;font-size:10px;color:#8b949e;opacity:.6;pointer-events:none">גרסה 1.4 · 23.10.26</div>
 </body>
 </html>
