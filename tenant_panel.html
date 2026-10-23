@@ -16,6 +16,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
+/* 3.10: הודעות בולטות */
+.hl-item{border:1px solid #3a3320;border-radius:12px;padding:12px;background:#0d1117}
+.hl-types{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.hl-types button{flex:1 1 auto;min-width:88px;padding:9px 8px;border-radius:9px;border:1px solid #30363d;background:#161b22;color:#c9d1d9;font:700 14px Assistant,sans-serif;cursor:pointer}
+.hl-types button.on{background:#7a5c12;border-color:#ffcc00;color:#fff}
+.hl-types button.on.imp{background:#7a2412;border-color:#ff8a5c}
+.hl-types button.on.gen{background:#123e7a;border-color:#58a6ff}
+.hl-tpl{display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 8px}
+.hl-tpl button{padding:5px 10px;border-radius:99px;border:1px solid #3a3320;background:#1c1810;color:#e3c46a;font:600 12px Assistant,sans-serif;cursor:pointer}
+.hl-item input[type=text],.hl-item textarea{width:100%;margin-bottom:8px}
+.hl-item textarea{min-height:76px;resize:vertical;font:inherit}
+.hl-dates{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hl-del{background:none;border:1px solid #5a1a1a;color:#ff7b72;border-radius:8px;padding:6px 12px;font:700 13px Assistant,sans-serif;cursor:pointer}
+.hl-add{margin-top:10px;width:100%;padding:12px;border-radius:10px;border:1px dashed #ffcc00;background:rgba(255,204,0,.06);color:#ffcc00;font:800 15px Assistant,sans-serif;cursor:pointer}
+.hl-st{font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px}
 body{font-family:Assistant,sans-serif;background:linear-gradient(135deg,#0d1117 0%,#161b22 100%);color:#e6edf3;min-height:100vh;}
 html,body{overscroll-behavior:none;}
 .modal-bg,.modal-body{overscroll-behavior:contain;}
@@ -250,6 +265,48 @@ input:focus,select:focus{border-color:#58a6ff;}
 .pdf-drop .pd-ic{font-size:28px;margin-bottom:6px}
 .pdf-drop .pd-t{font-weight:700;font-size:14px}
 .pdf-drop .pd-s{color:#8b949e;font-size:12px;margin-top:4px}
+/* 3.10: קפיצה מהירה בטופס */
+.qnav{display:none;gap:6px;overflow-x:auto;padding:8px 14px;border-bottom:1px solid #30363d;background:#11161d;scrollbar-width:none;position:sticky;top:0;z-index:5}
+.qnav::-webkit-scrollbar{display:none}
+.qnav button{flex:0 0 auto;padding:8px 13px;border-radius:99px;border:1px solid #30363d;background:#161b22;color:#c9d1d9;font:700 14px Assistant,sans-serif;white-space:nowrap}
+.qnav button:active{background:#21262d}
+/* ===== 3.10: מצב טלפון (אייפון / אנדרואיד) =====
+   טופס במסך מלא, כפתור שמירה קבוע בתחתית, שדות גדולים (16px —
+   באייפון שדה קטן יותר גורם לזום מעצבן בכל לחיצה), כפתורי מגע נוחים. */
+@media (max-width:760px){
+  body{-webkit-text-size-adjust:100%}
+  input,select,textarea{font-size:16px !important}
+  .topbar{height:auto;min-height:56px;padding:8px 12px calc(8px) 12px;padding-top:calc(env(safe-area-inset-top,0px) + 8px);flex-wrap:wrap;gap:8px}
+  .topbar-left{gap:10px;min-width:0;flex:1 1 auto}
+  .topbar-logo{height:34px}
+  .topbar-btns{flex:1 1 100%;overflow-x:auto;scrollbar-width:none;gap:6px;padding-bottom:2px}
+  .topbar-btns::-webkit-scrollbar{display:none}
+  .topbar-btns .btn-top{flex:0 0 auto;min-height:40px;padding:8px 14px;font-size:14px;white-space:nowrap}
+  #co-banner{padding:14px 16px !important;gap:12px !important}
+  #co-banner-logo{height:52px !important}
+  #co-banner-name{font-size:18px !important}
+  .content{padding:14px 12px !important}
+  .modal-bg{padding:0 !important;align-items:stretch !important}
+  .modal{max-width:none !important;max-height:none !important;height:100%;height:100dvh;border-radius:0 !important;border:none !important;
+    display:flex;flex-direction:column;overflow:hidden !important}
+  .modal-hdr{padding:12px 14px;padding-top:calc(env(safe-area-inset-top,0px) + 12px);flex:0 0 auto}
+  .modal-hdr h3{font-size:18px}
+  .modal-x{font-size:30px;padding:4px 8px}
+  .qnav{display:flex;flex:0 0 auto}
+  .modal-body{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 12px 24px;gap:14px}
+  .modal-foot{flex:0 0 auto;padding:10px 12px;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 10px);flex-wrap:wrap;gap:8px;
+    background:#0d1117;box-shadow:0 -6px 18px rgba(0,0,0,.45)}
+  .modal-foot > div{flex:1 1 100%;display:flex;gap:8px}
+  .modal-foot > div > button{flex:1 1 0;min-height:48px;font-size:15px !important;padding:10px 6px !important}
+  .modal-foot .btn-save{flex:1.6 1 0 !important}
+  .modal-foot .btn-del{order:2;flex:1 1 100%;min-height:40px;font-size:13px !important;background:none !important}
+  .field label{font-size:15px}
+  .btn-save,.btn-cancel,.btn-preview,.btn-edit,.btn-top{min-height:44px}
+  .hl-dates{grid-template-columns:1fr !important}
+  .hl-types button{min-height:44px;font-size:15px}
+  #app-version{z-index:1 !important;bottom:2px !important;font-size:9px !important}
+  #toast{left:12px !important;right:12px !important;bottom:calc(env(safe-area-inset-bottom,0px) + 80px) !important;transform:none !important;text-align:center}
+}
 </style>
 <script src="nsf-zmsel.js?v=1.0-181026"></script>
 </head>
@@ -451,6 +508,8 @@ input:focus,select:focus{border-color:#58a6ff;}
       </div>
       <button class="modal-x" onclick="closeModal()">&#215;</button>
     </div>
+    <!-- 3.10: קפיצה מהירה לחלקי הטופס (בעיקר בטלפון) -->
+    <div class="qnav" id="qnav"></div>
     <div class="modal-body">
 
       <div class="field" id="building-sec">
@@ -996,6 +1055,26 @@ input:focus,select:focus{border-color:#58a6ff;}
           <div style="font-size:11px;color:#8b949e;margin-top:6px;">
             המודעה תישמר לכל המסכים המסומנים. מודעות קיימות בהם יוחלפו.
           </div>
+        </div>
+      </div>
+      <!-- 3.10: הודעות בולטות — שמחות והודעות חשובות במרכז המסך -->
+      <div class="field" id="t-hl-outer" style="display:none;border:1px solid #6b5a1a;border-radius:12px;padding:14px;background:linear-gradient(135deg,#231d0b,#161b22 70%);">
+        <div style="font-size:16px;color:#ffcc00;font-weight:800;margin-bottom:4px;">✨ הודעות בולטות — שמחות והודעות חשובות</div>
+        <div class="hint" style="margin-bottom:10px;line-height:1.6">
+          מופיעות במרכז המסך ככרטיס מודגש וזוהר, בסוף כל גלילה של ההודעה הרגילה — כך שאף אחד לא מפספס.
+          למשל: "נולדה בת למשפחת כהן — הקידוש בשבת בבית הכנסת".
+        </div>
+        <div id="t-hl-list" style="display:flex;flex-direction:column;gap:12px;"></div>
+        <button type="button" class="hl-add" onclick="tHlAdd()">+ הודעה בולטת חדשה</button>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap;">
+          <span style="font-size:13px;color:#8b949e;">כל הודעה מוצגת</span>
+          <select id="t-hl-sec" style="width:auto;min-width:110px;">
+            <option value="8">8 שניות</option><option value="12">12 שניות</option><option value="15">15 שניות</option>
+            <option value="20">20 שניות</option><option value="30">30 שניות</option>
+          </select>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+          <button class="btn-save" style="padding:11px 20px;" onclick="tHlSave()">שמור הודעות בולטות</button>
         </div>
       </div>
     </div>
@@ -2118,6 +2197,8 @@ function openEdit(el){
   var _bl=document.getElementById("bcast-list"); if(_bl) _bl.innerHTML="";
   bcastCount();
   document.getElementById("edit-modal").classList.add("open");
+  setTimeout(qnavBuild, 60);   /* 3.10: אחרי שהחלונית מוצגת — רק החלקים שגלויים */
+  try{ document.querySelector("#edit-modal .modal-body").scrollTop=0; }catch(e){}
   });
 }
 
@@ -2159,6 +2240,7 @@ function applyTenantDisplaySection(raw){
   _tZm = (Array.isArray(cfg.zm_show) && cfg.zm_show.length) ? cfg.zm_show.slice() : null;
   try{ tZmDraw(); }catch(e){}
   try{ tMusLoad(cfg); }catch(e){}
+  try{ tHlLoad(cfg); }catch(e){}
   var _tbs=document.getElementById("t-bg-sec"); if(_tbs) _tbs.value = cfg.bg_sec || 10;
   // מהירות גלילה
   var sp=(cfg.scrollSpeed>0)?cfg.scrollSpeed:80;
@@ -2210,6 +2292,7 @@ function applyTenantPerms(){
   _tShow('t-pdf-outer', false);
   /* מוזיקה — פעילה אלא אם האדמין כיבה (גם ללקוחות קיימים) */
   _tShow('t-music-sec', P.music!==false);   /* 3.8: בכל סוגי המסכים */
+  _tShow('t-hl-outer', !!P.edit_message && (_tPurpose||"main")==="main");   /* 3.10: מסכי בניין */
 }
 function _tenantBaseDC(){
   /* בסיס לשמירה: העתקה מלאה של הקונפיג הקיים.
@@ -2410,6 +2493,88 @@ function tMusSave(){
   _tenantSaveDC(out).then(function(){ _tMus=list; toast("המוזיקה עודכנה ✓ — תוך חצי דקה במסך"); })
     .catch(function(){ toast("השמירה נכשלה"); });
 }
+/* ===== 3.10: קפיצה מהירה לחלקי הטופס ===== */
+var QNAV=[["txt-sec","✏️ ההודעה"],["pdf-sec","📄 קובץ"],["sched-sec","🗓️ תזמון"],["t-hl-outer","✨ הודעות בולטות"],
+  ["tenant-display-sec","🖥️ תצוגה"],["t-zm-outer","🕐 זמנים"],["t-music-sec","🎵 מוזיקה"],["t-bg-outer","🖼️ רקע"],
+  ["tenant-minyan-sec","🕍 מניינים"],["building-sec","🏢 שם הבניין"]];
+function qnavBuild(){
+  var q=document.getElementById("qnav"); if(!q) return;
+  q.innerHTML=QNAV.filter(function(x){ var e=document.getElementById(x[0]); return e && e.style.display!=="none" && e.offsetParent!==null; })
+    .map(function(x){ return '<button type="button" onclick="qnavGo(\''+x[0]+'\')">'+x[1]+'</button>'; }).join("");
+}
+function qnavGo(id){
+  var e=document.getElementById(id), b=document.querySelector("#edit-modal .modal-body"); if(!e||!b) return;
+  b.scrollTo({top:Math.max(0,e.offsetTop-b.offsetTop-8),behavior:"smooth"});
+}
+/* ===== 3.10: הודעות בולטות (שמחות / הודעה חשובה / כללי) ===== */
+var _tHl=[];
+var HL_TPL={simcha:[["נולד בן","נולד בן למשפחת ","הברית תתקיים "],["נולדה בת","נולדה בת למשפחת ","הקידוש יתקיים בשבת "],
+  ["בר מצווה","בר המצווה של ","בן למשפחת "],["אירוסין","מזל טוב למשפחת ","לרגל אירוסי "],["חתונה","מזל טוב למשפחת ","לרגל נישואי "],
+  ["פדיון הבן","פדיון הבן של משפחת ",""]], important:[["הפסקת מים","הפסקת מים","ביום "],["עבודות בבניין","עבודות בבניין",""]],
+  general:[["אסיפת דיירים","אסיפת דיירים","ביום "]]};
+function tHlToday(n){ var d=new Date(); d.setDate(d.getDate()+(n||0)); return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2); }
+function tHlEsc(t){ return String(t==null?"":t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;"); }
+function tHlStatus(h){
+  var t=tHlToday(0);
+  if(h.to && t>h.to) return '<span class="hl-st" style="background:#3a1416;color:#ff9a9a">הסתיים</span>';
+  if(h.from && t<h.from) return '<span class="hl-st" style="background:#13233a;color:#8cc3ff">יתחיל '+tHlEsc(h.from.split("-").reverse().join("/"))+'</span>';
+  return '<span class="hl-st" style="background:#0f3a1f;color:#7ee787">מוצג עכשיו</span>';
+}
+function tHlCollect(){
+  [].forEach.call(document.querySelectorAll("#t-hl-list .hl-item"),function(el){
+    var i=+el.getAttribute("data-i"), h=_tHl[i]; if(!h) return;
+    h.title=el.querySelector(".hl-ti").value; h.text=el.querySelector(".hl-tx").value;
+    h.from=el.querySelector(".hl-fr").value; h.to=el.querySelector(".hl-to").value;
+  });
+}
+function tHlDraw(){
+  var box=document.getElementById("t-hl-list"); if(!box) return;
+  if(!_tHl.length){ box.innerHTML='<div class="hint" style="text-align:center;padding:8px">אין הודעות בולטות. לחץ על "הודעה בולטת חדשה".</div>'; return; }
+  box.innerHTML=_tHl.map(function(h,i){
+    var ty=h.type||"simcha";
+    var tpl=(HL_TPL[ty]||[]).map(function(x,k){ return '<button type="button" onclick="tHlTpl('+i+','+k+')">'+x[0]+'</button>'; }).join("");
+    return '<div class="hl-item" data-i="'+i+'">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px">'+
+        '<b style="color:#ffcc00">הודעה '+(i+1)+'</b>'+tHlStatus(h)+'</div>'+
+      '<div class="hl-types">'+
+        '<button type="button" class="'+(ty==="simcha"?"on":"")+'" onclick="tHlType('+i+',\'simcha\')">🎉 שמחה</button>'+
+        '<button type="button" class="'+(ty==="important"?"on imp":"")+'" onclick="tHlType('+i+',\'important\')">❗ הודעה חשובה</button>'+
+        '<button type="button" class="'+(ty==="general"?"on gen":"")+'" onclick="tHlType('+i+',\'general\')">ℹ️ כללי</button></div>'+
+      (tpl?'<div class="hl-tpl">'+tpl+'</div>':'')+
+      '<input type="text" class="hl-ti" maxlength="80" placeholder="כותרת — למשל: נולדה בת למשפחת כהן" value="'+tHlEsc(h.title)+'">'+
+      '<textarea class="hl-tx" maxlength="400" placeholder="פרטים — למשל: הקידוש יתקיים בשבת אחרי מוסף. כולם מוזמנים!">'+tHlEsc(h.text)+'</textarea>'+
+      '<div class="hl-dates"><div><div class="hint">מתאריך</div><input type="date" class="hl-fr" value="'+tHlEsc(h.from)+'"></div>'+
+        '<div><div class="hint">עד תאריך (כולל)</div><input type="date" class="hl-to" value="'+tHlEsc(h.to)+'"></div></div>'+
+      '<div style="display:flex;justify-content:flex-start;margin-top:10px"><button type="button" class="hl-del" onclick="tHlDel('+i+')">מחק הודעה</button></div>'+
+    '</div>';
+  }).join("");
+}
+function tHlAdd(){ tHlCollect(); _tHl.push({type:"simcha",title:"",text:"",from:tHlToday(0),to:tHlToday(7)}); tHlDraw();
+  var it=document.querySelectorAll("#t-hl-list .hl-item"); var last=it[it.length-1]; if(last){ last.scrollIntoView({behavior:"smooth",block:"center"}); } }
+function tHlDel(i){ tHlCollect(); if(!confirm("למחוק את ההודעה?")) return; _tHl.splice(i,1); tHlDraw(); }
+function tHlType(i,t){ tHlCollect(); if(_tHl[i]) _tHl[i].type=t; tHlDraw(); }
+function tHlTpl(i,k){
+  tHlCollect(); var h=_tHl[i]; if(!h) return; var x=(HL_TPL[h.type||"simcha"]||[])[k]; if(!x) return;
+  if(!h.title || confirm("להחליף את הכותרת בתבנית \""+x[0]+"\"?")){ h.title=x[1]; if(!h.text) h.text=x[2]; }
+  tHlDraw();
+  var el=document.querySelector('#t-hl-list .hl-item[data-i="'+i+'"] .hl-ti'); if(el){ el.focus(); try{ el.setSelectionRange(el.value.length,el.value.length); }catch(e){} }
+}
+function tHlLoad(cfg){
+  _tHl=Array.isArray(cfg.highlights)?cfg.highlights.map(function(h){ return {type:h.type||"simcha",title:h.title||"",text:h.text||"",from:h.from||"",to:h.to||""}; }):[];
+  var s=document.getElementById("t-hl-sec"); if(s) s.value=String(cfg.hl_sec||12);
+  tHlDraw();
+}
+function tHlSave(){
+  if(!(CURRENT_PERMS&&CURRENT_PERMS.edit_message)){ toast("אין הרשאה"); return; }
+  tHlCollect();
+  var list=_tHl.filter(function(h){ return String(h.title||"").trim()||String(h.text||"").trim(); });
+  for(var i=0;i<list.length;i++){ if(list[i].from && list[i].to && list[i].to<list[i].from){ toast("בהודעה "+(i+1)+" — תאריך הסיום לפני תאריך ההתחלה"); return; } }
+  var out=_tenantBaseDC();
+  out.highlights=list;
+  out.hl_sec=parseInt((document.getElementById("t-hl-sec")||{}).value,10)||12;
+  _tenantSaveDC(out).then(function(){ _tHl=list.slice(); tHlDraw(); toast("ההודעות הבולטות נשמרו ✓ — יופיעו במסך תוך דקה"); })
+    .catch(function(){ toast("השמירה נכשלה"); });
+}
 /* ===== 3.7: בחירת זמני היום שמוצגים במסך (בהרשאת אדמין) ===== */
 var _tZm=null;
 function tZmDef(){ var p=_tPurpose||"main"; return p==="main"?"building":(p==="lobby"?"main":p); }
@@ -2455,6 +2620,7 @@ function tApplyPurpose(){
   try{ tZmDraw(); }catch(e){}
   show("t-pdf-outer", false);   /* הוסר — הקובץ מוצג דרך ההודעה */
   show("t-music-sec", !!(CURRENT_PERMS && CURRENT_PERMS.music!==false));   /* 3.8: בכל סוגי המסכים */
+  show("t-hl-outer", isBuilding && !!(CURRENT_PERMS && CURRENT_PERMS.edit_message));   /* 3.10 */
 }
 
 function saveMinyanView(){
@@ -3449,7 +3615,7 @@ window.addEventListener("load",function(){
   }
 });
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.9 · 23.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.10 · 23.10.26</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון/טופס פתוח במקום לצאת מהאפליקציה */
 (function(){
@@ -3579,6 +3745,48 @@ function pdfShrink(f){
     im.src=u;
   });
 }
+/* ===== 3.10: PDF הופך לתמונות חדות כבר בהעלאה =====
+   כל עמוד מצויר כאן, בדפדפן, ב-3000 פיקסלים בצד הארוך (יותר ממה שהמסך
+   צריך) ונשמר כתמונה. המסך מציג תמונה רגילה — חדה, מהירה, בלי תלות
+   בגופנים ובלי שהמכשיר החלש של המסך יצטרך לצייר PDF בעצמו. */
+var PDFJS_T="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", PDF_PX=3000;
+function needPdfJsT(){
+  if(window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  return new Promise(function(res,rej){
+    var sc=document.createElement("script"); sc.src=PDFJS_T;
+    sc.onload=function(){ pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS_T.replace("pdf.min.js","pdf.worker.min.js"); res(pdfjsLib); };
+    sc.onerror=function(){ rej(new Error("pdfjs")); };
+    document.head.appendChild(sc);
+  });
+}
+function pdfToJpegs(f, onPage){
+  return needPdfJsT().then(function(lib){ return f.arrayBuffer().then(function(buf){
+    return lib.getDocument({data:buf, cMapUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/", cMapPacked:true,
+      standardFontDataUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/"}).promise; }); })
+  .then(function(doc){
+    var n=Math.min(doc.numPages,15), out=[], chain=Promise.resolve();
+    for(var i=1;i<=n;i++)(function(pn){
+      chain=chain.then(function(){ return doc.getPage(pn).then(function(pg){
+        var v1=pg.getViewport({scale:1}), sc=Math.min(6, PDF_PX/Math.max(v1.width,v1.height));
+        var vp=pg.getViewport({scale:sc}), cv=document.createElement("canvas");
+        cv.width=Math.round(vp.width); cv.height=Math.round(vp.height);
+        var cx=cv.getContext("2d"); cx.fillStyle="#fff"; cx.fillRect(0,0,cv.width,cv.height);
+        return pg.render({canvasContext:cx,viewport:vp}).promise.then(function(){
+          return new Promise(function(res){ cv.toBlob(function(b){ res(b); },"image/jpeg",0.95); });
+        }).then(function(b){
+          out.push({blob:b,type:"image/jpeg"}); if(onPage) onPage(pn,n);
+          cv.width=cv.height=1;   /* משחרר זיכרון בטלפון */
+          if(pn===1) return pg.getTextContent().then(function(tc){
+            if(tc && tc.items && !tc.items.length)
+              _upWarn.push(f.name+": ה-PDF הזה הוא בעצם תמונה סרוקה (בלי טקסט). החדות תלויה בסריקה — אם הוא מטושטש, בקש את קובץ ה-PDF המקורי מהמעצב.");
+          }).catch(function(){});
+        });
+      }); });
+    })(i);
+    if(doc.numPages>15) _upWarn.push(f.name+": יש בקובץ "+doc.numPages+" עמודים — הועלו 15 הראשונים.");
+    return chain.then(function(){ return out; });
+  });
+}
 function pdfPick(inp,p){
   p=p||"";
   var files=Array.prototype.slice.call(inp.files||[]);
@@ -3604,7 +3812,34 @@ function pdfPick(inp,p){
   var u0=document.getElementById(p+"pdf-url"); if(u0) u0.value="";
   _pdfBusy=true; _upWarn=[];
   var urls=[], chain=Promise.resolve();
+  var conv=document.getElementById(p+"pdf-have-n");
   files.forEach(function(f,idx){
+    var isPdf=(f.type==="application/pdf"||/\.pdf$/i.test(f.name));
+    if(isPdf){
+      /* 3.10: PDF — כל עמוד הופך לתמונה חדה ועולה בנפרד. אם ההמרה נכשלה — עולה ה-PDF כמו שהוא */
+      chain=chain.then(function(){
+        if(conv) conv.textContent="ממיר את "+f.name+" לתמונות חדות…";
+        return pdfToJpegs(f,function(pn,n){ if(conv) conv.textContent="ממיר את "+f.name+" — עמוד "+pn+" מתוך "+n+"…"; })
+          .catch(function(){ return [{blob:f,type:"application/pdf"}]; });
+      }).then(function(pages){
+        var c2=Promise.resolve();
+        pages.forEach(function(x){
+          c2=c2.then(function(){
+            var ext=x.type==="application/pdf"?"pdf":"jpg";
+            var key=(sid||"screen")+"/"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8)+"."+ext;
+            return fetch(SUPA_BASE+"/storage/v1/object/screen-media/"+key,{method:"POST",
+              headers:{apikey:SUPA_KEY,Authorization:"Bearer "+SUPA_KEY,"Content-Type":x.type,"x-upsert":"false"},body:x.blob})
+            .then(function(r){ if(!r.ok) throw new Error("upload "+r.status);
+              urls.push(SUPA_BASE+"/storage/v1/object/public/screen-media/"+key); });
+          });
+        });
+        return c2.then(function(){
+          bi.style.width=Math.round(10+90*(idx+1)/files.length)+"%";
+          if(conv) conv.textContent=f.name+" — "+pages.length+(pages.length===1?" עמוד":" עמודים")+" הועלו כתמונות חדות";
+        });
+      });
+      return;
+    }
     chain=chain.then(function(){ return pdfShrink(f); }).then(function(x){
       /* הסיומת נקבעת לפי סוג הקובץ — המסך מזהה תמונה לפי הסיומת */
       var ext={"application/pdf":"pdf","image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"}[x.type]||"bin";
@@ -3625,7 +3860,7 @@ function pdfPick(inp,p){
     var u=document.getElementById(p+"pdf-url");
     if(u) u.value=_pdfUp;     /* אותו שדה ממשיך לשמש את השמירה */
     _pdfBusy=false;
-    toast(urls.length>1 ? ("הועלו "+urls.length+" קבצים — לחץ שמור") : "הקובץ הועלה — לחץ שמור");
+    toast(urls.length>1 ? ("הועלו "+urls.length+" עמודים/קבצים — לחץ שמור") : "הקובץ הועלה — לחץ שמור");
     if(_upWarn.length) setTimeout(function(){ alert("שים לב לאיכות:\n\n"+_upWarn.join("\n\n")); }, 300);
   }).catch(function(){
     _pdfBusy=false;

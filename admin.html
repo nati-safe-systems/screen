@@ -4031,7 +4031,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.13 · 23.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.14 · 23.10.26</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){
@@ -4179,6 +4179,31 @@ function adImgClear(){
   adImgErr("");
 }
 /* העלאת קובץ (PDF / תמונה) להודעת המסך מתוך האדמין */
+var PDFJS_A="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+function admPdfJpegs(f, onPage){
+  var lp = window.pdfjsLib ? Promise.resolve(window.pdfjsLib) : new Promise(function(res,rej){
+    var sc=document.createElement("script"); sc.src=PDFJS_A;
+    sc.onload=function(){ pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS_A.replace("pdf.min.js","pdf.worker.min.js"); res(pdfjsLib); };
+    sc.onerror=rej; document.head.appendChild(sc); });
+  return lp.then(function(lib){ return f.arrayBuffer().then(function(buf){
+    return lib.getDocument({data:buf, cMapUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/", cMapPacked:true,
+      standardFontDataUrl:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/"}).promise; }); })
+  .then(function(doc){
+    var n=Math.min(doc.numPages,15), out=[], chain=Promise.resolve();
+    for(var i=1;i<=n;i++)(function(pn){
+      chain=chain.then(function(){ return doc.getPage(pn).then(function(pg){
+        var v1=pg.getViewport({scale:1}), sc=Math.min(6, 3000/Math.max(v1.width,v1.height));
+        var vp=pg.getViewport({scale:sc}), cv=document.createElement("canvas");
+        cv.width=Math.round(vp.width); cv.height=Math.round(vp.height);
+        var cx=cv.getContext("2d"); cx.fillStyle="#fff"; cx.fillRect(0,0,cv.width,cv.height);
+        return pg.render({canvasContext:cx,viewport:vp}).promise.then(function(){
+          return new Promise(function(res){ cv.toBlob(function(b){ res(b); },"image/jpeg",0.95); });
+        }).then(function(b){ out.push(b); if(onPage) onPage(pn,n); cv.width=cv.height=1; });
+      }); });
+    })(i);
+    return chain.then(function(){ return out; });
+  });
+}
 function admMsgFile(inp){
   var f=inp.files&&inp.files[0]; if(!f) return;
   var msg=document.getElementById("edit-sc-pdfmsg");
@@ -4188,6 +4213,27 @@ function admMsgFile(inp){
   if(!ext){ say("סוג קובץ לא נתמך — PDF או תמונה","#ff6b6b"); inp.value=""; return; }
   if(f.size>20*1024*1024){ say("הקובץ גדול מ-20 מגה","#ff6b6b"); inp.value=""; return; }
   var sid=(document.getElementById("edit-sc-id")||{}).value||"general";
+  /* 4.14: PDF — כל עמוד הופך לתמונה חדה (3000 פיקסלים) ועולה בנפרד; המסך מציג אותם ברצף */
+  if(ext==="pdf"){
+    say("ממיר לתמונות חדות...");
+    admPdfJpegs(f,function(pn,n){ say("ממיר עמוד "+pn+" מתוך "+n+"..."); }).then(function(pages){
+      var urls=[], c=Promise.resolve();
+      pages.forEach(function(b,i){
+        c=c.then(function(){
+          var k=sid+"/"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8)+".jpg";
+          say("מעלה עמוד "+(i+1)+" מתוך "+pages.length+"...");
+          return fetch(SB+"/storage/v1/object/screen-media/"+k,{method:"POST",
+            headers:{apikey:SK,Authorization:"Bearer "+SK,"Content-Type":"image/jpeg","x-upsert":"false"},body:b})
+          .then(function(r){ if(!r.ok) throw new Error("upload "+r.status); urls.push(SB+"/storage/v1/object/public/screen-media/"+k); });
+        });
+      });
+      return c.then(function(){
+        document.getElementById("edit-sc-pdfurl").value=urls.join(" ");
+        say("הועלה ✓ "+f.name+" — "+urls.length+(urls.length===1?" עמוד":" עמודים")+" כתמונות חדות — לחץ שמור","#3fb950");
+      });
+    }).catch(function(){ say("ההמרה או ההעלאה נכשלה","#ff6b6b"); }).then(function(){ inp.value=""; });
+    return;
+  }
   var key=sid+"/"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8)+"."+ext;
   say("מעלה...");
   fetch(SB+"/storage/v1/object/screen-media/"+key,{

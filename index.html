@@ -837,6 +837,7 @@ body.ads-bottom .ad-slide video.ad-vid{width:auto;height:17vh;max-width:60%;obje
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;800;900&family=Heebo:wght@300;400;500;700;800;900&family=Rubik:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700;1,900&family=Suez+One&display=swap" rel="stylesheet">
 <script src="nsf-zmsel.js?v=1.0-181026"></script>
 <script src="nsf-music.js?v=1.6-211026"></script>
+<script src="nsf-highlight.js?v=1.0-231026"></script>
 </head>
 <body>
 <!-- מודעה על כל המסך — מצב ads_mode="full" -->
@@ -2050,6 +2051,10 @@ function parseDisplayConfig(raw){
     audio_shuffle: c.audio_shuffle!==false,
     /* 12.15: מנהג ההשתקה בספירה ובבין המצרים — נשמר באדמין אבל לא הגיע למסך עד עכשיו */
     omer_custom: c.omer_custom || "full",
+    /* 12.19: הודעות בולטות — שמחות והודעות חשובות במרכז הלוח */
+    highlights: Array.isArray(c.highlights) ? c.highlights : [],
+    hl_sec: +c.hl_sec || 12,
+    hl_every: +c.hl_every || 90,
     metzarim_custom: c.metzarim_custom || "tammuz17",
     /* הגדרות הפרסום. הפונקציה הזו מעבירה רק שדות שמופיעים כאן,
        ולכן ads_promo / ads_mode נשמרו באדמין אבל לא הגיעו למסך מעולם —
@@ -2810,6 +2815,7 @@ function applyDisplayConfig(cfg){
      (fitWx עצמה יוצאת מיד אם שום דבר לא השתנה) */
   setTimeout(function(){ try{ fitWx(); }catch(e){} }, 300);
   try{ audioApply(); }catch(e){ _auState="שגיאה: "+(e&&e.message?e.message:e); }
+  try{ if(window.NatiHighlight) NatiHighlight.set(cfg.highlights, cfg.hl_sec, cfg.hl_every); }catch(e){}
   // בהירות תמונת הרקע (100=ללא שינוי, נמוך יותר=כהה יותר)
   var _bc=document.getElementById("bc");
   if(_bc){ var _bb=(cfg.bgBrightness>0)?cfg.bgBrightness:100; _bc.style.setProperty('--bg-bright',(_bb/100)); }
@@ -5425,7 +5431,7 @@ setInterval(fitTimer, 60000);
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.18 · 21.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.19 · 23.10.26</div>
 <script>
 /* ---- עדכון אוטומטי מ-GitHub · 13.10.26 ----
    כל 3 דקות המסך בודק (בקשת HEAD קטנה, בלי להוריד את הקובץ) אם הקובץ שלו
