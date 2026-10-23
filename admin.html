@@ -950,8 +950,8 @@ th.sc-sort .ar{font-size:10px;opacity:.85;margin-inline-start:4px;}
         <div class="field" style="margin-top:12px;">
           <label>מקור הזמנים ההלכתיים</label>
           <select id="edit-sc-zmsrc" onchange="markCustom()" style="margin-top:6px;">
-            <option value="hebcal">Hebcal (ברירת מחדל)</option>
-            <option value="engine">מנוע מקומי — מכויל ללוח</option>
+            <option value="hebcal">Hebcal</option>
+            <option value="engine">מנוע מקומי — מכויל ללוח (ברירת מחדל למסך חדש)</option>
           </select>
           <div style="font-size:12px;color:#8b949e;margin-top:5px;">
             מצב צל פעיל תמיד: המנוע רץ ברקע ורושם הפרשים גם כשהמקור הוא Hebcal.
@@ -2726,6 +2726,8 @@ function openAddScreen(){
   document.getElementById('dc-tenant-edit').checked=false;
   document.getElementById('dc-tenant-ads').checked=false;
   adsList=[]; resetAdForm(); renderAdsAdmin(); toggleAdsMgmt();
+  /* 4.15: מסך חדש — זמנים מהמנוע המקומי (המכויל ללוח) כברירת מחדל */
+  var _zsN=document.getElementById('edit-sc-zmsrc'); if(_zsN) _zsN.value='engine';
   openModal('modal-sc');
 }
 
@@ -4031,7 +4033,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.14 · 23.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.15 · 23.10.26</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){
