@@ -165,7 +165,8 @@
   function mk(r, m) {
     return {
       id: r.id, room_id: r.room_id, prayer: r.prayer,
-      label: r.label || null, minutes: m, time: fmt(m),
+      label: r.time_text ? null : (r.label || null), minutes: m,
+      time: r.time_text ? String(r.time_text) : fmt(m), text: !!r.time_text,
       rolling: false, sort_order: r.sort_order || 0
     };
   }
@@ -195,7 +196,7 @@
 
   var API = { resolve: resolve, next: next, byPrayer: byPrayer,
               countdown: countdown, fmt: fmt, toMin: toMin, ZKEY: ZKEY,
-              dayCtx: dayCtx, matchDayType: matchDayType, VERSION: '1.1' };
+              dayCtx: dayCtx, matchDayType: matchDayType, VERSION: '1.2' };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   root.NatiMinyan = API;
 })(typeof window !== 'undefined' ? window : globalThis);

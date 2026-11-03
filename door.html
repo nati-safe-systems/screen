@@ -2091,7 +2091,8 @@ body.merkaz #nsf-slide > *{max-width:74% !important}
   function mk(r, m) {
     return {
       id: r.id, room_id: r.room_id, prayer: r.prayer,
-      label: r.label || null, minutes: m, time: fmt(m),
+      label: r.time_text ? null : (r.label || null), minutes: m,
+      time: r.time_text ? String(r.time_text) : fmt(m), text: !!r.time_text,
       rolling: false, sort_order: r.sort_order || 0
     };
   }
@@ -2782,7 +2783,7 @@ NatiGuard.check(function(){ load(); tick(); });
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot);
   else boot();
 })();
-</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך כניסה · גרסה 3.17 · 21.10.26</div>
+</script><div id="nsf-ver" style="position:fixed;left:8px;bottom:34px;z-index:2147482001;">נתי SAFE · מסך כניסה · גרסה 3.18 · 03.11.26</div>
 <!-- "תפילת ___ מתחילה כאן עכשיו" — לחיצת גבאי בשלט / באפליקציה -->
 <script src="room-call.js?v=2.4-161026"></script>
 <!-- ===== נתי SAFE · סימן מים מוזהב + רענון נתונים חכם (משותף לכל מסכי בית הכנסת) ===== -->
