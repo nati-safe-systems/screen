@@ -1671,6 +1671,13 @@ function saveMin(i,f,v){
   if(f==="mode"||f==="prayer"||f==="room_id"){ doSave(); }   /* בחירה מרשימה — מיד */
   else saveLater("min"+m.id+f, doSave);                       /* הקלדה — אחרי השהיה */
 }
+/* טקסט במקום השעה — נשמר בפונקציה נפרדת (nsf_set_prayer_text) */
+function saveMinText(i,v){
+  var m=MINS[i]; v=String(v||"").trim(); m.time_text=v||null;
+  rpc("nsf_set_prayer_text",{p_token:NSF_TOKEN,p_id:String(m.id),p_text:v})
+   .then(function(r){ if(r&&r.ok===false) throw new Error(r.err||"נדחה"); flash();drawMins();preview(); })
+   .catch(function(e){ say("השמירה נכשלה: "+(e.message||e)+" — הורץ merkaz_prayer_times.sql?",1); });
+}
 function delMin(i){sf("prayer_times?id=eq."+MINS[i].id,{method:"DELETE"}).then(function(){pickSite();});}
 
 var OPEN={};
@@ -1756,7 +1763,9 @@ function drawMinRow(i){ return [i].map(function(i){
         opts({fixed:"שעה קבועה",interval:"כל X דקות",relative:"יחסי לזמן הלכתי"},m.mode)+'</select></div>'+
       '<div><label>חל בימים</label><select onchange="saveMin('+i+',\'day_type\',this.value)">'+
         opts(DAYT,m.day_type||"all")+'</select></div>'+
-      '<div><label>תווית (רשות)</label><input value="'+esc(m.label||"")+'" placeholder="ותיקין" onchange="saveMin('+i+',\'label\',this.value)"></div>';
+      '<div><label>תווית (רשות)</label><input value="'+esc(m.label||"")+'" placeholder="ברכות 7:15 · הודו 7:30" onchange="saveMin('+i+',\'label\',this.value)"></div>'+
+      '<div style="grid-column:1/-1"><label>טקסט במקום השעה (רשות)</label><input value="'+esc(m.time_text||"")+'" placeholder="ותיקין / מנחה גדולה / 20 דק׳ אחרי השקיעה" onchange="saveMinText('+i+',this.value)">'+
+        '<div class="hint">כשממולא — המסך מציג את הטקסט הזה בלבד, בלי שעה. השעה שלמטה משמשת רק לסדר הרשימה ול"המניין הבא".</div></div>';
 
     if(m.mode==="fixed")
       h+='<div><label>שעה</label><input type="time" value="'+(m.fixed_time||"").slice(0,5)+'" onchange="saveMin('+i+',\'fixed_time\',this.value)"></div>';
@@ -2117,4 +2126,4 @@ function goBackPanel(){
   location.href="https://nati-safe-systems.github.io/screen/tenant_panel.html"
     + (co?("?co="+encodeURIComponent(co)):"");
 }
-</script><div id="app-version" style="position:fixed;left:8px;bottom:6px;font-size:11px;color:#8b949e;opacity:.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול בית הכנסת · גרסה 2.10 · 03.11.26</div></body></html>
+</script><div id="app-version" style="position:fixed;left:8px;bottom:6px;font-size:11px;color:#8b949e;opacity:.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול בית הכנסת · גרסה 2.11 · 03.11.26</div></body></html>
