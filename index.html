@@ -375,56 +375,64 @@ body.portrait #mq-wrap,body.portrait #st-wrap{top:0;}
 body.portrait > .ft{width:100%;order:99;flex-shrink:0;border-top:1px solid rgba(255,255,255,0.1);}
 body.portrait.ticker-on > .ft{margin-bottom:60px;}
 
-/* מזג אוויר מפורט */
-.wx-now{display:flex;align-items:center;justify-content:center;gap:7px;}
+/* מזג אוויר מפורט — 12.22: כל מספר עם מילה שמסבירה אותו
+   "עכשיו", ולכל יום "ביום" (המקסימום) ו"בלילה" (המינימום). */
+.wx-now{display:flex;flex-direction:column;align-items:center;gap:1px;}
+.wx-nl{font-size:calc(var(--sbs,1) * 0.62vw);font-weight:800;color:#bfe3ff;}
+.wx-nrow{display:flex;align-items:center;gap:6px;}
 .wx-ic svg,.wx-di svg{display:block;}
-.wx-days{display:flex;flex-direction:column;gap:2px;margin-top:4px;
-  border-top:1px solid rgba(130,205,255,0.18);padding-top:3px;}
-.wx-day{display:flex;align-items:center;gap:5px;justify-content:flex-start;white-space:nowrap;}
-.wx-dl{font-size:calc(var(--sbs,1) * 0.72vw);opacity:0.8;min-width:2.2em;text-align:right;font-weight:700;}
+.wx-days{display:flex;flex-direction:column;gap:3px;margin-top:4px;
+  border-top:1px solid rgba(130,205,255,0.18);padding-top:4px;}
+.wx-day{display:flex;align-items:center;gap:6px;justify-content:flex-start;white-space:nowrap;}
+.wx-dl{font-size:calc(var(--sbs,1) * 0.72vw);min-width:3.6em;text-align:right;font-weight:800;color:#eaf6ff;}
+.wx-hl{display:inline-flex;align-items:baseline;gap:3px;}
+.wx-k{font-size:calc(var(--sbs,1) * 0.56vw);font-weight:700;color:#bfe3ff;}
 .wx-hi{font-size:calc(var(--sbs,1) * 0.82vw);font-weight:800;color:#ffd08a;}
-.wx-sep{font-size:calc(var(--sbs,1) * 0.7vw);opacity:0.45;}
 .wx-lo{font-size:calc(var(--sbs,1) * 0.82vw);font-weight:800;color:#9fd4ff;}
-body.portrait .wx-dl,body.portrait .wx-sep{font-size:calc(var(--sbs) * 0.58vw);}
+.wx-sep{display:none;}
+body.portrait .wx-dl{font-size:calc(var(--sbs) * 0.6vw);}
+body.portrait .wx-k{font-size:calc(var(--sbs) * 0.48vw);}
 body.portrait .wx-hi,body.portrait .wx-lo{font-size:calc(var(--sbs) * 0.66vw);}
 
-/* מזג אוויר ברצועת שם הבניין — פינה שמאלית עליונה */
+/* מזג אוויר ברצועת שם הבניין — פינה שמאלית עליונה.
+   עמודה לכל יום: שם היום, סמל, "ביום 23°", "בלילה 15°". */
 #building-title-bg > .wx{
   position:absolute!important;top:50%;left:14px;transform:translateY(-50%);
-  z-index:7;margin:0;padding:.35vw .7vw;max-width:none;overflow:visible;
-  background:linear-gradient(180deg,rgba(0,92,186,0.9),rgba(0,46,105,0.94));
-  border:1px solid rgba(130,205,255,0.75);border-radius:.5vw;
-  display:flex!important;flex-direction:column;align-items:center;gap:.18vw;
+  z-index:7;margin:0;padding:.35vw .8vw .45vw;max-width:none;overflow:visible;
+  background:linear-gradient(180deg,rgba(0,92,186,0.92),rgba(0,46,105,0.95));
+  border:1px solid rgba(130,205,255,0.75);border-radius:.6vw;
+  display:flex!important;flex-direction:column;align-items:stretch;gap:.25vw;
   color:#eaf6ff;white-space:nowrap;line-height:1.15;
   box-shadow:0 2px 8px rgba(0,0,0,0.45), inset 0 0 10px rgba(130,205,255,0.13);}
-
-#building-title-bg > .wx .wx-ttl{display:block;width:100%;text-align:center;
-  font-size:.6vw;font-weight:800;color:#bfe3ff;letter-spacing:.02vw;
-  border-bottom:1px solid rgba(255,255,255,0.25);padding-bottom:.14vw;}
-
-#building-title-bg > .wx .wx-now{display:flex;flex-direction:row;align-items:center;gap:.35vw;}
-#building-title-bg > .wx .wx-ic svg{width:1.35vw;height:1.35vw;display:block;}
-#building-title-bg > .wx .wx-t{font-size:1.35vw;font-weight:900;color:#fff;line-height:1;}
-#building-title-bg > .wx .wx-d{display:block;font-size:.6vw;color:#cfe8ff;font-weight:600;}
-
-#building-title-bg > .wx .wx-days{display:flex;flex-direction:row;justify-content:center;
-  gap:.7vw;width:100%;margin:0;border-top:1px solid rgba(255,255,255,0.22);
-  border-right:none;padding:.16vw 0 0 0;}
-#building-title-bg > .wx .wx-day{display:flex;align-items:center;gap:.18vw;}
-#building-title-bg > .wx .wx-dl{font-size:.58vw;color:#bfe3ff;min-width:auto;opacity:1;}
-#building-title-bg > .wx .wx-di svg{width:.75vw;height:.75vw;display:block;}
-#building-title-bg > .wx .wx-hi{font-size:.7vw;color:#ffd08a;font-weight:800;}
-#building-title-bg > .wx .wx-lo{font-size:.7vw;color:#9fd4ff;font-weight:800;}
-#building-title-bg > .wx .wx-sep{font-size:.58vw;opacity:.5;}
-body.portrait #building-title-bg > .wx{left:8px;padding:1.2vw 1.8vw;max-width:34%;border-radius:1.2vw;}
-body.portrait #building-title-bg > .wx .wx-ttl{font-size:1.5vw;}
-body.portrait #building-title-bg > .wx .wx-ic svg{width:3.6vw;height:3.6vw;}
+#building-title-bg > .wx .wx-ttl{display:block;text-align:center;
+  font-size:.7vw;font-weight:800;color:#d6eeff;letter-spacing:.03vw;
+  border-bottom:1px solid rgba(255,255,255,0.25);padding-bottom:.18vw;}
+#building-title-bg > .wx .wx-body{display:flex;flex-direction:row;align-items:stretch;gap:0;}
+#building-title-bg > .wx .wx-now{padding:0 .7vw 0 .9vw;border-left:1px solid rgba(255,255,255,0.28);justify-content:center;}
+#building-title-bg > .wx .wx-nl{font-size:.68vw;}
+#building-title-bg > .wx .wx-ic svg{width:1.5vw;height:1.5vw;}
+#building-title-bg > .wx .wx-t{font-size:1.7vw;font-weight:900;color:#fff;line-height:1;}
+#building-title-bg > .wx .wx-d{display:block;font-size:.66vw;color:#cfe8ff;font-weight:700;}
+#building-title-bg > .wx .wx-days{display:flex;flex-direction:row;gap:0;margin:0;padding:0;border:0;}
+#building-title-bg > .wx .wx-day{flex-direction:column;align-items:center;gap:.08vw;padding:0 .6vw;
+  border-left:1px solid rgba(255,255,255,0.14);}
+#building-title-bg > .wx .wx-day:last-child{border-left:0;padding-left:0;}
+#building-title-bg > .wx .wx-dl{font-size:.74vw;min-width:0;text-align:center;color:#fff;}
+#building-title-bg > .wx .wx-di svg{width:1.05vw;height:1.05vw;}
+#building-title-bg > .wx .wx-k{font-size:.58vw;}
+#building-title-bg > .wx .wx-hi,
+#building-title-bg > .wx .wx-lo{font-size:.95vw;}
+body.portrait #building-title-bg > .wx{left:8px;padding:1vw 1.6vw;max-width:46%;border-radius:1.2vw;}
+body.portrait #building-title-bg > .wx .wx-ttl{font-size:1.6vw;}
+body.portrait #building-title-bg > .wx .wx-nl{font-size:1.5vw;}
+body.portrait #building-title-bg > .wx .wx-ic svg{width:3.4vw;height:3.4vw;}
 body.portrait #building-title-bg > .wx .wx-t{font-size:3.6vw;}
-body.portrait #building-title-bg > .wx .wx-d{font-size:1.5vw;}
-body.portrait #building-title-bg > .wx .wx-dl{font-size:1.4vw;}
+body.portrait #building-title-bg > .wx .wx-d{font-size:1.45vw;}
+body.portrait #building-title-bg > .wx .wx-dl{font-size:1.6vw;}
+body.portrait #building-title-bg > .wx .wx-k{font-size:1.25vw;}
 body.portrait #building-title-bg > .wx .wx-hi,
-body.portrait #building-title-bg > .wx .wx-lo{font-size:1.7vw;}
-body.portrait #building-title-bg > .wx .wx-di svg{width:1.8vw;height:1.8vw;}
+body.portrait #building-title-bg > .wx .wx-lo{font-size:2vw;}
+body.portrait #building-title-bg > .wx .wx-di svg{width:2.2vw;height:2.2vw;}
 
 /* מזג אוויר במסך השבת */
 #sho-wx{display:none;position:absolute;top:14px;left:16px;z-index:6;
@@ -2203,15 +2211,22 @@ function wxEnsureEl(){
   if(old) old.remove();
   var el=document.createElement("div");
   el.id="wx"; el.className="wx"; el.setAttribute("data-pos",pos);
-  el.innerHTML='<div class="wx-ttl">תחזית מזג האוויר</div>'+
-               '<div class="wx-now"><span class="wx-ic"></span>'+
-               '<span class="wx-t">--°</span><span class="wx-d">טוען…</span></div>'+
+  el.innerHTML='<div class="wx-ttl">מזג האוויר</div>'+
+               '<div class="wx-body">'+
+               '<div class="wx-now"><span class="wx-nl">עכשיו</span>'+
+                 '<span class="wx-nrow"><span class="wx-ic"></span><span class="wx-t">--°</span></span>'+
+                 '<span class="wx-d">טוען…</span></div>'+
                '<div class="wx-days">'+
-               '<div class="wx-day"><span class="wx-dl">היום</span><span class="wx-di"></span>'+
-                 '<span class="wx-hi">--°</span><span class="wx-sep">/</span><span class="wx-lo">--°</span></div>'+
-               '<div class="wx-day"><span class="wx-dl">מחר</span><span class="wx-di"></span>'+
-                 '<span class="wx-hi">--°</span><span class="wx-sep">/</span><span class="wx-lo">--°</span></div>'+
-               '</div>';
+                 '<div class="wx-day"><span class="wx-dl">היום</span><span class="wx-di"></span>'+
+                   '<span class="wx-hl"><span class="wx-k">ביום</span><span class="wx-hi">--°</span></span>'+
+                   '<span class="wx-hl"><span class="wx-k">בלילה</span><span class="wx-lo">--°</span></span></div>'+
+                 '<div class="wx-day"><span class="wx-dl">מחר</span><span class="wx-di"></span>'+
+                   '<span class="wx-hl"><span class="wx-k">ביום</span><span class="wx-hi">--°</span></span>'+
+                   '<span class="wx-hl"><span class="wx-k">בלילה</span><span class="wx-lo">--°</span></span></div>'+
+                 '<div class="wx-day"><span class="wx-dl">מחרתיים</span><span class="wx-di"></span>'+
+                   '<span class="wx-hl"><span class="wx-k">ביום</span><span class="wx-hi">--°</span></span>'+
+                   '<span class="wx-hl"><span class="wx-k">בלילה</span><span class="wx-lo">--°</span></span></div>'+
+               '</div></div>';
   if(pos==="header"){
     /* בתוך רצועת שם הבניין עצמה — כך המרכוז האנכי נמדד מולה */
     var band=document.getElementById("building-title-bg");
@@ -2279,9 +2294,12 @@ function wxPaint(d){
     el.querySelector(".wx-d").textContent=info[0];
     var days=el.querySelectorAll(".wx-day");
     if(d.daily&&d.daily.temperature_2m_max){
-      for(var i=0;i<2&&i<days.length;i++){
+      for(var i=0;i<days.length;i++){
+        /* תחזית ישנה במטמון (שני ימים בלבד) — היום השלישי פשוט מוסתר */
+        if(d.daily.temperature_2m_max[i]==null){ days[i].style.display="none"; continue; }
+        days[i].style.display="";
         var dc=(d.daily.weather_code||[])[i], di=WX_CODES[dc]||["","cloud"];
-        days[i].querySelector(".wx-di").innerHTML=wxIcon(di[1],14);
+        days[i].querySelector(".wx-di").innerHTML=wxIcon(di[1],16);
         days[i].querySelector(".wx-hi").textContent=Math.round(d.daily.temperature_2m_max[i])+"°";
         days[i].querySelector(".wx-lo").textContent=Math.round(d.daily.temperature_2m_min[i])+"°";
         days[i].title=di[0];
@@ -2306,7 +2324,7 @@ function wxFetch(){
   var url = "https://api.open-meteo.com/v1/forecast?latitude="+c.lat+"&longitude="+c.lng+
             "&current=temperature_2m,weather_code"+
             "&daily=weather_code,temperature_2m_max,temperature_2m_min"+
-            "&timezone=Asia%2FJerusalem&forecast_days=2";
+            "&timezone=Asia%2FJerusalem&forecast_days=3";
   window._wxUrl=url; window._wxState="שולח בקשה ישירה...";
 
   /* בקשה עם מגבלת זמן. בלי זה, אם הרשת בולעת את הפנייה בשקט,
@@ -5442,7 +5460,7 @@ setInterval(fitTimer, 60000);
 <!-- תווית הגרסה הועלתה מעל חיווי פיקוד העורף (#nsf-conn, bottom:6px)
      ומעל תג התצוגה המקדימה (#preview-badge, bottom:8px), ששניהם
      יושבים באותה פינה והסתירו אותה. -->
-<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.21 · 23.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:34px;font-size:11px;color:#8b949e;opacity:0.7;z-index:2147482001;pointer-events:none;direction:rtl;">נתי SAFE · גרסה 12.22 · 05.11.26</div>
 <script>
 /* ---- עדכון אוטומטי מ-GitHub · 13.10.26 ----
    כל 3 דקות המסך בודק (בקשת HEAD קטנה, בלי להוריד את הקובץ) אם הקובץ שלו
