@@ -1518,10 +1518,11 @@ function boot(){
 }); }
 
 function addSite(){var n=document.getElementById("newSite").value.trim(); if(!n)return;
-  sf("sites",{method:"POST",body:JSON.stringify({name:n,tenant_id:"00000000-0000-0000-0000-000000000000",
+  /* 2.13: האתר נוצר תחת הלקוח שהממשק פתוח עבורו (?co=), והשגיאה האמיתית מוצגת */
+  sf("sites",{method:"POST",body:JSON.stringify({name:n,company_id:ONLY_CO||null,tenant_id:"00000000-0000-0000-0000-000000000000",
     lat:31.7683,lng:35.2137,elevation:754})})
   .then(function(){document.getElementById("newSite").value="";say("האתר נוצר");boot();})
-  .catch(function(){say("שמירה נכשלה",1);});}
+  .catch(function(e){say("יצירת האתר נכשלה: "+((e&&(e.message||e.detail))||e),1);console.error(e);});}
 
 /* ---- מילוי רשימת ערכות העיצוב ----
    המקור הוא NatiOrnate.THEMES, ולכן כל ערכה שתתווסף למודול תופיע כאן
@@ -2189,4 +2190,4 @@ function goBackPanel(){
   location.href="https://nati-safe-systems.github.io/screen/tenant_panel.html"
     + (co?("?co="+encodeURIComponent(co)):"");
 }
-</script><div id="app-version" style="position:fixed;left:8px;bottom:6px;font-size:11px;color:#8b949e;opacity:.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול בית הכנסת · גרסה 2.12 · 27.11.26</div></body></html>
+</script><div id="app-version" style="position:fixed;left:8px;bottom:6px;font-size:11px;color:#8b949e;opacity:.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול בית הכנסת · גרסה 2.13 · 27.11.26</div></body></html>
