@@ -2172,8 +2172,7 @@ function preview(){
   }
   /* מצב לקוח: הסתרת פעולות שמורות לניהול המערכת */
   if(q.get("co")){
-    /* 2.14: לקוח בלי אף אתר (בית כנסת חדש) — יכול להקים את הראשון.
-       לקוח שכבר יש לו אתר — לא פותח נוספים. מנהל — תמיד. */
+    /* הקמת אתר חדש — למנהל בלבד */
     updNewSite();
     /* בורר האתרים מיותר כשיש אתר אחד */
     setTimeout(function(){
@@ -2190,7 +2189,8 @@ function updNewSite(){
   var e=document.getElementById("newSiteRow"); if(!e) return;
   var co=(new URLSearchParams(location.search)).get("co");
   if(!co){ e.style.display=""; return; }
-  var can = MNY_ADMIN || (Array.isArray(SITES) && SITES.length===0);
+  /* הקמת בית כנסת — רק מנהל המערכת (בממשק הלקוח מוסתר) */
+  var can = MNY_ADMIN;
   if(MNY_P && !mnyCan("shul_site")) can=false;
   e.style.display = can ? "" : "none";
 }
@@ -2199,4 +2199,4 @@ function goBackPanel(){
   location.href="https://nati-safe-systems.github.io/screen/tenant_panel.html"
     + (co?("?co="+encodeURIComponent(co)):"");
 }
-</script><div id="app-version" style="position:fixed;left:8px;bottom:6px;font-size:11px;color:#8b949e;opacity:.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול בית הכנסת · גרסה 2.14 · 27.11.26</div></body></html>
+</script><div id="app-version" style="position:fixed;left:8px;bottom:6px;font-size:11px;color:#8b949e;opacity:.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול בית הכנסת · גרסה 2.15 · 27.11.26</div></body></html>

@@ -698,6 +698,12 @@ th.sc-sort .ar{font-size:10px;opacity:.85;margin-inline-start:4px;}
             <select id="edit-sc-site" onchange="siteChanged()"><option value="">— ללא אתר —</option></select>
             <select id="edit-sc-room" onchange="markCustom()"><option value="">— ללא חדר —</option></select>
           </div>
+          <!-- 4.18: הקמת בית כנסת חדש ללקוח של המסך — מכאן בלבד, לא מממשק הלקוח -->
+          <button type="button" onclick="newShulSite()"
+            style="margin-top:6px;background:#21262d;border:1px dashed #ffcc00;color:#ffcc00;border-radius:6px;
+                   padding:6px 12px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;">
+            ＋ בית כנסת חדש ללקוח של המסך
+          </button>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
             <!-- "main" הוסר מכאן בכוונה: הוא אינו ייעוד של בית כנסת אלא
                  הערך שמשאיר את המסך ב-index.html, כלומר מסך בניין מגורים.
@@ -2971,6 +2977,23 @@ function loadSitesRooms(){
   }).catch(function(){});
 }
 function esc2(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
+/* 4.18: בית כנסת חדש — נוצר תחת הלקוח שנבחר במסך, ומשויך למסך מיד */
+function newShulSite(){
+  var co=(document.getElementById('edit-sc-co')||{}).value||'';
+  if(!co){ toast('בחר קודם לקוח למסך'); return; }
+  var cn=(allCompanies.find(function(c){return c.company_id===co;})||{}).company_name||co;
+  var name=prompt('שם בית הכנסת החדש (ללקוח: '+cn+')','');
+  if(!name||!name.trim()) return;
+  rpc('nsf_create_site',{p_token:NSF_TOKEN,p_name:name.trim(),p_company:co}).then(function(r){
+    if(r&&r.ok===false) throw new Error(r.err||'נדחה');
+    var nid=(r&&(r.id||(r[0]&&r[0].id)))||null;
+    return loadSitesRooms().then(function(){
+      var ss=document.getElementById('edit-sc-site');
+      if(ss && nid){ ss.value=nid; fillRooms(''); markCustom(); }
+      toast('בית הכנסת נוצר'+(nid?' ושויך למסך — לחץ שמור':''));
+    });
+  }).catch(function(e){ toast('יצירה נכשלה: '+((e&&e.message)||e)); });
+}
 function siteChanged(){ fillRooms(''); markCustom(); }
 
 /* מציג רק את מה שרלוונטי לסוג המסך שנבחר.
@@ -4057,7 +4080,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(function(){t.style.display='none';},3500);}
 document.querySelectorAll('.modal-bg').forEach(function(bg){bg.addEventListener('click',function(e){if(e.target===bg)bg.classList.remove('open');});});
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.17 · 23.10.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול · גרסה 4.18 · 27.11.26</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון פתוח במקום לצאת מהאפליקציה */
 (function(){
