@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>בדיקת מוזיקה · נתי SAFE</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:#0b0906}
+body{font-family:Heebo,Arial,sans-serif;background:linear-gradient(175deg,#141008,#0b0906);background-attachment:fixed;color:#f3e8cf;padding:16px 14px 60px;font-size:14.5px;line-height:1.55}
+h1{font-size:24px;font-weight:900;background:linear-gradient(180deg,#fff2c6,#e2bd62 55%,#a77c2c);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:#a8977a;margin:2px 0 14px;font-size:13.5px}
+.card{background:linear-gradient(180deg,#1d170e,#17120b);border:1px solid rgba(216,176,90,.25);border-radius:16px;padding:14px;margin-bottom:12px}
+.card h2{font-size:17px;font-weight:800;color:#f6dd9a;margin-bottom:8px}
+.ok{color:#8fe39b}.bad{color:#ff9a90}.warn{color:#f3c969}.dim{color:#a8977a}
+.big{font-size:18px;font-weight:900}
+.row{padding:9px 0;border-top:1px solid rgba(216,176,90,.12)}
+.row:first-of-type{border-top:0}
+.tag{display:inline-block;font-size:11.5px;font-weight:800;padding:1px 8px;border-radius:9px;margin-inline-start:4px;white-space:nowrap}
+.t-ok{background:rgba(127,208,138,.14);color:#8fe39b}
+.t-warn{background:rgba(243,201,105,.14);color:#f3c969}
+.t-bad{background:rgba(255,143,134,.14);color:#ff9a90}
+.f{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-top:1px solid rgba(216,176,90,.08)}
+.f .n{flex:1;min-width:0;word-break:break-word}
+.f .s{color:#a8977a;font-size:12.5px;white-space:nowrap}
+button{background:linear-gradient(180deg,#241c11,#1a140c);border:1px solid rgba(216,176,90,.42);color:#f6dd9a;border-radius:9px;padding:6px 11px;font:700 12.5px Heebo,Arial;cursor:pointer;white-space:nowrap}
+button.pri{background:linear-gradient(180deg,#f6dd9a,#d8b05a 55%,#b88d38);color:#20160a;border:0;font-weight:900;padding:11px 16px;font-size:15px;width:100%}
+.verdict{border-radius:14px;padding:14px;margin-bottom:12px;font-size:15px;border:1px solid}
+.v-ok{background:rgba(46,107,46,.18);border-color:rgba(127,208,138,.45)}
+.v-bad{background:rgba(140,28,28,.22);border-color:rgba(255,143,134,.5)}
+.v-warn{background:rgba(216,176,90,.1);border-color:rgba(216,176,90,.45)}
+.verdict li{margin:5px 18px 0 0}
+#ver{position:fixed;left:8px;bottom:6px;font-size:10.5px;color:#7d6f55}
+</style>
+</head>
+<body>
+<h1>בדיקת מוזיקה במסכים</h1>
+<div class="sub">מראה מה באמת יש בתיקיות בדרייב, מה כל מסך אמור לנגן, ואיזה קבצים לא מצליחים להתנגן.</div>
+
+<div id="verdict"></div>
+<div class="card"><h2>הנגן שמותקן באתר</h2><div id="player" class="dim">בודק...</div></div>
+<div class="card"><h2>מסכים עם מוזיקה</h2><div id="screens" class="dim">טוען...</div></div>
+<div id="libs"></div>
+
+<div id="ver">נתי SAFE · בדיקת מוזיקה · גרסה 1.0 · 27.11.26</div>
+
+<script>
+var SB="https://cxtrrejclkhqhkqbicmz.supabase.co";
+var SK="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4dHJyZWpjbGtocWhrcWJpY216Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTk3MDksImV4cCI6MjA5NTU3NTcwOX0._7wB4YwrYEnK6hWuR6YqcFxRb05OLnWvOelIC-ahIEQ";
+var MB=1048576, ISSUES=[], PLAYER_VER=null, GAS_CHUNK=null, SCREENS=[], LIBS_BY_GAS={};
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function mb(b){ return (b/MB).toFixed(b<10*MB?1:0)+" MB"; }
+function q(u,p){ return u+(u.indexOf("?")>-1?"&":"?")+p; }
+var AUDIO_OK=/\.(mp3|m4a|aac|ogg|oga|opus|wav)$/i;
+
+/* 1. גרסת הנגן שבאמת נמצא באתר */
+function checkPlayer(){
+  return fetch("nsf-music.js?chk="+Date.now(),{cache:"no-store"}).then(function(r){ return r.text(); }).then(function(t){
+    var m=t.match(/NatiMusic v([0-9.]+)\s*·\s*([0-9.]+)/);
+    PLAYER_VER=m?parseFloat(m[1]):null;
+    var stream=/action=chunk/.test(t);
+    var el=document.getElementById("player");
+    el.innerHTML='<div class="big '+(stream?'ok':'bad')+'">NatiMusic '+(m?('v'+m[1]+' · '+m[2]):'(לא זוהתה גרסה)')+'</div>'+
+      (stream?'<div class="dim">תומך בקבצים ארוכים (מנגן אותם בהזרמה).</div>'
+             :'<div class="bad">גרסה ישנה: לא יודעת לנגן קבצים ארוכים. כל קובץ מעל 35MB פשוט מדולג.</div>');
+    if(!stream) ISSUES.push("באתר מותקן נגן מוזיקה ישן ("+(m?'v'+m[1]:'?')+") שמדלג על כל קובץ ארוך.");
+  }).catch(function(){ document.getElementById("player").innerHTML='<span class="bad">לא הצלחתי לקרוא את nsf-music.js מהאתר.</span>'; });
+}
+
+/* 2. המסכים והגדרות המוזיקה שלהם */
+function loadScreens(){
+  return fetch(SB+"/rest/v1/screens?select=screen_id,building_name,display_config&order=screen_id",{headers:{apikey:SK,Authorization:"Bearer "+SK},cache:"no-store"})
+  .then(function(r){ return r.json(); }).then(function(rows){
+    SCREENS=(rows||[]).map(function(r){ var d=r.display_config; if(typeof d==="string"){ try{ d=JSON.parse(d); }catch(e){ d={}; } } r.dc=d||{}; return r; })
+      .filter(function(r){ return r.dc.audio_enabled || (r.dc.audio_libs&&r.dc.audio_libs.length); });
+    var el=document.getElementById("screens");
+    if(!SCREENS.length){ el.innerHTML='<span class="warn">לא נמצא אף מסך שהמוזיקה מופעלת בו.</span>'; return; }
+    el.innerHTML=SCREENS.map(function(s){
+      var d=s.dc, libs=(d.audio_libs||[]);
+      return '<div class="row"><b>'+esc(s.building_name||s.screen_id)+'</b> <span class="dim">('+esc(s.screen_id)+')</span>'+
+        (d.audio_enabled?'<span class="tag t-ok">פועלת</span>':'<span class="tag t-bad">כבויה</span>')+
+        '<div class="dim">ספריות: '+(libs.length?esc(libs.join(" · ")):'<span class="bad">לא נבחרה ספריה</span>')+
+        ' · '+(d.audio_shuffle===false?'<span class="warn">לפי הסדר (בלי ערבוב)</span>':'ערבוב')+
+        ' · עוצמה '+(d.audio_volume!=null?d.audio_volume:40)+'</div>'+
+        (d.audio_gas?'':'<div class="bad">לא הוגדר סקריפט מוזיקה</div>')+'</div>';
+    }).join("");
+    SCREENS.forEach(function(s){ var g=String(s.dc.audio_gas||"").trim(); if(g){ (LIBS_BY_GAS[g]=LIBS_BY_GAS[g]||{screens:[]}).screens.push(s); } });
+  });
+}
+
+/* 3. התיקיות בדרייב — דרך הסקריפט */
+function loadLibs(){
+  var gases=Object.keys(LIBS_BY_GAS), box=document.getElementById("libs");
+  if(!gases.length) return Promise.resolve();
+  return Promise.all(gases.map(function(g,gi){
+    var card=document.createElement("div"); card.className="card"; card.innerHTML='<h2>התיקיות בדרייב'+(gases.length>1?' ('+(gi+1)+')':'')+'</h2><div class="dim">טוען מהדרייב...</div>';
+    box.appendChild(card);
+    return fetch(q(g,"action=libs&fresh=1"),{cache:"no-store"}).then(function(r){ return r.json(); }).then(function(d){
+      if(!d||!d.ok) throw new Error((d&&d.error)||"תשובה לא תקינה");
+      LIBS_BY_GAS[g].libs=d.libs||[];
+      var used={}; LIBS_BY_GAS[g].screens.forEach(function(s){ (s.dc.audio_libs||[]).forEach(function(n){ used[n]=1; }); });
+      var maxMB=GAS_CHUNK===false?35:30;
+      var h='';
+      Object.keys(used).forEach(function(n){ if(!d.libs.some(function(l){ return l.name===n; })){
+        h+='<div class="row bad">ספריה "'+esc(n)+'" נבחרה במסך אבל אין בדרייב תיקיה בשם הזה (אולי שונה שם התיקיה).</div>';
+        ISSUES.push('במסך נבחרה ספריה "'+n+'" שלא קיימת בדרייב — המסך לא ינגן ממנה כלום.'); } });
+      d.libs.forEach(function(l){
+        var long=l.files.filter(function(f){ return f.s>maxMB*MB; });
+        h+='<div class="row"><b style="font-size:15.5px">'+esc(l.name)+'</b> <span class="dim">· '+l.files.length+' קבצים</span>'+
+          (used[l.name]?'<span class="tag t-ok">בשימוש במסך</span>':'<span class="tag t-warn">לא נבחרה באף מסך</span>')+
+          (long.length?'<span class="tag t-warn">'+long.length+' ארוכים</span>':'');
+        l.files.forEach(function(f){
+          h+='<div class="f"><div class="n">'+esc(f.n)+'</div><div class="s">'+mb(f.s)+(f.s>maxMB*MB?' · ארוך':'')+'</div>'+
+             '<button data-g="'+esc(g)+'" data-id="'+esc(f.id)+'" data-s="'+f.s+'" onclick="testFile(this)">בדוק</button></div>';
+        });
+        h+='</div>';
+        if(used[l.name] && l.files.length<=1) ISSUES.push('בספריה "'+l.name+'" יש רק '+l.files.length+' קובץ שהסקריפט רואה — לכן תמיד אותה מנגינה.');
+        if(used[l.name] && long.length && (GAS_CHUNK===false || (PLAYER_VER!==null && PLAYER_VER<1.1)))
+          ISSUES.push('בספריה "'+l.name+'" יש '+long.length+' קבצים ארוכים (מעל '+maxMB+'MB) שלא מתנגנים אף פעם — '+(GAS_CHUNK===false?'הסקריפט בדרייב ישן':'הנגן באתר ישן')+'. רק '+(l.files.length-long.length)+' מתוך '+l.files.length+' מתנגנים בפועל.');
+      });
+      h+='<div class="dim" style="margin-top:8px">הסקריפט רואה רק קבצי שמע: mp3, m4a, aac, ogg, opus, wav. קבצים בסוג אחר (למשל mp4, wma, flac, קיצורי דרך) לא נכנסים לרשימה בכלל.</div>'+
+         '<div style="margin-top:10px"><button class="pri" data-g="'+esc(g)+'" onclick="testAll(this)">בדוק את כל הקבצים אחד אחד</button></div>';
+      card.innerHTML='<h2>התיקיות בדרייב'+(gases.length>1?' ('+(gi+1)+')':'')+'</h2>'+h;
+    }).catch(function(e){
+      card.innerHTML='<h2>התיקיות בדרייב</h2><div class="bad">הסקריפט לא ענה: '+esc(e.message)+'</div>';
+      ISSUES.push("סקריפט המוזיקה בדרייב לא עונה ("+e.message+") — המסכים מנגנים רק ממה שנשמר אצלם מקודם.");
+    });
+  }));
+}
+
+/* האם הסקריפט בדרייב תומך בחלקים (קבצים ארוכים) */
+function checkGasChunk(){
+  var gases=Object.keys(LIBS_BY_GAS); if(!gases.length) return Promise.resolve();
+  var g=gases[0];
+  return fetch(q(g,"action=libs"),{cache:"no-store"}).then(function(r){ return r.json(); }).then(function(d){
+    var f=null; (d.libs||[]).some(function(l){ return (f=l.files[0]); });
+    if(!f) return;
+    return fetch(q(g,"action=chunk&id="+encodeURIComponent(f.id)+"&from=0&len=65536"),{cache:"no-store"}).then(function(r){ return r.json(); }).then(function(c){
+      GAS_CHUNK=!!(c && c.ok && typeof c.b64==="string");
+      if(!GAS_CHUNK) ISSUES.push("סקריפט המוזיקה בדרייב בגרסה ישנה (1.0) — לא יודע לשלוח קבצים ארוכים.");
+    });
+  }).catch(function(){});
+}
+
+function testFile(b){
+  var g=b.getAttribute("data-g"), id=b.getAttribute("data-id"), s=+b.getAttribute("data-s");
+  var long=s>30*MB, t0=Date.now(); b.disabled=true; b.textContent="בודק...";
+  var url=long?q(g,"action=chunk&id="+encodeURIComponent(id)+"&from=0&len=65536"):q(g,"action=file&id="+encodeURIComponent(id));
+  return fetch(url,{cache:"no-store"}).then(function(r){ return r.json(); }).then(function(d){
+    var sec=((Date.now()-t0)/1000).toFixed(1);
+    if(d && d.ok && d.b64){ b.outerHTML='<span class="tag t-ok">'+(long?'הזרמה תקינה':'תקין')+' · '+sec+' שנ׳</span>'; return true; }
+    if(d && d.big){ b.outerHTML='<span class="tag t-bad">ארוך מדי — מדולג</span>'; return false; }
+    if(d && d.libs){ b.outerHTML='<span class="tag t-bad">הסקריפט ישן — מדולג</span>'; return false; }
+    b.outerHTML='<span class="tag t-bad">שגיאה: '+esc((d&&d.error)||"?")+'</span>'; return false;
+  }).catch(function(e){ b.outerHTML='<span class="tag t-bad">נכשל ('+esc(e.message)+')</span>'; return false; });
+}
+function testAll(btn){
+  var list=[].slice.call(btn.closest(".card").querySelectorAll("button[data-id]")); btn.disabled=true;
+  var i=0, bad=0;
+  (function next(){
+    if(i>=list.length){ btn.textContent=bad?("נמצאו "+bad+" קבצים שלא מתנגנים"):"כל הקבצים תקינים ✓"; return; }
+    btn.textContent="בודק "+(i+1)+" מתוך "+list.length+"...";
+    testFile(list[i++]).then(function(ok){ if(!ok) bad++; next(); });
+  })();
+}
+
+function verdict(){
+  var v=document.getElementById("verdict");
+  if(ISSUES.length) v.innerHTML='<div class="verdict v-bad"><b>נמצאו בעיות שמסבירות למה חוזרת אותה מנגינה:</b><ul>'+ISSUES.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join("")+'</ul></div>';
+  else v.innerHTML='<div class="verdict v-ok"><b>לא נמצאה בעיה בצד של הדרייב והנגן.</b> אפשר ללחוץ "בדוק את כל הקבצים" כדי לוודא שכל קובץ נטען.</div>';
+}
+
+checkPlayer().then(loadScreens).then(checkGasChunk).then(loadLibs).then(verdict).catch(function(e){
+  document.getElementById("verdict").innerHTML='<div class="verdict v-bad">שגיאה בבדיקה: '+esc(e.message)+'</div>';
+});
+</script>
+</body>
+</html>

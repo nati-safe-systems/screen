@@ -1,5 +1,5 @@
 /* =====================================================================
-   נתי SAFE — נגן ספריות מוזיקה · NatiMusic v1.7 · 22.10.26
+   נתי SAFE — נגן ספריות מוזיקה · NatiMusic v1.8 · 27.11.26
    ---------------------------------------------------------------------
    כל ספריה היא תיקיה בגוגל דרייב (בתוך "נתי SAFE מוזיקה").
    באדמין בוחרים לכל מסך מאילו ספריות לנגן — נשמר ב-display_config:
@@ -28,6 +28,10 @@
    - 1.5: החלון שמוצג על המסך מקבל עדיפות. חלון מוסתר, או חלון שלא
      מצליח לנגן 15 שניות, מוותר — והחלון הגלוי מנגן. החיווי בחלון הגלוי
      מראה מה מתנגן בפועל בחלון השני.
+
+   - 1.8: בלי ערבוב — סבב חדש מתחיל משיר אקראי ולא תמיד מהראשון
+     (אם המכשיר מתאפס כל לילה, קודם תמיד נשמע אותו שיר ראשון).
+     היסטוריית 30 השירים האחרונים נשמרת במכשיר: NatiMusic.history().
 
    שימוש:
      מסך הבניין:  NatiMusic.apply(DC, {muted: isMusicMuted})  — בכל עדכון הגדרות
@@ -78,6 +82,11 @@
   var blobs={}, busy={}, fail={};
 
   function setState(s){ if(s!==state){ try{ console.info("[NatiMusic] "+s); }catch(e){} } state=s; }
+  var _lastHist="";
+  function hist(){
+    try{ if(!curId || curId===_lastHist) return; _lastHist=curId; var t=trackOf(curId);
+      var h=lsGet("nsf_mus_hist")||[]; h.unshift({at:new Date().toISOString(), lib:t?t.lib:"", n:t?nice(t.n):curId}); lsSet("nsf_mus_hist",h.slice(0,30)); }catch(e){}
+  }
   function vol(){ var v=CFG && +CFG.audio_volume; return Math.max(0, Math.min(100, isFinite(v)&&v>=0 ? v : 40))/100; }
   function libsOf(c){ return (c && Array.isArray(c.audio_libs)) ? c.audio_libs.filter(function(x){ return x && String(x).trim(); }) : []; }
 
@@ -168,7 +177,12 @@
     var key=want.join("|")+"#"+(CFG&&CFG.audio_shuffle===false?"o":"s");
     var sv=lsGet("nsf_mus_q");
     if(!Q){ Q=(sv && sv.key===key && Array.isArray(sv.order)) ? sv : null; }
-    if(!Q || Q.key!==key){ Q={key:key, order:makeOrder(ids), i:0}; }
+    if(!Q || Q.key!==key){
+      var ord=makeOrder(ids);
+      /* 1.8: גם בלי ערבוב — לא תמיד מהשיר הראשון */
+      if(CFG&&CFG.audio_shuffle===false&&ord.length>1){ var r=Math.floor(Math.random()*ord.length); ord=ord.slice(r).concat(ord.slice(0,r)); }
+      Q={key:key, order:ord, i:0};
+    }
     else{
       /* שירים שנמחקו יוצאים; שירים חדשים נכנסים למקום אקראי בהמשך הסבב */
       var have={}; ids.forEach(function(id){ have[id]=1; });
@@ -311,7 +325,7 @@
     a.src=URL.createObjectURL(S.ms);
     fadeIn(v);
     setState("טוען (קובץ ארוך): "+nice(t.n)+"...");
-    a.play().then(function(){ setState("מנגן · "+t.lib+" · "+nice(t.n)); })
+    a.play().then(function(){ setState("מנגן · "+t.lib+" · "+nice(t.n)); hist(); })
       .catch(function(){
         if(S.dead) return;
         setState("הניגון נחסם — ממתין למגע במסך");
@@ -357,7 +371,7 @@
         au.play().catch(function(){ setState("המכשיר עצר את הנגינה וחוסם המשך"); });
       }, wait);
     });
-    au.addEventListener("playing",function(){ var t=trackOf(curId); if(t) setState("מנגן · "+t.lib+" · "+nice(t.n)); });
+    au.addEventListener("playing",function(){ var t=trackOf(curId); if(t) setState("מנגן · "+t.lib+" · "+nice(t.n)); hist(); });
     au.addEventListener("waiting",function(){ if(curId) setState("ממתין לנתונים..."); });
     au.onerror=function(){
       if(!curId) return;                                   /* ניקוי מכוון של הנגן — לא שגיאה */
@@ -388,7 +402,7 @@
     }
     fadeIn(v);
     var t=trackOf(id);
-    a.play().then(function(){ setState("מנגן · "+(t?t.lib+" · "+nice(t.n):"")); })
+    a.play().then(function(){ setState("מנגן · "+(t?t.lib+" · "+nice(t.n):"")); hist(); })
       .catch(function(){
         setState("הניגון נחסם — ממתין למגע במסך");
         var go=function(){ if(au) au.play().catch(function(){}); };
@@ -483,5 +497,5 @@
     now:function(){ var t=trackOf(curId); if(t) return {lib:t.lib,name:nice(t.n)}; var o=otherInfo(); return (o&&o.p)?{lib:o.lib,name:o.n}:null; },
     count:function(){ return TRACKS.length; },
     error:function(){ return lastErr; },
-    _muted:defaultMuted, VERSION:"1.7"};
+    _muted:defaultMuted, history:function(){ return lsGet("nsf_mus_hist")||[]; }, VERSION:"1.8"};
 })(window);
