@@ -64,11 +64,11 @@ input{width:100%;padding:12px;border-radius:10px;border:1px solid #2a3441;backgr
    שכבת עיצוב בלבד: לא משנה שום התנהגות. גוברת גם על צבעים שנכתבו
    ישירות על אלמנטים (style=...), כך שכל הממשק נראה אחיד.
    ===================================================================== */
-:root{--bg0:#0a0f1e;--bg1:#10162b;--card:#141b2e;--card2:#19223a;--line:rgba(129,140,248,.22);--line2:rgba(129,140,248,.42);
-  --gold:#8b9cff;--gold2:#c7d2fe;--ink:#e6e9f2;--dim:#9aa3bd;--dim2:#6b7593;--field:#0d1324;--btn1:#1e2742;--btn2:#182038}
+:root{--bg0:#f1e8d8;--bg1:#f9f3e8;--card:#fffdf8;--card2:#fdf8ef;--line:rgba(160,120,70,.22);--line2:rgba(160,120,70,.42);
+  --gold:#b08d55;--gold2:#5e4029;--ink:#3e2c1f;--dim:#7d6852;--dim2:#a38f77;--field:#fffefb;--btn1:#fffaf2;--btn2:#f5ecdc}
 html{background:var(--bg0)!important}
 body{font-family:Heebo,Assistant,Arial,sans-serif!important;color:var(--ink)!important;
-  background:radial-gradient(ellipse at 50% -10%,rgba(129,140,248,.15),transparent 55%),linear-gradient(175deg,var(--bg1),var(--bg0) 60%)!important;
+  background:radial-gradient(ellipse at 50% -10%,rgba(160,120,70,.15),transparent 55%),linear-gradient(175deg,var(--bg1),var(--bg0) 60%)!important;
   background-attachment:fixed!important}
 /* צבעים שנכתבו ישירות על אלמנטים */
 [style*="background:#161b22"],[style*="background: #161b22"],[style*="background:#1c2128"]{background:linear-gradient(180deg,var(--card2),var(--card))!important}
@@ -77,77 +77,93 @@ body{font-family:Heebo,Assistant,Arial,sans-serif!important;color:var(--ink)!imp
 [style*="solid #30363d"],[style*="solid #21262d"]{border-color:var(--line)!important}
 [style*="color:#ffcc00"],[style*="color: #ffcc00"]{color:var(--gold)!important}
 [style*="solid #ffcc00"]{border-color:var(--gold)!important}
-[style*="background:#ffcc00"],[style*="background: #ffcc00"]{background:linear-gradient(180deg,#7590ff,#5466e6)!important;color:#ffffff!important}
+[style*="background:#ffcc00"],[style*="background: #ffcc00"]{background:linear-gradient(180deg,#9a7a56,#7a5a3c)!important;color:#ffffff!important}
 [style*="color:#8b949e"],[style*="color: #8b949e"],[style*="color:#6e7681"]{color:var(--dim)!important}
 [style*="color:#e6edf3"],[style*="color: #e6edf3"]{color:var(--ink)!important}
 /* שדות */
-input,select,textarea{background:var(--field)!important;border:1px solid rgba(129,140,248,.2)!important;color:var(--ink)!important;border-radius:10px!important;transition:border-color .2s,box-shadow .2s}
-input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(--gold)!important;box-shadow:0 0 0 3px rgba(129,140,248,.16)!important}
+input,select,textarea{background:var(--field)!important;border:1px solid rgba(160,120,70,.2)!important;color:var(--ink)!important;border-radius:10px!important;transition:border-color .2s,box-shadow .2s}
+input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(--gold)!important;box-shadow:0 0 0 3px rgba(160,120,70,.16)!important}
 input::placeholder,textarea::placeholder{color:var(--dim2)!important}
-select option{background:#141b2e;color:var(--ink)}
-input[type=checkbox],input[type=radio]{accent-color:#8b9cff}
+select option{background:#fffdf8;color:var(--ink)}
+input[type=checkbox],input[type=radio]{accent-color:#b08d55}
 label{color:var(--dim)}
 /* כרטיסים, חלונות וטבלאות */
 .card,.login-card,.sc-card,.tbl-card,.settings-card,.stat,.modal,.sched-box,.sf-wrap,.type-opt,.accsec,.alert-box{
   background:linear-gradient(180deg,var(--card2),var(--card))!important;border:1px solid var(--line)!important;border-radius:16px!important;
-  box-shadow:0 8px 24px rgba(0,0,0,.35),inset 0 1px 0 rgba(200,210,255,.05)!important}
-.sc-card:hover,.type-opt:hover{border-color:var(--line2)!important;box-shadow:0 10px 30px rgba(0,0,0,.45),0 0 0 3px rgba(129,140,248,.08)!important}
-.modal-hdr,.modal-foot,.modal-ft,.sc-hdr,.sc-foot,.acchd{background:rgba(24,32,56,.85)!important;border-color:var(--line)!important}
+  box-shadow:0 8px 24px rgba(110,80,45,.10),inset 0 1px 0 rgba(255,255,255,.05)!important}
+.sc-card:hover,.type-opt:hover{border-color:var(--line2)!important;box-shadow:0 10px 30px rgba(110,80,45,.14),0 0 0 3px rgba(160,120,70,.08)!important}
+.modal-hdr,.modal-foot,.modal-ft,.sc-hdr,.sc-foot,.acchd{background:rgba(248,241,229,.85)!important;border-color:var(--line)!important}
 .modal-bg{background:rgba(5,4,2,.72)!important;backdrop-filter:blur(3px)}
 .modal-hdr h3,.sec-title,.settings-title,.sf-title,.sched-head .t,.sc-name{color:var(--gold2)!important}
 .modal-hdr h3,.sec-title,.settings-title{font-family:"Frank Ruhl Libre",serif!important;font-weight:900!important;letter-spacing:.2px}
 table{background:transparent!important}
-th{background:rgba(24,32,56,.9)!important;color:var(--gold)!important;border-color:var(--line)!important}
-td{border-color:rgba(129,140,248,.1)!important;color:var(--ink)}
-tr:hover td{background:rgba(129,140,248,.05)!important}
+th{background:rgba(248,241,229,.9)!important;color:var(--gold)!important;border-color:var(--line)!important}
+td{border-color:rgba(160,120,70,.1)!important;color:var(--ink)}
+tr:hover td{background:rgba(160,120,70,.05)!important}
 .key,.sc-id{color:var(--dim)!important}
 /* כפתורים */
 button{border-radius:10px}
 .btn-sm,.btn-top,.btn-edit,.btn-show,.btn-cancel,.btn-modal-cancel,.btn-preview,.btn-add-sched,.tb-btn,.btn-logout,.modal-x,.tab{
   background:linear-gradient(180deg,var(--btn1),var(--btn2))!important;border:1px solid var(--line2)!important;color:var(--gold2)!important}
-.btn-sm:hover,.btn-top:hover,.btn-edit:hover,.btn-show:hover,.tab:hover{box-shadow:0 0 0 3px rgba(129,140,248,.12)!important}
+.btn-sm:hover,.btn-top:hover,.btn-edit:hover,.btn-show:hover,.tab:hover{box-shadow:0 0 0 3px rgba(160,120,70,.12)!important}
 .btn-main,.btn-login,.btn-save,.btn-modal-save,.btn-save-set,.btn-add,.btn-sf-save,.btn-top.gold,.tab.active{
-  background:linear-gradient(180deg,#7590ff,#5466e6)!important;color:#ffffff!important;border:0!important;font-weight:900!important;
-  box-shadow:0 4px 14px rgba(129,140,248,.22),inset 0 1px 0 rgba(255,255,255,.45)!important}
-.btn-sm.red,.btn-top.red,.btn-del{background:linear-gradient(180deg,#3a1512,#26100d)!important;color:#ffb3ad!important;border:1px solid rgba(255,143,134,.45)!important}
-.btn-sm.green{color:#b9ecbf!important;border-color:rgba(127,208,138,.5)!important}
-.btn-sm.blue{color:#cfe3ff!important}
-.btn-sm.warn{color:#c7d2fe!important}
+  background:linear-gradient(180deg,#9a7a56,#7a5a3c)!important;color:#ffffff!important;border:0!important;font-weight:900!important;
+  box-shadow:0 4px 14px rgba(160,120,70,.22),inset 0 1px 0 rgba(255,255,255,.45)!important}
+.btn-sm.red,.btn-top.red,.btn-del{background:linear-gradient(180deg,#fff1ee,#fbe3de)!important;color:#a3322a!important;border:1px solid rgba(255,143,134,.45)!important}
+.btn-sm.green{color:#2f6b35!important;border-color:rgba(127,208,138,.5)!important}
+.btn-sm.blue{color:#2d5a8a!important}
+.btn-sm.warn{color:#5e4029!important}
 /* סרגל עליון */
-.topbar{background:linear-gradient(180deg,rgba(24,32,56,.96),rgba(18,14,9,.96))!important;border-bottom:1px solid var(--line)!important;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+.topbar{background:linear-gradient(180deg,rgba(248,241,229,.96),rgba(18,14,9,.96))!important;border-bottom:1px solid var(--line)!important;box-shadow:0 6px 20px rgba(110,80,45,.12)}
 .topbar-title,.topbar-brand,.brand,.login-brand{font-family:"Frank Ruhl Libre",serif!important;font-weight:900!important}
 .topbar-brand span,.brand span,.login-brand span{color:var(--gold)!important}
 .tabs{border-color:var(--line)!important}
 /* תגיות */
 .badge{border-radius:20px!important}
-.badge.ok{background:rgba(46,107,46,.2)!important;color:#b9ecbf!important;border:1px solid rgba(127,208,138,.4)!important}
-.badge.no,.badge.exp{background:rgba(140,28,28,.22)!important;color:#ffb3ad!important;border:1px solid rgba(255,143,134,.4)!important}
-.badge.warn{background:rgba(129,140,248,.14)!important;color:var(--gold2)!important;border:1px solid var(--line2)!important}
+.badge.ok{background:rgba(46,107,46,.2)!important;color:#2f6b35!important;border:1px solid rgba(127,208,138,.4)!important}
+.badge.no,.badge.exp{background:rgba(190,50,40,.08)!important;color:#a3322a!important;border:1px solid rgba(255,143,134,.4)!important}
+.badge.warn{background:rgba(160,120,70,.14)!important;color:var(--gold2)!important;border:1px solid var(--line2)!important}
 .stat-num{font-family:"Frank Ruhl Libre",serif!important}
-#toast{background:linear-gradient(180deg,#7590ff,#5466e6)!important;color:#ffffff!important;border:0!important;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.45)!important}
-.err{color:#ffb3ad!important}
+#toast{background:linear-gradient(180deg,#9a7a56,#7a5a3c)!important;color:#ffffff!important;border:0!important;font-weight:800;box-shadow:0 8px 24px rgba(110,80,45,.14)!important}
+.err{color:#a3322a!important}
 .hint{color:var(--dim2)!important}
 /* פס גלילה */
-::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-track{background:#0a0f1e}
-::-webkit-scrollbar-thumb{background:#28324f;border-radius:9px}::-webkit-scrollbar-thumb:hover{background:#3a4670}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-track{background:#f1e8d8}
+::-webkit-scrollbar-thumb{background:#dccbb0;border-radius:9px}::-webkit-scrollbar-thumb:hover{background:#c4ab84}
 /* הוספות: רקע לוגואים עדין, לשוניות, כפתורים כחולים */
 .login-bg img{opacity:.12!important;filter:grayscale(1) brightness(.8)}
 .app-bg img{opacity:.03!important;filter:grayscale(1)}
 .tabs{background:rgba(14,11,7,.9)!important}
-[style*="background:#1f6feb"],.go,.pr button.on{background:linear-gradient(180deg,#7590ff,#5466e6)!important;color:#ffffff!important;border-color:transparent!important;font-weight:900!important}
-.stat::before{background:linear-gradient(180deg,#a5b4fc,#5466e6)!important}
+[style*="background:#1f6feb"],.go,.pr button.on{background:linear-gradient(180deg,#9a7a56,#7a5a3c)!important;color:#ffffff!important;border-color:transparent!important;font-weight:900!important}
+.stat::before{background:linear-gradient(180deg,#d4b783,#a8834a)!important}
 .stat-num{color:var(--gold2)!important}
 /* שלט גבאי — יוקרה */
-.top .t{font-family:"Frank Ruhl Libre",serif;font-size:24px;background:linear-gradient(180deg,#ffffff,#a5b4fc 55%,#7c8cf8);-webkit-background-clip:text;background-clip:text;color:transparent}
-.top .t small{-webkit-text-fill-color:#9aa3bd;color:#9aa3bd;font-family:Heebo,sans-serif}
-.pr button,.sites button,.out{background:linear-gradient(180deg,#1e2742,#182038)!important;border:1px solid rgba(129,140,248,.42)!important;color:#c7d2fe!important}
-.sites button.on{background:linear-gradient(180deg,#7590ff,#5466e6)!important;color:#ffffff!important}
-.rb{border:1.5px solid rgba(129,140,248,.32)!important;background:linear-gradient(160deg,#1a2238,#10162a)!important;box-shadow:0 8px 22px rgba(0,0,0,.4),inset 0 1px 0 rgba(200,210,255,.06)}
-.rb .n{color:#a5b4fc!important;font-family:"Frank Ruhl Libre",serif}
-.rb .nm{color:#e6e9f2}
-.rb .st,.hint,.msg{color:#9aa3bd!important}
-.rb.sent,.cell.live .rb{border-color:#7fd08a!important;background:linear-gradient(160deg,#1f5a2c,#123a1c)!important}
+.top .t{font-family:"Frank Ruhl Libre",serif;font-size:24px;background:linear-gradient(180deg,#8a6640,#5e4029 60%,#4a3120);-webkit-background-clip:text;background-clip:text;color:transparent}
+.top .t small{-webkit-text-fill-color:#7d6852;color:#7d6852;font-family:Heebo,sans-serif}
+.pr button,.sites button,.out{background:linear-gradient(180deg,#fffaf2,#f5ecdc)!important;border:1px solid rgba(160,120,70,.42)!important;color:#5e4029!important}
+.sites button.on{background:linear-gradient(180deg,#9a7a56,#7a5a3c)!important;color:#ffffff!important}
+.rb{border:1.5px solid rgba(160,120,70,.32)!important;background:linear-gradient(160deg,#fffaf2,#f5ecdc)!important;box-shadow:0 8px 22px rgba(110,80,45,.12),inset 0 1px 0 rgba(255,255,255,.06)}
+.rb .n{color:#8d6e4e!important;font-family:"Frank Ruhl Libre",serif}
+.rb .nm{color:#3e2c1f}
+.rb .st,.hint,.msg{color:#7d6852!important}
+.rb.sent,.cell.live .rb{border-color:#7fd08a!important;background:linear-gradient(160deg,#e4f3e3,#cfe8cd)!important}
 input{text-align:center!important;direction:ltr}
+
+/* שנהב-מוקה: תיקוני טקסט על רקע בהיר */
+[style*="color:#fff;"],[style*="color: #fff;"],[style*="color:#fff\""],[style*="color:#ffffff"]{color:var(--ink)}
+[style*="color:#58a6ff"]{color:#2d5a8a!important}[style*="color:#3fb950"]{color:#2f7a3a!important}[style*="color:#f85149"]{color:#b3362c!important}[style*="color:#d29922"]{color:#9a6a12!important}
+a{color:#8a5a2b}
+h1,h2,h3,b,strong{color:inherit}
+[style*="color:#ffcc00"],[style*="color:#e3b341"],[style*="color:#ffd86b"],[style*="color:#ffd769"],[style*="color:#f0c86a"],[style*="color:#ff9f43"]{color:#9a6a12!important}
+[style*="color:#7ee787"],[style*="color:#2ea043"]{color:#2f7a3a!important}
+[style*="color:#8b949e"],[style*="color:#6e7681"],[style*="color:#cfd8e3"],[style*="color:#cdb98d"],[style*="color:#9c8b6a"]{color:var(--dim)!important}
+[style*="color:#e6edf3"],[style*="color:#f4e8cf"]{color:var(--ink)!important}
+[style*="color:#ff9a9a"],[style*="color:#ff6b6b"]{color:#b3362c!important}
+[style*="background:#ffcc00"]{background:#b08d55!important;color:#fff!important}
+[style*="background:#0d1117"],[style*="background:#161b22"],[style*="background:#21262d"]{background:#fffaf2!important}
+[style*="solid #30363d"],[style*="solid #21262d"]{border-color:rgba(160,120,70,.22)!important}
+.item .hd b,.grphd b,.card h2 b{color:#6b4a2b!important}
+.times{color:#2f7a3a!important}
 </style>
 </head>
 <body>
@@ -330,6 +346,6 @@ function load(){
 }
 load();
 </script>
-<div style="position:fixed;left:8px;bottom:6px;font-size:10px;color:#8b949e;opacity:.6;pointer-events:none">גרסה 1.6 · 27.11.26</div>
+<div style="position:fixed;left:8px;bottom:6px;font-size:10px;color:#8b949e;opacity:.6;pointer-events:none">גרסה 1.7 · 27.11.26</div>
 </body>
 </html>
