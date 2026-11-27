@@ -1500,7 +1500,7 @@ function mnyPerms(res){
   }
 }
 function boot(){
-  if(!MNY_ADMIN) rpc("nsf_me",{p_token:NSF_TOKEN}).then(function(r){ if(r&&r.ok){ setAdminOnly(!!r.is_admin); mnyPerms(r); } }).catch(function(){});
+  if(!MNY_ADMIN) rpc("nsf_me",{p_token:NSF_TOKEN}).then(function(r){ if(r&&r.ok){ setAdminOnly(!!r.is_admin); mnyPerms(r); try{ updNewSite(); }catch(e){} } }).catch(function(){});
   sf("sites?select=*&order=name").then(function(r){
   SITES=Array.isArray(r)?r:[];
   if(ONLY_CO){
@@ -1510,6 +1510,7 @@ function boot(){
     (SITES.length?"":"<option value=''>— אין אתרים, צור אחד —</option>")+
     SITES.map(function(s){return "<option value='"+s.id+"'>"+s.name+"</option>";}).join("");
   if(SITES.length) pickSite();
+  try{ updNewSite(); }catch(e){}
 }).catch(function(e){
   var t="שגיאה "+(e.status||"")+": "+(e.message||e);
   if(e.status===401||e.status===403) t+="  —  אין הרשאת קריאה. הרץ את fix-permissions.sql";
@@ -2171,9 +2172,9 @@ function preview(){
   }
   /* מצב לקוח: הסתרת פעולות שמורות לניהול המערכת */
   if(q.get("co")){
-    ["newSiteRow"].forEach(function(id){
-      var e=document.getElementById(id); if(e) e.style.display="none";
-    });
+    /* 2.14: לקוח בלי אף אתר (בית כנסת חדש) — יכול להקים את הראשון.
+       לקוח שכבר יש לו אתר — לא פותח נוספים. מנהל — תמיד. */
+    updNewSite();
     /* בורר האתרים מיותר כשיש אתר אחד */
     setTimeout(function(){
       var sel=document.getElementById("siteSel");
@@ -2185,9 +2186,17 @@ function preview(){
     }, 1200);
   }
 })();
+function updNewSite(){
+  var e=document.getElementById("newSiteRow"); if(!e) return;
+  var co=(new URLSearchParams(location.search)).get("co");
+  if(!co){ e.style.display=""; return; }
+  var can = MNY_ADMIN || (Array.isArray(SITES) && SITES.length===0);
+  if(MNY_P && !mnyCan("shul_site")) can=false;
+  e.style.display = can ? "" : "none";
+}
 function goBackPanel(){
   var co=(new URLSearchParams(location.search)).get("co")||"";
   location.href="https://nati-safe-systems.github.io/screen/tenant_panel.html"
     + (co?("?co="+encodeURIComponent(co)):"");
 }
-</script><div id="app-version" style="position:fixed;left:8px;bottom:6px;font-size:11px;color:#8b949e;opacity:.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול בית הכנסת · גרסה 2.13 · 27.11.26</div></body></html>
+</script><div id="app-version" style="position:fixed;left:8px;bottom:6px;font-size:11px;color:#8b949e;opacity:.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול בית הכנסת · גרסה 2.14 · 27.11.26</div></body></html>
