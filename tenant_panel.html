@@ -309,6 +309,87 @@ input:focus,select:focus{border-color:#58a6ff;}
 }
 </style>
 <script src="nsf-zmsel.js?v=1.0-181026"></script>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@700;900&family=Heebo:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<style id="lux">
+/* =====================================================================
+   נתי SAFE · עיצוב יוקרה — שחור חם וזהב · 27.11.26
+   שכבת עיצוב בלבד: לא משנה שום התנהגות. גוברת גם על צבעים שנכתבו
+   ישירות על אלמנטים (style=...), כך שכל הממשק נראה אחיד.
+   ===================================================================== */
+:root{--bg0:#0b0906;--bg1:#141008;--card:#17120b;--card2:#1d170e;--line:rgba(216,176,90,.22);--line2:rgba(216,176,90,.42);
+  --gold:#d8b05a;--gold2:#f6dd9a;--ink:#f3e8cf;--dim:#a8977a;--dim2:#7d6f55;--field:#0f0c08;--btn1:#241c11;--btn2:#1a140c}
+html{background:var(--bg0)!important}
+body{font-family:Heebo,Assistant,Arial,sans-serif!important;color:var(--ink)!important;
+  background:radial-gradient(ellipse at 50% -10%,rgba(216,176,90,.15),transparent 55%),linear-gradient(175deg,var(--bg1),var(--bg0) 60%)!important;
+  background-attachment:fixed!important}
+/* צבעים שנכתבו ישירות על אלמנטים */
+[style*="background:#161b22"],[style*="background: #161b22"],[style*="background:#1c2128"]{background:linear-gradient(180deg,var(--card2),var(--card))!important}
+[style*="background:#0d1117"],[style*="background: #0d1117"],[style*="background:#0b0f18"]{background:var(--field)!important}
+[style*="background:#21262d"],[style*="background: #21262d"]{background:linear-gradient(180deg,var(--btn1),var(--btn2))!important}
+[style*="solid #30363d"],[style*="solid #21262d"]{border-color:var(--line)!important}
+[style*="color:#ffcc00"],[style*="color: #ffcc00"]{color:var(--gold)!important}
+[style*="solid #ffcc00"]{border-color:var(--gold)!important}
+[style*="background:#ffcc00"],[style*="background: #ffcc00"]{background:linear-gradient(180deg,#f6dd9a,#d8b05a 55%,#b88d38)!important;color:#20160a!important}
+[style*="color:#8b949e"],[style*="color: #8b949e"],[style*="color:#6e7681"]{color:var(--dim)!important}
+[style*="color:#e6edf3"],[style*="color: #e6edf3"]{color:var(--ink)!important}
+/* שדות */
+input,select,textarea{background:var(--field)!important;border:1px solid rgba(216,176,90,.2)!important;color:var(--ink)!important;border-radius:10px!important;transition:border-color .2s,box-shadow .2s}
+input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(--gold)!important;box-shadow:0 0 0 3px rgba(216,176,90,.16)!important}
+input::placeholder,textarea::placeholder{color:var(--dim2)!important}
+select option{background:#17120b;color:var(--ink)}
+input[type=checkbox],input[type=radio]{accent-color:#d8b05a}
+label{color:var(--dim)}
+/* כרטיסים, חלונות וטבלאות */
+.card,.login-card,.sc-card,.tbl-card,.settings-card,.stat,.modal,.sched-box,.sf-wrap,.type-opt,.accsec,.alert-box{
+  background:linear-gradient(180deg,var(--card2),var(--card))!important;border:1px solid var(--line)!important;border-radius:16px!important;
+  box-shadow:0 8px 24px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,236,190,.05)!important}
+.sc-card:hover,.type-opt:hover{border-color:var(--line2)!important;box-shadow:0 10px 30px rgba(0,0,0,.45),0 0 0 3px rgba(216,176,90,.08)!important}
+.modal-hdr,.modal-foot,.modal-ft,.sc-hdr,.sc-foot,.acchd{background:rgba(29,23,14,.85)!important;border-color:var(--line)!important}
+.modal-bg{background:rgba(5,4,2,.72)!important;backdrop-filter:blur(3px)}
+.modal-hdr h3,.sec-title,.settings-title,.sf-title,.sched-head .t,.sc-name{color:var(--gold2)!important}
+.modal-hdr h3,.sec-title,.settings-title{font-family:"Frank Ruhl Libre",serif!important;font-weight:900!important;letter-spacing:.2px}
+table{background:transparent!important}
+th{background:rgba(29,23,14,.9)!important;color:var(--gold)!important;border-color:var(--line)!important}
+td{border-color:rgba(216,176,90,.1)!important;color:var(--ink)}
+tr:hover td{background:rgba(216,176,90,.05)!important}
+.key,.sc-id{color:var(--dim)!important}
+/* כפתורים */
+button{border-radius:10px}
+.btn-sm,.btn-top,.btn-edit,.btn-show,.btn-cancel,.btn-modal-cancel,.btn-preview,.btn-add-sched,.tb-btn,.btn-logout,.modal-x,.tab{
+  background:linear-gradient(180deg,var(--btn1),var(--btn2))!important;border:1px solid var(--line2)!important;color:var(--gold2)!important}
+.btn-sm:hover,.btn-top:hover,.btn-edit:hover,.btn-show:hover,.tab:hover{box-shadow:0 0 0 3px rgba(216,176,90,.12)!important}
+.btn-main,.btn-login,.btn-save,.btn-modal-save,.btn-save-set,.btn-add,.btn-sf-save,.btn-top.gold,.tab.active{
+  background:linear-gradient(180deg,#f6dd9a,#d8b05a 55%,#b88d38)!important;color:#20160a!important;border:0!important;font-weight:900!important;
+  box-shadow:0 4px 14px rgba(216,176,90,.22),inset 0 1px 0 rgba(255,255,255,.45)!important}
+.btn-sm.red,.btn-top.red,.btn-del{background:linear-gradient(180deg,#3a1512,#26100d)!important;color:#ffb3ad!important;border:1px solid rgba(255,143,134,.45)!important}
+.btn-sm.green{color:#b9ecbf!important;border-color:rgba(127,208,138,.5)!important}
+.btn-sm.blue{color:#cfe3ff!important}
+.btn-sm.warn{color:#f6dd9a!important}
+/* סרגל עליון */
+.topbar{background:linear-gradient(180deg,rgba(29,23,14,.96),rgba(18,14,9,.96))!important;border-bottom:1px solid var(--line)!important;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+.topbar-title,.topbar-brand,.brand,.login-brand{font-family:"Frank Ruhl Libre",serif!important;font-weight:900!important}
+.topbar-brand span,.brand span,.login-brand span{color:var(--gold)!important}
+.tabs{border-color:var(--line)!important}
+/* תגיות */
+.badge{border-radius:20px!important}
+.badge.ok{background:rgba(46,107,46,.2)!important;color:#b9ecbf!important;border:1px solid rgba(127,208,138,.4)!important}
+.badge.no,.badge.exp{background:rgba(140,28,28,.22)!important;color:#ffb3ad!important;border:1px solid rgba(255,143,134,.4)!important}
+.badge.warn{background:rgba(216,176,90,.14)!important;color:var(--gold2)!important;border:1px solid var(--line2)!important}
+.stat-num{font-family:"Frank Ruhl Libre",serif!important}
+#toast{background:linear-gradient(180deg,#f6dd9a,#d8b05a)!important;color:#20160a!important;border:0!important;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.45)!important}
+.err{color:#ffb3ad!important}
+.hint{color:var(--dim2)!important}
+/* פס גלילה */
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-track{background:#0b0906}
+::-webkit-scrollbar-thumb{background:#3a2e1a;border-radius:9px}::-webkit-scrollbar-thumb:hover{background:#5a4626}
+/* הוספות: רקע לוגואים עדין, לשוניות, כפתורים כחולים */
+.login-bg img{opacity:.12!important;filter:grayscale(1) sepia(1) brightness(.8)}
+.app-bg img{opacity:.03!important;filter:grayscale(1) sepia(1)}
+.tabs{background:rgba(14,11,7,.9)!important}
+[style*="background:#1f6feb"],.go,.pr button.on{background:linear-gradient(180deg,#f6dd9a,#d8b05a 55%,#b88d38)!important;color:#20160a!important;border-color:transparent!important;font-weight:900!important}
+.stat::before{background:linear-gradient(180deg,#f6dd9a,#a77c2c)!important}
+.stat-num{color:var(--gold2)!important}
+</style>
 </head>
 <body>
 
@@ -3679,7 +3760,7 @@ window.addEventListener("load",function(){
   }
 });
 </script>
-<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.15 · 27.11.26</div>
+<div id="app-version" style="position:fixed;left:8px;bottom:8px;font-size:11px;color:#8b949e;opacity:0.7;z-index:9997;pointer-events:none;direction:rtl;">נתי SAFE · ניהול לקוח · גרסה 3.16 · 27.11.26</div>
 <script>
 /* ניווט מובייל: כפתור "חזור" סוגר חלון/טופס פתוח במקום לצאת מהאפליקציה */
 (function(){
