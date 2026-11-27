@@ -203,28 +203,151 @@ label,.field label{color:#6e5a45!important}
 .field label[style*="background"],label[style*="background"]{color:#fff!important}
 .rte-preview-label{color:var(--dim)!important}
 </style>
+<style id="lux-gold" media="not all">
+/* =====================================================================
+   נתי SAFE · עיצוב יוקרה — שחור חם וזהב · 27.11.26
+   שכבת עיצוב בלבד: לא משנה שום התנהגות. גוברת גם על צבעים שנכתבו
+   ישירות על אלמנטים (style=...), כך שכל הממשק נראה אחיד.
+   ===================================================================== */
+:root{--bg0:#0b0906;--bg1:#141008;--card:#17120b;--card2:#1d170e;--line:rgba(216,176,90,.22);--line2:rgba(216,176,90,.42);
+  --gold:#d8b05a;--gold2:#f6dd9a;--ink:#f3e8cf;--dim:#a8977a;--dim2:#7d6f55;--field:#0f0c08;--btn1:#241c11;--btn2:#1a140c}
+html{background:var(--bg0)!important}
+body{font-family:Heebo,Assistant,Arial,sans-serif!important;color:var(--ink)!important;
+  background:radial-gradient(ellipse at 50% -10%,rgba(216,176,90,.15),transparent 55%),linear-gradient(175deg,var(--bg1),var(--bg0) 60%)!important;
+  background-attachment:fixed!important}
+/* צבעים שנכתבו ישירות על אלמנטים */
+[style*="background:#161b22"],[style*="background: #161b22"],[style*="background:#1c2128"]{background:linear-gradient(180deg,var(--card2),var(--card))!important}
+[style*="background:#0d1117"],[style*="background: #0d1117"],[style*="background:#0b0f18"]{background:var(--field)!important}
+[style*="background:#21262d"],[style*="background: #21262d"]{background:linear-gradient(180deg,var(--btn1),var(--btn2))!important}
+[style*="solid #30363d"],[style*="solid #21262d"]{border-color:var(--line)!important}
+[style*="color:#ffcc00"],[style*="color: #ffcc00"]{color:var(--gold)!important}
+[style*="solid #ffcc00"]{border-color:var(--gold)!important}
+[style*="background:#ffcc00"],[style*="background: #ffcc00"]{background:linear-gradient(180deg,#f6dd9a,#d8b05a 55%,#b88d38)!important;color:#20160a!important}
+[style*="color:#8b949e"],[style*="color: #8b949e"],[style*="color:#6e7681"]{color:var(--dim)!important}
+[style*="color:#e6edf3"],[style*="color: #e6edf3"]{color:var(--ink)!important}
+/* שדות */
+input,select,textarea{background:var(--field)!important;border:1px solid rgba(216,176,90,.2)!important;color:var(--ink)!important;border-radius:10px!important;transition:border-color .2s,box-shadow .2s}
+input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(--gold)!important;box-shadow:0 0 0 3px rgba(216,176,90,.16)!important}
+input::placeholder,textarea::placeholder{color:var(--dim2)!important}
+select option{background:#17120b;color:var(--ink)}
+input[type=checkbox],input[type=radio]{accent-color:#d8b05a}
+label{color:var(--dim)}
+/* כרטיסים, חלונות וטבלאות */
+.card,.login-card,.sc-card,.tbl-card,.settings-card,.stat,.modal,.sched-box,.sf-wrap,.type-opt,.accsec,.alert-box{
+  background:linear-gradient(180deg,var(--card2),var(--card))!important;border:1px solid var(--line)!important;border-radius:16px!important;
+  box-shadow:0 8px 24px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,236,190,.05)!important}
+.sc-card:hover,.type-opt:hover{border-color:var(--line2)!important;box-shadow:0 10px 30px rgba(0,0,0,.45),0 0 0 3px rgba(216,176,90,.08)!important}
+.modal-hdr,.modal-foot,.modal-ft,.sc-hdr,.sc-foot,.acchd{background:rgba(29,23,14,.85)!important;border-color:var(--line)!important}
+.modal-bg{background:rgba(5,4,2,.72)!important;backdrop-filter:blur(3px)}
+.modal-hdr h3,.sec-title,.settings-title,.sf-title,.sched-head .t,.sc-name{color:var(--gold2)!important}
+.modal-hdr h3,.sec-title,.settings-title{font-family:"Frank Ruhl Libre",serif!important;font-weight:900!important;letter-spacing:.2px}
+table{background:transparent!important}
+th{background:rgba(29,23,14,.9)!important;color:var(--gold)!important;border-color:var(--line)!important}
+td{border-color:rgba(216,176,90,.1)!important;color:var(--ink)}
+tr:hover td{background:rgba(216,176,90,.05)!important}
+.key,.sc-id{color:var(--dim)!important}
+/* כפתורים */
+button{border-radius:10px}
+.btn-sm,.btn-top,.btn-edit,.btn-show,.btn-cancel,.btn-modal-cancel,.btn-preview,.btn-add-sched,.tb-btn,.btn-logout,.modal-x,.tab{
+  background:linear-gradient(180deg,var(--btn1),var(--btn2))!important;border:1px solid var(--line2)!important;color:var(--gold2)!important}
+.btn-sm:hover,.btn-top:hover,.btn-edit:hover,.btn-show:hover,.tab:hover{box-shadow:0 0 0 3px rgba(216,176,90,.12)!important}
+.btn-main,.btn-login,.btn-save,.btn-modal-save,.btn-save-set,.btn-add,.btn-sf-save,.btn-top.gold,.tab.active{
+  background:linear-gradient(180deg,#f6dd9a,#d8b05a 55%,#b88d38)!important;color:#20160a!important;border:0!important;font-weight:900!important;
+  box-shadow:0 4px 14px rgba(216,176,90,.22),inset 0 1px 0 rgba(255,255,255,.45)!important}
+.btn-sm.red,.btn-top.red,.btn-del{background:linear-gradient(180deg,#3a1512,#26100d)!important;color:#ffb3ad!important;border:1px solid rgba(255,143,134,.45)!important}
+.btn-sm.green{color:#b9ecbf!important;border-color:rgba(127,208,138,.5)!important}
+.btn-sm.blue{color:#cfe3ff!important}
+.btn-sm.warn{color:#f6dd9a!important}
+/* סרגל עליון */
+.topbar{background:linear-gradient(180deg,rgba(29,23,14,.96),rgba(18,14,9,.96))!important;border-bottom:1px solid var(--line)!important;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+.topbar-title,.topbar-brand,.brand,.login-brand{font-family:"Frank Ruhl Libre",serif!important;font-weight:900!important}
+.topbar-brand span,.brand span,.login-brand span{color:var(--gold)!important}
+.tabs{border-color:var(--line)!important}
+/* תגיות */
+.badge{border-radius:20px!important}
+.badge.ok{background:rgba(46,107,46,.2)!important;color:#b9ecbf!important;border:1px solid rgba(127,208,138,.4)!important}
+.badge.no,.badge.exp{background:rgba(140,28,28,.22)!important;color:#ffb3ad!important;border:1px solid rgba(255,143,134,.4)!important}
+.badge.warn{background:rgba(216,176,90,.14)!important;color:var(--gold2)!important;border:1px solid var(--line2)!important}
+.stat-num{font-family:"Frank Ruhl Libre",serif!important}
+#toast{background:linear-gradient(180deg,#f6dd9a,#d8b05a)!important;color:#20160a!important;border:0!important;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.45)!important}
+.err{color:#ffb3ad!important}
+.hint{color:var(--dim2)!important}
+/* פס גלילה */
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-track{background:#0b0906}
+::-webkit-scrollbar-thumb{background:#3a2e1a;border-radius:9px}::-webkit-scrollbar-thumb:hover{background:#5a4626}
+/* הוספות: רקע לוגואים עדין, לשוניות, כפתורים כחולים */
+.login-bg img{opacity:.12!important;filter:grayscale(1) sepia(1) brightness(.8)}
+.app-bg img{opacity:.03!important;filter:grayscale(1) sepia(1)}
+.tabs{background:rgba(14,11,7,.9)!important}
+[style*="background:#1f6feb"],.go,.pr button.on{background:linear-gradient(180deg,#f6dd9a,#d8b05a 55%,#b88d38)!important;color:#20160a!important;border-color:transparent!important;font-weight:900!important}
+.stat::before{background:linear-gradient(180deg,#f6dd9a,#a77c2c)!important}
+.stat-num{color:var(--gold2)!important}
+/* שלט גבאי — יוקרה */
+.top .t{font-family:"Frank Ruhl Libre",serif;font-size:24px;background:linear-gradient(180deg,#fff2c6,#e2bd62 55%,#a77c2c);-webkit-background-clip:text;background-clip:text;color:transparent}
+.top .t small{-webkit-text-fill-color:#a8977a;color:#a8977a;font-family:Heebo,sans-serif}
+.pr button,.sites button,.out{background:linear-gradient(180deg,#241c11,#1a140c)!important;border:1px solid rgba(216,176,90,.42)!important;color:#f6dd9a!important}
+.sites button.on{background:linear-gradient(180deg,#f6dd9a,#d8b05a 55%,#b88d38)!important;color:#20160a!important}
+.rb{border:1.5px solid rgba(216,176,90,.32)!important;background:linear-gradient(160deg,#211a10,#130f09)!important;box-shadow:0 8px 22px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,236,190,.06)}
+.rb .n{color:#e2bd62!important;font-family:"Frank Ruhl Libre",serif}
+.rb .nm{color:#f3e8cf}
+.rb .st,.hint,.msg{color:#a8977a!important}
+.rb.sent,.cell.live .rb{border-color:#7fd08a!important;background:linear-gradient(160deg,#1f5a2c,#123a1c)!important}
+input{text-align:center!important;direction:ltr}
+</style>
 <style id="nsf-mode-css">
-#nsf-mode-btn{position:fixed;left:12px;bottom:26px;z-index:2147483000;width:44px;height:44px;border-radius:50%;padding:0!important;
-  display:flex;align-items:center;justify-content:center;font:400 22px/1 Arial,sans-serif!important;cursor:pointer;
-  background:#fffaf2!important;color:#7a5a3c!important;border:1px solid rgba(160,120,70,.4)!important;box-shadow:0 4px 14px rgba(110,80,45,.18)!important}
-html.nsf-dark #nsf-mode-btn{background:#21262d!important;color:#ffcc00!important;border:1px solid #30363d!important;box-shadow:0 4px 14px rgba(0,0,0,.5)!important}
+#nsf-mode{position:fixed;top:calc(10px + env(safe-area-inset-top));left:10px;z-index:2147483000;display:flex;gap:6px;padding:5px;border-radius:99px;
+  background:rgba(255,255,255,.75);border:1px solid rgba(0,0,0,.12);box-shadow:0 4px 14px rgba(0,0,0,.18);backdrop-filter:blur(6px);direction:ltr}
+#nsf-mode.in{position:static;box-shadow:none;margin-inline-start:auto;flex:0 0 auto}
+#nsf-mode .sw{flex:0 0 26px!important;width:26px!important;height:26px!important;max-height:26px!important;min-height:0!important;min-width:0!important;font-size:0!important;line-height:0!important;box-sizing:border-box!important;padding:0!important;margin:0!important;border-radius:50%!important;cursor:pointer;
+  border:2px solid transparent!important;box-shadow:none!important;transition:transform .15s}
+#nsf-mode .sw:active{transform:scale(.9)}
+#nsf-mode .sw-light{background:linear-gradient(135deg,#fffdf8 50%,#d9c3a0 50%)!important}
+#nsf-mode .sw-gold{background:linear-gradient(135deg,#2a2114 50%,#d8b05a 50%)!important}
+#nsf-mode .sw-dark{background:linear-gradient(135deg,#0d1117 50%,#ffcc00 50%)!important}
+#nsf-mode .sw.on{border-color:#b08d55!important;box-shadow:0 0 0 2px rgba(176,141,85,.35)!important}
+html.nsf-dark #nsf-mode{background:rgba(22,27,34,.85);border-color:#30363d}
+html.nsf-dark #nsf-mode .sw.on{border-color:#ffcc00!important;box-shadow:0 0 0 2px rgba(255,204,0,.3)!important}
+html.nsf-gold #nsf-mode{background:rgba(23,18,11,.85);border-color:rgba(216,176,90,.4)}
+html.nsf-gold #nsf-mode .sw.on{border-color:#e2bd62!important;box-shadow:0 0 0 2px rgba(216,176,90,.35)!important}
+#nsf-mode.in{background:transparent;border:0;backdrop-filter:none}
+#nsf-mode.in.top{margin:0 auto 78px;background:rgba(255,255,255,.55);border:1px solid rgba(0,0,0,.08)}
+html.nsf-dark #nsf-mode.in.top,html.nsf-gold #nsf-mode.in.top{background:rgba(0,0,0,.35);border-color:rgba(255,255,255,.08)}
 </style>
 <script>
-/* מצב בהיר / כהה — נשמר במכשיר עד שמחליפים */
+/* ערכת צבעים: בהיר (שנהב) / יוקרה (חום-זהב) / כהה — נשמר במכשיר עד שמחליפים */
 (function(){
-  var K="nsf_ui_mode";
-  function get(){ try{ return localStorage.getItem(K)==="dark"?"dark":"light"; }catch(e){ return "light"; } }
+  var K="nsf_ui_mode", MODES=[["light","שנהב בהיר"],["gold","חום וזהב"],["dark","כהה"]];
+  function get(){ try{ var m=localStorage.getItem(K); return (m==="dark"||m==="gold")?m:"light"; }catch(e){ return "light"; } }
   function apply(m){
-    document.documentElement.classList.toggle("nsf-dark",m==="dark");
-    var s=document.getElementById("lux"); if(s) s.media=(m==="dark"?"not all":"all");
-    var b=document.getElementById("nsf-mode-btn");
-    if(b){ b.innerHTML=(m==="dark"?"☀":"☾"); b.title=b.ariaLabel=(m==="dark"?"מעבר למצב בהיר":"מעבר למצב כהה"); }
+    var h=document.documentElement;
+    h.classList.toggle("nsf-dark",m==="dark"); h.classList.toggle("nsf-gold",m==="gold"); h.classList.toggle("nsf-light",m==="light");
+    var a=document.getElementById("lux"), g=document.getElementById("lux-gold");
+    if(a) a.media=(m==="light"?"all":"not all");
+    if(g) g.media=(m==="gold"?"all":"not all");
+    var p=document.getElementById("nsf-mode");
+    if(p) [].forEach.call(p.children,function(b){ b.classList.toggle("on",b.getAttribute("data-m")===m); });
   }
-  window.nsfToggleMode=function(){ var m=get()==="dark"?"light":"dark"; try{ localStorage.setItem(K,m); }catch(e){} apply(m); };
+  window.nsfSetMode=function(m){ try{ localStorage.setItem(K,m); }catch(e){} apply(m); };
   apply(get());
+  var SLOTS=[".top"];
+  function place(){
+    var p=document.getElementById("nsf-mode"); if(!p) return;
+    for(var i=0;i<SLOTS.length;i++){
+      var s=document.querySelector(SLOTS[i]);
+      if(s && (s.offsetParent!==null || getComputedStyle(s).position==="fixed") && getComputedStyle(s).display!=="none"){ var top=(s.id==="mny-login"); if(p.parentNode!==s){ if(top) s.insertBefore(p,s.firstChild); else s.appendChild(p); } p.classList.add("in"); p.classList.toggle("top",top); return; }
+    }
+    if(p.parentNode!==document.body){ document.body.appendChild(p); }
+    p.classList.remove("in");
+  }
   document.addEventListener("DOMContentLoaded",function(){
-    var b=document.createElement("button"); b.id="nsf-mode-btn"; b.type="button"; b.onclick=window.nsfToggleMode;
-    document.body.appendChild(b); apply(get());
+    var p=document.createElement("div"); p.id="nsf-mode"; p.setAttribute("role","group"); p.setAttribute("aria-label","ערכת צבעים");
+    MODES.forEach(function(x){
+      var b=document.createElement("button"); b.type="button"; b.className="sw sw-"+x[0]; b.setAttribute("data-m",x[0]);
+      b.title=x[1]; b.setAttribute("aria-label",x[1]);
+      b.onclick=function(e){ e.stopPropagation(); window.nsfSetMode(x[0]); };
+      p.appendChild(b);
+    });
+    document.body.appendChild(p); apply(get()); place(); setInterval(place,800);
   });
   window.addEventListener("storage",function(e){ if(e.key===K) apply(get()); });
 })();
@@ -411,6 +534,6 @@ function load(){
 }
 load();
 </script>
-<div style="position:fixed;left:8px;bottom:6px;font-size:10px;color:#8b949e;opacity:.6;pointer-events:none">גרסה 1.8 · 27.11.26</div>
+<div style="position:fixed;left:8px;bottom:6px;font-size:10px;color:#8b949e;opacity:.6;pointer-events:none">גרסה 1.9 · 27.11.26</div>
 </body>
 </html>
