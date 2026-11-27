@@ -1,5 +1,5 @@
 /* =====================================================================
-   נתי SAFE — נגן ספריות מוזיקה · NatiMusic v1.8 · 27.11.26
+   נתי SAFE — נגן ספריות מוזיקה · NatiMusic v1.9 · 27.11.26
    ---------------------------------------------------------------------
    כל ספריה היא תיקיה בגוגל דרייב (בתוך "נתי SAFE מוזיקה").
    באדמין בוחרים לכל מסך מאילו ספריות לנגן — נשמר ב-display_config:
@@ -32,6 +32,11 @@
    - 1.8: בלי ערבוב — סבב חדש מתחיל משיר אקראי ולא תמיד מהראשון
      (אם המכשיר מתאפס כל לילה, קודם תמיד נשמע אותו שיר ראשון).
      היסטוריית 30 השירים האחרונים נשמרת במכשיר: NatiMusic.history().
+   - 1.9: קובץ ארוך (למשל "10 שעות קלאסי") כבר לא משתלט על המסך:
+     מתנגן עד 20 דקות ברצף ואז עובר לשיר הבא. בפעם הבאה שהוא מגיע
+     בתור — ממשיך מהמקום שבו נעצר, ולא מההתחלה. גם אחרי רענון של המסך
+     (עדכון גרסה) הוא ממשיך מאותו מקום, ולא מתחיל שוב מהפתיחה.
+     אפשר לשנות את ה-20 דקות: display_config.audio_long_min.
 
    שימוש:
      מסך הבניין:  NatiMusic.apply(DC, {muted: isMusicMuted})  — בכל עדכון הגדרות
@@ -268,6 +273,15 @@
         throw e;
       });
   }
+  /* 1.9: מיקום בקבצים ארוכים — נשמר במכשיר */
+  function offGet(id){ var o=lsGet("nsf_mus_off")||{}; return +o[id]||0; }
+  function offSet(id,v){ var o=lsGet("nsf_mus_off")||{}; if(v>0) o[id]=Math.floor(v); else delete o[id]; lsSet("nsf_mus_off",o); }
+  function longMin(){ var m=CFG && +CFG.audio_long_min; return (isFinite(m)&&m>=3)?m:20; }
+  function streamBytesAt(S){
+    try{ var b=S.sb.buffered; if(!b.length) return S.start; var end=b.end(b.length-1); if(end<=0) return S.start;
+      var bps=(S.pos-S.start)/end; return S.start+au.currentTime*bps; }catch(e){ return S.start; }
+  }
+  var _offAt=0;
   function killStream(){ if(STREAM){ STREAM.dead=true; clearTimeout(STREAM.tm); STREAM=null; } }
   function streamFail(S){
     if(S.dead) return; S.dead=true; clearTimeout(S.tm);
@@ -313,7 +327,10 @@
     var a=ensureAu(), v=vol();
     killStream(); curId=id;
     try{ sessionStorage.removeItem("nsf_mus_pos"); }catch(e){}
-    var S={id:id, pos:0, size:+t.s||0, dead:false, busy:false};
+    var S={id:id, pos:0, start:0, size:+t.s||0, dead:false, busy:false};
+    /* 1.9: ממשיכים מהמקום שבו הקובץ נעצר בפעם הקודמת */
+    var off=offGet(id);
+    if(off>0 && S.size && off < S.size-2*1048576){ S.pos=off; S.start=off; } else if(off) offSet(id,0);
     S.ms=new MediaSource(); STREAM=S;
     S.ms.addEventListener("sourceopen",function(){
       if(S.dead) return;
@@ -350,7 +367,7 @@
     if(au) return au;
     au=document.createElement("audio"); au.preload="auto"; au.style.display="none";
     au.setAttribute("data-nsf","music");
-    au.onended=function(){ killStream(); advance(); curId=""; tick(); };
+    au.onended=function(){ if(STREAM&&curId) offSet(curId,0); killStream(); advance(); curId=""; tick(); };
     /* 1.2: המכשיר עצר את הנגינה בלי שביקשנו — ממשיכים מיד */
     au.addEventListener("pause",function(){
       if(ours || !curId || au.ended) return;
@@ -378,7 +395,20 @@
       lastErr="הקובץ לא מתנגן במכשיר (פגום או בפורמט לא נתמך)";
       fail[curId]={at:Date.now()}; try{ URL.revokeObjectURL(blobs[curId]); }catch(e){} delete blobs[curId];
       killStream(); advance(); curId=""; setTimeout(tick, 1500); };
-    au.ontimeupdate=function(){ if(au && curId && !STREAM && Math.floor(au.currentTime)%5===0) savePos(); };
+    au.ontimeupdate=function(){
+      if(au && curId && !STREAM && Math.floor(au.currentTime)%5===0) savePos();
+      /* 1.9: קובץ ארוך — שומרים מיקום כל 15 שניות, ואחרי 20 דקות עוברים לשיר הבא */
+      if(au && curId && STREAM && STREAM.id===curId){
+        var S=STREAM, now=Date.now();
+        if(now-_offAt>15000){ _offAt=now; offSet(curId, streamBytesAt(S)); }
+        if(au.currentTime > longMin()*60){
+          var id=curId; offSet(id, streamBytesAt(S));
+          ourPause(function(){ au.pause(); });
+          killStream(); advance(); curId=""; setState("עובר לשיר הבא (קובץ ארוך — ימשיך בפעם הבאה)");
+          setTimeout(tick, 600);
+        }
+      }
+    };
     document.body.appendChild(au);
     return au;
   }
@@ -484,7 +514,7 @@
   }
 
   setInterval(function(){ try{ tick(); }catch(e){} }, 20000);
-  root.addEventListener("pagehide", function(){ savePos(); releaseLock(); });
+  root.addEventListener("pagehide", function(){ savePos(); try{ if(STREAM&&curId&&STREAM.id===curId) offSet(curId, streamBytesAt(STREAM)); }catch(e){} releaseLock(); });
   root.addEventListener("beforeunload", savePos);
 
   root.NatiMusic={apply:apply, auto:auto, active:active, stop:stop,
@@ -497,5 +527,5 @@
     now:function(){ var t=trackOf(curId); if(t) return {lib:t.lib,name:nice(t.n)}; var o=otherInfo(); return (o&&o.p)?{lib:o.lib,name:o.n}:null; },
     count:function(){ return TRACKS.length; },
     error:function(){ return lastErr; },
-    _muted:defaultMuted, history:function(){ return lsGet("nsf_mus_hist")||[]; }, VERSION:"1.8"};
+    _muted:defaultMuted, history:function(){ return lsGet("nsf_mus_hist")||[]; }, VERSION:"1.9"};
 })(window);
